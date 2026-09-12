@@ -147,24 +147,38 @@
 
             var app = Vue.createApp({
                 components: {
-                    GtsRoot: Vue.defineAsyncComponent(function () {
+                    PrototypeRoot: Vue.defineAsyncComponent(function () {
                         return window["vue3-sfc-loader"].loadModule("/src/App.vue", options);
                     }),
                 },
-                template: "<GtsRoot />",
+                template: "<PrototypeRoot />",
             });
             app.use(ElementPlus, { locale: ElementPlusLocaleZhCn });
 
             // 加载路由模块并安装（App.vue 使用 <RouterView />，需 router 提供）
-            window["vue3-sfc-loader"].loadModule("/src/router/index.js", options).then(
-                function (routerMod) {
-                    app.use(routerMod.default);
-                    app.mount("#app");
-                },
-                function (err) {
-                    showBootError("路由加载失败：" + (err && err.message ? err.message : String(err)));
-                }
-            );
+            // 注意：vue3-sfc-loader 0.9.5 的 `export {...} from` re-export 编译产物
+            // 走 require() 且只查 moduleCache 不回落 getFile；src/api/{slug}.js 的
+            // 原型态恰是纯 re-export。修复：先预加载全部 /mock 模块，把它们的
+            // Module 实例注册进 moduleCache，后续 re-export 即可命中。
+            (function () {
+                var preload = [];
+                Object.keys(SRC).forEach(function (path) {
+                    if (path.indexOf("/mock/") === 0 && path.slice(-3) === ".js") {
+                        preload.push(window["vue3-sfc-loader"].loadModule(path, options));
+                    }
+                });
+                Promise.all(preload).catch(function () { /* 单个 mock 预载失败不阻断启动，最终由页面加载报错 */ }).then(function () {
+                    return window["vue3-sfc-loader"].loadModule("/src/router/index.js", options);
+                }).then(
+                    function (routerMod) {
+                        app.use(routerMod.default);
+                        app.mount("#app");
+                    },
+                    function (err) {
+                        showBootError("路由加载失败：" + (err && err.message ? err.message : String(err)));
+                    }
+                );
+            })();
         })();
     </script>
 </body>

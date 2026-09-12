@@ -291,5 +291,7 @@
   "Watermelon",
   "WindPower",
   "ZoomIn",
-  "ZoomOut"
+  "ZoomOut",
+  "default",
+  "icons"
 ]
