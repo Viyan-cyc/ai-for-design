@@ -232,6 +232,7 @@ SKILL.md 增加"UI Runtime 选择"步骤（默认 element-plus，用户可指定
 - **2026-09-12 D18**：**全工程 Node 化**（用户确认设计师配合，推翻"不重写设计师生态"的保守边界）。范围：资产库 8 个脚本（query/build_tokens/build_indexes/validate_library/refresh_release/asset_graph/schema_tools/export_icons → .mjs）、顶层 build_release.mjs、installer/install_skills.mjs、测试 validate_package/validate_coordination → .mjs、全部文档 python3 命令改 node。依据：全工程 Python 仅 ~410 行且纯标准库，1:1 机械移植；设计师本就依赖 Node（组件库 npm 构建），单运行时对所有人是减法。实施约束：①迁移期双实现并存，同一资产库跑旧/新 diff 产出逐字节一致后才删 .py（build_tokens 模板绑定与 validate_library 锁校验为重点对照）；②token CSS 生成头注释变化 → protectedFiles 哈希变化 → 走一次 build_release --version 1.5.1 重新锁哈希；③主链路 query_assets.mjs 优先落地。
 - **2026-09-12 D19**：3-4 人并行协同改造，按四条工作流分工（W1 主链路 / W2 组件库 / W3 Node 化 / W4 文档收尾），接口契约先冻结（组件格式规范 + skill 脚本 CLI 约定）后并行；todolist 与打勾状态维护在本文件 §13。协同前置：仓库当前零提交，必须先建基线提交。
 - **2026-09-12 D20**：协同执行方式 = 四张自包含任务卡（tasks/W1-W4）由各成员直接喂给自己的 AI 会话执行，用户自领 W1；§5.3 第 1 条修正——types.ts / style.scss 必须消除，但 per-component index.ts 与 barrel index.ts **保留**（兼容 npm run build:library），复用拷贝只取 GName.vue。同日决策点 C 定稿：EP 2.13.5 取官方 dist（npm/CDN），用户后续可提供则优先。
+- **2026-09-12 D21**：新增原型选项「样式语言 STYLE_LANG」（用户提出）。原型工作区统一一种语言，不混用；取值 `scss`（默认）| `less`，由 init `--style-lang` 参数指定，记录在 views/{slug}/js/constants.js。默认 scss 的理由：源 G 组件样式本就是 style.scss（D7 钉死 less 是跟随 gts 约定，现回归资产库生态），W2 codemod 迁移近零转换；token 层不受影响（预览走平铺 index.css，与预处理器解耦）。实施归 W1 新增 T8（sass UMD 编译器 + init 参数 + 模板/规范双版本 + build 校验 lang 与 STYLE_LANG 一致），须在 W2-M1 codemod 开工前完成；W2 M0 规范第 2 条改为「跟随 STYLE_LANG」，W4 D1 SKILL.md 增「原型生成选项」节（组件模式/UI 库/样式语言三开关统一呈现）、D2 写二开依赖差异（scss→npm i -D sass，less→npm i -D less，Vite 零配置）。
 
 ## 10. 待决策点
 
@@ -239,7 +240,7 @@ SKILL.md 增加"UI Runtime 选择"步骤（默认 element-plus，用户可指定
 |---|---|---|
 | A | ~~尺寸单位~~ **已决（D14）：全 px 先行**。G 组件 token 本为 px，页面统一 px，单位天然一致；rem 留作二次开发工程 postcss-pxtorem 升级路径。 | 已关闭。 |
 | B | ~~复用 G 组件落位子目录~~ **已决（D17）：方案一** `src/components/{basic|business|complex}/`，与资产库分类名一致。 | 已关闭。 |
-| C | EP 2.13.5 UMD 来源 | 用户提供 vs 实施时取官方 dist。实施时定。 |
+| C | ~~EP 2.13.5 UMD 来源~~ **已决（T3，commit 1a5f66c）：官方 npm dist**（dist 五件套 + icons 2.3.2 + dayjs 1.11.19）。 | 已关闭。 |
 | D | 模板是否未来升级为"可直接出码" | 本次只读参考；未来按组件规范改造模板后可升级。暂不决策。 |
 
 ## 11. 实施清单与顺序
@@ -264,13 +265,14 @@ SKILL.md 增加"UI Runtime 选择"步骤（默认 element-plus，用户可指定
 ### W1 主链路（1 人，最重，建议用户自领）
 
 - [ ] T0 基线提交：全量文件首个 commit，建 main 保护、PR 流程约定 (前置：无任何依赖，立即做)
-- [ ] T1 P0 技术验证：迁移 GButton → init → 复用 → build → 预览跑通（产出：验证结论文档，回填风险 1/2 的结论）(cyc/2026-09-12 build 已过，待人工浏览器确认后合入)
-- [ ] T2 从 gts-autin-coder 复制工具链进 skill + 去 gts 化改名（index.gts.html→index.html、data-gts-theme→data-theme、输出文案清理）
-- [ ] T3 EP 2.13.5 落地：preview UMD 替换 + verify/whitelists 三份白名单按 2.13.5 刷新（决策点 C 在此定：官方 dist 或用户提供）
-- [ ] T4 init.mjs 改造：ASSETS_ROOT 参数 + token glob 现取复制 + api/{slug}.js 适配层生成（D16）+ locales.js 单文件模式（D15）
-- [ ] T5 build.mjs 改造：token 校验改为工作区 token CSS 实时提取 + 删 rem/px-WARN（D14）+ 页面禁 import mock 校验（D16）
+- [x] T1 P0 技术验证：迁移 GButton → init → 复用 → build → 预览跑通（产出：验证结论文档，回填风险 1/2 的结论）(cyc/2026-09-12，浏览器实测通过：GButton 事件计数正常)
+- [x] T2 从 gts-autin-coder 复制工具链进 skill + 去 gts 化改名（index.gts.html→index.html、data-gts-theme→data-theme、输出文案清理）(cyc/2026-09-12，commit 3ef6db3：4 脚本重写+preview/verify 重组+5 个 .py 删除，grep -ri gts 零命中)
+- [x] T3 EP 2.13.5 落地：preview UMD 替换 + verify/whitelists 三份白名单按 2.13.5 刷新（决策点 C：官方 npm dist。cyc/2026-09-12 commit 1a5f66c：官方 dist 五件套+白名单 116 组件/130 导出/295 图标；连带修复 3 个 preview 缺陷——token index.css 404、api 相对路径层级、sfc-loader 0.9.5 re-export 需预载 mock 模块。无头浏览器实测 token 主色 #0067D1 生效）
+- [x] T4 init.mjs 改造：ASSETS_ROOT 参数 + token glob 现取复制 + api/{slug}.js 适配层生成（D16）+ locales.js 单文件模式（D15）(cyc/2026-09-12，随 T2 完成)
+- [x] T5 build.mjs 改造：token 校验改为工作区 token CSS 实时提取 + 删 rem/px-WARN（D14）+ 页面禁 import mock 校验（D16）(cyc/2026-09-12，随 T2 完成，commit 3ef6db3)
 - [ ] T6 collect_component.mjs：相对 import 递归闭包复制 + 来源注释（D12）
 - [ ] T7 端到端验收：hybrid/free 各生成一页 + 明暗主题 + 毛玻璃 + 换肤 + 二开视角通读（依赖 W2 的 M2 迁移完成，是最终汇合点）
+- [x] T8 STYLE_LANG 开关（D21）：init --style-lang 参数 + sass UMD 编译器入 preview + 模板/规范双版本 + build 校验 style lang 与 STYLE_LANG 一致（**须在 W2-M1 codemod 开工前完成**）(cyc/2026-09-12：npm sass 1.93.2 组装 sass.browser.js（compileString，规避浏览器包 renderSync 仅限 Node 的限制）+ immutable 5.1.4；moduleCache 注册 sass 适配器/scss 占位打通 sfc-loader 内联 `<style lang="scss">` 处理链；scss/less 双模无头浏览器实测通过，注入 $变量/@mixin 输出 37px 证明真 sass 编译；负向校验 FAIL 正确。W2-M1 可开工)
 
 ### W2 组件库改造（1 人，与设计师对接，建议第二人）
 
