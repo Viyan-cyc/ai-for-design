@@ -6,7 +6,7 @@
 // init.mjs ONLY creates essential files:
 //   - mock/modules/{slug}.js     (always)
 //   - src/api/{slug}.js          (always — interface adapter, re-exports mock)
-//   - src/locales/               (always — global shared i18n entries)
+//   - src/locales/               (always — all i18n: global common + per-page entries)
 //   - src/views/{slug}/          (always — starter page)
 //   - src/router/index.js        (always — preview needs it)
 //   - src/App.vue + main.js      (always — FIXED from template)
@@ -25,7 +25,7 @@
 //   │   ├── api/{slug}.js                # ★ 接口适配层（二开时唯一要改的文件）
 //   │   ├── assets/tokens/               # ★ 设计资产 token（从 ASSETS_ROOT 现取）
 //   │   ├── assets/                      # 主题/字体/样式（FIXED）
-//   │   ├── locales/                     # 全局共享词条（页面级词条在 views/{slug}/js/locales.js）
+//   │   ├── locales/                     # 全部语言资源：lang/{zh-CN,en-US}/common.json + pages/{slug}.js
 //   │   ├── router/index.js              # 路由（内联，无 guards/modules）
 //   │   └── views/{slug}/               # ★ 页面主目录
 //   │       ├── index.vue                # 页面主组件
@@ -313,7 +313,7 @@ writeFileSync(
 // --- 6d. locales/index.js ---
 writeFileSync(
   join(srcDir, 'locales', 'index.js'),
-  `// i18n 入口 — 全局共享词条；页面级词条在 views/{slug}/js/locales.js
+  `// i18n 入口 — 语言资源统一在此：lang/*/common.json 跨页共享，pages/{slug}.js 页面级
 // 预览环境简单对象合并；真实工程用 vue-i18n 时把两个语言对象拆进 JSON 即可
 import zhCNCommon from './lang/zh-CN/common.json'
 import enUSCommon from './lang/en-US/common.json'
@@ -354,7 +354,7 @@ writeFileSync(
 import { ref, onMounted } from 'vue'
 import { Monitor } from '@element-plus/icons-vue'
 import { fetchList } from '../../api/${slug}.js'
-import { t } from './js/locales.js'
+import { t } from '../../locales/pages/${slug}.js'
 import { COMPONENT_MODE, STATUS_MAP } from './js/constants.js'
 
 const loading = ref(false)
@@ -423,9 +423,10 @@ onMounted(() => {
   'utf8',
 );
 
-// --- 6g. views/{slug}/js/locales.js (single-file bilingual object, D15) ---
+// --- 6g. src/locales/pages/{slug}.js (page entries, D15 — single-file bilingual + flattened t) ---
+mkdirSync(join(srcDir, 'locales', 'pages'), { recursive: true });
 writeFileSync(
-  join(srcDir, 'views', slug, 'js', 'locales.js'),
+  join(srcDir, 'locales', 'pages', `${slug}.js`),
   `// ${pageName} — 页面词条（单文件双语言；每页一个文件，一次写完）
 // messages 存双语言源；t 按 LANG 展平成字符串，模板直接 {{ t.xxx }}。
 // 接 vue-i18n 时把 messages 的 zh/en 拆成两个 JSON，页面模板零改动。

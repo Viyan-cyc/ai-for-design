@@ -85,7 +85,7 @@ export { fetchList, fetchDetail }
 
 ## 6. i18n 模式（D15：locales.js 单文件双语言）
 
-- **页面级**：每页一个 `views/{slug}/js/locales.js`（init 已建骨架）。zh + en 一次写完（en 机械翻译顺带产出）。**`messages` 存双语言源，`t` 是按 LANG 展平的字符串**——模板直接 `{{ t.title }}`，**禁止手动 `.zh`**（漏写展平会在界面渲染成 JSON 串）：
+- **页面级**：每页一个 `src/locales/pages/{slug}.js`（init 已建骨架，与全局词条同在 `src/locales/` 下）。zh + en 一次写完（en 机械翻译顺带产出）。**`messages` 存双语言源，`t` 是按 LANG 展平的字符串**——模板直接 `{{ t.title }}`，**禁止手动 `.zh`**（漏写展平会在界面渲染成 JSON 串）：
   ```js
   export const messages = {
     title: { zh: '设备管理', en: 'Device Management' },
@@ -148,7 +148,7 @@ export { fetchList, fetchDetail }
 从 views/{slug}/index.vue 引用:
   页面子组件:   import StatusTag from './components/StatusTag.vue'
   常量:        import { STATUS_MAP } from './js/constants.js'
-  页面词条:    import { t } from './js/locales.js'
+  页面词条:    import { t } from '../../locales/pages/{slug}.js'
   API 适配层:  import { fetchList } from '../../api/{slug}.js'
   素材:        import logo from '../../assets/uploads/logo.png'
   SVG 图标:    import ranIcon from '../../assets/images/ran.svg'

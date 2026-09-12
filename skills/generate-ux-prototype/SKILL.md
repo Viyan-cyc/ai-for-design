@@ -44,12 +44,11 @@ skill 目录不存放任何设计数据副本：token、组件、模板、毛玻
     ├── assets/themes/               # 皮肤插槽（base.css + README 协议；自定义皮肤放这里）
     ├── assets/fonts/                # 字体（FIXED）
     ├── assets/images/ uploads/      # 按需创建素材
-    ├── locales/                     # 全局共享词条（init 必建：lang/{zh-CN,en-US}/common.json + index.js）
+    ├── locales/                     # 全部语言资源（init 必建：lang/{zh-CN,en-US}/common.json + pages/{slug}.js + index.js）
     ├── router/index.js              # 路由（init 必建 — 内联，无 guards/modules）
     ├── views/{slug}/                # ★ 页面主目录（init 必建）
     │   ├── index.vue                # 页面主组件（starter，替换它）
     │   └── js/constants.js          # 页面常量（含 COMPONENT_MODE）
-    │   └── js/locales.js            # 页面词条（单文件双语言）
     └── components/                  # 复用 G 组件 / 跨页组件（按需创建）
 ```
 
@@ -139,7 +138,7 @@ init 生成的 starter 中 `COMPONENT_MODE` 默认为 `'hybrid'`，确认结果�
 - `views/{slug}/index.vue` 为页面主组件（替换 starter），以组合编排为主。
 - **拆分触发式**：子组件仅在 **>150 行 / 被复用 / 状态复杂** 时才拆出独立文件（常规页面约 4-8 个文件）；页面私有放 `views/{slug}/components/`，跨页复用放 `src/components/`（复用的 G 组件按 collect 落位约定）。
 - **无依赖的文件并行写**：constants.js、locales.js、mock 数据、互不依赖的子组件可在同一轮并行创建。
-- 常量放 `views/{slug}/js/constants.js`（全大写+下划线命名）；页面词条放 `views/{slug}/js/locales.js`（单文件双语言，见下文 i18n）。
+- 常量放 `views/{slug}/js/constants.js`（全大写+下划线命名）；页面词条放 `src/locales/pages/{slug}.js`（单文件双语言，见下文 i18n）。
 
 ### Step 6 — 生成前自检（MANDATORY，build 前必做）
 
@@ -207,7 +206,7 @@ node scripts/serve.mjs --dir "{artifact-folder}/{slug}" --port 8765
 
 ## i18n
 
-- **页面级**：每页一个 `views/{slug}/js/locales.js`——单文件双语言对象（zh-CN + en-US 一次写完，en 由 AI 机械翻译顺带产出），模板经 `t.xxx` 引用；写法见 code-conventions「i18n 模式」。
+- **页面级**：每页一个 `src/locales/pages/{slug}.js`——单文件双语言对象（zh-CN + en-US 一次写完，en 由 AI 机械翻译顺带产出），模板经 `t.xxx` 引用；写法见 code-conventions「i18n 模式」。
 - **全局**：`src/locales/lang/{zh-CN,en-US}/common.json` 仅存**跨页共享**词条（确认/取消/搜索等，按需追加）。
 - 将来接 vue-i18n 时把两个语言对象拆进 JSON 即可，页面模板零改动。
 
