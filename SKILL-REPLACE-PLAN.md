@@ -234,6 +234,8 @@ SKILL.md 增加"UI Runtime 选择"步骤（默认 element-plus，用户可指定
 - **2026-09-12 D20**：协同执行方式 = 四张自包含任务卡（tasks/W1-W4）由各成员直接喂给自己的 AI 会话执行，用户自领 W1；§5.3 第 1 条修正——types.ts / style.scss 必须消除，但 per-component index.ts 与 barrel index.ts **保留**（兼容 npm run build:library），复用拷贝只取 GName.vue。同日决策点 C 定稿：EP 2.13.5 取官方 dist（npm/CDN），用户后续可提供则优先。
 - **2026-09-12 D21**：新增原型选项「样式语言 STYLE_LANG」（用户提出）。原型工作区统一一种语言，不混用；取值 `scss`（默认）| `less`，由 init `--style-lang` 参数指定，记录在 views/{slug}/js/constants.js。默认 scss 的理由：源 G 组件样式本就是 style.scss（D7 钉死 less 是跟随 gts 约定，现回归资产库生态），W2 codemod 迁移近零转换；token 层不受影响（预览走平铺 index.css，与预处理器解耦）。实施归 W1 新增 T8（sass UMD 编译器 + init 参数 + 模板/规范双版本 + build 校验 lang 与 STYLE_LANG 一致），须在 W2-M1 codemod 开工前完成；W2 M0 规范第 2 条改为「跟随 STYLE_LANG」，W4 D1 SKILL.md 增「原型生成选项」节（组件模式/UI 库/样式语言三开关统一呈现）、D2 写二开依赖差异（scss→npm i -D sass，less→npm i -D less，Vite 零配置）。
 
+- **2026-09-12 D22**：样式语言钉死 **less**，D21 作废（T8 交付即废弃）。原因：产品线二次开发硬要求必须是 less；若组件库/模板走 scss，二开拷贝组件时会出现 scss 与 less 并行。全链路（组件库资产 M0 规范、原型模板、预览编译、build 校验）只剩 less 一种语言。影响面：① W2 M0 第 2 条 / M1 转换条款改回 less（源 .scss 内容为扁平规则直接贴入）；② W4 D1 三开关改两开关（组件复用、UI 库），D2 二开依赖固定 npm i -D less；③ W1 T8 已交付的 init --style-lang 参数、sass.browser.js/immutable.js、base.scss、build 1b 双语言校验需回退为 less 单语言形态（无需再支持 scss）；④ T6 collect_component 不受影响（只搬 .vue 不碰样式语言）。
+
 ## 10. 待决策点
 
 | # | 问题 | 选项与推荐 |
@@ -272,7 +274,8 @@ SKILL.md 增加"UI Runtime 选择"步骤（默认 element-plus，用户可指定
 - [x] T5 build.mjs 改造：token 校验改为工作区 token CSS 实时提取 + 删 rem/px-WARN（D14）+ 页面禁 import mock 校验（D16）(cyc/2026-09-12，随 T2 完成，commit 3ef6db3)
 - [ ] T6 collect_component.mjs：相对 import 递归闭包复制 + 来源注释（D12）
 - [ ] T7 端到端验收：hybrid/free 各生成一页 + 明暗主题 + 毛玻璃 + 换肤 + 二开视角通读（依赖 W2 的 M2 迁移完成，是最终汇合点）
-- [x] T8 STYLE_LANG 开关（D21）：init --style-lang 参数 + sass UMD 编译器入 preview + 模板/规范双版本 + build 校验 style lang 与 STYLE_LANG 一致（**须在 W2-M1 codemod 开工前完成**）(cyc/2026-09-12：npm sass 1.93.2 组装 sass.browser.js（compileString，规避浏览器包 renderSync 仅限 Node 的限制）+ immutable 5.1.4；moduleCache 注册 sass 适配器/scss 占位打通 sfc-loader 内联 `<style lang="scss">` 处理链；scss/less 双模无头浏览器实测通过，注入 $变量/@mixin 输出 37px 证明真 sass 编译；负向校验 FAIL 正确。W2-M1 可开工)
+- [x] T8 STYLE_LANG 开关（D21）→ **已交付随即被 D22 作废**（cyc/2026-09-12：scss/less 双模曾全链路实测通过，见 W1 卡回写；当日产品线确定二开必须 less，D22 钉死单语言 less，T8 产物需回退）
+- [ ] T9 D22 回退：init 删 --style-lang 参数与 base.scss、main.js 模板固定 import base.less、constants.js 删 STYLE_LANG、preview 删 sass.browser.js/immutable.js 与 scss/sass moduleCache 注册（保留 .scss handleModule 亦可删）、build 1b 改为「工作区禁止出现 .scss 与 lang="scss"」（D22：全链路只剩 less）
 
 ### W2 组件库改造（1 人，与设计师对接，建议第二人）
 
