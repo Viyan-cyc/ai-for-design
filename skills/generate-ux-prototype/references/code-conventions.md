@@ -85,19 +85,21 @@ export { fetchList, fetchDetail }
 
 ## 6. i18n 模式（D15：locales.js 单文件双语言）
 
-- **页面级**：每页一个 `views/{slug}/js/locales.js`（init 已建骨架）。zh + en 一次写完（en 机械翻译顺带产出），模板经 `t.xxx` 引用：
+- **页面级**：每页一个 `views/{slug}/js/locales.js`（init 已建骨架）。zh + en 一次写完（en 机械翻译顺带产出）。**`messages` 存双语言源，`t` 是按 LANG 展平的字符串**——模板直接 `{{ t.title }}`，**禁止手动 `.zh`**（漏写展平会在界面渲染成 JSON 串）：
   ```js
-  export const t = {
-    title:   { zh: '设备管理', en: 'Device Management' },
-    refresh: { zh: '刷新', en: 'Refresh' },
+  export const messages = {
+    title: { zh: '设备管理', en: 'Device Management' },
   }
+  const LANG = 'zh' // 'zh' | 'en'，页面显示语言（原型期常量；运行时切换随 vue-i18n 引入）
+  export const t = Object.fromEntries(
+    Object.entries(messages).map(([key, val]) => [key, typeof val === 'string' ? val : val[LANG] || val.zh]),
+  )
   ```
   ```html
-  <span class="title">{{ t.title.zh }}</span>
+  <span class="title">{{ t.title }}</span>
   ```
-  > 单语言页面（用户明确只要中文）可直接存字符串 `title: '设备管理'`，保持本文件内自洽即可；双语言对象是默认形态。
-- **全局共享**：`src/locales/lang/{zh-CN,en-US}/common.json` 仅存**跨页共享**词条（确认/取消/搜索等，按需追加）；页面不 import 全局词条，除非确需复用。
-- 将来接 vue-i18n：把 zh/en 两个对象拆进 JSON，页面模板零改动。
+  > 单语言页面可直接在 messages 里存字符串 `title: '设备管理'`，展平逻辑已兼容（typeof val === 'string' 直通）。
+- 将来接 vue-i18n：把 messages 的 zh/en 拆进 JSON，页面模板零改动。
 
 ## 7. 复用 G 组件约定（D12/D17/D20）
 

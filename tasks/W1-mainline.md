@@ -124,3 +124,4 @@
   5. **gts 验收**：`grep -riI gts skills/generate-ux-prototype/` 唯一命中是 vendored sfc-loader 里的 `SVGTSpanElement`（SVG 标准类型），源码/文档/配置零命中。
   - **发现并修复：sfc-loader 0.9.5 预览运行时 bug**——`el-pagination` 传单向 `:current-page` prop 时整个组件渲染成注释节点（v6/v10/v11 矩阵复现，`@current-change` 或 `v-model:current-page` 均正常）。修复：页面用 `v-model:current-page`/`v-model:page-size`。**code-conventions 需补一条**（T7 后续）；真实 Vite 工程不受影响。
   - 产物：`%TEMP%/t7-verify/{device-monitor,alarm-insight}`（临时目录，不入库）。
+- [2026-09-12] (cyc/W1-T7fix) **i18n 渲染缺陷修复（用户验收发现）**：T7 两个演示页与 starter 把 `{{ t.title }}` 插值到 `{zh,en}` 对象上，界面渲染成 JSON 串。根因是「模板手动 `.zh`」约定本身易错（照规范写也会漏）。修复：locales.js 改为 **`messages` 双语言源 + `t` 按 `LANG` 展平成字符串**（`Object.fromEntries`，string 直通兼容单语言页），模板统一 `{{ t.xxx }}`，code-conventions §6 重写并**禁止手动 `.zh`**；init 脚手架与 T7 两演示页同步修正（含 metric `:key` 的 m.title.zh）。浏览器复验：两页 + 新 init 冒烟产物 JSON 泄漏 0、中文词条正常。接 vue-i18n 路径不变（拆 messages 进 JSON，模板零改动）。
