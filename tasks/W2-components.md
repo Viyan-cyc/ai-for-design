@@ -17,7 +17,7 @@
 以 SKILL-REPLACE-PLAN.md §5.3 七条为骨架，扩写为 `skills/generate-ux-prototype/references/component-format.md`，必须包含：
 
 1. **目录**：`components/{basic|business|complex}/GName/` 下仅 `GName.vue`（必须）+ `examples.vue`（可选，供 AI 学习匹配，不随复用拷贝）+ `index.ts`（必须保留——兼容 npm run build:library，D20 修正：不删任何 index.ts）。**types.ts、style.scss、其他外部文件一律消除**。
-2. **SFC 自包含**：template + `<script setup>` + `<style lang="scss" scoped>` 全内联；禁止 `src="./style.scss"` 外链；禁止 @import 外部样式。（D21 修订：组件库统一 **scss**——源 G 组件样式本就是 style.scss，迁移近零转换；STYLE_LANG 工作区开关仍保留 less 取值，但组件库资产本身钉死 scss）
+2. **SFC 自包含**：template + `<script setup>` + `<style lang="less" scoped>` 全内联；禁止 `src="./style.scss"` 外链；禁止 @import 外部样式。（D22 修订：样式语言钉死 **less**——产品线二次开发硬要求，D21 的 scss 方案作废；组件库与原型工作区统一只剩 less，避免二开拷贝时 scss/less 并行）
 3. **纯 JS**：无 TS 标注（`defineProps<{...}>()` → `defineProps({ type: { type: String, default: 'default' } })`；`defineEmits<{...}>()` → `defineEmits(['search','reset'])`；类型 import 删除）。
 4. **文案**：组件内可见文案走 props 默认值或 slot 兜底（中文）；组件内部不引入 i18n。
 5. **依赖**：仅 vue / element-plus / @element-plus/icons-vue / dayjs + 相对路径其他 G 组件。
@@ -30,7 +30,7 @@
 ### M1 codemod 脚本（半天）
 写 `assets/g-design-enterprise-v1.5.0/scripts/migrate_components.mjs`（Node，D18 全工程 Node 化）：
 - 输入：组件目录；输出：原地迁移（先 git 提交迁移前状态以便回滚 diff）。
-- 转换：内联 style.scss 到 `<style lang="scss" scoped>`（scss 内容是扁平 CSS 单行规则，直接贴入即可，无需 sass 编译——若遇到真正的 scss 语法如嵌套/变量，**逐个人工处理**并记录）；去 TS；props/emits 改对象语法；删除 types.ts/style.scss；补/保留 index.ts。（D21：lang 从 less 改为 scss，迁移转换量近零——源样式无需转语言，只做内联）
+- 转换：内联 style.scss 到 `<style lang="less" scoped>`（scss 内容是扁平 CSS 单行规则，直接贴入即可，无需编译——若遇到真正的 scss 语法如嵌套/变量，**逐个人工处理**并记录，less 语法基本兼容）；去 TS；props/emits 改对象语法；删除 types.ts/style.scss；补/保留 index.ts。（D22：目标 lang 为 less，源文件本就是 .scss 内容——扁平规则直接贴入，与最早方案一致）
 - 产出 `migration-report.json`：每组件的转换项、人工处理项、API 对比（迁移前后 defineProps/defineEmits 签名 diff，必须为空 diff）。
 
 ### M2 执行迁移 + 抽查（半天到一天，**最长关键路径，M1 完立即跑**）
