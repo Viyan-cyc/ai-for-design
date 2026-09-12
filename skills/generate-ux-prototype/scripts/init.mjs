@@ -22,7 +22,6 @@
 //   ├── src/
 //   │   ├── main.js                      # 工程入口（FIXED）
 //   │   ├── App.vue                      # 应用壳
-//   │   ├── README.md                    # 接入说明（FIXED）
 //   │   ├── api/{slug}.js                # ★ 接口适配层（二开时唯一要改的文件）
 //   │   ├── assets/tokens/               # ★ 设计资产 token（从 ASSETS_ROOT 现取）
 //   │   ├── assets/                      # 主题/字体/样式（FIXED）
@@ -154,7 +153,7 @@ if (existsSync(join(dest, 'src'))) {
 }
 mkdirSync(dest, { recursive: true });
 
-// ---------- 4. copy deliverable scaffold (main.js + assets + README) ----------
+// ---------- 4. copy deliverable scaffold (main.js + assets) ----------
 const srcDir = join(dest, 'src');
 cpSync(scaffoldSrc, srcDir, { recursive: true });
 
@@ -383,7 +382,7 @@ onMounted(() => {
     <el-card shadow="never">
       <template #header>
         <div class="header">
-          <span class="title">{{ t.title }}</span>
+          <span class="title">{{ t.title.zh }}</span>
           <el-button type="primary" :icon="Monitor" @click="fetchData">{{ t.refresh }}</el-button>
         </div>
       </template>

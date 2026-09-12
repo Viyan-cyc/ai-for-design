@@ -112,3 +112,7 @@
   - **Python 3.12.10 已装**（winget，`C:\Users\Tony\AppData\Local\Programs\Python\Python312`；Windows 官方包只有 python.exe，无 python3/py launcher——脚本用候选列表 ['python','python3'] 兜底）。migration_diff 仍依赖 Python 跑旧 .py 对照，**N5 删 .py 后该依赖自然消失**。
   - 结论：**两平台都已配好**。入口判断 bug（10 处）+ 本轮测试框架差异修复后，三套测试在 Windows 全绿：migration_diff 18/18、validate_package 10/10、validate_coordination 7/7；书峯 Mac 侧 N1-N4 交付时同套测试通过。书峯 N5（删 .py + build_release --version 1.5.1 重锁）前无需再专门回 Windows 验证——对照框架已证明 py 与 mjs 产出语义一致，删 .py 后 validate_package/coordination 纯 Node 化，不再有解释器差异面。
   - 连带：.gitignore 加 `__pycache__/`（migration_diff 跑 .py 的字节码缓存不入库）。
+- [2026-09-12] (cyc/W1-T7pre) **T7 前置两小修完成**（W4 发现 1+2 落地）：
+  - init.mjs 头注释删除 `src/README.md` 行（选择删注释而非补模板——W4 已把二开说明改道 `src/api/{slug}.js` 文件头 + code-conventions，再补 README 会形成第二份说明源）；连带修第 157 行注释。
+  - starter 模板 `{{ t.title }}` → `{{ t.title.zh }}`（locales.js 中 title 是 `{zh,en}` 对象，原样渲染成 `[object Object]`；与 code-conventions.md:96 示例对齐）。
+  - 冒烟：init RESULT: OK（ASSETS_VERSION 1.5.1）+ build RESULT: OK，产物中 `t.title.zh` 生效。
