@@ -1,7 +1,7 @@
 # 组件库改造规范 v1
 
 > **状态**：正式稿 · 待设计师评审签字（签字后本文件即为组件库格式契约 / 冻结点）
-> **依据**：SKILL-REPLACE-PLAN.md §5（组件复用方案）、§9 D7（库端改造）、D20（index.ts 保留修正）、任务卡 tasks/W2-components.md M0
+> **依据**：SKILL-REPLACE-PLAN.md §5（组件复用方案）、§9 D7（库端改造）、D20（index.ts 保留修正）、D22（样式语言钉死 less，撤回 D21 scss 默认）、任务卡 tasks/W2-components.md M0
 > **适用范围**：`assets/g-design-enterprise-v1.5.0/frontend/element-plus/src/components/`（下称 components/）全部存量组件（61 个目录）与设计师后续新增组件
 > **现状基线**（2026-09-12 盘点）：58 个主 .vue + 3 个 service 组件 + 49 个 examples.vue + 49 个 style.scss + 53 个 types.ts + 63 个 index.ts（61 组件级 + basic/business 两个 barrel，complex 无 barrel）
 

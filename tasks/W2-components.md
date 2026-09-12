@@ -68,3 +68,8 @@
   3. `package.json` devDependencies 无 `less` —— 改 `<style lang="less">` 后 vite 编译必需加依赖（备选：纯 `<style scoped>` 免加依赖，但与工作区 less 约定不一致，复用拷贝需改写，不推荐）。
   → 建议 M1 codemod 一并处理 #1/#2，#3 由用户拍板归属（W2 代改 / W4 / W3）。规范主选 less 方案。
 - [2026-09-12] (moyuntian/W2-M0) 【需拍板】复用闭包契约给 W1/T6：拷 GIcon 时须连带拷 `src/icons/icon-nodes.json` + `icon-aliases.json` 并保持 `../../../icons/` 相对路径（GIcon 跨目录数据依赖，非 .vue）。collect_component.mjs 的递归闭包须覆盖非 .vue 相对 import。规范 §5/§10 已登记。
+- [2026-09-12] (moyuntian/W2-M0) D22 决策（用户拍板）：撤回 D21 的 scss 默认，样式语言钉死 **less**。用户理由：产品线二次开发硬要求 less，避免迁移完的组件被二开拷走时 scss/less 混用。技术补充：less 有官方 `less.browser.js` 浏览器编译器；sass 的 `sass.browser.js` 是 W1-T8 组装的（规避 `renderSync` 仅 Node 限制），链路更脆弱。源 style.scss 经盘点全为扁平 CSS，贴进 less scoped 合法，迁移近零转换。任务卡 §2 与 M1 备注已改 less（引用 D22），component-format.md 已是 less，M0 正式稿内容不用动。**跨 W 待办（按决策纪律第 4 条不自改 SKILL-REPLACE-PLAN.md，需用户在 CC 会话「检查回写」时统一裁决）**：
+  1. §9 追加 D22 决策记录（撤回 D21 scss 默认 + STYLE_LANG 默认改 less）——任务卡 §2/M1 备注已引用 D22，§9 未登记是缺口。
+  2. §13 W1-T8 已打勾 ✓(cyc/2026-09-12)，描述含「sass UMD 编译器入 preview」——建议保留 sass 编译器（STYLE_LANG=scss 取值仍可用），仅默认值从 scss 改 less；或去掉 scss 支持只留 less。由 W1 裁决。
+  3. §13 W2-M0 描述「以 §5.3 七条为骨架」——§5.3 第 2 条原文是 less（未被 D21 改动），与最终方向一致，不用动。
+  4. component-format.md 文档头「依据」已补 D22 引用（本任务所有权文件，M0 执行细节自主改）；待 D22 入 §9 后可与 §9 记录交叉印证。
