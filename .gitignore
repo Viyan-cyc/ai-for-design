@@ -18,3 +18,6 @@ assets/g-design-enterprise-v1.5.0/frontend/element-plus/dist/
 # codegraph 索引（MCP 工具本地缓存，可重建）
 .codegraph/
 tasks/p0-workspace/t9-verify/
+
+# 旧 .py 对照运行垃圾（N1 migration_diff 会跑 .py，产生字节码缓存）
+__pycache__/
