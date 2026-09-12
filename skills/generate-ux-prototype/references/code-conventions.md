@@ -196,5 +196,6 @@ export { fetchList, fetchDetail }
 1. **devDependency 固定 `npm i -D less`**：真实工程 Vite 零配置编译 Less（`main.js` 已 `import './assets/style/base.less'`）；无需 sass/其他预处理器。
 2. **api 适配层两段式**：二开 `src/api/{slug}.js` 时用 `import ... from` + `export { }` 两段式，勿用 `export {...} from` re-export 简写（sfc-loader 0.9.5 re-export 缺陷经验，见 W1-T3；真实 Vite 工程无此限制，两段式是双保险）。
 3. **复用 G 组件的 index.js 垫片**是预览专用兼容文件；真实工程可删（Vite 原生解析目录式命名导入），组件本体 `GName.vue` 与页面代码不受影响。
+4. **el-pagination 用 v-model**：预览运行时（sfc-loader 0.9.5）下传单向 `:current-page` / `:page-size` prop 会静默不渲染（组件变注释节点）；写 `v-model:current-page` / `v-model:page-size`（T7 实测。真实 Vite 工程无此限制）。
 
 真实工程 npm 依赖（`preview/src/main.js` 头部已注释声明）：`vue@^3.4`、`vue-router@^4.4`、`element-plus@2.13.5`、`@element-plus/icons-vue@^2.3`、`dayjs@^1.11`、`less@^4.2`。

@@ -116,3 +116,11 @@
   - init.mjs 头注释删除 `src/README.md` 行（选择删注释而非补模板——W4 已把二开说明改道 `src/api/{slug}.js` 文件头 + code-conventions，再补 README 会形成第二份说明源）；连带修第 157 行注释。
   - starter 模板 `{{ t.title }}` → `{{ t.title.zh }}`（locales.js 中 title 是 `{zh,en}` 对象，原样渲染成 `[object Object]`；与 code-conventions.md:96 示例对齐）。
   - 冒烟：init RESULT: OK（ASSETS_VERSION 1.5.1）+ build RESULT: OK，产物中 `t.title.zh` 生效。
+- [2026-09-12] (cyc/W1-T7) **T7 端到端验收通过**（无头 Chrome 实测，非仅编译）：
+  1. **hybrid 页**（device-monitor，48 条 mock、20 行表格）：init 1.5.1 → collect_component 双组件（GMetricCard + GStatusTag，闭包+来源注释+interop 垫片全对）→ build OK → 浏览器渲染 20 行、4 张 KPI 卡、状态标签色系正确（success 11/danger 3/warning 4）、`data-surface="brand"` 主卡底色 rgb(0,103,209)=资产 token #0067D1。
+  2. **free 页**（alarm-insight，手写看板）：7 根趋势柱 + 6 条告警全渲染，COMPONENT_MODE='free' 落 constants。
+  3. **明暗切换**：`setTheme('dark')` 后 `--color-brand` #0067D1→#2E86DE、success tag 底→#00291D（语义暗层生效）；**自定义皮肤**：theme-deep-blue.css 按插槽协议注册后 `--color-brand`=#105cf6 生效；**毛玻璃**：`data-material="frosted"` → backdrop-filter blur(20px)+半透明表面（frosted.css 预设链路通）。
+  4. **二开演练**：api/{slug}.js 换「假 axios」实现（URL/方法对齐真实后端形状），页面零改动正常取数。
+  5. **gts 验收**：`grep -riI gts skills/generate-ux-prototype/` 唯一命中是 vendored sfc-loader 里的 `SVGTSpanElement`（SVG 标准类型），源码/文档/配置零命中。
+  - **发现并修复：sfc-loader 0.9.5 预览运行时 bug**——`el-pagination` 传单向 `:current-page` prop 时整个组件渲染成注释节点（v6/v10/v11 矩阵复现，`@current-change` 或 `v-model:current-page` 均正常）。修复：页面用 `v-model:current-page`/`v-model:page-size`。**code-conventions 需补一条**（T7 后续）；真实 Vite 工程不受影响。
+  - 产物：`%TEMP%/t7-verify/{device-monitor,alarm-insight}`（临时目录，不入库）。
