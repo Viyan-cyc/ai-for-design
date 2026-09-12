@@ -1,4 +1,4 @@
-import '../tokens/index.scss'
+import '../tokens/index.css'
 import './styles/base.css'
 import type{App}from'vue'
 import*as Basic from'./components/basic'

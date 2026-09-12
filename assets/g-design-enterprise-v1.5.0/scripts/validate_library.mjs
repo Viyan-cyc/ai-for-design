@@ -65,7 +65,7 @@ export function check(root = ROOT, skipLock = false) {
         const child = path.join(dir, entry.name);
         if (entry.isDirectory()) walk(child);
         else if (
-          ['.vue', '.ts', '.scss', '.css'].includes(path.extname(entry.name)) &&
+          ['.vue', '.ts', '.css'].includes(path.extname(entry.name)) &&
           !['examples.vue', 'examples.ts'].includes(entry.name)
         ) {
           texts.push(fs.readFileSync(child, 'utf8'));

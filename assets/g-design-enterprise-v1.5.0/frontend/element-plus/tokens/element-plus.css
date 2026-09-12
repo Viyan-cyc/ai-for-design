@@ -101,10 +101,6 @@
 .el-tag.el-tag--warning {
   --el-tag-text-color: var(--color-text-primary);
 }
-.el-alert--warning {
-  --el-alert-title-color: var(--color-text-primary);
-  --el-alert-description-color: var(--color-text-secondary);
-}
 .el-input,
 .el-textarea,
 .el-select {

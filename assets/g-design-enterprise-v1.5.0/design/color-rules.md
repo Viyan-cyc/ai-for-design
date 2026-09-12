@@ -102,7 +102,7 @@ Color Token 按用途命名。业务界面优先引用有语义的 `--color-*`�
 
 通过 `[data-theme="light"]` / `[data-theme="dark"]` 切换语义映射，基础色板身份保持稳定。现有组件用 `--g-*` 转接 `--color-*`；Element Plus 的 primary/success/warning/danger/error/info 对应高亮/成功/提醒/错误/错误/信息。橙色告警单独使用 `--color-alert` 或 `--g-feedback-alert`。主按钮按五种状态使用对应语义，衍生组件状态属于实现适配。
 
-Element Plus 基础样式先加载，再加载生成的 `tokens/index.scss`。毛玻璃是独立材质，按需读取 [frosted-glass.md](frosted-glass.md)，使用 frost-* 参数；不改变业务功能色。
+Element Plus 基础样式先加载，再加载生成的 `tokens/index.css`（D23 起 token 层为纯 CSS，无 Sass）。毛玻璃是独立材质，按需读取 [frosted-glass.md](frosted-glass.md)，使用 frost-* 参数；不改变业务功能色。
 
 ## 维护
 

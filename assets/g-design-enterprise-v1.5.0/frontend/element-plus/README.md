@@ -9,7 +9,7 @@ npm run dev            # 启动预览
 npm run build:library  # 构建完整组件库，输出 dist/
 ```
 
-先加载 Element Plus 基础样式，再加载 tokens/index.scss 和 src/styles/base.css。库入口也导入生成 Token，避免仅更新源码而组件库 CSS 不生效。
+先加载 Element Plus 基础样式，再加载 tokens/index.css 和 src/styles/base.css。库入口也导入生成 Token，避免仅更新源码而组件库 CSS 不生效。
 
 `src/page-config.json` 保存标题、主题、风格、页面状态和演示数据；六套默认数据在 `configs/`，对应 Schema 在 `schemas/`。运行 resolve_source_assets.py 后，所选模板由生成的 src/selected-template.ts 导入。
 

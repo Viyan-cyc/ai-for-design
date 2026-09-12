@@ -1,6 +1,4 @@
-// GENERATED from design/tokens.json; edit the source, then run scripts/build_tokens.mjs.
-// 数值来源：design/tokens.json；规则：design/color-rules.md、design/frosted-glass.md。
-@use "./element-plus.scss";
+/* 数值来源：design/tokens.json；规则：design/color-rules.md、design/frosted-glass.md。 */
 @import "./primitive.css";
 @import "./semantic-light.css";
 @import "./semantic-dark.css";

@@ -26,11 +26,10 @@
     "frontend/element-plus/tsconfig.json",
     "frontend/element-plus/vite.preview.config.ts",
     "frontend/element-plus/index.html",
-    "frontend/element-plus/tokens/index.scss",
+    "frontend/element-plus/tokens/index.css",
     "frontend/element-plus/tokens/semantic-dark.css",
     "frontend/element-plus/tokens/charts.css",
     "frontend/element-plus/tokens/code.css",
-    "frontend/element-plus/tokens/element-plus.scss",
     "frontend/element-plus/tokens/primitive.css",
     "frontend/element-plus/tokens/glass.css",
     "frontend/element-plus/tokens/semantic-light.css",
@@ -45,7 +44,7 @@
     "frontend/element-plus/licenses/THIRD-PARTY-NOTICES.md",
     "frontend/element-plus/tokens/frost-decoration.css"
   ],
-  "sourceReleaseSha256": "3fee09ab4505afd3a58dde5f3e9410b6eaf3e699f634e2370d87fdc91a83a9eb",
+  "sourceReleaseSha256": "2d9201c13529f0aa3e64baf128f4e7326fde95a5ffd22f0e2bf79c5fdcab4ab9",
   "sourceReleaseHashFormat": "manifest-sha256 and sorted path:sha256 lines",
   "sourceLock": "release/source-lock.json",
   "materialRules": "design/frosted-glass.md"

@@ -68,7 +68,7 @@
         "frontend/element-plus/tokens/frost-decoration.css",
         "frontend/element-plus/tokens/frosted.css",
         "frontend/element-plus/tokens/glass.css",
-        "frontend/element-plus/tokens/index.scss",
+        "frontend/element-plus/tokens/index.css",
         "frontend/element-plus/tokens/primitive.css",
         "frontend/element-plus/tokens/semantic-dark.css",
         "frontend/element-plus/tokens/semantic-light.css"
@@ -156,7 +156,7 @@
         "frontend/element-plus/tokens/frost-decoration.css",
         "frontend/element-plus/tokens/frosted.css",
         "frontend/element-plus/tokens/glass.css",
-        "frontend/element-plus/tokens/index.scss",
+        "frontend/element-plus/tokens/index.css",
         "frontend/element-plus/tokens/primitive.css",
         "frontend/element-plus/tokens/semantic-dark.css",
         "frontend/element-plus/tokens/semantic-light.css"
@@ -234,7 +234,7 @@
         "frontend/element-plus/tokens/frost-decoration.css",
         "frontend/element-plus/tokens/frosted.css",
         "frontend/element-plus/tokens/glass.css",
-        "frontend/element-plus/tokens/index.scss",
+        "frontend/element-plus/tokens/index.css",
         "frontend/element-plus/tokens/primitive.css",
         "frontend/element-plus/tokens/semantic-dark.css",
         "frontend/element-plus/tokens/semantic-light.css"
@@ -310,7 +310,7 @@
         "frontend/element-plus/tokens/frost-decoration.css",
         "frontend/element-plus/tokens/frosted.css",
         "frontend/element-plus/tokens/glass.css",
-        "frontend/element-plus/tokens/index.scss",
+        "frontend/element-plus/tokens/index.css",
         "frontend/element-plus/tokens/primitive.css",
         "frontend/element-plus/tokens/semantic-dark.css",
         "frontend/element-plus/tokens/semantic-light.css"
@@ -394,7 +394,7 @@
         "frontend/element-plus/tokens/frost-decoration.css",
         "frontend/element-plus/tokens/frosted.css",
         "frontend/element-plus/tokens/glass.css",
-        "frontend/element-plus/tokens/index.scss",
+        "frontend/element-plus/tokens/index.css",
         "frontend/element-plus/tokens/primitive.css",
         "frontend/element-plus/tokens/semantic-dark.css",
         "frontend/element-plus/tokens/semantic-light.css"
@@ -470,7 +470,7 @@
         "frontend/element-plus/tokens/frost-decoration.css",
         "frontend/element-plus/tokens/frosted.css",
         "frontend/element-plus/tokens/glass.css",
-        "frontend/element-plus/tokens/index.scss",
+        "frontend/element-plus/tokens/index.css",
         "frontend/element-plus/tokens/primitive.css",
         "frontend/element-plus/tokens/semantic-dark.css",
         "frontend/element-plus/tokens/semantic-light.css"

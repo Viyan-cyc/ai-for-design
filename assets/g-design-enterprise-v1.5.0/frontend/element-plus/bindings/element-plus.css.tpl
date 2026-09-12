@@ -100,10 +100,6 @@
 .el-tag.el-tag--warning {
   --el-tag-text-color: {{element-plus-5|--el-tag-text-color}};
 }
-.el-alert--warning {
-  --el-alert-title-color: {{element-plus-6|--el-alert-title-color}};
-  --el-alert-description-color: {{element-plus-6|--el-alert-description-color}};
-}
 .el-input,
 .el-textarea,
 .el-select {

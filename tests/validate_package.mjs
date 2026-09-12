@@ -93,7 +93,7 @@ function main() {
       assert(result.status === 0 && result.stdout.includes('RESULT: OK'), `build smoke failed: ${result.stdout}${result.stderr}`);
       passed('generated workspace passes build.mjs smoke (SFC compile, whitelists, token checks)');
 
-      // —— 1:1 保留：token 编辑传播到 CSS/Sass/可读值 ——
+      // —— 1:1 保留：token 编辑传播到 CSS/可读值（D23：Sass 层已清零）——
       // 在沙箱副本上做（N3 教训：绝不污染真仓库）。副本内生成物带 .py 头，
       // 改 tokens.json 后重跑 mjs 生成器，断言新值进入生成物即可，与头注释无关。
       const tokenClone = path.join(work, 'token-clone');
@@ -116,13 +116,14 @@ function main() {
       fs.writeFileSync(tokenFile, `${JSON.stringify(td, null, 2)}\n`, 'utf8');
       cloneScript('build_tokens.mjs');
       const primitiveCss = fs.readFileSync(path.join(tokenClone, 'frontend/element-plus/tokens/primitive.css'), 'utf8');
-      const sassTokens = fs.readFileSync(path.join(tokenClone, 'frontend/element-plus/tokens/element-plus.scss'), 'utf8');
+      const tokenIndex = fs.readFileSync(path.join(tokenClone, 'frontend/element-plus/tokens/index.css'), 'utf8');
       const tokensMd = fs.readFileSync(path.join(tokenClone, 'design/tokens.md'), 'utf8');
       assert(primitiveCss.includes('--brand-50: #123456;'), 'brand-50 not in primitive.css');
       assert(primitiveCss.includes('--space-16: 18px;'), 'space-16 not in primitive.css');
-      assert(sassTokens.includes('#123456'), 'brand-50 not in element-plus.scss');
+      assert(tokenIndex.includes('@import "./primitive.css"'), 'index.css entry missing primitive layer');
+      assert(!tokenIndex.includes('scss'), 'index.css must not reference scss');
       assert(tokensMd.includes('#123456'), 'brand-50 not in tokens.md');
-      passed('one token edit propagates to CSS, Sass and readable values');
+      passed('one token edit propagates to CSS layers and readable values');
 
       // —— 1:1 保留：frosted token 传播 + legacy glass 别名 ——
       const td2 = JSON.parse(fs.readFileSync(tokenFile, 'utf8'));

@@ -818,15 +818,6 @@
 | --- | --- | --- |
 | `--el-tag-text-color` | `var(--color-text-primary)` | V1.3 tokens/element-plus.css |
 
-## element-plus-6
-
-.el-alert--warning
-
-| Token | 值 | 用途/来源 |
-| --- | --- | --- |
-| `--el-alert-title-color` | `var(--color-text-primary)` | V1.3 tokens/element-plus.css |
-| `--el-alert-description-color` | `var(--color-text-secondary)` | V1.3 tokens/element-plus.css |
-
 ## element-plus-7
 
 .el-input,
@@ -984,19 +975,6 @@ implementation-dimensions
 | `--spec-gtopology-height` | `8px` | 保留现有实现值：src/components/complex/GTopology/GTopology.vue / height |
 | `--spec-page-states-min-height` | `240px` | 保留现有实现值：src/page-states/PageStateShell.vue / min-height |
 | `--spec-styles-font-size` | `18px` | 保留现有实现值：src/styles/base.css / font-size |
-
-## element-plus-dimensions
-
-element-plus-dimensions
-
-| Token | 值 | 用途/来源 |
-| --- | --- | --- |
-| `--el-compile-size-4` | `4px` | Element Plus 编译期基础尺寸 |
-| `--el-compile-size-2` | `2px` | Element Plus 编译期基础尺寸 |
-| `--el-compile-size-20` | `20px` | Element Plus 编译期基础尺寸 |
-| `--el-compile-size-40` | `40px` | Element Plus 编译期基础尺寸 |
-| `--el-compile-size-32` | `32px` | Element Plus 编译期基础尺寸 |
-| `--el-compile-size-24` | `24px` | Element Plus 编译期基础尺寸 |
 
 ## frost-decoration
 

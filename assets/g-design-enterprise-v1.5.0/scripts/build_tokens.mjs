@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
- * Generate CSS/SCSS and readable token indexes from design/tokens.json (stdlib only).
- * 移植自 scripts/build_tokens.py（W3/D18），行为逐条对齐，diff 验证见 tests/migration_diff.mjs。
+ * Generate CSS token layers and readable token indexes from design/tokens.json (stdlib only).
+ * 移植自 scripts/build_tokens.py（W3/D18），行为逐条对齐；D23 起 Sass 层清零，只产 CSS。
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -102,9 +102,7 @@ export function outputs(root = ROOT) {
       (m, expanded, group, name) => replace(m, expanded, group, name),
     );
     if (value.includes('{{')) throw new Error(`Unresolved placeholder ${relative}`);
-    const prefix = relative.endsWith('.scss')
-      ? '// GENERATED from design/tokens.json; edit the source, then run scripts/build_tokens.mjs.\n'
-      : '/* GENERATED from design/tokens.json. Do not edit generated values. */\n';
+    const prefix = '/* GENERATED from design/tokens.json. Do not edit generated values. */\n';
     result[`frontend/element-plus/tokens/${relative}`] = prefix + value;
   }
 

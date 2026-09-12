@@ -783,14 +783,6 @@
         "--el-tag-text-color"
       ]
     },
-    "element-plus-6": {
-      "description": ".el-alert--warning",
-      "count": 2,
-      "tokens": [
-        "--el-alert-title-color",
-        "--el-alert-description-color"
-      ]
-    },
     "element-plus-7": {
       "description": ".el-input,\n.el-textarea,\n.el-select",
       "count": 5,
@@ -936,18 +928,6 @@
         "--spec-gtopology-height",
         "--spec-page-states-min-height",
         "--spec-styles-font-size"
-      ]
-    },
-    "element-plus-dimensions": {
-      "description": "element-plus-dimensions",
-      "count": 6,
-      "tokens": [
-        "--el-compile-size-4",
-        "--el-compile-size-2",
-        "--el-compile-size-20",
-        "--el-compile-size-40",
-        "--el-compile-size-32",
-        "--el-compile-size-24"
       ]
     },
     "frost-decoration": {
