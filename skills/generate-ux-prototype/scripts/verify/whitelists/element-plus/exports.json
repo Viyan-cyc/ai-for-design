@@ -1,4 +1,5 @@
 [
+  "ClickOutside",
   "ElAffix",
   "ElAlert",
   "ElAnchor",
@@ -7,6 +8,7 @@
   "ElAutoResizer",
   "ElAutocomplete",
   "ElAvatar",
+  "ElAvatarGroup",
   "ElBacktop",
   "ElBadge",
   "ElBreadcrumb",
@@ -27,13 +29,13 @@
   "ElCollapse",
   "ElCollapseItem",
   "ElCollapseTransition",
-  "ElCollection",
-  "ElCollectionItem",
   "ElColorPicker",
+  "ElColorPickerPanel",
   "ElConfigProvider",
   "ElContainer",
   "ElCountdown",
   "ElDatePicker",
+  "ElDatePickerPanel",
   "ElDescriptions",
   "ElDescriptionsItem",
   "ElDialog",
@@ -119,5 +121,12 @@
   "ElTreeSelect",
   "ElTreeV2",
   "ElUpload",
-  "ElWatermark"
+  "ElWatermark",
+  "Mousewheel",
+  "buildLocaleContext",
+  "localeContextKey",
+  "useLocale",
+  "vLoading",
+  "vRepeatClick",
+  "version"
 ]

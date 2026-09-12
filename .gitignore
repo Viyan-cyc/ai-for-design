@@ -1,0 +1,5 @@
+
+# W1 冒烟测试工作区（init 产物，可随时重建，不入库）
+tasks/p0-workspace/p0-verify/
+tasks/p0-workspace/t2-smoke/
+tasks/p0-workspace/t3-smoke/
