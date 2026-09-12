@@ -87,9 +87,11 @@ async function main() {
   } else {
     install(dest, false);
   }
-  console.log('\n✅ 安装完成。接下来：');
-  console.log(`  1. 把这个目录配置为你 AI 工具的 skills 来源：${dest}`);
+  console.log('\n✅ 安装完成，四个 Skill 已就位。接下来：');
+  console.log(`  1. 把这个目录添加为你 agent 的自定义技能库：${dest}`);
+  console.log('     （在 agent 的技能/扩展设置里把该目录注册为技能来源）');
   console.log('  2. 新开一个 AI 会话，直接说需求即可，例如："把这张截图转成页面"');
+  console.log('     也可用 $skill-name 显式调用。');
   console.log('  3. 重要：原包文件夹不要删除或改名（skill 依赖它读取设计资产）。');
   console.log(`     当前包位置：${PACKAGE}`);
   console.log('     如果以后移动了包，重跑本向导（会自动重新绑定）。');

@@ -7,7 +7,7 @@
 - 跨阶段交接：workflow.md；简单任务直接使用已有参考。
 - **运行依赖：仅 Node.js ≥ 18**（全工程工具链 .mjs 化；无 Python 依赖）。原型生成 Skill 交付 Vue 3 + Element Plus 2.13.5 源码工作区 + 零构建离线预览。
 
-安装（设计师推荐，在 AI agent 对话里说一句话即可）：把包发给 AI 并说「安装这个 skill 包」——AI 执行 `node installer/setup.mjs`（自动探测常见 skills 目录供选择，同版本自动重绑定），装完按提示把安装目录配置为 AI 工具的 skills 来源；原包文件夹保留勿删。命令行等价：`node installer/install_skills.mjs TARGET_SKILLS_DIRECTORY`。仅写入目标目录；存在同名 Skill 时停止，先将旧版移到目标目录之外。安装器保存包绝对路径，包须保留在原位置；移动后重跑 `node installer/setup.mjs` 重新绑定。安装态脚本（init/collect）自动读取绑定定位资产库，无需传路径；用户指定资产路径优先于绑定。支持自然语言选择及 $skill-name 显式调用。
+安装（设计师推荐，在 AI agent 对话里说一句话即可）：把包发给 AI 并说「安装这些技能到我的自定义技能库」——AI 执行 `node installer/setup.mjs`（自动探测常见技能目录供选择，同版本自动重绑定）。安装完成后，这四个 Skill 就进入你的 agent 自定义技能库：新开会话直接说需求（如「把这张截图转成页面」）即可自动匹配调用，也可用 `$skill-name` 显式调用。注意两点：① 原包文件夹保留勿删（Skill 依赖它读取设计资产）；② 移动包后重跑 `node installer/setup.mjs` 重新绑定。命令行等价：`node installer/install_skills.mjs 自定义技能库目录`。仅写入目标目录；存在同名 Skill 时停止，先将旧版移到目标目录之外。安装器保存包绝对路径，安装态脚本（init/collect）自动读取绑定定位资产库，无需传路径；用户指定资产路径优先于绑定。
 
 维护数值、规则及组件后执行 `node scripts/build_release.mjs`；新版本显式加 `--version X.Y.Z`。完整验证：`node tests/validate_package.mjs`，协作/安装验证：`node tests/validate_coordination.mjs`。前端构建须先在资产库 frontend/element-plus 执行 npm ci。
 
