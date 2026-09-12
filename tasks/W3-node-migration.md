@@ -56,3 +56,6 @@
 ## 结论回写区（执行中随时追加，每条带姓名+日期）
 
 <!-- 格式：- [日期] (姓名/卡号) 结论或问题一句话；细节缩进展开。写完 commit 到本任务分支 -->
+
+- [2026-09-12] (曾书峯/W3) **需拍板**：manage-design-assets 的 4 个 .py（scan_assets/compare_assets/sync_to_library/extract_prototype_assets，共 290 行）不在 D18 迁移清单与任务卡 Python 源清单里，但 N5 要求 `git rm 全部 .py` 且验收标准为仓库 `.py` 零命中——两者矛盾（删了这 4 个 skill 就没有实现文件）。我的建议：把 4 个一并移植为 .mjs（属 W3 文件所有权 `*.py → *.mjs` 范围内，量小机械），作为 N4 的附带项；若设计师另有安排请拍板。
+- [2026-09-12] (曾书峯/W3) N1 头注释差异的解释口径：任务卡 N2 给的头注释示例（`/* GENERATED ...; run scripts/build_tokens.mjs */`）按 N1「GENERATED 头从 .py 改成 .mjs 是唯一允许差异」的口径执行——保留现有每种文件的头形状（.css 用 `/* ... Do not edit generated values. */` 无脚本名、.scss 用 `// ... run scripts/build_tokens.mjs.`），仅替换脚本名 py→mjs；tokens.md/color-tokens.md 内嵌的 `python3 scripts/build_tokens.py` 命令改为 `node scripts/build_tokens.mjs`；query_assets 图标查询输出里的 `scripts/export_icons.py` 指针改为 `.mjs`。以上均列入 N1 允许替换表，其余逐字节一致。
