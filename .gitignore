@@ -10,3 +10,4 @@ tasks/p0-workspace/t6-collect/
 # npm 源包（T8 组装 sass.browser.js 的输入，见 SKILL-REPLACE-PLAN.md D21）
 immutable-5.1.4.tgz
 sass-1.93.2.tgz
+tasks/p0-workspace/t9-verify/

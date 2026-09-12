@@ -13,8 +13,6 @@
     <script src="./public/library/element-plus/element-plus-icons-vue.iife.min.js"></script>
     <script src="./public/library/element-plus/element-plus-locale-zh-cn.min.js"></script>
     <script src="./public/library/element-plus/less.min.js"></script>
-    <script src="./public/library/element-plus/immutable.js"></script>
-    <script src="./public/library/element-plus/sass.browser.js"></script>
     <script src="./public/library/element-plus/vue3-sfc-loader.js"></script>
     <link rel="stylesheet" href="./public/library/element-plus/element-plus.index.css">
 
@@ -82,29 +80,6 @@
                 document.head.appendChild(style);
             }
 
-            // dart-sass 浏览器编译（compileString），供 .scss 文件块与 SFC 内联
-            // <style lang="scss"> 共用。importer 让 @use/@import 相对路径从源码
-            // 映射（SRC）取内容 —— 离线预览没有文件系统。
-            function compileSass(text, importerPath) {
-                return window.sass.compileString(text, {
-                    importer: {
-                        findFileUrl: function (url) {
-                            if (/^(https?:)?\/\//.test(url) || url.charAt(0) === "/") return null;
-                            var base = importerPath ? importerPath.replace(/\/[^/]*$/, "/") : "";
-                            var probe = (base + url).split("/"), stack = [];
-                            for (var i = 0; i < probe.length; i++) {
-                                if (probe[i] === "" || probe[i] === ".") continue;
-                                if (probe[i] === "..") stack.pop(); else stack.push(probe[i]);
-                            }
-                            return new URL("/" + stack.join("/") + ".scss", location.href);
-                        },
-                    },
-                });
-            }
-            function compileSassText(text) {
-                return compileSass(String(text).replace(/^﻿/, ""));
-            }
-
             var options = {
                 moduleCache: Object.assign(Object.create(null), {
                     vue: Vue,
@@ -117,22 +92,6 @@
                     'element-plus/es/locale/lang/zh-cn': ElementPlusLocaleZhCn,
                     'element-plus/dist/index.css': {},
                     less: less,
-                    // SFC 内联 <style lang="scss"> 的处理链（sfc-loader 0.9.5）：
-                    // ① 预载模块 'scss'（moduleCache 命中即返回，否则 getFile('scss') 报错）
-                    // ② 内置 scss 预处理器经 moduleCache['sass'] 取编译器并调 legacy
-                    //    renderSync —— dart-sass 浏览器包的 renderSync 是 Node 专用，
-                    //    故用 compileString 适配成 legacy 形态（{css, stats}）。
-                    scss: {},
-                    sass: {
-                        renderSync: function (opts) {
-                            var result = compileSass(String(opts.data), opts.file || opts.filename);
-                            return {
-                                css: result.css,
-                                map: result.sourceMapUrl ? "" : "",
-                                stats: { includedFiles: result.loadedUrls ? result.loadedUrls.map(String) : [] },
-                            };
-                        },
-                    },
                 }),
                 getFile: function (path) {
                     var clean = String(path).split("?")[0].split("#")[0];
@@ -191,16 +150,9 @@
                             return {};
                         });
                     }
-                    if (type === ".scss") {
-                        // Sass → CSS 编译（sass.browser.js 已在页面加载，compileString）
-                        return Promise.resolve(getContentData()).then(function (text) {
-                            var result = compileSassText(text);
-                            addStyle(result.css);
-                            return {};
-                        });
-                    }
-                    if (type === ".sass") {
-                        return Promise.reject(new Error("缩进式 .sass 不支持，请用 .scss（大括号语法）"));
+                    if (type === ".scss" || type === ".sass") {
+                        // D22：全链路只剩 less（产品线二开硬要求），scss 直接拒绝
+                        return Promise.reject(new Error("不支持 scss/sass — 样式语言统一为 less（D22）"));
                     }
                     if (type === ".json") {
                         // ESM 语义：default import 拿到解析后的对象（剥 BOM —— Windows 编辑器常带）

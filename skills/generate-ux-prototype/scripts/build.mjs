@@ -145,27 +145,21 @@ if (vueFiles.length === 0) fail('no .vue files under src/');
 const pageIndexes = vueFiles.filter((f) => /[\\/]views[\\/][^\\/]+[\\/]index\.vue$/.test(f));
 if (pageIndexes.length === 0) fail('no page entry found (expected src/views/{kebab}/index.vue)');
 
-// ---------- 1b. STYLE_LANG consistency (D21) ----------
-// Workspace-wide style language: declared in views/{slug}/js/constants.js; every
-// SFC <style lang> and every .less/.scss file must agree. scss is the default.
-let declaredLang = 'scss';
-for (const f of walkFiles(srcDir, ['.js'])) {
-  const t = readFileSync(f, 'utf8');
-  const m = t.match(/export\s+const\s+STYLE_LANG\s*=\s*'(scss|less)'/);
-  if (m) { declaredLang = m[1]; break; }
-}
-const wrongExt = declaredLang === 'scss' ? '.less' : '.scss';
+// ---------- 1b. style language check (D22) ----------
+// Less is the ONLY style language across the whole chain (product-line
+// secondary-development hard requirement). scss anywhere in the workspace is
+// a build failure.
 for (const f of vueFiles) {
   const rel0 = '/' + f.slice(srcDir.length).split('\\').join('/').replace(/^\/+/, '');
   const src = readFileSync(f, 'utf8');
-  for (const m of src.matchAll(/<style\s+lang="(less|scss)"/g)) {
-    if (m[1] !== declaredLang) fail(`${rel0}: <style lang="${m[1]}"> but workspace STYLE_LANG is '${declaredLang}' (D21: one language per workspace)`);
+  if (/<style\s+lang="scss"/i.test(src)) {
+    fail(`${rel0}: <style lang="scss"> — style language is less only (D22)`);
   }
 }
 for (const f of cssFiles) {
-  const ext = f.slice(f.lastIndexOf('.'));
-  if (ext === wrongExt && f.includes(join('assets', 'style'))) {
-    fail(`'${wrongExt}' base style present but STYLE_LANG is '${declaredLang}' (D21: one language per workspace)`);
+  if (f.endsWith('.scss')) {
+    const rel0 = '/' + f.slice(srcDir.length).split('\\').join('/').replace(/^\/+/, '');
+    fail(`${rel0}: .scss file present — style language is less only (D22)`);
   }
 }
 

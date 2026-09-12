@@ -75,12 +75,6 @@ if (assetsRootIdx !== -1) {
   assetsRootArg = rawArgs[assetsRootIdx + 1];
   rawArgs.splice(assetsRootIdx, 2);
 }
-const styleLangIdx = rawArgs.findIndex((a) => a === '--style-lang' || a === '-s');
-let styleLangArg;
-if (styleLangIdx !== -1) {
-  styleLangArg = rawArgs[styleLangIdx + 1];
-  rawArgs.splice(styleLangIdx, 2);
-}
 const args = rawArgs.filter((a) => !a.startsWith('-'));
 let artifactFolder, slug;
 if (args.length === 2) {
@@ -89,11 +83,7 @@ if (args.length === 2) {
   artifactFolder = process.cwd();
   [slug] = args;
 } else {
-  fail('Usage: node init.mjs "<artifact-folder>" "<slug>" [--assets-root <path>] [--style-lang scss|less]');
-}
-const STYLE_LANG = styleLangArg || 'scss'; // D21: unified per workspace, scss default
-if (!['scss', 'less'].includes(STYLE_LANG)) {
-  fail(`--style-lang must be 'scss' or 'less' (got '${STYLE_LANG}')`);
+  fail('Usage: node init.mjs "<artifact-folder>" "<slug>" [--assets-root <path>]');
 }
 
 if (!existsSync(artifactFolder) || !statSync(artifactFolder).isDirectory()) {
@@ -168,17 +158,21 @@ mkdirSync(dest, { recursive: true });
 const srcDir = join(dest, 'src');
 cpSync(scaffoldSrc, srcDir, { recursive: true });
 
-// ---------- 4pre. style language (D21): keep only the chosen base style file ----------
-const unwantedBase = STYLE_LANG === 'scss' ? 'base.less' : 'base.scss';
-try { rmSync(join(srcDir, 'assets', 'style', unwantedBase)); } catch { /* absent ok */ }
+// ---------- 4pre. style language (D22): less only — remove any legacy scss base ----------
+try { rmSync(join(srcDir, 'assets', 'style', 'base.scss')); } catch { /* absent ok */ }
 const mainJsPath = join(srcDir, 'main.js');
 writeFileSync(mainJsPath, readFileSync(mainJsPath, 'utf8').replace(
   /import '\.\/assets\/style\/base\.(less|scss)'/,
-  `import './assets/style/base.${STYLE_LANG}'`,
+  `import './assets/style/base.less'`,
 ), 'utf8');
 
 // ---------- 4a. copy asset-library token layer (live fetch, glob) ----------
 cpSync(tokensSrc, join(srcDir, 'assets', 'tokens'), { recursive: true });
+// D22: less only — the library's .scss files are Sass build-time sources
+// (superseded by the pre-compiled element-plus.css bridge); never ship them
+// into workspaces, where scss of any kind is banned.
+try { rmSync(join(srcDir, 'assets', 'tokens', 'index.scss')); } catch { /* absent ok */ }
+try { rmSync(join(srcDir, 'assets', 'tokens', 'element-plus.scss')); } catch { /* absent ok */ }
 // Asset library entry is index.scss (Sass). The offline preview links a plain
 // index.css, so flatten it here: the .scss entry only re-exports pure .css
 // layers in load order (element-plus.scss bridge var overrides are already
@@ -408,7 +402,7 @@ onMounted(() => {
   </div>
 </template>
 
-<style lang="${STYLE_LANG}" scoped>
+<style lang="less" scoped>
 .page-root {
   min-height: 100%;
   padding: 24px;
@@ -445,7 +439,7 @@ export const t = {
   'utf8',
 );
 
-// --- 6h. views/{slug}/js/constants.js (with COMPONENT_MODE + STYLE_LANG, plan §4.3/D21) ---
+// --- 6h. views/{slug}/js/constants.js (with COMPONENT_MODE, plan §4.3) ---
 writeFileSync(
   join(srcDir, 'views', slug, 'js', 'constants.js'),
   `// ${pageName} — 常量定义
@@ -454,8 +448,8 @@ writeFileSync(
 // 组件模式开关（生成时确认）：'reuse' 命中库组件必须复用 | 'hybrid' 命中复用未命中手写 | 'free' 全手写
 export const COMPONENT_MODE = 'hybrid'
 
-// 样式语言开关（D21，生成时确认）：本工作区全部样式统一用此语言，不混用
-export const STYLE_LANG = '${STYLE_LANG}'
+// 样式语言（D22）：全工程统一 less，禁止 scss
+export const STYLE_LANG = 'less'
 
 export const STATUS_MAP = {
   running:     { label: '运行中', type: 'success' },
@@ -521,5 +515,4 @@ console.log(`HTML_PATH: ${resolve(join(dest, 'index.html'))}`);
 console.log(`SRC_DIR: ${resolve(srcDir)}`);
 console.log(`PAGE: ${pageName}`);
 console.log(`ASSETS_VERSION: ${assetVersion}`);
-console.log(`STYLE_LANG: ${STYLE_LANG}`);
 process.exit(0);

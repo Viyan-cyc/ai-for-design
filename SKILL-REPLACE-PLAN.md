@@ -275,7 +275,7 @@ SKILL.md 增加"UI Runtime 选择"步骤（默认 element-plus，用户可指定
 - [x] T6 collect_component.mjs：相对 import 递归闭包复制 + 来源注释（D12）(cyc/2026-09-12，正向用例全过：GStatusTag 单件、GMonitorPanel→GStatusTag 闭包 2 文件+2 垫片、build 3 components OK；负向全对：types 依赖报缺失/不存在 id/重复复制。预览端到端实测 rows=5、panels=3、3 个 EP tag warning/primary/danger、token #0067D1。两个新发现落 preview：① 目录式命名导入渲染空 → collect 生成 interop 垫片 index.js（两段式 export，规避 sfc-loader 0.9.5 re-export 缺陷）+ getFile 后备 index.js 优先；② loader 把垫片按裸路径记录为模块 → 其内部 './GName.vue' 解析成兄弟路径 '…/GName.vue' → getFile 需补「目录内真实组件」后备（不可回退 index.js，会循环导入）；build.mjs 相应加组件目录式候选)
 - [ ] T7 端到端验收：hybrid/free 各生成一页 + 明暗主题 + 毛玻璃 + 换肤 + 二开视角通读（依赖 W2 的 M2 迁移完成，是最终汇合点）
 - [x] T8 STYLE_LANG 开关（D21）→ **已交付随即被 D22 作废**（cyc/2026-09-12：scss/less 双模曾全链路实测通过，见 W1 卡回写；当日产品线确定二开必须 less，D22 钉死单语言 less，T8 产物需回退）
-- [ ] T9 D22 回退：init 删 --style-lang 参数与 base.scss、main.js 模板固定 import base.less、constants.js 删 STYLE_LANG、preview 删 sass.browser.js/immutable.js 与 scss/sass moduleCache 注册（保留 .scss handleModule 亦可删）、build 1b 改为「工作区禁止出现 .scss 与 lang="scss"」（D22：全链路只剩 less）
+- [x] T9 D22 回退：init 删 --style-lang 参数与 base.scss、main.js 模板固定 import base.less、constants.js 删 STYLE_LANG、preview 删 sass.browser.js/immutable.js 与 scss/sass moduleCache 注册（保留 .scss handleModule 亦可删）、build 1b 改为「工作区禁止出现 .scss 与 lang="scss"」（D22：全链路只剩 less）(cyc/2026-09-12，全部完成且超额：连带发现 init 拷 token 时带入资产库 .scss 源产物 → init 删除；.scss handleModule 改为显式报错；仓库删除 base.scss/sass.browser.js/immutable.js 三文件。验证：init→build OK、负向双 FAIL、build-data OK、无头浏览器 rows=5/token #0067D1 生效，详见 W1 卡回写)
 
 ### W2 组件库改造（1 人，与设计师对接，建议第二人）
 

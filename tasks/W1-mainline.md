@@ -96,3 +96,9 @@
   - **build.mjs 连带**：相对 import 候选新增组件目录式 `…/{lastSeg}/{Pascal(lastSeg)}.vue`（`/components/business/GStatusTag` → GStatusTag.vue）。
   - **验证**：正向全过——GStatusTag 单件（1+1 文件）、GMonitorPanel→GStatusTag 闭包（2+2 文件）、build 3 components OK、无头浏览器 rows=5/panels=3/三个面板标题/3 个真实 EP tag（warning/primary/danger）/token #0067D1 生效/boot 无错误。负向全对——types 依赖报缺失清单、不存在 id 报错、重复复制报 target exists。
   - **垫片性质**：预览运行时兼容文件（非库代码），真实 Vite 工程原生解析目录式命名导入，无需垫片。
+- [2026-09-12] (cyc/W1-T9) **D22 回退完成 — 全链路只剩 less**：
+  - init.mjs：删 `--style-lang` 参数与 STYLE_LANG 常量逻辑；main.js 固定 import base.less；页面模板固定 `<style lang="less" scoped>`；constants.js 的 STYLE_LANG 改为固定值 `less`（保留导出，二开者可读）；输出行删 STYLE_LANG。
+  - **连带发现 — 资产库 token 自带 .scss**：init 拷 tokens 时带入 index.scss 与 element-plus.scss（Sass 构建期源产物，`@forward var.scss` 编译期定制用），运行态由预编译 element-plus.css 桥接承载，拷进工作区纯冗余且会触发 build 负向 → init 现在删除这两个文件。**W2/W3 注意**：资产库里的 .scss 源产物属于库自身的构建配置，不影响产品线（二开者拿到的是工作区拷贝，已被 init 清掉）；但若 W3 移植 build_tokens.py 时继续产出 .scss，需在 N 任务的交付物说明里写清「.scss 仅存在于资产库，不入工作区」。
+  - preview/index.html：删 sass.browser.js/immutable.js 两个 script 标签、compileSass 函数、moduleCache 的 scss/sass 注册；.scss/.sass handleModule 改为直接报错（D22 提示）。三个文件已从仓库删除：base.scss、sass.browser.js（5.4MB）、immutable.js。
+  - build.mjs 1b：改为「工作区禁止出现 .scss 与 lang="scss"」（不再读 STYLE_LANG 声明）；build-data.mjs TEXT_EXT 删 .scss。
+  - **验证**：重建 t9-verify 工作区——init 产出 base.less/main.js import less/`<style lang="less">`/无任何 .scss；build OK（1 page, 1 components）；负向两条正确 FAIL（混入 bad.scss、页面改 lang="scss"）；build-data OK；无头浏览器 rows=5/tags=5/token 主色 rgb(0,103,209) 生效/boot 无错误。
