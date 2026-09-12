@@ -1,0 +1,22 @@
+{
+  "schemaVersion": "1.4",
+  "id": "g-button",
+  "assetVersion": "1.5.0",
+  "name": "GButton",
+  "level": "basic",
+  "useWhen": [
+    "通用操作"
+  ],
+  "states": [
+    "hover",
+    "active",
+    "focus",
+    "disabled",
+    "loading"
+  ],
+  "api": "Element Plus-compatible",
+  "base": "ElButton",
+  "source": "frontend/element-plus/src/components/basic/GButton/GButton.vue",
+  "types": "frontend/element-plus/src/components/basic/GButton/types.ts",
+  "legacyIds": []
+}

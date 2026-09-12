@@ -1,0 +1,24 @@
+{
+  "schemaVersion": "1.4",
+  "id": "g-description-panel",
+  "assetVersion": "1.5.0",
+  "name": "GDescriptionPanel",
+  "level": "business",
+  "useWhen": [
+    "结构化信息描述面板"
+  ],
+  "states": [
+    "default",
+    "loading",
+    "empty",
+    "error",
+    "disabled"
+  ],
+  "api": "typed-props-and-events",
+  "base": null,
+  "source": "frontend/element-plus/src/components/business/GDescriptionPanel/GDescriptionPanel.vue",
+  "types": "frontend/element-plus/src/components/business/GDescriptionPanel/types.ts",
+  "legacyIds": [
+    "gdescriptionpanel"
+  ]
+}

@@ -1,0 +1,293 @@
+{
+  "type": "object",
+  "properties": {
+    "schemaVersion": {
+      "const": "2.2"
+    },
+    "assetId": {
+      "const": "g-design-enterprise"
+    },
+    "assetVersion": {
+      "const": "1.5.0"
+    },
+    "directionId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "templateId": {
+      "const": "topology-monitoring-page"
+    },
+    "theme": {
+      "enum": [
+        "light",
+        "dark"
+      ]
+    },
+    "visualStyle": {
+      "enum": [
+        "enterprise-light-dark",
+        "frosted-glass",
+        "aurora-glass"
+      ]
+    },
+    "state": {
+      "enum": [
+        "loading",
+        "empty",
+        "error",
+        "forbidden",
+        "partial",
+        "ready"
+      ]
+    },
+    "rows": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "columns": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "prop": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "width": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          }
+        },
+        "required": [
+          "prop",
+          "label"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "metrics": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          },
+          "delta": {
+            "type": "string"
+          },
+          "trend": {
+            "enum": [
+              "up",
+              "down"
+            ]
+          }
+        },
+        "required": [
+          "title",
+          "value"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "form": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "type": {
+          "enum": [
+            "device",
+            "service"
+          ]
+        },
+        "enabled": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "name",
+        "type",
+        "enabled"
+      ],
+      "additionalProperties": false
+    },
+    "details": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string"
+          },
+          "value": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "label",
+          "value"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "events": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "time": {
+            "type": "string"
+          },
+          "type": {
+            "enum": [
+              "primary",
+              "success",
+              "warning",
+              "danger",
+              "info"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "time"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "nodes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "x": {
+            "type": "number"
+          },
+          "y": {
+            "type": "number"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "normal",
+              "success",
+              "warning",
+              "danger",
+              "offline"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "x",
+          "y"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "edges": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "target": {
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "normal",
+              "success",
+              "warning",
+              "danger",
+              "offline"
+            ]
+          },
+          "flow": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "source",
+          "target"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "steps": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "assetId",
+    "assetVersion",
+    "directionId",
+    "title",
+    "templateId",
+    "theme",
+    "visualStyle",
+    "state",
+    "rows",
+    "columns",
+    "metrics",
+    "form",
+    "details",
+    "events",
+    "nodes",
+    "edges",
+    "steps"
+  ],
+  "additionalProperties": false,
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

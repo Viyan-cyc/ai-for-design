@@ -1,0 +1,51 @@
+{
+  "schemaVersion": "1.1",
+  "assetId": "g-design-enterprise",
+  "framework": "vue3",
+  "projectRoot": "frontend/element-plus",
+  "discovery": {
+    "components": "frontend/element-plus/src/components/*/*/G*.vue",
+    "templates": "frontend/element-plus/src/page-templates/*/*.vue",
+    "indexes": "components",
+    "manifest": "asset-manifest.json"
+  },
+  "indexMapping": {
+    "components": "index.json",
+    "templates": "templates.json",
+    "interactions": "interactions.json",
+    "rootKey": "components",
+    "templateRootKey": "templates",
+    "interactionRootKey": "interactions"
+  },
+  "manifestMapping": {
+    "assetVersionField": "assetVersion",
+    "protectedFilesField": "protectedFiles",
+    "sourceReleaseSha256Field": "sourceReleaseSha256",
+    "prototypeBaseFilesField": "prototypeBaseFiles"
+  },
+  "syncStrategy": {
+    "hashAlgorithm": "sha256",
+    "registerNewAssets": true,
+    "updateManifest": true,
+    "bumpVersionOnSync": false,
+    "defaultVersionPolicy": "keep"
+  },
+  "assetNaming": {
+    "componentIdTransform": "kebab-case",
+    "templateIdTransform": "kebab-case"
+  },
+  "ignorePatterns": [
+    "**/examples.vue",
+    "**/node_modules/**",
+    "**/.DS_Store"
+  ],
+  "versioning": {
+    "jsonFiles": [
+      "design/tokens.json",
+      "components/specs/*.json",
+      "components/templates/*.json",
+      "frontend/element-plus/configs/*.json",
+      "frontend/element-plus/schemas/*.json"
+    ]
+  }
+}

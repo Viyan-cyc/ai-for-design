@@ -1,0 +1,22 @@
+{
+  "schemaVersion": "1.4",
+  "id": "g-alert",
+  "assetVersion": "1.5.0",
+  "name": "GAlert",
+  "level": "basic",
+  "useWhen": [
+    "页内反馈"
+  ],
+  "states": [
+    "default",
+    "hover",
+    "active",
+    "focus",
+    "disabled"
+  ],
+  "api": "Element Plus-compatible",
+  "base": "ElAlert",
+  "source": "frontend/element-plus/src/components/basic/GAlert/GAlert.vue",
+  "types": "frontend/element-plus/src/components/basic/GAlert/types.ts",
+  "legacyIds": []
+}

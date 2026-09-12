@@ -1,0 +1,19 @@
+{
+  "schemaVersion": "1.4",
+  "id": "g-search-bar",
+  "assetVersion": "1.5.0",
+  "name": "GSearchBar",
+  "level": "business",
+  "useWhen": [
+    "列表查询",
+    "资源搜索"
+  ],
+  "states": [
+    "default"
+  ],
+  "api": "typed-props-and-events",
+  "base": null,
+  "source": "frontend/element-plus/src/components/business/GSearchBar/GSearchBar.vue",
+  "types": null,
+  "legacyIds": []
+}

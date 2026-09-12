@@ -1,0 +1,28 @@
+{
+  "schemaVersion": "1.0",
+  "projectId": "",
+  "sources": [],
+  "selectedDirectionId": null,
+  "currentJourney": [],
+  "coreExperienceNeeds": [],
+  "opportunities": [],
+  "designDirections": [
+    {
+      "id": "direction-a",
+      "status": "draft",
+      "name": "",
+      "requirementIds": [],
+      "evidence": [],
+      "coreObject": "",
+      "entry": "",
+      "organization": "",
+      "journeyChange": "",
+      "benefits": [],
+      "tradeoffs": [],
+      "applicableConditions": [],
+      "openQuestions": []
+    }
+  ],
+  "evidenceGaps": [],
+  "decisionsRequired": []
+}

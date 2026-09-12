@@ -1,0 +1,22 @@
+{
+  "schemaVersion": "1.4",
+  "id": "g-tag",
+  "assetVersion": "1.5.0",
+  "name": "GTag",
+  "level": "basic",
+  "useWhen": [
+    "状态和分类标记"
+  ],
+  "states": [
+    "default",
+    "hover",
+    "active",
+    "focus",
+    "disabled"
+  ],
+  "api": "Element Plus-compatible",
+  "base": "ElTag",
+  "source": "frontend/element-plus/src/components/basic/GTag/GTag.vue",
+  "types": "frontend/element-plus/src/components/basic/GTag/types.ts",
+  "legacyIds": []
+}

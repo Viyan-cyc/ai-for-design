@@ -1,0 +1,22 @@
+{
+  "schemaVersion": "1.4",
+  "id": "g-form",
+  "assetVersion": "1.5.0",
+  "name": "GForm",
+  "level": "basic",
+  "useWhen": [
+    "结构化表单"
+  ],
+  "states": [
+    "default",
+    "hover",
+    "active",
+    "focus",
+    "disabled"
+  ],
+  "api": "Element Plus-compatible",
+  "base": "ElForm",
+  "source": "frontend/element-plus/src/components/basic/GForm/GForm.vue",
+  "types": "frontend/element-plus/src/components/basic/GForm/types.ts",
+  "legacyIds": []
+}

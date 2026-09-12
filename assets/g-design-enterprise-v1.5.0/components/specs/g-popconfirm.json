@@ -1,0 +1,22 @@
+{
+  "schemaVersion": "1.4",
+  "id": "g-popconfirm",
+  "assetVersion": "1.5.0",
+  "name": "GPopconfirm",
+  "level": "basic",
+  "useWhen": [
+    "危险操作二次确认"
+  ],
+  "states": [
+    "default",
+    "hover",
+    "active",
+    "focus",
+    "disabled"
+  ],
+  "api": "Element Plus-compatible",
+  "base": "ElPopconfirm",
+  "source": "frontend/element-plus/src/components/basic/GPopconfirm/GPopconfirm.vue",
+  "types": "frontend/element-plus/src/components/basic/GPopconfirm/types.ts",
+  "legacyIds": []
+}

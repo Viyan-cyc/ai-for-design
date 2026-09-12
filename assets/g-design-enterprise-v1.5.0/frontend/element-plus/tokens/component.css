@@ -1,0 +1,34 @@
+/* GENERATED from design/tokens.json. Do not edit generated values. */
+/* H Design 色彩.docx 映射。原文与使用规则：source/h-design-color-spec.md、source/h-design-color-mappings.md。 */
+/* 兼容现有组件变量；在主题边界重新绑定，支持嵌套主题。非颜色尺寸保持原值。 */
+:root,
+[data-theme] {
+  --g-brand: var(--color-brand);
+  --g-accent: var(--color-brand);
+  --g-success: var(--color-success);
+  --g-urgent: var(--color-error);
+  --g-important: var(--color-alert);
+  --g-warning: var(--color-warning);
+  --g-bg-page: var(--color-bg-1);
+  --g-bg-surface: var(--color-bg-5);
+  --g-bg-hover: var(--color-hover);
+  --g-text-primary: var(--color-text-primary);
+  --g-text-secondary: var(--color-text-secondary);
+  --g-text-disabled: var(--color-text-disabled);
+  --g-border: var(--color-border);
+  --g-focus: var(--color-border-focus);
+  --g-mask: var(--color-bg-mask);
+  --g-glass-surface: var(--glass-surface);
+  --g-glass-surface-soft: var(--glass-surface-soft);
+  --g-glass-border: var(--glass-border);
+  --g-glass-shadow: var(--glass-shadow);
+  --g-topology-node-normal: var(--color-brand);
+  --g-topology-node-success: var(--color-success);
+  --g-topology-node-warning: var(--color-warning);
+  --g-topology-node-danger: var(--color-error);
+  --g-control-height: 32px;
+  --g-control-radius: 4px;
+  --g-table-header-height: 40px;
+  --g-table-row-height: 44px;
+  --g-panel-gap: 16px;
+}

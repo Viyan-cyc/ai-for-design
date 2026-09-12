@@ -1,0 +1,26 @@
+{
+  "schemaVersion": "2.2",
+  "assetId": "g-design-enterprise",
+  "assetVersion": "1.5.0",
+  "directionId": "example-standard-list-page",
+  "templateId": "standard-list-page",
+  "components": [
+    "g-button",
+    "g-data-table-pro",
+    "g-message",
+    "g-notification",
+    "g-permission-state",
+    "g-search-bar"
+  ],
+  "interactions": [
+    "retry-state",
+    "search",
+    "reset-search",
+    "create-record",
+    "paginate",
+    "batch-update"
+  ],
+  "assetGaps": [],
+  "theme": "light",
+  "visualStyle": "enterprise-light-dark"
+}

@@ -1,0 +1,19 @@
+{
+  "schemaVersion": "1.4",
+  "id": "g-monitor-panel",
+  "assetVersion": "1.5.0",
+  "name": "GMonitorPanel",
+  "level": "complex",
+  "useWhen": [
+    "实时指标",
+    "运行监控"
+  ],
+  "states": [
+    "default"
+  ],
+  "api": "typed-props-and-events",
+  "base": null,
+  "source": "frontend/element-plus/src/components/complex/GMonitorPanel/GMonitorPanel.vue",
+  "types": null,
+  "legacyIds": []
+}

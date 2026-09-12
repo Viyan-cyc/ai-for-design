@@ -1,0 +1,33 @@
+{
+  "schemaVersion": "1.4",
+  "id": "topology-monitoring-page",
+  "assetVersion": "1.5.0",
+  "name": "TopologyMonitoringPage",
+  "useWhen": [
+    "网络监控",
+    "服务依赖"
+  ],
+  "source": "frontend/element-plus/src/page-templates/TopologyMonitoringPage/TopologyMonitoringPage.vue",
+  "appEntry": "frontend/element-plus/src/App.vue",
+  "configFile": "frontend/element-plus/src/page-config.json",
+  "configPreset": "frontend/element-plus/configs/topology-monitoring-page.json",
+  "configSchema": "frontend/element-plus/schemas/topology-monitoring-page.schema.json",
+  "criticalInteractions": [
+    "retry-state",
+    "select-node",
+    "zoom-topology"
+  ],
+  "pageStates": [
+    "loading",
+    "empty",
+    "error",
+    "forbidden",
+    "partial",
+    "ready"
+  ],
+  "visualStyles": [
+    "enterprise-light-dark",
+    "frosted-glass",
+    "aurora-glass"
+  ]
+}

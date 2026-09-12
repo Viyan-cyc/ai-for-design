@@ -1,0 +1,22 @@
+{
+  "schemaVersion": "1.4",
+  "id": "g-link",
+  "assetVersion": "1.5.0",
+  "name": "GLink",
+  "level": "basic",
+  "useWhen": [
+    "导航与文字操作"
+  ],
+  "states": [
+    "default",
+    "hover",
+    "active",
+    "focus",
+    "disabled"
+  ],
+  "api": "Element Plus-compatible",
+  "base": "ElLink",
+  "source": "frontend/element-plus/src/components/basic/GLink/GLink.vue",
+  "types": "frontend/element-plus/src/components/basic/GLink/types.ts",
+  "legacyIds": []
+}

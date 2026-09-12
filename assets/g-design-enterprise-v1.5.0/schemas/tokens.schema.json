@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "assetId",
+    "assetVersion",
+    "groups"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "1.4"
+    },
+    "assetId": {
+      "type": "string"
+    },
+    "assetVersion": {
+      "type": "string"
+    },
+    "groups": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": [
+          "description",
+          "tokens"
+        ],
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "tokens": {
+            "type": "object",
+            "propertyNames": {
+              "pattern": "^--[a-zA-Z0-9-]+$"
+            },
+            "additionalProperties": {
+              "type": "object",
+              "required": [
+                "value",
+                "type"
+              ],
+              "properties": {
+                "value": {
+                  "type": "string"
+                },
+                "type": {
+                  "enum": [
+                    "color",
+                    "dimension",
+                    "number",
+                    "fontFamily",
+                    "fontWeight",
+                    "duration",
+                    "shadow",
+                    "gradient",
+                    "reference",
+                    "css-value"
+                  ]
+                },
+                "usage": {
+                  "type": "string"
+                },
+                "source": {
+                  "type": "string"
+                },
+                "codeMapping": {
+                  "type": "object",
+                  "description": "代码色语义映射维护于 code-light，浅深数值分别在对应主题组。",
+                  "properties": {
+                    "group": {
+                      "type": "string"
+                    },
+                    "subcategory": {
+                      "type": "string"
+                    },
+                    "hljsClass": {
+                      "type": "string"
+                    },
+                    "ideSetting": {
+                      "type": "string"
+                    },
+                    "frequency": {
+                      "type": "string"
+                    },
+                    "rationale": {
+                      "type": "string"
+                    },
+                    "example": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,11 @@
+schemaVersion: "1.4"
+packageId: ai-for-gdesign
+packageVersion: "1.5.0"
+assetsRoot: assets
+catalog: asset-catalog.json
+aiEntry: AI-ENTRY.md
+libraries:
+  - id: g-design-enterprise
+    release: "1.5.0"
+    path: assets/g-design-enterprise-v1.5.0
+    manifest: asset-manifest.json

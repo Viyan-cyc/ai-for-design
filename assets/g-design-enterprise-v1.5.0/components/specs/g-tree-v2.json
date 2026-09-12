@@ -1,0 +1,22 @@
+{
+  "schemaVersion": "1.4",
+  "id": "g-tree-v2",
+  "assetVersion": "1.5.0",
+  "name": "GTreeV2",
+  "level": "basic",
+  "useWhen": [
+    "大数据虚拟树"
+  ],
+  "states": [
+    "default",
+    "hover",
+    "active",
+    "focus",
+    "disabled"
+  ],
+  "api": "Element Plus-compatible",
+  "base": "ElTreeV2",
+  "source": "frontend/element-plus/src/components/basic/GTreeV2/GTreeV2.vue",
+  "types": "frontend/element-plus/src/components/basic/GTreeV2/types.ts",
+  "legacyIds": []
+}

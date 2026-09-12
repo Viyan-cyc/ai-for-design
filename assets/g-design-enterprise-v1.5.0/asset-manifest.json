@@ -1,0 +1,52 @@
+{
+  "schemaVersion": "1.4",
+  "assetId": "g-design-enterprise",
+  "assetVersion": "1.5.0",
+  "name": "G Design Enterprise",
+  "framework": "vue3",
+  "componentBase": "element-plus@2.13.5",
+  "projectRoot": "frontend/element-plus",
+  "designSource": "design/tokens.json",
+  "designRules": "design/rules.md",
+  "componentIndex": "components/index.json",
+  "templateIndex": "components/templates.json",
+  "interactionIndex": "components/interactions.json",
+  "themes": [
+    "light",
+    "dark"
+  ],
+  "visualStyles": [
+    "enterprise-light-dark",
+    "frosted-glass",
+    "aurora-glass"
+  ],
+  "prototypeBaseFiles": [
+    "frontend/element-plus/package.json",
+    "frontend/element-plus/package-lock.json",
+    "frontend/element-plus/tsconfig.json",
+    "frontend/element-plus/vite.preview.config.ts",
+    "frontend/element-plus/index.html",
+    "frontend/element-plus/tokens/index.scss",
+    "frontend/element-plus/tokens/semantic-dark.css",
+    "frontend/element-plus/tokens/charts.css",
+    "frontend/element-plus/tokens/code.css",
+    "frontend/element-plus/tokens/element-plus.scss",
+    "frontend/element-plus/tokens/primitive.css",
+    "frontend/element-plus/tokens/glass.css",
+    "frontend/element-plus/tokens/semantic-light.css",
+    "frontend/element-plus/tokens/element-plus.css",
+    "frontend/element-plus/tokens/component.css",
+    "frontend/element-plus/tokens/components/overlay.css",
+    "frontend/element-plus/tokens/components/form.css",
+    "frontend/element-plus/tokens/components/feedback.css",
+    "frontend/element-plus/tokens/components/data.css",
+    "frontend/element-plus/tokens/frosted.css",
+    "frontend/element-plus/licenses/LUCIDE-LICENSE",
+    "frontend/element-plus/licenses/THIRD-PARTY-NOTICES.md",
+    "frontend/element-plus/tokens/frost-decoration.css"
+  ],
+  "sourceReleaseSha256": "0908ec8e1f63dc261eb9e8ef197ffc83e67247059bc676fb44655ac63e9ea8a5",
+  "sourceReleaseHashFormat": "manifest-sha256 and sorted path:sha256 lines",
+  "sourceLock": "release/source-lock.json",
+  "materialRules": "design/frosted-glass.md"
+}

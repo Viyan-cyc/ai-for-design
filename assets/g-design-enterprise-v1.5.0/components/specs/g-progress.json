@@ -1,0 +1,22 @@
+{
+  "schemaVersion": "1.4",
+  "id": "g-progress",
+  "assetVersion": "1.5.0",
+  "name": "GProgress",
+  "level": "basic",
+  "useWhen": [
+    "任务进度展示"
+  ],
+  "states": [
+    "default",
+    "hover",
+    "active",
+    "focus",
+    "disabled"
+  ],
+  "api": "Element Plus-compatible",
+  "base": "ElProgress",
+  "source": "frontend/element-plus/src/components/basic/GProgress/GProgress.vue",
+  "types": "frontend/element-plus/src/components/basic/GProgress/types.ts",
+  "legacyIds": []
+}

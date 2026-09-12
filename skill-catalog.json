@@ -1,0 +1,62 @@
+{
+  "schemaVersion": "1.4",
+  "packageVersion": "1.5.0",
+  "skills": [
+    {
+      "id": "extract-structured-requirements",
+      "entry": "skills/extract-structured-requirements/SKILL.md",
+      "description": "Extract evidence-linked requirements from notes, documents or screenshots when requirement analysis is requested; reuse known inputs.",
+      "inputs": [
+        "用户资料或已有需求"
+      ],
+      "outputs": [
+        "需求草稿；需要交接时 requirements.json"
+      ],
+      "skipWhen": "已有充分需求，或用户只要求按明确截图生成页面",
+      "nextWhenRequested": "derive-experience-insights"
+    },
+    {
+      "id": "derive-experience-insights",
+      "entry": "skills/derive-experience-insights/SKILL.md",
+      "description": "Analyze journeys and propose a design direction when experience or workflow analysis is requested; follow the selected reference.",
+      "inputs": [
+        "需求或选定参考"
+      ],
+      "outputs": [
+        "体验判断；需要交接时 insights.json"
+      ],
+      "skipWhen": "方向已经明确且本次无需体验分析",
+      "nextWhenRequested": "generate-ux-prototype"
+    },
+    {
+      "id": "generate-ux-prototype",
+      "entry": "skills/generate-ux-prototype/SKILL.md",
+      "description": "Create or edit a G Design page from screenshots or requirements using local tokens, components and templates; supports direct reference input.",
+      "inputs": [
+        "参考或需求方向",
+        "指定资产库"
+      ],
+      "outputs": [
+        "可运行原型、配置、来源及验证记录"
+      ],
+      "skipWhen": "仅需求分析或公共规范维护",
+      "nextWhenRequested": null
+    },
+    {
+      "id": "manage-design-assets",
+      "entry": "skills/manage-design-assets/SKILL.md",
+      "description": "Maintain G Design tokens, design rules and shared components; compare and sync reusable prototype changes within user-authorized scope.",
+      "inputs": [
+        "明确修改范围",
+        "目标资产库；同步时附原型"
+      ],
+      "outputs": [
+        "更新后的源资产、生成物及验证结果"
+      ],
+      "skipWhen": "仅修改页面私有业务配置",
+      "nextWhenRequested": null
+    }
+  ],
+  "packageId": "ai-for-gdesign",
+  "workflow": "workflow.md"
+}

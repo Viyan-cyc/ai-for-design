@@ -1,0 +1,10 @@
+/* GENERATED from design/tokens.json. Do not edit generated values. */
+/* H Design 色彩.docx 映射。原文与使用规则：source/h-design-color-spec.md、source/h-design-color-mappings.md。 */
+:root,
+[data-theme] {
+  --g-form-label-color: var(--color-text-secondary);
+  --g-input-bg: var(--color-fill-subtle);
+  --g-input-border: var(--color-border);
+  --g-input-focus: var(--color-border-focus);
+  --g-input-error: var(--color-error);
+}

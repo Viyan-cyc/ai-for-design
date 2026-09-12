@@ -1,0 +1,22 @@
+{
+  "schemaVersion": "1.4",
+  "id": "g-input-number",
+  "assetVersion": "1.5.0",
+  "name": "GInputNumber",
+  "level": "basic",
+  "useWhen": [
+    "数字录入"
+  ],
+  "states": [
+    "default",
+    "hover",
+    "active",
+    "focus",
+    "disabled"
+  ],
+  "api": "Element Plus-compatible",
+  "base": "ElInputNumber",
+  "source": "frontend/element-plus/src/components/basic/GInputNumber/GInputNumber.vue",
+  "types": "frontend/element-plus/src/components/basic/GInputNumber/types.ts",
+  "legacyIds": []
+}

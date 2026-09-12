@@ -1,0 +1,28 @@
+{
+  "schemaVersion": "2.2",
+  "assetId": "g-design-enterprise",
+  "assetVersion": "1.5.0",
+  "directionId": "frosted-overview",
+  "templateId": "device-management-page",
+  "components": [
+    "g-button",
+    "g-dashboard-grid",
+    "g-data-table-pro",
+    "g-message",
+    "g-metric-card",
+    "g-notification",
+    "g-permission-state",
+    "g-search-bar"
+  ],
+  "interactions": [
+    "retry-state",
+    "search",
+    "reset-search",
+    "create-record",
+    "paginate",
+    "batch-update"
+  ],
+  "assetGaps": [],
+  "theme": "light",
+  "visualStyle": "frosted-glass"
+}

@@ -1,0 +1,22 @@
+{
+  "schemaVersion": "1.4",
+  "id": "g-skeleton",
+  "assetVersion": "1.5.0",
+  "name": "GSkeleton",
+  "level": "basic",
+  "useWhen": [
+    "内容加载占位"
+  ],
+  "states": [
+    "default",
+    "hover",
+    "active",
+    "focus",
+    "disabled"
+  ],
+  "api": "Element Plus-compatible",
+  "base": "ElSkeleton",
+  "source": "frontend/element-plus/src/components/basic/GSkeleton/GSkeleton.vue",
+  "types": "frontend/element-plus/src/components/basic/GSkeleton/types.ts",
+  "legacyIds": []
+}

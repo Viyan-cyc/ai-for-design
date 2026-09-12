@@ -1,0 +1,36 @@
+{
+  "schemaVersion": "1.4",
+  "id": "standard-list-page",
+  "assetVersion": "1.5.0",
+  "name": "StandardListPage",
+  "useWhen": [
+    "查询列表",
+    "通用管理"
+  ],
+  "source": "frontend/element-plus/src/page-templates/StandardListPage/StandardListPage.vue",
+  "appEntry": "frontend/element-plus/src/App.vue",
+  "configFile": "frontend/element-plus/src/page-config.json",
+  "configPreset": "frontend/element-plus/configs/standard-list-page.json",
+  "configSchema": "frontend/element-plus/schemas/standard-list-page.schema.json",
+  "criticalInteractions": [
+    "retry-state",
+    "search",
+    "reset-search",
+    "create-record",
+    "paginate",
+    "batch-update"
+  ],
+  "pageStates": [
+    "loading",
+    "empty",
+    "error",
+    "forbidden",
+    "partial",
+    "ready"
+  ],
+  "visualStyles": [
+    "enterprise-light-dark",
+    "frosted-glass",
+    "aurora-glass"
+  ]
+}

@@ -1,0 +1,36 @@
+{
+  "schemaVersion": "1.4",
+  "id": "device-management-page",
+  "assetVersion": "1.5.0",
+  "name": "DeviceManagementPage",
+  "useWhen": [
+    "设备管理",
+    "资产管理"
+  ],
+  "source": "frontend/element-plus/src/page-templates/DeviceManagementPage/DeviceManagementPage.vue",
+  "appEntry": "frontend/element-plus/src/App.vue",
+  "configFile": "frontend/element-plus/src/page-config.json",
+  "configPreset": "frontend/element-plus/configs/device-management-page.json",
+  "configSchema": "frontend/element-plus/schemas/device-management-page.schema.json",
+  "criticalInteractions": [
+    "retry-state",
+    "search",
+    "reset-search",
+    "create-record",
+    "paginate",
+    "batch-update"
+  ],
+  "pageStates": [
+    "loading",
+    "empty",
+    "error",
+    "forbidden",
+    "partial",
+    "ready"
+  ],
+  "visualStyles": [
+    "enterprise-light-dark",
+    "frosted-glass",
+    "aurora-glass"
+  ]
+}

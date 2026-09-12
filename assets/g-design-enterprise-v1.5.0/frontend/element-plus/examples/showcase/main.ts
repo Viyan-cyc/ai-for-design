@@ -1,0 +1,1 @@
+import{createApp}from'vue';import ElementPlus from'element-plus';import'element-plus/dist/index.css';import'../../tokens/index.scss';import'../../src/styles/base.css';import GDesignEnterprise from'../../src';import App from'./App.vue';createApp(App).use(ElementPlus).use(GDesignEnterprise).mount('#app')

@@ -1,0 +1,22 @@
+{
+  "schemaVersion": "1.4",
+  "id": "g-collapse",
+  "assetVersion": "1.5.0",
+  "name": "GCollapse",
+  "level": "basic",
+  "useWhen": [
+    "分组内容折叠"
+  ],
+  "states": [
+    "default",
+    "hover",
+    "active",
+    "focus",
+    "disabled"
+  ],
+  "api": "Element Plus-compatible",
+  "base": "ElCollapse",
+  "source": "frontend/element-plus/src/components/basic/GCollapse/GCollapse.vue",
+  "types": "frontend/element-plus/src/components/basic/GCollapse/types.ts",
+  "legacyIds": []
+}

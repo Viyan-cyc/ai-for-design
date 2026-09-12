@@ -1,0 +1,7 @@
+interface:
+  display_name: "AI for Design · Manage Assets"
+  short_description: "识别并治理原型中的可复用组件与页面模板"
+  brand_color: "#45E0CD"
+  default_prompt: "Use $manage-design-assets to compare my validated prototype with its selected enterprise asset library and prepare a safe asset sync proposal."
+policy:
+  allow_implicit_invocation: true

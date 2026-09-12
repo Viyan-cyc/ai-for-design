@@ -1,0 +1,22 @@
+{
+  "schemaVersion": "1.4",
+  "id": "g-checkbox",
+  "assetVersion": "1.5.0",
+  "name": "GCheckbox",
+  "level": "basic",
+  "useWhen": [
+    "多项选择"
+  ],
+  "states": [
+    "default",
+    "hover",
+    "active",
+    "focus",
+    "disabled"
+  ],
+  "api": "Element Plus-compatible",
+  "base": "ElCheckbox",
+  "source": "frontend/element-plus/src/components/basic/GCheckbox/GCheckbox.vue",
+  "types": "frontend/element-plus/src/components/basic/GCheckbox/types.ts",
+  "legacyIds": []
+}

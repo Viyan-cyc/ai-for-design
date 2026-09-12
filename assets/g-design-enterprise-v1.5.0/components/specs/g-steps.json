@@ -1,0 +1,22 @@
+{
+  "schemaVersion": "1.4",
+  "id": "g-steps",
+  "assetVersion": "1.5.0",
+  "name": "GSteps",
+  "level": "basic",
+  "useWhen": [
+    "流程进度"
+  ],
+  "states": [
+    "default",
+    "hover",
+    "active",
+    "focus",
+    "disabled"
+  ],
+  "api": "Element Plus-compatible",
+  "base": "ElSteps",
+  "source": "frontend/element-plus/src/components/basic/GSteps/GSteps.vue",
+  "types": "frontend/element-plus/src/components/basic/GSteps/types.ts",
+  "legacyIds": []
+}

@@ -1,0 +1,22 @@
+{
+  "schemaVersion": "1.4",
+  "id": "g-icon",
+  "assetVersion": "1.5.0",
+  "name": "GIcon",
+  "level": "basic",
+  "useWhen": [
+    "完全离线的Lucide SVG图标"
+  ],
+  "states": [
+    "default",
+    "hover",
+    "active",
+    "focus",
+    "disabled"
+  ],
+  "api": "Element Plus-compatible",
+  "base": "lucide-static@1.43.0",
+  "source": "frontend/element-plus/src/components/basic/GIcon/GIcon.vue",
+  "types": "frontend/element-plus/src/components/basic/GIcon/types.ts",
+  "legacyIds": []
+}

@@ -1,0 +1,22 @@
+{
+  "schemaVersion": "1.4",
+  "id": "g-breadcrumb",
+  "assetVersion": "1.5.0",
+  "name": "GBreadcrumb",
+  "level": "basic",
+  "useWhen": [
+    "层级路径"
+  ],
+  "states": [
+    "default",
+    "hover",
+    "active",
+    "focus",
+    "disabled"
+  ],
+  "api": "Element Plus-compatible",
+  "base": "ElBreadcrumb",
+  "source": "frontend/element-plus/src/components/basic/GBreadcrumb/GBreadcrumb.vue",
+  "types": "frontend/element-plus/src/components/basic/GBreadcrumb/types.ts",
+  "legacyIds": []
+}

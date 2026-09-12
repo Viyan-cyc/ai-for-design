@@ -1,0 +1,165 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "asset-library-contract",
+  "title": "Asset Library Contract",
+  "description": "Describes how an enterprise asset library organizes components, templates, interactions, validation, indexes, and manifests for AI for Design workflows.",
+  "type": "object",
+  "required": ["schemaVersion", "assetId", "framework", "discovery", "indexMapping", "manifestMapping", "syncStrategy"],
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "enum": ["1.0", "1.1"]
+    },
+    "assetId": {
+      "type": "string",
+      "description": "Unique identifier of one enterprise asset library, e.g. enterprise-dark or aurora-glass."
+    },
+    "framework": {
+      "type": "string",
+      "description": "Frontend framework or component format.",
+      "examples": ["vue", "react", "svelte", "angular"]
+    },
+    "discovery": {
+      "type": "object",
+      "required": ["components", "templates"],
+      "properties": {
+        "components": {
+          "type": "string",
+          "description": "Glob pattern relative to asset library root for component source files."
+        },
+        "templates": {
+          "type": "string",
+          "description": "Glob pattern relative to asset library root for page template source files."
+        },
+        "indexes": {
+          "type": "string",
+          "description": "Directory that holds index JSON files, relative to asset library root."
+        },
+        "manifest": {
+          "type": "string",
+          "description": "Relative path to the asset manifest file."
+        }
+      }
+    },
+    "indexMapping": {
+      "type": "object",
+      "required": ["components", "templates"],
+      "properties": {
+        "components": {
+          "type": "string",
+          "description": "Filename of the component index JSON under indexes/."
+        },
+        "templates": {
+          "type": "string",
+          "description": "Filename of the template index JSON under indexes/."
+        },
+        "interactions": {
+          "type": "string",
+          "description": "Optional filename of the interaction index JSON under indexes/."
+        },
+        "rootKey": {
+          "type": "string",
+          "default": "components",
+          "description": "Root key inside the component index that holds the component map."
+        },
+        "templateRootKey": {
+          "type": "string",
+          "default": "templates",
+          "description": "Root key inside the template index that holds the template map."
+        },
+        "interactionRootKey": {
+          "type": "string",
+          "default": "interactions",
+          "description": "Root key inside the interaction index that holds the interaction map."
+        }
+      }
+    },
+    "validation": {
+      "type": "object",
+      "properties": {
+        "configValidator": {
+          "type": "string",
+          "description": "Optional relative path to a dependency-free library-specific configuration validator."
+        }
+      }
+    },
+    "versioning": {
+      "type": "object",
+      "properties": {
+        "jsonFiles": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "JSON files or glob patterns whose assetVersion values must track the manifest version."
+        }
+      }
+    },
+    "assetNaming": {
+      "type": "object",
+      "description": "Rules for deriving asset IDs from source filenames.",
+      "properties": {
+        "componentIdTransform": {
+          "type": "string",
+          "enum": ["kebab-case", "camelCase", "PascalCase", "none"],
+          "default": "kebab-case"
+        },
+        "templateIdTransform": {
+          "type": "string",
+          "enum": ["kebab-case", "camelCase", "PascalCase", "none"],
+          "default": "kebab-case"
+        }
+      }
+    },
+    "manifestMapping": {
+      "type": "object",
+      "required": ["assetVersionField", "protectedFilesField", "sourceReleaseSha256Field"],
+      "properties": {
+        "assetVersionField": {
+          "type": "string"
+        },
+        "protectedFilesField": {
+          "type": "string"
+        },
+        "sourceReleaseSha256Field": {
+          "type": "string"
+        },
+        "prototypeBaseFilesField": {
+          "type": "string",
+          "description": "Optional field listing base files copied for every prototype."
+        }
+      }
+    },
+    "syncStrategy": {
+      "type": "object",
+      "required": ["hashAlgorithm"],
+      "properties": {
+        "hashAlgorithm": {
+          "type": "string",
+          "enum": ["sha256", "sha512", "md5"],
+          "default": "sha256"
+        },
+        "registerNewAssets": {
+          "type": "boolean",
+          "default": true
+        },
+        "updateManifest": {
+          "type": "boolean",
+          "default": true
+        },
+        "bumpVersionOnSync": {
+          "type": "boolean",
+          "default": true
+        },
+        "autoDetectDependencies": {
+          "type": "boolean",
+          "default": false,
+          "description": "If true, attempt to parse import statements to populate dependencies."
+        }
+      }
+    },
+    "ignorePatterns": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Glob patterns for files to ignore during scan."
+    }
+  }
+}

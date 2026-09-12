@@ -1,0 +1,22 @@
+{
+  "schemaVersion": "1.4",
+  "id": "g-select",
+  "assetVersion": "1.5.0",
+  "name": "GSelect",
+  "level": "basic",
+  "useWhen": [
+    "单项或多项选择"
+  ],
+  "states": [
+    "default",
+    "hover",
+    "active",
+    "focus",
+    "disabled"
+  ],
+  "api": "Element Plus-compatible",
+  "base": "ElSelect",
+  "source": "frontend/element-plus/src/components/basic/GSelect/GSelect.vue",
+  "types": "frontend/element-plus/src/components/basic/GSelect/types.ts",
+  "legacyIds": []
+}

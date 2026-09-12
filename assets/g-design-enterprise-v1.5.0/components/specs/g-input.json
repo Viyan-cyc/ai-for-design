@@ -1,0 +1,22 @@
+{
+  "schemaVersion": "1.4",
+  "id": "g-input",
+  "assetVersion": "1.5.0",
+  "name": "GInput",
+  "level": "basic",
+  "useWhen": [
+    "文本录入",
+    "搜索"
+  ],
+  "states": [
+    "focus",
+    "disabled",
+    "readonly",
+    "error"
+  ],
+  "api": "Element Plus-compatible",
+  "base": "ElInput",
+  "source": "frontend/element-plus/src/components/basic/GInput/GInput.vue",
+  "types": "frontend/element-plus/src/components/basic/GInput/types.ts",
+  "legacyIds": []
+}

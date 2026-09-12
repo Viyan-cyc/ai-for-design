@@ -1,0 +1,20 @@
+{
+  "schemaVersion": "1.4",
+  "id": "g-message",
+  "assetVersion": "1.5.0",
+  "name": "GMessage",
+  "level": "basic",
+  "useWhen": [
+    "即时操作反馈"
+  ],
+  "states": [
+    "default"
+  ],
+  "api": "function",
+  "base": "ElMessage",
+  "source": "frontend/element-plus/src/components/basic/GMessage/index.ts",
+  "types": "frontend/element-plus/src/components/basic/GMessage/types.ts",
+  "legacyIds": [
+    "gmessage"
+  ]
+}

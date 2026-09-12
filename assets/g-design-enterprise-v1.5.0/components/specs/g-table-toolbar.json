@@ -1,0 +1,24 @@
+{
+  "schemaVersion": "1.4",
+  "id": "g-table-toolbar",
+  "assetVersion": "1.5.0",
+  "name": "GTableToolbar",
+  "level": "business",
+  "useWhen": [
+    "表格标题与工具操作区"
+  ],
+  "states": [
+    "default",
+    "loading",
+    "empty",
+    "error",
+    "disabled"
+  ],
+  "api": "typed-props-and-events",
+  "base": null,
+  "source": "frontend/element-plus/src/components/business/GTableToolbar/GTableToolbar.vue",
+  "types": "frontend/element-plus/src/components/business/GTableToolbar/types.ts",
+  "legacyIds": [
+    "gtabletoolbar"
+  ]
+}

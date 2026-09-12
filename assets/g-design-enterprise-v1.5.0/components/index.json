@@ -1,0 +1,2113 @@
+{
+  "schemaVersion": "1.4",
+  "generated": true,
+  "components": {
+    "g-advanced-filter": {
+      "schemaVersion": "1.4",
+      "id": "g-advanced-filter",
+      "assetVersion": "1.5.0",
+      "name": "GAdvancedFilter",
+      "level": "business",
+      "useWhen": [
+        "可组合的高级筛选条件"
+      ],
+      "states": [
+        "default",
+        "loading",
+        "empty",
+        "error",
+        "disabled"
+      ],
+      "api": "typed-props-and-events",
+      "base": null,
+      "source": "frontend/element-plus/src/components/business/GAdvancedFilter/GAdvancedFilter.vue",
+      "types": "frontend/element-plus/src/components/business/GAdvancedFilter/types.ts",
+      "legacyIds": [
+        "gadvancedfilter"
+      ],
+      "spec": "components/specs/g-advanced-filter.json",
+      "files": [
+        "frontend/element-plus/src/components/business/GAdvancedFilter/GAdvancedFilter.vue",
+        "frontend/element-plus/src/components/business/GAdvancedFilter/index.ts",
+        "frontend/element-plus/src/components/business/GAdvancedFilter/style.scss",
+        "frontend/element-plus/src/components/business/GAdvancedFilter/types.ts"
+      ],
+      "tokens": [
+        "--g-bg-surface",
+        "--space-12",
+        "--space-16",
+        "--space-8",
+        "--spec-gadvanced-filter-grid-template-columns"
+      ],
+      "dependencies": []
+    },
+    "g-alarm-topology": {
+      "schemaVersion": "1.4",
+      "id": "g-alarm-topology",
+      "assetVersion": "1.5.0",
+      "name": "GAlarmTopology",
+      "level": "complex",
+      "useWhen": [
+        "故障定位",
+        "告警影响分析"
+      ],
+      "states": [
+        "default"
+      ],
+      "api": "typed-props-and-events",
+      "base": null,
+      "source": "frontend/element-plus/src/components/complex/GAlarmTopology/GAlarmTopology.vue",
+      "types": null,
+      "legacyIds": [],
+      "spec": "components/specs/g-alarm-topology.json",
+      "files": [
+        "frontend/element-plus/src/components/complex/GAlarmTopology/GAlarmTopology.vue",
+        "frontend/element-plus/src/components/complex/GAlarmTopology/index.ts",
+        "frontend/element-plus/src/components/complex/GTopology/GTopology.vue",
+        "frontend/element-plus/src/components/complex/GTopology/index.ts",
+        "frontend/element-plus/src/components/complex/GTopology/types.ts"
+      ],
+      "tokens": [
+        "--border-width-normal",
+        "--color-icon-inverse",
+        "--font-size-small",
+        "--g-accent",
+        "--g-bg-page",
+        "--g-bg-surface",
+        "--g-border",
+        "--g-focus",
+        "--g-success",
+        "--g-text-disabled",
+        "--g-text-primary",
+        "--g-topology-node-normal",
+        "--g-urgent",
+        "--g-warning",
+        "--radius-medium",
+        "--space-12",
+        "--space-16",
+        "--space-20",
+        "--space-6",
+        "--spec-gtopology-font-size",
+        "--spec-gtopology-font-size-2",
+        "--spec-gtopology-height",
+        "--spec-gtopology-min-height",
+        "--spec-gtopology-width"
+      ],
+      "dependencies": [
+        "g-topology"
+      ]
+    },
+    "g-alert": {
+      "schemaVersion": "1.4",
+      "id": "g-alert",
+      "assetVersion": "1.5.0",
+      "name": "GAlert",
+      "level": "basic",
+      "useWhen": [
+        "页内反馈"
+      ],
+      "states": [
+        "default",
+        "hover",
+        "active",
+        "focus",
+        "disabled"
+      ],
+      "api": "Element Plus-compatible",
+      "base": "ElAlert",
+      "source": "frontend/element-plus/src/components/basic/GAlert/GAlert.vue",
+      "types": "frontend/element-plus/src/components/basic/GAlert/types.ts",
+      "legacyIds": [],
+      "spec": "components/specs/g-alert.json",
+      "files": [
+        "frontend/element-plus/src/components/basic/GAlert/GAlert.vue",
+        "frontend/element-plus/src/components/basic/GAlert/index.ts",
+        "frontend/element-plus/src/components/basic/GAlert/style.scss",
+        "frontend/element-plus/src/components/basic/GAlert/types.ts"
+      ],
+      "tokens": [
+        "--g-font-family"
+      ],
+      "dependencies": []
+    },
+    "g-autocomplete": {
+      "schemaVersion": "1.4",
+      "id": "g-autocomplete",
+      "assetVersion": "1.5.0",
+      "name": "GAutocomplete",
+      "level": "basic",
+      "useWhen": [
+        "输入建议与自动补全"
+      ],
+      "states": [
+        "default",
+        "hover",
+        "active",
+        "focus",
+        "disabled"
+      ],
+      "api": "Element Plus-compatible",
+      "base": "ElAutocomplete",
+      "source": "frontend/element-plus/src/components/basic/GAutocomplete/GAutocomplete.vue",
+      "types": "frontend/element-plus/src/components/basic/GAutocomplete/types.ts",
+      "legacyIds": [],
+      "spec": "components/specs/g-autocomplete.json",
+      "files": [
+        "frontend/element-plus/src/components/basic/GAutocomplete/GAutocomplete.vue",
+        "frontend/element-plus/src/components/basic/GAutocomplete/index.ts",
+        "frontend/element-plus/src/components/basic/GAutocomplete/style.scss",
+        "frontend/element-plus/src/components/basic/GAutocomplete/types.ts"
+      ],
+      "tokens": [
+        "--g-font-family"
+      ],
+      "dependencies": []
+    },
+    "g-badge": {
+      "schemaVersion": "1.4",
+      "id": "g-badge",
+      "assetVersion": "1.5.0",
+      "name": "GBadge",
+      "level": "basic",
+      "useWhen": [
+        "数量与提醒标记"
+      ],
+      "states": [
+        "default",
+        "hover",
+        "active",
+        "focus",
+        "disabled"
+      ],
+      "api": "Element Plus-compatible",
+      "base": "ElBadge",
+      "source": "frontend/element-plus/src/components/basic/GBadge/GBadge.vue",
+      "types": "frontend/element-plus/src/components/basic/GBadge/types.ts",
+      "legacyIds": [],
+      "spec": "components/specs/g-badge.json",
+      "files": [
+        "frontend/element-plus/src/components/basic/GBadge/GBadge.vue",
+        "frontend/element-plus/src/components/basic/GBadge/index.ts",
+        "frontend/element-plus/src/components/basic/GBadge/style.scss",
+        "frontend/element-plus/src/components/basic/GBadge/types.ts"
+      ],
+      "tokens": [
+        "--g-font-family"
+      ],
+      "dependencies": []
+    },
+    "g-batch-action-bar": {
+      "schemaVersion": "1.4",
+      "id": "g-batch-action-bar",
+      "assetVersion": "1.5.0",
+      "name": "GBatchActionBar",
+      "level": "business",
+      "useWhen": [
+        "选中数据后的批量操作"
+      ],
+      "states": [
+        "default",
+        "loading",
+        "empty",
+        "error",
+        "disabled"
+      ],
+      "api": "typed-props-and-events",
+      "base": null,
+      "source": "frontend/element-plus/src/components/business/GBatchActionBar/GBatchActionBar.vue",
+      "types": "frontend/element-plus/src/components/business/GBatchActionBar/types.ts",
+      "legacyIds": [
+        "gbatchactionbar"
+      ],
+      "spec": "components/specs/g-batch-action-bar.json",
+      "files": [
+        "frontend/element-plus/src/components/business/GBatchActionBar/GBatchActionBar.vue",
+        "frontend/element-plus/src/components/business/GBatchActionBar/index.ts",
+        "frontend/element-plus/src/components/business/GBatchActionBar/style.scss",
+        "frontend/element-plus/src/components/business/GBatchActionBar/types.ts"
+      ],
+      "tokens": [
+        "--border-width-normal",
+        "--g-focus",
+        "--g-radius-md",
+        "--g-text-primary",
+        "--space-10",
+        "--space-16",
+        "--spec-gbatch-action-bar-background"
+      ],
+      "dependencies": []
+    },
+    "g-breadcrumb": {
+      "schemaVersion": "1.4",
+      "id": "g-breadcrumb",
+      "assetVersion": "1.5.0",
+      "name": "GBreadcrumb",
+      "level": "basic",
+      "useWhen": [
+        "层级路径"
+      ],
+      "states": [
+        "default",
+        "hover",
+        "active",
+        "focus",
+        "disabled"
+      ],
+      "api": "Element Plus-compatible",
+      "base": "ElBreadcrumb",
+      "source": "frontend/element-plus/src/components/basic/GBreadcrumb/GBreadcrumb.vue",
+      "types": "frontend/element-plus/src/components/basic/GBreadcrumb/types.ts",
+      "legacyIds": [],
+      "spec": "components/specs/g-breadcrumb.json",
+      "files": [
+        "frontend/element-plus/src/components/basic/GBreadcrumb/GBreadcrumb.vue",
+        "frontend/element-plus/src/components/basic/GBreadcrumb/index.ts",
+        "frontend/element-plus/src/components/basic/GBreadcrumb/style.scss",
+        "frontend/element-plus/src/components/basic/GBreadcrumb/types.ts"
+      ],
+      "tokens": [
+        "--g-font-family"
+      ],
+      "dependencies": []
+    },
+    "g-button": {
+      "schemaVersion": "1.4",
+      "id": "g-button",
+      "assetVersion": "1.5.0",
+      "name": "GButton",
+      "level": "basic",
+      "useWhen": [
+        "通用操作"
+      ],
+      "states": [
+        "hover",
+        "active",
+        "focus",
+        "disabled",
+        "loading"
+      ],
+      "api": "Element Plus-compatible",
+      "base": "ElButton",
+      "source": "frontend/element-plus/src/components/basic/GButton/GButton.vue",
+      "types": "frontend/element-plus/src/components/basic/GButton/types.ts",
+      "legacyIds": [],
+      "spec": "components/specs/g-button.json",
+      "files": [
+        "frontend/element-plus/src/components/basic/GButton/GButton.vue",
+        "frontend/element-plus/src/components/basic/GButton/index.ts",
+        "frontend/element-plus/src/components/basic/GButton/style.scss",
+        "frontend/element-plus/src/components/basic/GButton/types.ts"
+      ],
+      "tokens": [
+        "--g-control-radius",
+        "--g-font-family"
+      ],
+      "dependencies": []
+    },
+    "g-cascader": {
+      "schemaVersion": "1.4",
+      "id": "g-cascader",
+      "assetVersion": "1.5.0",
+      "name": "GCascader",
+      "level": "basic",
+      "useWhen": [
+        "层级数据选择"
+      ],
+      "states": [
+        "default",
+        "hover",
+        "active",
+        "focus",
+        "disabled"
+      ],
+      "api": "Element Plus-compatible",
+      "base": "ElCascader",
+      "source": "frontend/element-plus/src/components/basic/GCascader/GCascader.vue",
+      "types": "frontend/element-plus/src/components/basic/GCascader/types.ts",
+      "legacyIds": [],
+      "spec": "components/specs/g-cascader.json",
+      "files": [
+        "frontend/element-plus/src/components/basic/GCascader/GCascader.vue",
+        "frontend/element-plus/src/components/basic/GCascader/index.ts",
+        "frontend/element-plus/src/components/basic/GCascader/style.scss",
+        "frontend/element-plus/src/components/basic/GCascader/types.ts"
+      ],
+      "tokens": [
+        "--g-font-family"
+      ],
+      "dependencies": []
+    },
+    "g-checkbox": {
+      "schemaVersion": "1.4",
+      "id": "g-checkbox",
+      "assetVersion": "1.5.0",
+      "name": "GCheckbox",
+      "level": "basic",
+      "useWhen": [
+        "多项选择"
+      ],
+      "states": [
+        "default",
+        "hover",
+        "active",
+        "focus",
+        "disabled"
+      ],
+      "api": "Element Plus-compatible",
+      "base": "ElCheckbox",
+      "source": "frontend/element-plus/src/components/basic/GCheckbox/GCheckbox.vue",
+      "types": "frontend/element-plus/src/components/basic/GCheckbox/types.ts",
+      "legacyIds": [],
+      "spec": "components/specs/g-checkbox.json",
+      "files": [
+        "frontend/element-plus/src/components/basic/GCheckbox/GCheckbox.vue",
+        "frontend/element-plus/src/components/basic/GCheckbox/index.ts",
+        "frontend/element-plus/src/components/basic/GCheckbox/style.scss",
+        "frontend/element-plus/src/components/basic/GCheckbox/types.ts"
+      ],
+      "tokens": [
+        "--g-font-family"
+      ],
+      "dependencies": []
+    },
+    "g-collapse": {
+      "schemaVersion": "1.4",
+      "id": "g-collapse",
+      "assetVersion": "1.5.0",
+      "name": "GCollapse",
+      "level": "basic",
+      "useWhen": [
+        "分组内容折叠"
+      ],
+      "states": [
+        "default",
+        "hover",
+        "active",
+        "focus",
+        "disabled"
+      ],
+      "api": "Element Plus-compatible",
+      "base": "ElCollapse",
+      "source": "frontend/element-plus/src/components/basic/GCollapse/GCollapse.vue",
+      "types": "frontend/element-plus/src/components/basic/GCollapse/types.ts",
+      "legacyIds": [],
+      "spec": "components/specs/g-collapse.json",
+      "files": [
+        "frontend/element-plus/src/components/basic/GCollapse/GCollapse.vue",
+        "frontend/element-plus/src/components/basic/GCollapse/index.ts",
+        "frontend/element-plus/src/components/basic/GCollapse/style.scss",
+        "frontend/element-plus/src/components/basic/GCollapse/types.ts"
+      ],
+      "tokens": [
+        "--g-font-family"
+      ],
+      "dependencies": []
+    },
+    "g-dashboard-grid": {
+      "schemaVersion": "1.4",
+      "id": "g-dashboard-grid",
+      "assetVersion": "1.5.0",
+      "name": "GDashboardGrid",
+      "level": "complex",
+      "useWhen": [
+        "运营看板",
+        "监控大盘"
+      ],
+      "states": [
+        "default"
+      ],
+      "api": "typed-props-and-events",
+      "base": null,
+      "source": "frontend/element-plus/src/components/complex/GDashboardGrid/GDashboardGrid.vue",
+      "types": null,
+      "legacyIds": [],
+      "spec": "components/specs/g-dashboard-grid.json",
+      "files": [
+        "frontend/element-plus/src/components/complex/GDashboardGrid/GDashboardGrid.vue",
+        "frontend/element-plus/src/components/complex/GDashboardGrid/index.ts"
+      ],
+      "tokens": [
+        "--g-panel-gap"
+      ],
+      "dependencies": []
+    },
+    "g-data-table-pro": {
+      "schemaVersion": "1.4",
+      "id": "g-data-table-pro",
+      "assetVersion": "1.5.0",
+      "name": "GDataTablePro",
+      "level": "business",
+      "useWhen": [
+        "设备管理",
+        "告警管理"
+      ],
+      "states": [
+        "default"
+      ],
+      "api": "typed-props-and-events",
+      "base": null,
+      "source": "frontend/element-plus/src/components/business/GDataTablePro/GDataTablePro.vue",
+      "types": null,
+      "legacyIds": [],
+      "spec": "components/specs/g-data-table-pro.json",
+      "files": [
+        "frontend/element-plus/src/components/business/GDataTablePro/GDataTablePro.vue",
+        "frontend/element-plus/src/components/business/GDataTablePro/index.ts"
+      ],
+      "tokens": [
+        "--space-12",
+        "--space-16"
+      ],
+      "dependencies": []
+    },
+    "g-date-picker": {
+      "schemaVersion": "1.4",
+      "id": "g-date-picker",
+      "assetVersion": "1.5.0",
+      "name": "GDatePicker",
+      "level": "basic",
+      "useWhen": [
+        "日期选择"
+      ],
+      "states": [
+        "default",
+        "hover",
+        "active",
+        "focus",
+        "disabled"
+      ],
+      "api": "Element Plus-compatible",
+      "base": "ElDatePicker",
+      "source": "frontend/element-plus/src/components/basic/GDatePicker/GDatePicker.vue",
+      "types": "frontend/element-plus/src/components/basic/GDatePicker/types.ts",
+      "legacyIds": [],
+      "spec": "components/specs/g-date-picker.json",
+      "files": [
+        "frontend/element-plus/src/components/basic/GDatePicker/GDatePicker.vue",
+        "frontend/element-plus/src/components/basic/GDatePicker/index.ts",
+        "frontend/element-plus/src/components/basic/GDatePicker/style.scss",
+        "frontend/element-plus/src/components/basic/GDatePicker/types.ts"
+      ],
+      "tokens": [
+        "--g-font-family"
+      ],
+      "dependencies": []
+    },
+    "g-description-panel": {
+      "schemaVersion": "1.4",
+      "id": "g-description-panel",
+      "assetVersion": "1.5.0",
+      "name": "GDescriptionPanel",
+      "level": "business",
+      "useWhen": [
+        "结构化信息描述面板"
+      ],
+      "states": [
+        "default",
+        "loading",
+        "empty",
+        "error",
+        "disabled"
+      ],
+      "api": "typed-props-and-events",
+      "base": null,
+      "source": "frontend/element-plus/src/components/business/GDescriptionPanel/GDescriptionPanel.vue",
+      "types": "frontend/element-plus/src/components/business/GDescriptionPanel/types.ts",
+      "legacyIds": [
+        "gdescriptionpanel"
+      ],
+      "spec": "components/specs/g-description-panel.json",
+      "files": [
+        "frontend/element-plus/src/components/business/GDescriptionPanel/GDescriptionPanel.vue",
+        "frontend/element-plus/src/components/business/GDescriptionPanel/index.ts",
+        "frontend/element-plus/src/components/business/GDescriptionPanel/style.scss",
+        "frontend/element-plus/src/components/business/GDescriptionPanel/types.ts"
+      ],
+      "tokens": [
+        "--space-12",
+        "--spec-gdescription-panel-font-size"
+      ],
+      "dependencies": []
+    },
+    "g-dialog": {
+      "schemaVersion": "1.4",
+      "id": "g-dialog",
+      "assetVersion": "1.5.0",
+      "name": "GDialog",
+      "level": "basic",
+      "useWhen": [
+        "模态任务"
+      ],
+      "states": [
+        "default",
+        "hover",
+        "active",
+        "focus",
+        "disabled"
+      ],
+      "api": "Element Plus-compatible",
+      "base": "ElDialog",
+      "source": "frontend/element-plus/src/components/basic/GDialog/GDialog.vue",
+      "types": "frontend/element-plus/src/components/basic/GDialog/types.ts",
+      "legacyIds": [],
+      "spec": "components/specs/g-dialog.json",
+      "files": [
+        "frontend/element-plus/src/components/basic/GDialog/GDialog.vue",
+        "frontend/element-plus/src/components/basic/GDialog/index.ts",
+        "frontend/element-plus/src/components/basic/GDialog/style.scss",
+        "frontend/element-plus/src/components/basic/GDialog/types.ts"
+      ],
+      "tokens": [
+        "--g-font-family"
+      ],
+      "dependencies": []
+    },
+    "g-drawer": {
+      "schemaVersion": "1.4",
+      "id": "g-drawer",
+      "assetVersion": "1.5.0",
+      "name": "GDrawer",
+      "level": "basic",
+      "useWhen": [
+        "侧向详情与编辑"
+      ],
+      "states": [
+        "default",
+        "hover",
+        "active",
+        "focus",
+        "disabled"
+      ],
+      "api": "Element Plus-compatible",
+      "base": "ElDrawer",
+      "source": "frontend/element-plus/src/components/basic/GDrawer/GDrawer.vue",
+      "types": "frontend/element-plus/src/components/basic/GDrawer/types.ts",
+      "legacyIds": [],
+      "spec": "components/specs/g-drawer.json",
+      "files": [
+        "frontend/element-plus/src/components/basic/GDrawer/GDrawer.vue",
+        "frontend/element-plus/src/components/basic/GDrawer/index.ts",
+        "frontend/element-plus/src/components/basic/GDrawer/style.scss",
+        "frontend/element-plus/src/components/basic/GDrawer/types.ts"
+      ],
+      "tokens": [
+        "--g-font-family"
+      ],
+      "dependencies": []
+    },
+    "g-dropdown": {
+      "schemaVersion": "1.4",
+      "id": "g-dropdown",
+      "assetVersion": "1.5.0",
+      "name": "GDropdown",
+      "level": "basic",
+      "useWhen": [
+        "下拉操作菜单"
+      ],
+      "states": [
+        "default",
+        "hover",
+        "active",
+        "focus",
+        "disabled"
+      ],
+      "api": "Element Plus-compatible",
+      "base": "ElDropdown",
+      "source": "frontend/element-plus/src/components/basic/GDropdown/GDropdown.vue",
+      "types": "frontend/element-plus/src/components/basic/GDropdown/types.ts",
+      "legacyIds": [],
+      "spec": "components/specs/g-dropdown.json",
+      "files": [
+        "frontend/element-plus/src/components/basic/GDropdown/GDropdown.vue",
+        "frontend/element-plus/src/components/basic/GDropdown/index.ts",
+        "frontend/element-plus/src/components/basic/GDropdown/style.scss",
+        "frontend/element-plus/src/components/basic/GDropdown/types.ts"
+      ],
+      "tokens": [
+        "--g-font-family"
+      ],
+      "dependencies": []
+    },
+    "g-empty": {
+      "schemaVersion": "1.4",
+      "id": "g-empty",
+      "assetVersion": "1.5.0",
+      "name": "GEmpty",
+      "level": "basic",
+      "useWhen": [
+        "空数据状态"
+      ],
+      "states": [
+        "default",
+        "hover",
+        "active",
+        "focus",
+        "disabled"
+      ],
+      "api": "Element Plus-compatible",
+      "base": "ElEmpty",
+      "source": "frontend/element-plus/src/components/basic/GEmpty/GEmpty.vue",
+      "types": "frontend/element-plus/src/components/basic/GEmpty/types.ts",
+      "legacyIds": [],
+      "spec": "components/specs/g-empty.json",
+      "files": [
+        "frontend/element-plus/src/components/basic/GEmpty/GEmpty.vue",
+        "frontend/element-plus/src/components/basic/GEmpty/index.ts",
+        "frontend/element-plus/src/components/basic/GEmpty/style.scss",
+        "frontend/element-plus/src/components/basic/GEmpty/types.ts"
+      ],
+      "tokens": [
+        "--g-font-family"
+      ],
+      "dependencies": []
+    },
+    "g-filter-bar": {
+      "schemaVersion": "1.4",
+      "id": "g-filter-bar",
+      "assetVersion": "1.5.0",
+      "name": "GFilterBar",
+      "level": "business",
+      "useWhen": [
+        "多条件筛选与展开收起"
+      ],
+      "states": [
+        "default",
+        "loading",
+        "empty",
+        "error",
+        "disabled"
+      ],
+      "api": "typed-props-and-events",
+      "base": null,
+      "source": "frontend/element-plus/src/components/business/GFilterBar/GFilterBar.vue",
+      "types": "frontend/element-plus/src/components/business/GFilterBar/types.ts",
+      "legacyIds": [
+        "gfilterbar"
+      ],
+      "spec": "components/specs/g-filter-bar.json",
+      "files": [
+        "frontend/element-plus/src/components/business/GFilterBar/GFilterBar.vue",
+        "frontend/element-plus/src/components/business/GFilterBar/index.ts",
+        "frontend/element-plus/src/components/business/GFilterBar/style.scss",
+        "frontend/element-plus/src/components/business/GFilterBar/types.ts"
+      ],
+      "tokens": [
+        "--border-width-normal",
+        "--g-bg-surface",
+        "--g-border",
+        "--g-radius-lg",
+        "--space-16",
+        "--space-8"
+      ],
+      "dependencies": []
+    },
+    "g-form-section": {
+      "schemaVersion": "1.4",
+      "id": "g-form-section",
+      "assetVersion": "1.5.0",
+      "name": "GFormSection",
+      "level": "business",
+      "useWhen": [
+        "分组表单区块"
+      ],
+      "states": [
+        "default",
+        "loading",
+        "empty",
+        "error",
+        "disabled"
+      ],
+      "api": "typed-props-and-events",
+      "base": null,
+      "source": "frontend/element-plus/src/components/business/GFormSection/GFormSection.vue",
+      "types": "frontend/element-plus/src/components/business/GFormSection/types.ts",
+      "legacyIds": [
+        "gformsection"
+      ],
+      "spec": "components/specs/g-form-section.json",
+      "files": [
+        "frontend/element-plus/src/components/business/GFormSection/GFormSection.vue",
+        "frontend/element-plus/src/components/business/GFormSection/index.ts",
+        "frontend/element-plus/src/components/business/GFormSection/style.scss",
+        "frontend/element-plus/src/components/business/GFormSection/types.ts"
+      ],
+      "tokens": [
+        "--border-width-normal",
+        "--g-bg-surface",
+        "--g-border",
+        "--g-radius-lg",
+        "--g-text-secondary",
+        "--space-16",
+        "--space-6"
+      ],
+      "dependencies": []
+    },
+    "g-form": {
+      "schemaVersion": "1.4",
+      "id": "g-form",
+      "assetVersion": "1.5.0",
+      "name": "GForm",
+      "level": "basic",
+      "useWhen": [
+        "结构化表单"
+      ],
+      "states": [
+        "default",
+        "hover",
+        "active",
+        "focus",
+        "disabled"
+      ],
+      "api": "Element Plus-compatible",
+      "base": "ElForm",
+      "source": "frontend/element-plus/src/components/basic/GForm/GForm.vue",
+      "types": "frontend/element-plus/src/components/basic/GForm/types.ts",
+      "legacyIds": [],
+      "spec": "components/specs/g-form.json",
+      "files": [
+        "frontend/element-plus/src/components/basic/GForm/GForm.vue",
+        "frontend/element-plus/src/components/basic/GForm/index.ts",
+        "frontend/element-plus/src/components/basic/GForm/style.scss",
+        "frontend/element-plus/src/components/basic/GForm/types.ts"
+      ],
+      "tokens": [
+        "--g-font-family"
+      ],
+      "dependencies": []
+    },
+    "g-icon": {
+      "schemaVersion": "1.4",
+      "id": "g-icon",
+      "assetVersion": "1.5.0",
+      "name": "GIcon",
+      "level": "basic",
+      "useWhen": [
+        "完全离线的Lucide SVG图标"
+      ],
+      "states": [
+        "default",
+        "hover",
+        "active",
+        "focus",
+        "disabled"
+      ],
+      "api": "Element Plus-compatible",
+      "base": "lucide-static@1.43.0",
+      "source": "frontend/element-plus/src/components/basic/GIcon/GIcon.vue",
+      "types": "frontend/element-plus/src/components/basic/GIcon/types.ts",
+      "legacyIds": [],
+      "spec": "components/specs/g-icon.json",
+      "files": [
+        "frontend/element-plus/src/components/basic/GIcon/GIcon.vue",
+        "frontend/element-plus/src/components/basic/GIcon/index.ts",
+        "frontend/element-plus/src/components/basic/GIcon/style.scss",
+        "frontend/element-plus/src/components/basic/GIcon/types.ts",
+        "frontend/element-plus/src/icons/icon-aliases.json",
+        "frontend/element-plus/src/icons/icon-nodes.json"
+      ],
+      "tokens": [],
+      "dependencies": []
+    },
+    "g-input-number": {
+      "schemaVersion": "1.4",
+      "id": "g-input-number",
+      "assetVersion": "1.5.0",
+      "name": "GInputNumber",
+      "level": "basic",
+      "useWhen": [
+        "数字录入"
+      ],
+      "states": [
+        "default",
+        "hover",
+        "active",
+        "focus",
+        "disabled"
+      ],
+      "api": "Element Plus-compatible",
+      "base": "ElInputNumber",
+      "source": "frontend/element-plus/src/components/basic/GInputNumber/GInputNumber.vue",
+      "types": "frontend/element-plus/src/components/basic/GInputNumber/types.ts",
+      "legacyIds": [],
+      "spec": "components/specs/g-input-number.json",
+      "files": [
+        "frontend/element-plus/src/components/basic/GInputNumber/GInputNumber.vue",
+        "frontend/element-plus/src/components/basic/GInputNumber/index.ts",
+        "frontend/element-plus/src/components/basic/GInputNumber/style.scss",
+        "frontend/element-plus/src/components/basic/GInputNumber/types.ts"
+      ],
+      "tokens": [
+        "--g-font-family"
+      ],
+      "dependencies": []
+    },
+    "g-input": {
+      "schemaVersion": "1.4",
+      "id": "g-input",
+      "assetVersion": "1.5.0",
+      "name": "GInput",
+      "level": "basic",
+      "useWhen": [
+        "文本录入",
+        "搜索"
+      ],
+      "states": [
+        "focus",
+        "disabled",
+        "readonly",
+        "error"
+      ],
+      "api": "Element Plus-compatible",
+      "base": "ElInput",
+      "source": "frontend/element-plus/src/components/basic/GInput/GInput.vue",
+      "types": "frontend/element-plus/src/components/basic/GInput/types.ts",
+      "legacyIds": [],
+      "spec": "components/specs/g-input.json",
+      "files": [
+        "frontend/element-plus/src/components/basic/GInput/GInput.vue",
+        "frontend/element-plus/src/components/basic/GInput/index.ts",
+        "frontend/element-plus/src/components/basic/GInput/style.scss",
+        "frontend/element-plus/src/components/basic/GInput/types.ts"
+      ],
+      "tokens": [
+        "--g-control-radius"
+      ],
+      "dependencies": []
+    },
+    "g-link": {
+      "schemaVersion": "1.4",
+      "id": "g-link",
+      "assetVersion": "1.5.0",
+      "name": "GLink",
+      "level": "basic",
+      "useWhen": [
+        "导航与文字操作"
+      ],
+      "states": [
+        "default",
+        "hover",
+        "active",
+        "focus",
+        "disabled"
+      ],
+      "api": "Element Plus-compatible",
+      "base": "ElLink",
+      "source": "frontend/element-plus/src/components/basic/GLink/GLink.vue",
+      "types": "frontend/element-plus/src/components/basic/GLink/types.ts",
+      "legacyIds": [],
+      "spec": "components/specs/g-link.json",
+      "files": [
+        "frontend/element-plus/src/components/basic/GLink/GLink.vue",
+        "frontend/element-plus/src/components/basic/GLink/index.ts",
+        "frontend/element-plus/src/components/basic/GLink/style.scss",
+        "frontend/element-plus/src/components/basic/GLink/types.ts"
+      ],
+      "tokens": [
+        "--g-font-family"
+      ],
+      "dependencies": []
+    },
+    "g-loading": {
+      "schemaVersion": "1.4",
+      "id": "g-loading",
+      "assetVersion": "1.5.0",
+      "name": "GLoading",
+      "level": "basic",
+      "useWhen": [
+        "全局或局部加载"
+      ],
+      "states": [
+        "default"
+      ],
+      "api": "function",
+      "base": "ElLoading",
+      "source": "frontend/element-plus/src/components/basic/GLoading/index.ts",
+      "types": "frontend/element-plus/src/components/basic/GLoading/types.ts",
+      "legacyIds": [
+        "gloading"
+      ],
+      "spec": "components/specs/g-loading.json",
+      "files": [
+        "frontend/element-plus/src/components/basic/GLoading/index.ts",
+        "frontend/element-plus/src/components/basic/GLoading/types.ts"
+      ],
+      "tokens": [],
+      "dependencies": []
+    },
+    "g-menu": {
+      "schemaVersion": "1.4",
+      "id": "g-menu",
+      "assetVersion": "1.5.0",
+      "name": "GMenu",
+      "level": "basic",
+      "useWhen": [
+        "功能导航"
+      ],
+      "states": [
+        "default",
+        "hover",
+        "active",
+        "focus",
+        "disabled"
+      ],
+      "api": "Element Plus-compatible",
+      "base": "ElMenu",
+      "source": "frontend/element-plus/src/components/basic/GMenu/GMenu.vue",
+      "types": "frontend/element-plus/src/components/basic/GMenu/types.ts",
+      "legacyIds": [],
+      "spec": "components/specs/g-menu.json",
+      "files": [
+        "frontend/element-plus/src/components/basic/GMenu/GMenu.vue",
+        "frontend/element-plus/src/components/basic/GMenu/index.ts",
+        "frontend/element-plus/src/components/basic/GMenu/style.scss",
+        "frontend/element-plus/src/components/basic/GMenu/types.ts"
+      ],
+      "tokens": [
+        "--g-font-family"
+      ],
+      "dependencies": []
+    },
+    "g-message": {
+      "schemaVersion": "1.4",
+      "id": "g-message",
+      "assetVersion": "1.5.0",
+      "name": "GMessage",
+      "level": "basic",
+      "useWhen": [
+        "即时操作反馈"
+      ],
+      "states": [
+        "default"
+      ],
+      "api": "function",
+      "base": "ElMessage",
+      "source": "frontend/element-plus/src/components/basic/GMessage/index.ts",
+      "types": "frontend/element-plus/src/components/basic/GMessage/types.ts",
+      "legacyIds": [
+        "gmessage"
+      ],
+      "spec": "components/specs/g-message.json",
+      "files": [
+        "frontend/element-plus/src/components/basic/GMessage/index.ts",
+        "frontend/element-plus/src/components/basic/GMessage/types.ts"
+      ],
+      "tokens": [],
+      "dependencies": []
+    },
+    "g-metric-card": {
+      "schemaVersion": "1.4",
+      "id": "g-metric-card",
+      "assetVersion": "1.5.0",
+      "name": "GMetricCard",
+      "level": "business",
+      "useWhen": [
+        "指标概览",
+        "数据看板"
+      ],
+      "states": [
+        "default"
+      ],
+      "api": "typed-props-and-events",
+      "base": null,
+      "source": "frontend/element-plus/src/components/business/GMetricCard/GMetricCard.vue",
+      "types": null,
+      "legacyIds": [],
+      "variants": {
+        "brand-frosted-decoration": {
+          "attributes": {
+            "data-surface": "brand",
+            "data-decoration": "frosted"
+          },
+          "tokenGroup": "frost-decoration",
+          "rules": "design/frosted-glass.md#色块装饰",
+          "useWhen": [
+            "有明确主次层级的品牌色重点卡片",
+            "边角有可避开文字的留白"
+          ],
+          "avoidWhen": [
+            "语义告警色块",
+            "密集数据",
+            "普通卡片批量装饰",
+            "宿主已有背景模糊"
+          ],
+          "minimumSuggestedSize": "240 × 112 CSS px",
+          "contentRule": "统一白字；趋势保留正负号或明确文字，不只依赖颜色"
+        }
+      },
+      "spec": "components/specs/g-metric-card.json",
+      "files": [
+        "frontend/element-plus/src/components/business/GMetricCard/GMetricCard.vue",
+        "frontend/element-plus/src/components/business/GMetricCard/index.ts"
+      ],
+      "tokens": [
+        "--border-width-normal",
+        "--g-bg-surface",
+        "--g-border",
+        "--g-success",
+        "--g-text-secondary",
+        "--g-urgent",
+        "--radius-medium",
+        "--space-16",
+        "--space-8",
+        "--spec-gmetric-card-font-size"
+      ],
+      "dependencies": []
+    },
+    "g-monitor-panel": {
+      "schemaVersion": "1.4",
+      "id": "g-monitor-panel",
+      "assetVersion": "1.5.0",
+      "name": "GMonitorPanel",
+      "level": "complex",
+      "useWhen": [
+        "实时指标",
+        "运行监控"
+      ],
+      "states": [
+        "default"
+      ],
+      "api": "typed-props-and-events",
+      "base": null,
+      "source": "frontend/element-plus/src/components/complex/GMonitorPanel/GMonitorPanel.vue",
+      "types": null,
+      "legacyIds": [],
+      "spec": "components/specs/g-monitor-panel.json",
+      "files": [
+        "frontend/element-plus/src/components/business/GStatusTag/GStatusTag.vue",
+        "frontend/element-plus/src/components/business/GStatusTag/index.ts",
+        "frontend/element-plus/src/components/complex/GMonitorPanel/GMonitorPanel.vue",
+        "frontend/element-plus/src/components/complex/GMonitorPanel/index.ts"
+      ],
+      "tokens": [
+        "--border-width-normal",
+        "--font-size-small",
+        "--font-size-x-large",
+        "--g-accent",
+        "--g-bg-surface",
+        "--g-border",
+        "--g-text-secondary",
+        "--radius-medium",
+        "--radius-small",
+        "--space-16",
+        "--space-4",
+        "--spec-gmonitor-panel-height"
+      ],
+      "dependencies": [
+        "g-status-tag"
+      ]
+    },
+    "g-notification": {
+      "schemaVersion": "1.4",
+      "id": "g-notification",
+      "assetVersion": "1.5.0",
+      "name": "GNotification",
+      "level": "basic",
+      "useWhen": [
+        "系统级通知"
+      ],
+      "states": [
+        "default"
+      ],
+      "api": "function",
+      "base": "ElNotification",
+      "source": "frontend/element-plus/src/components/basic/GNotification/index.ts",
+      "types": "frontend/element-plus/src/components/basic/GNotification/types.ts",
+      "legacyIds": [
+        "gnotification"
+      ],
+      "spec": "components/specs/g-notification.json",
+      "files": [
+        "frontend/element-plus/src/components/basic/GNotification/index.ts",
+        "frontend/element-plus/src/components/basic/GNotification/types.ts"
+      ],
+      "tokens": [],
+      "dependencies": []
+    },
+    "g-page-header": {
+      "schemaVersion": "1.4",
+      "id": "g-page-header",
+      "assetVersion": "1.5.0",
+      "name": "GPageHeader",
+      "level": "business",
+      "useWhen": [
+        "页面标题、路径与主操作区"
+      ],
+      "states": [
+        "default",
+        "loading",
+        "empty",
+        "error",
+        "disabled"
+      ],
+      "api": "typed-props-and-events",
+      "base": null,
+      "source": "frontend/element-plus/src/components/business/GPageHeader/GPageHeader.vue",
+      "types": "frontend/element-plus/src/components/business/GPageHeader/types.ts",
+      "legacyIds": [
+        "gpageheader"
+      ],
+      "spec": "components/specs/g-page-header.json",
+      "files": [
+        "frontend/element-plus/src/components/business/GPageHeader/GPageHeader.vue",
+        "frontend/element-plus/src/components/business/GPageHeader/index.ts",
+        "frontend/element-plus/src/components/business/GPageHeader/style.scss",
+        "frontend/element-plus/src/components/business/GPageHeader/types.ts"
+      ],
+      "tokens": [
+        "--border-width-normal",
+        "--font-size-large",
+        "--g-border",
+        "--g-text-secondary",
+        "--space-16",
+        "--space-6",
+        "--space-8"
+      ],
+      "dependencies": []
+    },
+    "g-pagination": {
+      "schemaVersion": "1.4",
+      "id": "g-pagination",
+      "assetVersion": "1.5.0",
+      "name": "GPagination",
+      "level": "basic",
+      "useWhen": [
+        "分页导航"
+      ],
+      "states": [
+        "default",
+        "hover",
+        "active",
+        "focus",
+        "disabled"
+      ],
+      "api": "Element Plus-compatible",
+      "base": "ElPagination",
+      "source": "frontend/element-plus/src/components/basic/GPagination/GPagination.vue",
+      "types": "frontend/element-plus/src/components/basic/GPagination/types.ts",
+      "legacyIds": [],
+      "spec": "components/specs/g-pagination.json",
+      "files": [
+        "frontend/element-plus/src/components/basic/GPagination/GPagination.vue",
+        "frontend/element-plus/src/components/basic/GPagination/index.ts",
+        "frontend/element-plus/src/components/basic/GPagination/style.scss",
+        "frontend/element-plus/src/components/basic/GPagination/types.ts"
+      ],
+      "tokens": [
+        "--g-font-family"
+      ],
+      "dependencies": []
+    },
+    "g-permission-state": {
+      "schemaVersion": "1.4",
+      "id": "g-permission-state",
+      "assetVersion": "1.5.0",
+      "name": "GPermissionState",
+      "level": "business",
+      "useWhen": [
+        "无权限状态与申请入口"
+      ],
+      "states": [
+        "default",
+        "loading",
+        "empty",
+        "error",
+        "disabled"
+      ],
+      "api": "typed-props-and-events",
+      "base": null,
+      "source": "frontend/element-plus/src/components/business/GPermissionState/GPermissionState.vue",
+      "types": "frontend/element-plus/src/components/business/GPermissionState/types.ts",
+      "legacyIds": [
+        "gpermissionstate"
+      ],
+      "spec": "components/specs/g-permission-state.json",
+      "files": [
+        "frontend/element-plus/src/components/business/GPermissionState/GPermissionState.vue",
+        "frontend/element-plus/src/components/business/GPermissionState/index.ts",
+        "frontend/element-plus/src/components/business/GPermissionState/style.scss",
+        "frontend/element-plus/src/components/business/GPermissionState/types.ts"
+      ],
+      "tokens": [
+        "--g-bg-surface",
+        "--spec-gpermission-state-min-height"
+      ],
+      "dependencies": []
+    },
+    "g-popconfirm": {
+      "schemaVersion": "1.4",
+      "id": "g-popconfirm",
+      "assetVersion": "1.5.0",
+      "name": "GPopconfirm",
+      "level": "basic",
+      "useWhen": [
+        "危险操作二次确认"
+      ],
+      "states": [
+        "default",
+        "hover",
+        "active",
+        "focus",
+        "disabled"
+      ],
+      "api": "Element Plus-compatible",
+      "base": "ElPopconfirm",
+      "source": "frontend/element-plus/src/components/basic/GPopconfirm/GPopconfirm.vue",
+      "types": "frontend/element-plus/src/components/basic/GPopconfirm/types.ts",
+      "legacyIds": [],
+      "spec": "components/specs/g-popconfirm.json",
+      "files": [
+        "frontend/element-plus/src/components/basic/GPopconfirm/GPopconfirm.vue",
+        "frontend/element-plus/src/components/basic/GPopconfirm/index.ts",
+        "frontend/element-plus/src/components/basic/GPopconfirm/style.scss",
+        "frontend/element-plus/src/components/basic/GPopconfirm/types.ts"
+      ],
+      "tokens": [
+        "--g-font-family"
+      ],
+      "dependencies": []
+    },
+    "g-popover": {
+      "schemaVersion": "1.4",
+      "id": "g-popover",
+      "assetVersion": "1.5.0",
+      "name": "GPopover",
+      "level": "basic",
+      "useWhen": [
+        "轻量浮层"
+      ],
+      "states": [
+        "default",
+        "hover",
+        "active",
+        "focus",
+        "disabled"
+      ],
+      "api": "Element Plus-compatible",
+      "base": "ElPopover",
+      "source": "frontend/element-plus/src/components/basic/GPopover/GPopover.vue",
+      "types": "frontend/element-plus/src/components/basic/GPopover/types.ts",
+      "legacyIds": [],
+      "spec": "components/specs/g-popover.json",
+      "files": [
+        "frontend/element-plus/src/components/basic/GPopover/GPopover.vue",
+        "frontend/element-plus/src/components/basic/GPopover/index.ts",
+        "frontend/element-plus/src/components/basic/GPopover/style.scss",
+        "frontend/element-plus/src/components/basic/GPopover/types.ts"
+      ],
+      "tokens": [
+        "--g-font-family"
+      ],
+      "dependencies": []
+    },
+    "g-progress": {
+      "schemaVersion": "1.4",
+      "id": "g-progress",
+      "assetVersion": "1.5.0",
+      "name": "GProgress",
+      "level": "basic",
+      "useWhen": [
+        "任务进度展示"
+      ],
+      "states": [
+        "default",
+        "hover",
+        "active",
+        "focus",
+        "disabled"
+      ],
+      "api": "Element Plus-compatible",
+      "base": "ElProgress",
+      "source": "frontend/element-plus/src/components/basic/GProgress/GProgress.vue",
+      "types": "frontend/element-plus/src/components/basic/GProgress/types.ts",
+      "legacyIds": [],
+      "spec": "components/specs/g-progress.json",
+      "files": [
+        "frontend/element-plus/src/components/basic/GProgress/GProgress.vue",
+        "frontend/element-plus/src/components/basic/GProgress/index.ts",
+        "frontend/element-plus/src/components/basic/GProgress/style.scss",
+        "frontend/element-plus/src/components/basic/GProgress/types.ts"
+      ],
+      "tokens": [
+        "--g-font-family"
+      ],
+      "dependencies": []
+    },
+    "g-radio": {
+      "schemaVersion": "1.4",
+      "id": "g-radio",
+      "assetVersion": "1.5.0",
+      "name": "GRadio",
+      "level": "basic",
+      "useWhen": [
+        "单项选择"
+      ],
+      "states": [
+        "default",
+        "hover",
+        "active",
+        "focus",
+        "disabled"
+      ],
+      "api": "Element Plus-compatible",
+      "base": "ElRadio",
+      "source": "frontend/element-plus/src/components/basic/GRadio/GRadio.vue",
+      "types": "frontend/element-plus/src/components/basic/GRadio/types.ts",
+      "legacyIds": [],
+      "spec": "components/specs/g-radio.json",
+      "files": [
+        "frontend/element-plus/src/components/basic/GRadio/GRadio.vue",
+        "frontend/element-plus/src/components/basic/GRadio/index.ts",
+        "frontend/element-plus/src/components/basic/GRadio/style.scss",
+        "frontend/element-plus/src/components/basic/GRadio/types.ts"
+      ],
+      "tokens": [
+        "--g-font-family"
+      ],
+      "dependencies": []
+    },
+    "g-resource-tree": {
+      "schemaVersion": "1.4",
+      "id": "g-resource-tree",
+      "assetVersion": "1.5.0",
+      "name": "GResourceTree",
+      "level": "business",
+      "useWhen": [
+        "可搜索的资源树"
+      ],
+      "states": [
+        "default",
+        "loading",
+        "empty",
+        "error",
+        "disabled"
+      ],
+      "api": "typed-props-and-events",
+      "base": null,
+      "source": "frontend/element-plus/src/components/business/GResourceTree/GResourceTree.vue",
+      "types": "frontend/element-plus/src/components/business/GResourceTree/types.ts",
+      "legacyIds": [
+        "gresourcetree"
+      ],
+      "spec": "components/specs/g-resource-tree.json",
+      "files": [
+        "frontend/element-plus/src/components/business/GResourceTree/GResourceTree.vue",
+        "frontend/element-plus/src/components/business/GResourceTree/index.ts",
+        "frontend/element-plus/src/components/business/GResourceTree/style.scss",
+        "frontend/element-plus/src/components/business/GResourceTree/types.ts"
+      ],
+      "tokens": [
+        "--border-width-normal",
+        "--g-bg-surface",
+        "--g-border",
+        "--g-radius-md",
+        "--space-12"
+      ],
+      "dependencies": []
+    },
+    "g-result": {
+      "schemaVersion": "1.4",
+      "id": "g-result",
+      "assetVersion": "1.5.0",
+      "name": "GResult",
+      "level": "basic",
+      "useWhen": [
+        "任务结果反馈"
+      ],
+      "states": [
+        "default",
+        "hover",
+        "active",
+        "focus",
+        "disabled"
+      ],
+      "api": "Element Plus-compatible",
+      "base": "ElResult",
+      "source": "frontend/element-plus/src/components/basic/GResult/GResult.vue",
+      "types": "frontend/element-plus/src/components/basic/GResult/types.ts",
+      "legacyIds": [],
+      "spec": "components/specs/g-result.json",
+      "files": [
+        "frontend/element-plus/src/components/basic/GResult/GResult.vue",
+        "frontend/element-plus/src/components/basic/GResult/index.ts",
+        "frontend/element-plus/src/components/basic/GResult/style.scss",
+        "frontend/element-plus/src/components/basic/GResult/types.ts"
+      ],
+      "tokens": [
+        "--g-font-family"
+      ],
+      "dependencies": []
+    },
+    "g-search-bar": {
+      "schemaVersion": "1.4",
+      "id": "g-search-bar",
+      "assetVersion": "1.5.0",
+      "name": "GSearchBar",
+      "level": "business",
+      "useWhen": [
+        "列表查询",
+        "资源搜索"
+      ],
+      "states": [
+        "default"
+      ],
+      "api": "typed-props-and-events",
+      "base": null,
+      "source": "frontend/element-plus/src/components/business/GSearchBar/GSearchBar.vue",
+      "types": null,
+      "legacyIds": [],
+      "spec": "components/specs/g-search-bar.json",
+      "files": [
+        "frontend/element-plus/src/components/business/GSearchBar/GSearchBar.vue",
+        "frontend/element-plus/src/components/business/GSearchBar/index.ts"
+      ],
+      "tokens": [
+        "--space-8",
+        "--spec-gsearch-bar-max-width"
+      ],
+      "dependencies": []
+    },
+    "g-select": {
+      "schemaVersion": "1.4",
+      "id": "g-select",
+      "assetVersion": "1.5.0",
+      "name": "GSelect",
+      "level": "basic",
+      "useWhen": [
+        "单项或多项选择"
+      ],
+      "states": [
+        "default",
+        "hover",
+        "active",
+        "focus",
+        "disabled"
+      ],
+      "api": "Element Plus-compatible",
+      "base": "ElSelect",
+      "source": "frontend/element-plus/src/components/basic/GSelect/GSelect.vue",
+      "types": "frontend/element-plus/src/components/basic/GSelect/types.ts",
+      "legacyIds": [],
+      "spec": "components/specs/g-select.json",
+      "files": [
+        "frontend/element-plus/src/components/basic/GSelect/GSelect.vue",
+        "frontend/element-plus/src/components/basic/GSelect/index.ts",
+        "frontend/element-plus/src/components/basic/GSelect/style.scss",
+        "frontend/element-plus/src/components/basic/GSelect/types.ts"
+      ],
+      "tokens": [
+        "--g-font-family"
+      ],
+      "dependencies": []
+    },
+    "g-skeleton": {
+      "schemaVersion": "1.4",
+      "id": "g-skeleton",
+      "assetVersion": "1.5.0",
+      "name": "GSkeleton",
+      "level": "basic",
+      "useWhen": [
+        "内容加载占位"
+      ],
+      "states": [
+        "default",
+        "hover",
+        "active",
+        "focus",
+        "disabled"
+      ],
+      "api": "Element Plus-compatible",
+      "base": "ElSkeleton",
+      "source": "frontend/element-plus/src/components/basic/GSkeleton/GSkeleton.vue",
+      "types": "frontend/element-plus/src/components/basic/GSkeleton/types.ts",
+      "legacyIds": [],
+      "spec": "components/specs/g-skeleton.json",
+      "files": [
+        "frontend/element-plus/src/components/basic/GSkeleton/GSkeleton.vue",
+        "frontend/element-plus/src/components/basic/GSkeleton/index.ts",
+        "frontend/element-plus/src/components/basic/GSkeleton/style.scss",
+        "frontend/element-plus/src/components/basic/GSkeleton/types.ts"
+      ],
+      "tokens": [
+        "--g-font-family"
+      ],
+      "dependencies": []
+    },
+    "g-status-tag": {
+      "schemaVersion": "1.4",
+      "id": "g-status-tag",
+      "assetVersion": "1.5.0",
+      "name": "GStatusTag",
+      "level": "business",
+      "useWhen": [
+        "设备状态",
+        "任务状态",
+        "告警等级"
+      ],
+      "states": [
+        "normal",
+        "success",
+        "warning",
+        "danger",
+        "offline"
+      ],
+      "api": "typed-props-and-events",
+      "base": null,
+      "source": "frontend/element-plus/src/components/business/GStatusTag/GStatusTag.vue",
+      "types": null,
+      "legacyIds": [],
+      "spec": "components/specs/g-status-tag.json",
+      "files": [
+        "frontend/element-plus/src/components/business/GStatusTag/GStatusTag.vue",
+        "frontend/element-plus/src/components/business/GStatusTag/index.ts"
+      ],
+      "tokens": [],
+      "dependencies": []
+    },
+    "g-steps": {
+      "schemaVersion": "1.4",
+      "id": "g-steps",
+      "assetVersion": "1.5.0",
+      "name": "GSteps",
+      "level": "basic",
+      "useWhen": [
+        "流程进度"
+      ],
+      "states": [
+        "default",
+        "hover",
+        "active",
+        "focus",
+        "disabled"
+      ],
+      "api": "Element Plus-compatible",
+      "base": "ElSteps",
+      "source": "frontend/element-plus/src/components/basic/GSteps/GSteps.vue",
+      "types": "frontend/element-plus/src/components/basic/GSteps/types.ts",
+      "legacyIds": [],
+      "spec": "components/specs/g-steps.json",
+      "files": [
+        "frontend/element-plus/src/components/basic/GSteps/GSteps.vue",
+        "frontend/element-plus/src/components/basic/GSteps/index.ts",
+        "frontend/element-plus/src/components/basic/GSteps/style.scss",
+        "frontend/element-plus/src/components/basic/GSteps/types.ts"
+      ],
+      "tokens": [
+        "--g-font-family"
+      ],
+      "dependencies": []
+    },
+    "g-switch": {
+      "schemaVersion": "1.4",
+      "id": "g-switch",
+      "assetVersion": "1.5.0",
+      "name": "GSwitch",
+      "level": "basic",
+      "useWhen": [
+        "二元状态切换"
+      ],
+      "states": [
+        "default",
+        "hover",
+        "active",
+        "focus",
+        "disabled"
+      ],
+      "api": "Element Plus-compatible",
+      "base": "ElSwitch",
+      "source": "frontend/element-plus/src/components/basic/GSwitch/GSwitch.vue",
+      "types": "frontend/element-plus/src/components/basic/GSwitch/types.ts",
+      "legacyIds": [],
+      "spec": "components/specs/g-switch.json",
+      "files": [
+        "frontend/element-plus/src/components/basic/GSwitch/GSwitch.vue",
+        "frontend/element-plus/src/components/basic/GSwitch/index.ts",
+        "frontend/element-plus/src/components/basic/GSwitch/style.scss",
+        "frontend/element-plus/src/components/basic/GSwitch/types.ts"
+      ],
+      "tokens": [
+        "--g-font-family"
+      ],
+      "dependencies": []
+    },
+    "g-table-toolbar": {
+      "schemaVersion": "1.4",
+      "id": "g-table-toolbar",
+      "assetVersion": "1.5.0",
+      "name": "GTableToolbar",
+      "level": "business",
+      "useWhen": [
+        "表格标题与工具操作区"
+      ],
+      "states": [
+        "default",
+        "loading",
+        "empty",
+        "error",
+        "disabled"
+      ],
+      "api": "typed-props-and-events",
+      "base": null,
+      "source": "frontend/element-plus/src/components/business/GTableToolbar/GTableToolbar.vue",
+      "types": "frontend/element-plus/src/components/business/GTableToolbar/types.ts",
+      "legacyIds": [
+        "gtabletoolbar"
+      ],
+      "spec": "components/specs/g-table-toolbar.json",
+      "files": [
+        "frontend/element-plus/src/components/business/GTableToolbar/GTableToolbar.vue",
+        "frontend/element-plus/src/components/business/GTableToolbar/index.ts",
+        "frontend/element-plus/src/components/business/GTableToolbar/style.scss",
+        "frontend/element-plus/src/components/business/GTableToolbar/types.ts"
+      ],
+      "tokens": [
+        "--font-size-small",
+        "--g-text-secondary",
+        "--space-12",
+        "--space-8"
+      ],
+      "dependencies": []
+    },
+    "g-table": {
+      "schemaVersion": "1.4",
+      "id": "g-table",
+      "assetVersion": "1.5.0",
+      "name": "GTable",
+      "level": "basic",
+      "useWhen": [
+        "结构化数据展示"
+      ],
+      "states": [
+        "loading",
+        "empty",
+        "selection"
+      ],
+      "api": "Element Plus-compatible",
+      "base": "ElTable",
+      "source": "frontend/element-plus/src/components/basic/GTable/GTable.vue",
+      "types": "frontend/element-plus/src/components/basic/GTable/types.ts",
+      "legacyIds": [],
+      "spec": "components/specs/g-table.json",
+      "files": [
+        "frontend/element-plus/src/components/basic/GTable/GTable.vue",
+        "frontend/element-plus/src/components/basic/GTable/index.ts",
+        "frontend/element-plus/src/components/basic/GTable/style.scss",
+        "frontend/element-plus/src/components/basic/GTable/types.ts"
+      ],
+      "tokens": [
+        "--g-bg-hover",
+        "--g-border"
+      ],
+      "dependencies": []
+    },
+    "g-tabs": {
+      "schemaVersion": "1.4",
+      "id": "g-tabs",
+      "assetVersion": "1.5.0",
+      "name": "GTabs",
+      "level": "basic",
+      "useWhen": [
+        "同层内容切换"
+      ],
+      "states": [
+        "default",
+        "hover",
+        "active",
+        "focus",
+        "disabled"
+      ],
+      "api": "Element Plus-compatible",
+      "base": "ElTabs",
+      "source": "frontend/element-plus/src/components/basic/GTabs/GTabs.vue",
+      "types": "frontend/element-plus/src/components/basic/GTabs/types.ts",
+      "legacyIds": [],
+      "spec": "components/specs/g-tabs.json",
+      "files": [
+        "frontend/element-plus/src/components/basic/GTabs/GTabs.vue",
+        "frontend/element-plus/src/components/basic/GTabs/index.ts",
+        "frontend/element-plus/src/components/basic/GTabs/style.scss",
+        "frontend/element-plus/src/components/basic/GTabs/types.ts"
+      ],
+      "tokens": [
+        "--g-font-family"
+      ],
+      "dependencies": []
+    },
+    "g-tag": {
+      "schemaVersion": "1.4",
+      "id": "g-tag",
+      "assetVersion": "1.5.0",
+      "name": "GTag",
+      "level": "basic",
+      "useWhen": [
+        "状态和分类标记"
+      ],
+      "states": [
+        "default",
+        "hover",
+        "active",
+        "focus",
+        "disabled"
+      ],
+      "api": "Element Plus-compatible",
+      "base": "ElTag",
+      "source": "frontend/element-plus/src/components/basic/GTag/GTag.vue",
+      "types": "frontend/element-plus/src/components/basic/GTag/types.ts",
+      "legacyIds": [],
+      "spec": "components/specs/g-tag.json",
+      "files": [
+        "frontend/element-plus/src/components/basic/GTag/GTag.vue",
+        "frontend/element-plus/src/components/basic/GTag/index.ts",
+        "frontend/element-plus/src/components/basic/GTag/style.scss",
+        "frontend/element-plus/src/components/basic/GTag/types.ts"
+      ],
+      "tokens": [
+        "--g-font-family"
+      ],
+      "dependencies": []
+    },
+    "g-textarea": {
+      "schemaVersion": "1.4",
+      "id": "g-textarea",
+      "assetVersion": "1.5.0",
+      "name": "GTextarea",
+      "level": "basic",
+      "useWhen": [
+        "多行文本录入"
+      ],
+      "states": [
+        "default",
+        "hover",
+        "active",
+        "focus",
+        "disabled"
+      ],
+      "api": "Element Plus-compatible",
+      "base": "ElInput",
+      "source": "frontend/element-plus/src/components/basic/GTextarea/GTextarea.vue",
+      "types": "frontend/element-plus/src/components/basic/GTextarea/types.ts",
+      "legacyIds": [],
+      "spec": "components/specs/g-textarea.json",
+      "files": [
+        "frontend/element-plus/src/components/basic/GTextarea/GTextarea.vue",
+        "frontend/element-plus/src/components/basic/GTextarea/index.ts",
+        "frontend/element-plus/src/components/basic/GTextarea/style.scss",
+        "frontend/element-plus/src/components/basic/GTextarea/types.ts"
+      ],
+      "tokens": [
+        "--g-font-family"
+      ],
+      "dependencies": []
+    },
+    "g-time-picker": {
+      "schemaVersion": "1.4",
+      "id": "g-time-picker",
+      "assetVersion": "1.5.0",
+      "name": "GTimePicker",
+      "level": "basic",
+      "useWhen": [
+        "时间选择"
+      ],
+      "states": [
+        "default",
+        "hover",
+        "active",
+        "focus",
+        "disabled"
+      ],
+      "api": "Element Plus-compatible",
+      "base": "ElTimePicker",
+      "source": "frontend/element-plus/src/components/basic/GTimePicker/GTimePicker.vue",
+      "types": "frontend/element-plus/src/components/basic/GTimePicker/types.ts",
+      "legacyIds": [],
+      "spec": "components/specs/g-time-picker.json",
+      "files": [
+        "frontend/element-plus/src/components/basic/GTimePicker/GTimePicker.vue",
+        "frontend/element-plus/src/components/basic/GTimePicker/index.ts",
+        "frontend/element-plus/src/components/basic/GTimePicker/style.scss",
+        "frontend/element-plus/src/components/basic/GTimePicker/types.ts"
+      ],
+      "tokens": [
+        "--g-font-family"
+      ],
+      "dependencies": []
+    },
+    "g-timeline-pro": {
+      "schemaVersion": "1.4",
+      "id": "g-timeline-pro",
+      "assetVersion": "1.5.0",
+      "name": "GTimelinePro",
+      "level": "complex",
+      "useWhen": [
+        "处置记录",
+        "事件追踪",
+        "恢复过程"
+      ],
+      "states": [
+        "default"
+      ],
+      "api": "typed-props-and-events",
+      "base": null,
+      "source": "frontend/element-plus/src/components/complex/GTimelinePro/GTimelinePro.vue",
+      "types": null,
+      "legacyIds": [],
+      "spec": "components/specs/g-timeline-pro.json",
+      "files": [
+        "frontend/element-plus/src/components/complex/GTimelinePro/GTimelinePro.vue",
+        "frontend/element-plus/src/components/complex/GTimelinePro/index.ts"
+      ],
+      "tokens": [],
+      "dependencies": []
+    },
+    "g-tooltip": {
+      "schemaVersion": "1.4",
+      "id": "g-tooltip",
+      "assetVersion": "1.5.0",
+      "name": "GTooltip",
+      "level": "basic",
+      "useWhen": [
+        "悬停辅助说明"
+      ],
+      "states": [
+        "default",
+        "hover",
+        "active",
+        "focus",
+        "disabled"
+      ],
+      "api": "Element Plus-compatible",
+      "base": "ElTooltip",
+      "source": "frontend/element-plus/src/components/basic/GTooltip/GTooltip.vue",
+      "types": "frontend/element-plus/src/components/basic/GTooltip/types.ts",
+      "legacyIds": [],
+      "spec": "components/specs/g-tooltip.json",
+      "files": [
+        "frontend/element-plus/src/components/basic/GTooltip/GTooltip.vue",
+        "frontend/element-plus/src/components/basic/GTooltip/index.ts",
+        "frontend/element-plus/src/components/basic/GTooltip/style.scss",
+        "frontend/element-plus/src/components/basic/GTooltip/types.ts"
+      ],
+      "tokens": [
+        "--g-font-family"
+      ],
+      "dependencies": []
+    },
+    "g-topology": {
+      "schemaVersion": "1.4",
+      "id": "g-topology",
+      "assetVersion": "1.5.0",
+      "name": "GTopology",
+      "level": "complex",
+      "useWhen": [
+        "网络拓扑",
+        "服务依赖",
+        "设备关系"
+      ],
+      "states": [
+        "default"
+      ],
+      "api": "typed-props-and-events",
+      "base": null,
+      "source": "frontend/element-plus/src/components/complex/GTopology/GTopology.vue",
+      "types": "frontend/element-plus/src/components/complex/GTopology/types.ts",
+      "legacyIds": [],
+      "spec": "components/specs/g-topology.json",
+      "files": [
+        "frontend/element-plus/src/components/complex/GTopology/GTopology.vue",
+        "frontend/element-plus/src/components/complex/GTopology/index.ts",
+        "frontend/element-plus/src/components/complex/GTopology/types.ts"
+      ],
+      "tokens": [
+        "--border-width-normal",
+        "--color-icon-inverse",
+        "--font-size-small",
+        "--g-accent",
+        "--g-bg-page",
+        "--g-bg-surface",
+        "--g-border",
+        "--g-focus",
+        "--g-success",
+        "--g-text-disabled",
+        "--g-text-primary",
+        "--g-topology-node-normal",
+        "--g-urgent",
+        "--g-warning",
+        "--radius-medium",
+        "--space-12",
+        "--space-16",
+        "--space-20",
+        "--space-6",
+        "--spec-gtopology-font-size",
+        "--spec-gtopology-font-size-2",
+        "--spec-gtopology-height",
+        "--spec-gtopology-min-height",
+        "--spec-gtopology-width"
+      ],
+      "dependencies": []
+    },
+    "g-transfer": {
+      "schemaVersion": "1.4",
+      "id": "g-transfer",
+      "assetVersion": "1.5.0",
+      "name": "GTransfer",
+      "level": "basic",
+      "useWhen": [
+        "双栏数据穿梭"
+      ],
+      "states": [
+        "default",
+        "hover",
+        "active",
+        "focus",
+        "disabled"
+      ],
+      "api": "Element Plus-compatible",
+      "base": "ElTransfer",
+      "source": "frontend/element-plus/src/components/basic/GTransfer/GTransfer.vue",
+      "types": "frontend/element-plus/src/components/basic/GTransfer/types.ts",
+      "legacyIds": [],
+      "spec": "components/specs/g-transfer.json",
+      "files": [
+        "frontend/element-plus/src/components/basic/GTransfer/GTransfer.vue",
+        "frontend/element-plus/src/components/basic/GTransfer/index.ts",
+        "frontend/element-plus/src/components/basic/GTransfer/style.scss",
+        "frontend/element-plus/src/components/basic/GTransfer/types.ts"
+      ],
+      "tokens": [
+        "--g-font-family"
+      ],
+      "dependencies": []
+    },
+    "g-tree-select": {
+      "schemaVersion": "1.4",
+      "id": "g-tree-select",
+      "assetVersion": "1.5.0",
+      "name": "GTreeSelect",
+      "level": "basic",
+      "useWhen": [
+        "树形数据选择"
+      ],
+      "states": [
+        "default",
+        "hover",
+        "active",
+        "focus",
+        "disabled"
+      ],
+      "api": "Element Plus-compatible",
+      "base": "ElTreeSelect",
+      "source": "frontend/element-plus/src/components/basic/GTreeSelect/GTreeSelect.vue",
+      "types": "frontend/element-plus/src/components/basic/GTreeSelect/types.ts",
+      "legacyIds": [],
+      "spec": "components/specs/g-tree-select.json",
+      "files": [
+        "frontend/element-plus/src/components/basic/GTreeSelect/GTreeSelect.vue",
+        "frontend/element-plus/src/components/basic/GTreeSelect/index.ts",
+        "frontend/element-plus/src/components/basic/GTreeSelect/style.scss",
+        "frontend/element-plus/src/components/basic/GTreeSelect/types.ts"
+      ],
+      "tokens": [
+        "--g-font-family"
+      ],
+      "dependencies": []
+    },
+    "g-tree-v2": {
+      "schemaVersion": "1.4",
+      "id": "g-tree-v2",
+      "assetVersion": "1.5.0",
+      "name": "GTreeV2",
+      "level": "basic",
+      "useWhen": [
+        "大数据虚拟树"
+      ],
+      "states": [
+        "default",
+        "hover",
+        "active",
+        "focus",
+        "disabled"
+      ],
+      "api": "Element Plus-compatible",
+      "base": "ElTreeV2",
+      "source": "frontend/element-plus/src/components/basic/GTreeV2/GTreeV2.vue",
+      "types": "frontend/element-plus/src/components/basic/GTreeV2/types.ts",
+      "legacyIds": [],
+      "spec": "components/specs/g-tree-v2.json",
+      "files": [
+        "frontend/element-plus/src/components/basic/GTreeV2/GTreeV2.vue",
+        "frontend/element-plus/src/components/basic/GTreeV2/index.ts",
+        "frontend/element-plus/src/components/basic/GTreeV2/style.scss",
+        "frontend/element-plus/src/components/basic/GTreeV2/types.ts"
+      ],
+      "tokens": [
+        "--g-font-family"
+      ],
+      "dependencies": []
+    },
+    "g-tree": {
+      "schemaVersion": "1.4",
+      "id": "g-tree",
+      "assetVersion": "1.5.0",
+      "name": "GTree",
+      "level": "basic",
+      "useWhen": [
+        "层级数据树"
+      ],
+      "states": [
+        "default",
+        "hover",
+        "active",
+        "focus",
+        "disabled"
+      ],
+      "api": "Element Plus-compatible",
+      "base": "ElTree",
+      "source": "frontend/element-plus/src/components/basic/GTree/GTree.vue",
+      "types": "frontend/element-plus/src/components/basic/GTree/types.ts",
+      "legacyIds": [],
+      "spec": "components/specs/g-tree.json",
+      "files": [
+        "frontend/element-plus/src/components/basic/GTree/GTree.vue",
+        "frontend/element-plus/src/components/basic/GTree/index.ts",
+        "frontend/element-plus/src/components/basic/GTree/style.scss",
+        "frontend/element-plus/src/components/basic/GTree/types.ts"
+      ],
+      "tokens": [
+        "--g-font-family"
+      ],
+      "dependencies": []
+    },
+    "g-upload": {
+      "schemaVersion": "1.4",
+      "id": "g-upload",
+      "assetVersion": "1.5.0",
+      "name": "GUpload",
+      "level": "basic",
+      "useWhen": [
+        "文件上传"
+      ],
+      "states": [
+        "default",
+        "hover",
+        "active",
+        "focus",
+        "disabled"
+      ],
+      "api": "Element Plus-compatible",
+      "base": "ElUpload",
+      "source": "frontend/element-plus/src/components/basic/GUpload/GUpload.vue",
+      "types": "frontend/element-plus/src/components/basic/GUpload/types.ts",
+      "legacyIds": [],
+      "spec": "components/specs/g-upload.json",
+      "files": [
+        "frontend/element-plus/src/components/basic/GUpload/GUpload.vue",
+        "frontend/element-plus/src/components/basic/GUpload/index.ts",
+        "frontend/element-plus/src/components/basic/GUpload/style.scss",
+        "frontend/element-plus/src/components/basic/GUpload/types.ts"
+      ],
+      "tokens": [
+        "--g-font-family"
+      ],
+      "dependencies": []
+    }
+  }
+}

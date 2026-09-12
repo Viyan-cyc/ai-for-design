@@ -1,0 +1,22 @@
+{
+  "schemaVersion": "1.4",
+  "id": "g-badge",
+  "assetVersion": "1.5.0",
+  "name": "GBadge",
+  "level": "basic",
+  "useWhen": [
+    "数量与提醒标记"
+  ],
+  "states": [
+    "default",
+    "hover",
+    "active",
+    "focus",
+    "disabled"
+  ],
+  "api": "Element Plus-compatible",
+  "base": "ElBadge",
+  "source": "frontend/element-plus/src/components/basic/GBadge/GBadge.vue",
+  "types": "frontend/element-plus/src/components/basic/GBadge/types.ts",
+  "legacyIds": []
+}

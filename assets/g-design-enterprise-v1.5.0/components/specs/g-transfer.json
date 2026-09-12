@@ -1,0 +1,22 @@
+{
+  "schemaVersion": "1.4",
+  "id": "g-transfer",
+  "assetVersion": "1.5.0",
+  "name": "GTransfer",
+  "level": "basic",
+  "useWhen": [
+    "双栏数据穿梭"
+  ],
+  "states": [
+    "default",
+    "hover",
+    "active",
+    "focus",
+    "disabled"
+  ],
+  "api": "Element Plus-compatible",
+  "base": "ElTransfer",
+  "source": "frontend/element-plus/src/components/basic/GTransfer/GTransfer.vue",
+  "types": "frontend/element-plus/src/components/basic/GTransfer/types.ts",
+  "legacyIds": []
+}

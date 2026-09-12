@@ -1,0 +1,12 @@
+{
+  "id": "lucide-offline",
+  "version": "1.43.0",
+  "license": "ISC",
+  "sourcePackage": "lucide-static@1.43.0",
+  "canonicalNodeData": "../../../src/icons/icon-nodes.json",
+  "aliases": "../../../src/icons/icon-aliases.json",
+  "tags": "tags.json",
+  "svgExport": "../../../../../scripts/export_icons.py",
+  "names": 2077,
+  "networkRequired": false
+}

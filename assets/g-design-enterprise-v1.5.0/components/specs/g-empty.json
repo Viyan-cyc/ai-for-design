@@ -1,0 +1,22 @@
+{
+  "schemaVersion": "1.4",
+  "id": "g-empty",
+  "assetVersion": "1.5.0",
+  "name": "GEmpty",
+  "level": "basic",
+  "useWhen": [
+    "空数据状态"
+  ],
+  "states": [
+    "default",
+    "hover",
+    "active",
+    "focus",
+    "disabled"
+  ],
+  "api": "Element Plus-compatible",
+  "base": "ElEmpty",
+  "source": "frontend/element-plus/src/components/basic/GEmpty/GEmpty.vue",
+  "types": "frontend/element-plus/src/components/basic/GEmpty/types.ts",
+  "legacyIds": []
+}

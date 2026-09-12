@@ -1,0 +1,22 @@
+{
+  "schemaVersion": "1.4",
+  "id": "g-cascader",
+  "assetVersion": "1.5.0",
+  "name": "GCascader",
+  "level": "basic",
+  "useWhen": [
+    "层级数据选择"
+  ],
+  "states": [
+    "default",
+    "hover",
+    "active",
+    "focus",
+    "disabled"
+  ],
+  "api": "Element Plus-compatible",
+  "base": "ElCascader",
+  "source": "frontend/element-plus/src/components/basic/GCascader/GCascader.vue",
+  "types": "frontend/element-plus/src/components/basic/GCascader/types.ts",
+  "legacyIds": []
+}

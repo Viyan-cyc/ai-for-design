@@ -1,0 +1,24 @@
+{
+  "schemaVersion": "1.4",
+  "id": "g-form-section",
+  "assetVersion": "1.5.0",
+  "name": "GFormSection",
+  "level": "business",
+  "useWhen": [
+    "分组表单区块"
+  ],
+  "states": [
+    "default",
+    "loading",
+    "empty",
+    "error",
+    "disabled"
+  ],
+  "api": "typed-props-and-events",
+  "base": null,
+  "source": "frontend/element-plus/src/components/business/GFormSection/GFormSection.vue",
+  "types": "frontend/element-plus/src/components/business/GFormSection/types.ts",
+  "legacyIds": [
+    "gformsection"
+  ]
+}

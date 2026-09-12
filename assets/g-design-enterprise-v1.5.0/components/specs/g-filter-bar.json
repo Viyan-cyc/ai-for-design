@@ -1,0 +1,24 @@
+{
+  "schemaVersion": "1.4",
+  "id": "g-filter-bar",
+  "assetVersion": "1.5.0",
+  "name": "GFilterBar",
+  "level": "business",
+  "useWhen": [
+    "多条件筛选与展开收起"
+  ],
+  "states": [
+    "default",
+    "loading",
+    "empty",
+    "error",
+    "disabled"
+  ],
+  "api": "typed-props-and-events",
+  "base": null,
+  "source": "frontend/element-plus/src/components/business/GFilterBar/GFilterBar.vue",
+  "types": "frontend/element-plus/src/components/business/GFilterBar/types.ts",
+  "legacyIds": [
+    "gfilterbar"
+  ]
+}

@@ -1,0 +1,193 @@
+/* GENERATED from design/tokens.json. Do not edit generated values. */
+/* H Design 色彩.docx 映射。原文与使用规则：source/h-design-color-spec.md、source/h-design-color-mappings.md。 */
+/* 严格采用 Word 图20代码语义表 HEX；与通用 UI 色板不同的专用值单独保存。 */
+:root,
+[data-theme="light"] {
+  --color-code-background: #FAFAFA;
+  --color-code-foreground: #393939;
+  --color-code-comment: #939393;
+  --color-code-quote: #939393;
+  --color-code-bullet: #939393;
+  --color-code-javadoc: #939393;
+  --color-code-doctag: #939393;
+  --color-code-link: #2E86DE;
+  --color-code-keyword: #C98208;
+  --color-code-punctuation: #393939;
+  --color-code-operator: #393939;
+  --color-code-section: #939393;
+  --color-code-meta: #C76207;
+  --color-code-type: #5531EB;
+  --color-code-title: #058358;
+  --color-code-class: #0067D1;
+  --color-code-name: #0067D1;
+  --color-code-function: #0067D1;
+  --color-code-params: #393939;
+  --color-code-built-in: #127180;
+  --color-code-attr: #5531EB;
+  --color-code-value: #D41DBC;
+  --color-code-property: #0067D1;
+  --color-code-variable: #393939;
+  --color-code-string: #393939;
+  --color-code-literal: #393939;
+  --color-code-number: #393939;
+  --color-code-regexp: #393939;
+  --color-code-boolean: #C98208;
+  --color-code-symbol: #393939;
+  --color-code-template-variable: #393939;
+  --color-code-subst: #393939;
+  --color-code-tag: #393939;
+  --color-code-selector-tag: #393939;
+  --color-code-selector-class: #393939;
+  --color-code-selector-id: #393939;
+  --color-code-error: #E02128;
+}
+[data-theme="dark"] {
+  --color-code-background: #131416;
+  --color-code-foreground: #DFDFDF;
+  --color-code-comment: #777777;
+  --color-code-quote: #777777;
+  --color-code-bullet: #777777;
+  --color-code-javadoc: #777777;
+  --color-code-doctag: #777777;
+  --color-code-link: #2E86DE;
+  --color-code-keyword: #F8CD75;
+  --color-code-punctuation: #DFDFDF;
+  --color-code-operator: #DFDFDF;
+  --color-code-section: #777777;
+  --color-code-meta: #C76207;
+  --color-code-type: #A89FF9;
+  --color-code-title: #36C18D;
+  --color-code-class: #5CA2E9;
+  --color-code-name: #5CA2E9;
+  --color-code-function: #5CA2E9;
+  --color-code-params: #DFDFDF;
+  --color-code-built-in: #55CCD9;
+  --color-code-attr: #A89FF9;
+  --color-code-value: #EB74DF;
+  --color-code-property: #5CA2E9;
+  --color-code-variable: #DFDFDF;
+  --color-code-string: #DFDFDF;
+  --color-code-literal: #DFDFDF;
+  --color-code-number: #DFDFDF;
+  --color-code-regexp: #DFDFDF;
+  --color-code-boolean: #F8CD75;
+  --color-code-symbol: #DFDFDF;
+  --color-code-template-variable: #DFDFDF;
+  --color-code-subst: #DFDFDF;
+  --color-code-tag: #DFDFDF;
+  --color-code-selector-tag: #DFDFDF;
+  --color-code-selector-class: #DFDFDF;
+  --color-code-selector-id: #DFDFDF;
+  --color-code-error: #EE696F;
+}
+
+/* 可选的 Highlight.js 样式：只对 .h-design-code 容器内生效。 */
+.h-design-code .hljs {
+  background: var(--color-code-background);
+  color: var(--color-code-foreground);
+}
+.h-design-code .hljs-comment {
+  color: var(--color-code-comment);
+}
+.h-design-code .hljs-quote {
+  color: var(--color-code-quote);
+}
+.h-design-code .hljs-bullet {
+  color: var(--color-code-bullet);
+}
+.h-design-code .hljs-javadoc {
+  color: var(--color-code-javadoc);
+}
+.h-design-code .hljs-doctag {
+  color: var(--color-code-doctag);
+}
+.h-design-code .hljs-link {
+  color: var(--color-code-link);
+}
+.h-design-code .hljs-keyword {
+  color: var(--color-code-keyword);
+}
+.h-design-code .hljs-punctuation {
+  color: var(--color-code-punctuation);
+}
+.h-design-code .hljs-operator {
+  color: var(--color-code-operator);
+}
+.h-design-code .hljs-section {
+  color: var(--color-code-section);
+}
+.h-design-code .hljs-meta {
+  color: var(--color-code-meta);
+}
+.h-design-code .hljs-type {
+  color: var(--color-code-type);
+}
+.h-design-code .hljs-title {
+  color: var(--color-code-title);
+}
+.h-design-code .hljs-class {
+  color: var(--color-code-class);
+}
+.h-design-code .hljs-name {
+  color: var(--color-code-name);
+}
+.h-design-code .hljs-function {
+  color: var(--color-code-function);
+}
+.h-design-code .hljs-params {
+  color: var(--color-code-params);
+}
+.h-design-code .hljs-built_in {
+  color: var(--color-code-built-in);
+}
+.h-design-code .hljs-attr {
+  color: var(--color-code-attr);
+}
+.h-design-code .hljs-value {
+  color: var(--color-code-value);
+}
+.h-design-code .hljs-property {
+  color: var(--color-code-property);
+}
+.h-design-code .hljs-variable {
+  color: var(--color-code-variable);
+}
+.h-design-code .hljs-string {
+  color: var(--color-code-string);
+}
+.h-design-code .hljs-literal {
+  color: var(--color-code-literal);
+}
+.h-design-code .hljs-number {
+  color: var(--color-code-number);
+}
+.h-design-code .hljs-regexp {
+  color: var(--color-code-regexp);
+}
+.h-design-code .hljs-boolean {
+  color: var(--color-code-boolean);
+}
+.h-design-code .hljs-symbol {
+  color: var(--color-code-symbol);
+}
+.h-design-code .hljs-template-variable {
+  color: var(--color-code-template-variable);
+}
+.h-design-code .hljs-subst {
+  color: var(--color-code-subst);
+}
+.h-design-code .hljs-tag {
+  color: var(--color-code-tag);
+}
+.h-design-code .hljs-selector-tag {
+  color: var(--color-code-selector-tag);
+}
+.h-design-code .hljs-selector-class {
+  color: var(--color-code-selector-class);
+}
+.h-design-code .hljs-selector-id {
+  color: var(--color-code-selector-id);
+}
+.h-design-code .hljs-error {
+  color: var(--color-code-error);
+}

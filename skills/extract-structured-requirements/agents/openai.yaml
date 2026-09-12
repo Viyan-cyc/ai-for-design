@@ -1,0 +1,7 @@
+interface:
+  display_name: "AI for Design · 结构化需求"
+  short_description: "由设计师选定输入，先出可确认MD，再固化为YAML"
+  brand_color: "#45E0CD"
+  default_prompt: "Use $extract-structured-requirements to organize the provided information into a requirement draft, reusing known paths and asking only for essential missing information."
+policy:
+  allow_implicit_invocation: true
