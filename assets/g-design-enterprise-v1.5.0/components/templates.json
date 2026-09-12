@@ -5,7 +5,7 @@
     "alarm-impact-page": {
       "schemaVersion": "1.4",
       "id": "alarm-impact-page",
-      "assetVersion": "1.5.0",
+      "assetVersion": "1.5.1",
       "name": "AlarmImpactPage",
       "useWhen": [
         "告警分析",
@@ -85,7 +85,7 @@
     "device-management-page": {
       "schemaVersion": "1.4",
       "id": "device-management-page",
-      "assetVersion": "1.5.0",
+      "assetVersion": "1.5.1",
       "name": "DeviceManagementPage",
       "useWhen": [
         "设备管理",
@@ -175,7 +175,7 @@
     "edit-form-page": {
       "schemaVersion": "1.4",
       "id": "edit-form-page",
-      "assetVersion": "1.5.0",
+      "assetVersion": "1.5.1",
       "name": "EditFormPage",
       "useWhen": [
         "新建",
@@ -249,7 +249,7 @@
     "object-detail-page": {
       "schemaVersion": "1.4",
       "id": "object-detail-page",
-      "assetVersion": "1.5.0",
+      "assetVersion": "1.5.1",
       "name": "ObjectDetailPage",
       "useWhen": [
         "设备详情",
@@ -327,7 +327,7 @@
     "standard-list-page": {
       "schemaVersion": "1.4",
       "id": "standard-list-page",
-      "assetVersion": "1.5.0",
+      "assetVersion": "1.5.1",
       "name": "StandardListPage",
       "useWhen": [
         "查询列表",
@@ -411,7 +411,7 @@
     "topology-monitoring-page": {
       "schemaVersion": "1.4",
       "id": "topology-monitoring-page",
-      "assetVersion": "1.5.0",
+      "assetVersion": "1.5.1",
       "name": "TopologyMonitoringPage",
       "useWhen": [
         "网络监控",

@@ -5,7 +5,7 @@
     "g-advanced-filter": {
       "schemaVersion": "1.4",
       "id": "g-advanced-filter",
-      "assetVersion": "1.5.0",
+      "assetVersion": "1.5.1",
       "name": "GAdvancedFilter",
       "level": "business",
       "useWhen": [
@@ -42,7 +42,7 @@
     "g-alarm-topology": {
       "schemaVersion": "1.4",
       "id": "g-alarm-topology",
-      "assetVersion": "1.5.0",
+      "assetVersion": "1.5.1",
       "name": "GAlarmTopology",
       "level": "complex",
       "useWhen": [
@@ -96,7 +96,7 @@
     "g-alert": {
       "schemaVersion": "1.4",
       "id": "g-alert",
-      "assetVersion": "1.5.0",
+      "assetVersion": "1.5.1",
       "name": "GAlert",
       "level": "basic",
       "useWhen": [
@@ -127,7 +127,7 @@
     "g-autocomplete": {
       "schemaVersion": "1.4",
       "id": "g-autocomplete",
-      "assetVersion": "1.5.0",
+      "assetVersion": "1.5.1",
       "name": "GAutocomplete",
       "level": "basic",
       "useWhen": [
@@ -158,7 +158,7 @@
     "g-badge": {
       "schemaVersion": "1.4",
       "id": "g-badge",
-      "assetVersion": "1.5.0",
+      "assetVersion": "1.5.1",
       "name": "GBadge",
       "level": "basic",
       "useWhen": [
@@ -189,7 +189,7 @@
     "g-batch-action-bar": {
       "schemaVersion": "1.4",
       "id": "g-batch-action-bar",
-      "assetVersion": "1.5.0",
+      "assetVersion": "1.5.1",
       "name": "GBatchActionBar",
       "level": "business",
       "useWhen": [
@@ -228,7 +228,7 @@
     "g-breadcrumb": {
       "schemaVersion": "1.4",
       "id": "g-breadcrumb",
-      "assetVersion": "1.5.0",
+      "assetVersion": "1.5.1",
       "name": "GBreadcrumb",
       "level": "basic",
       "useWhen": [
@@ -259,7 +259,7 @@
     "g-button": {
       "schemaVersion": "1.4",
       "id": "g-button",
-      "assetVersion": "1.5.0",
+      "assetVersion": "1.5.1",
       "name": "GButton",
       "level": "basic",
       "useWhen": [
@@ -291,7 +291,7 @@
     "g-cascader": {
       "schemaVersion": "1.4",
       "id": "g-cascader",
-      "assetVersion": "1.5.0",
+      "assetVersion": "1.5.1",
       "name": "GCascader",
       "level": "basic",
       "useWhen": [
@@ -322,7 +322,7 @@
     "g-checkbox": {
       "schemaVersion": "1.4",
       "id": "g-checkbox",
-      "assetVersion": "1.5.0",
+      "assetVersion": "1.5.1",
       "name": "GCheckbox",
       "level": "basic",
       "useWhen": [
@@ -353,7 +353,7 @@
     "g-collapse": {
       "schemaVersion": "1.4",
       "id": "g-collapse",
-      "assetVersion": "1.5.0",
+      "assetVersion": "1.5.1",
       "name": "GCollapse",
       "level": "basic",
       "useWhen": [
@@ -384,7 +384,7 @@
     "g-dashboard-grid": {
       "schemaVersion": "1.4",
       "id": "g-dashboard-grid",
-      "assetVersion": "1.5.0",
+      "assetVersion": "1.5.1",
       "name": "GDashboardGrid",
       "level": "complex",
       "useWhen": [
@@ -412,7 +412,7 @@
     "g-data-table-pro": {
       "schemaVersion": "1.4",
       "id": "g-data-table-pro",
-      "assetVersion": "1.5.0",
+      "assetVersion": "1.5.1",
       "name": "GDataTablePro",
       "level": "business",
       "useWhen": [
@@ -441,7 +441,7 @@
     "g-date-picker": {
       "schemaVersion": "1.4",
       "id": "g-date-picker",
-      "assetVersion": "1.5.0",
+      "assetVersion": "1.5.1",
       "name": "GDatePicker",
       "level": "basic",
       "useWhen": [
@@ -472,7 +472,7 @@
     "g-description-panel": {
       "schemaVersion": "1.4",
       "id": "g-description-panel",
-      "assetVersion": "1.5.0",
+      "assetVersion": "1.5.1",
       "name": "GDescriptionPanel",
       "level": "business",
       "useWhen": [
@@ -506,7 +506,7 @@
     "g-dialog": {
       "schemaVersion": "1.4",
       "id": "g-dialog",
-      "assetVersion": "1.5.0",
+      "assetVersion": "1.5.1",
       "name": "GDialog",
       "level": "basic",
       "useWhen": [
@@ -537,7 +537,7 @@
     "g-drawer": {
       "schemaVersion": "1.4",
       "id": "g-drawer",
-      "assetVersion": "1.5.0",
+      "assetVersion": "1.5.1",
       "name": "GDrawer",
       "level": "basic",
       "useWhen": [
@@ -568,7 +568,7 @@
     "g-dropdown": {
       "schemaVersion": "1.4",
       "id": "g-dropdown",
-      "assetVersion": "1.5.0",
+      "assetVersion": "1.5.1",
       "name": "GDropdown",
       "level": "basic",
       "useWhen": [
@@ -599,7 +599,7 @@
     "g-empty": {
       "schemaVersion": "1.4",
       "id": "g-empty",
-      "assetVersion": "1.5.0",
+      "assetVersion": "1.5.1",
       "name": "GEmpty",
       "level": "basic",
       "useWhen": [
@@ -630,7 +630,7 @@
     "g-filter-bar": {
       "schemaVersion": "1.4",
       "id": "g-filter-bar",
-      "assetVersion": "1.5.0",
+      "assetVersion": "1.5.1",
       "name": "GFilterBar",
       "level": "business",
       "useWhen": [
@@ -668,7 +668,7 @@
     "g-form-section": {
       "schemaVersion": "1.4",
       "id": "g-form-section",
-      "assetVersion": "1.5.0",
+      "assetVersion": "1.5.1",
       "name": "GFormSection",
       "level": "business",
       "useWhen": [
@@ -707,7 +707,7 @@
     "g-form": {
       "schemaVersion": "1.4",
       "id": "g-form",
-      "assetVersion": "1.5.0",
+      "assetVersion": "1.5.1",
       "name": "GForm",
       "level": "basic",
       "useWhen": [
@@ -738,7 +738,7 @@
     "g-icon": {
       "schemaVersion": "1.4",
       "id": "g-icon",
-      "assetVersion": "1.5.0",
+      "assetVersion": "1.5.1",
       "name": "GIcon",
       "level": "basic",
       "useWhen": [
@@ -769,7 +769,7 @@
     "g-input-number": {
       "schemaVersion": "1.4",
       "id": "g-input-number",
-      "assetVersion": "1.5.0",
+      "assetVersion": "1.5.1",
       "name": "GInputNumber",
       "level": "basic",
       "useWhen": [
@@ -800,7 +800,7 @@
     "g-input": {
       "schemaVersion": "1.4",
       "id": "g-input",
-      "assetVersion": "1.5.0",
+      "assetVersion": "1.5.1",
       "name": "GInput",
       "level": "basic",
       "useWhen": [
@@ -831,7 +831,7 @@
     "g-link": {
       "schemaVersion": "1.4",
       "id": "g-link",
-      "assetVersion": "1.5.0",
+      "assetVersion": "1.5.1",
       "name": "GLink",
       "level": "basic",
       "useWhen": [
@@ -862,7 +862,7 @@
     "g-loading": {
       "schemaVersion": "1.4",
       "id": "g-loading",
-      "assetVersion": "1.5.0",
+      "assetVersion": "1.5.1",
       "name": "GLoading",
       "level": "basic",
       "useWhen": [
@@ -888,7 +888,7 @@
     "g-menu": {
       "schemaVersion": "1.4",
       "id": "g-menu",
-      "assetVersion": "1.5.0",
+      "assetVersion": "1.5.1",
       "name": "GMenu",
       "level": "basic",
       "useWhen": [
@@ -919,7 +919,7 @@
     "g-message": {
       "schemaVersion": "1.4",
       "id": "g-message",
-      "assetVersion": "1.5.0",
+      "assetVersion": "1.5.1",
       "name": "GMessage",
       "level": "basic",
       "useWhen": [
@@ -945,7 +945,7 @@
     "g-metric-card": {
       "schemaVersion": "1.4",
       "id": "g-metric-card",
-      "assetVersion": "1.5.0",
+      "assetVersion": "1.5.1",
       "name": "GMetricCard",
       "level": "business",
       "useWhen": [
@@ -1004,7 +1004,7 @@
     "g-monitor-panel": {
       "schemaVersion": "1.4",
       "id": "g-monitor-panel",
-      "assetVersion": "1.5.0",
+      "assetVersion": "1.5.1",
       "name": "GMonitorPanel",
       "level": "complex",
       "useWhen": [
@@ -1046,7 +1046,7 @@
     "g-notification": {
       "schemaVersion": "1.4",
       "id": "g-notification",
-      "assetVersion": "1.5.0",
+      "assetVersion": "1.5.1",
       "name": "GNotification",
       "level": "basic",
       "useWhen": [
@@ -1072,7 +1072,7 @@
     "g-page-header": {
       "schemaVersion": "1.4",
       "id": "g-page-header",
-      "assetVersion": "1.5.0",
+      "assetVersion": "1.5.1",
       "name": "GPageHeader",
       "level": "business",
       "useWhen": [
@@ -1111,7 +1111,7 @@
     "g-pagination": {
       "schemaVersion": "1.4",
       "id": "g-pagination",
-      "assetVersion": "1.5.0",
+      "assetVersion": "1.5.1",
       "name": "GPagination",
       "level": "basic",
       "useWhen": [
@@ -1142,7 +1142,7 @@
     "g-permission-state": {
       "schemaVersion": "1.4",
       "id": "g-permission-state",
-      "assetVersion": "1.5.0",
+      "assetVersion": "1.5.1",
       "name": "GPermissionState",
       "level": "business",
       "useWhen": [
@@ -1176,7 +1176,7 @@
     "g-popconfirm": {
       "schemaVersion": "1.4",
       "id": "g-popconfirm",
-      "assetVersion": "1.5.0",
+      "assetVersion": "1.5.1",
       "name": "GPopconfirm",
       "level": "basic",
       "useWhen": [
@@ -1207,7 +1207,7 @@
     "g-popover": {
       "schemaVersion": "1.4",
       "id": "g-popover",
-      "assetVersion": "1.5.0",
+      "assetVersion": "1.5.1",
       "name": "GPopover",
       "level": "basic",
       "useWhen": [
@@ -1238,7 +1238,7 @@
     "g-progress": {
       "schemaVersion": "1.4",
       "id": "g-progress",
-      "assetVersion": "1.5.0",
+      "assetVersion": "1.5.1",
       "name": "GProgress",
       "level": "basic",
       "useWhen": [
@@ -1269,7 +1269,7 @@
     "g-radio": {
       "schemaVersion": "1.4",
       "id": "g-radio",
-      "assetVersion": "1.5.0",
+      "assetVersion": "1.5.1",
       "name": "GRadio",
       "level": "basic",
       "useWhen": [
@@ -1300,7 +1300,7 @@
     "g-resource-tree": {
       "schemaVersion": "1.4",
       "id": "g-resource-tree",
-      "assetVersion": "1.5.0",
+      "assetVersion": "1.5.1",
       "name": "GResourceTree",
       "level": "business",
       "useWhen": [
@@ -1337,7 +1337,7 @@
     "g-result": {
       "schemaVersion": "1.4",
       "id": "g-result",
-      "assetVersion": "1.5.0",
+      "assetVersion": "1.5.1",
       "name": "GResult",
       "level": "basic",
       "useWhen": [
@@ -1368,7 +1368,7 @@
     "g-search-bar": {
       "schemaVersion": "1.4",
       "id": "g-search-bar",
-      "assetVersion": "1.5.0",
+      "assetVersion": "1.5.1",
       "name": "GSearchBar",
       "level": "business",
       "useWhen": [
@@ -1397,7 +1397,7 @@
     "g-select": {
       "schemaVersion": "1.4",
       "id": "g-select",
-      "assetVersion": "1.5.0",
+      "assetVersion": "1.5.1",
       "name": "GSelect",
       "level": "basic",
       "useWhen": [
@@ -1428,7 +1428,7 @@
     "g-skeleton": {
       "schemaVersion": "1.4",
       "id": "g-skeleton",
-      "assetVersion": "1.5.0",
+      "assetVersion": "1.5.1",
       "name": "GSkeleton",
       "level": "basic",
       "useWhen": [
@@ -1459,7 +1459,7 @@
     "g-status-tag": {
       "schemaVersion": "1.4",
       "id": "g-status-tag",
-      "assetVersion": "1.5.0",
+      "assetVersion": "1.5.1",
       "name": "GStatusTag",
       "level": "business",
       "useWhen": [
@@ -1490,7 +1490,7 @@
     "g-steps": {
       "schemaVersion": "1.4",
       "id": "g-steps",
-      "assetVersion": "1.5.0",
+      "assetVersion": "1.5.1",
       "name": "GSteps",
       "level": "basic",
       "useWhen": [
@@ -1521,7 +1521,7 @@
     "g-switch": {
       "schemaVersion": "1.4",
       "id": "g-switch",
-      "assetVersion": "1.5.0",
+      "assetVersion": "1.5.1",
       "name": "GSwitch",
       "level": "basic",
       "useWhen": [
@@ -1552,7 +1552,7 @@
     "g-table-toolbar": {
       "schemaVersion": "1.4",
       "id": "g-table-toolbar",
-      "assetVersion": "1.5.0",
+      "assetVersion": "1.5.1",
       "name": "GTableToolbar",
       "level": "business",
       "useWhen": [
@@ -1588,7 +1588,7 @@
     "g-table": {
       "schemaVersion": "1.4",
       "id": "g-table",
-      "assetVersion": "1.5.0",
+      "assetVersion": "1.5.1",
       "name": "GTable",
       "level": "basic",
       "useWhen": [
@@ -1618,7 +1618,7 @@
     "g-tabs": {
       "schemaVersion": "1.4",
       "id": "g-tabs",
-      "assetVersion": "1.5.0",
+      "assetVersion": "1.5.1",
       "name": "GTabs",
       "level": "basic",
       "useWhen": [
@@ -1649,7 +1649,7 @@
     "g-tag": {
       "schemaVersion": "1.4",
       "id": "g-tag",
-      "assetVersion": "1.5.0",
+      "assetVersion": "1.5.1",
       "name": "GTag",
       "level": "basic",
       "useWhen": [
@@ -1680,7 +1680,7 @@
     "g-textarea": {
       "schemaVersion": "1.4",
       "id": "g-textarea",
-      "assetVersion": "1.5.0",
+      "assetVersion": "1.5.1",
       "name": "GTextarea",
       "level": "basic",
       "useWhen": [
@@ -1711,7 +1711,7 @@
     "g-time-picker": {
       "schemaVersion": "1.4",
       "id": "g-time-picker",
-      "assetVersion": "1.5.0",
+      "assetVersion": "1.5.1",
       "name": "GTimePicker",
       "level": "basic",
       "useWhen": [
@@ -1742,7 +1742,7 @@
     "g-timeline-pro": {
       "schemaVersion": "1.4",
       "id": "g-timeline-pro",
-      "assetVersion": "1.5.0",
+      "assetVersion": "1.5.1",
       "name": "GTimelinePro",
       "level": "complex",
       "useWhen": [
@@ -1769,7 +1769,7 @@
     "g-tooltip": {
       "schemaVersion": "1.4",
       "id": "g-tooltip",
-      "assetVersion": "1.5.0",
+      "assetVersion": "1.5.1",
       "name": "GTooltip",
       "level": "basic",
       "useWhen": [
@@ -1800,7 +1800,7 @@
     "g-topology": {
       "schemaVersion": "1.4",
       "id": "g-topology",
-      "assetVersion": "1.5.0",
+      "assetVersion": "1.5.1",
       "name": "GTopology",
       "level": "complex",
       "useWhen": [
@@ -1852,7 +1852,7 @@
     "g-transfer": {
       "schemaVersion": "1.4",
       "id": "g-transfer",
-      "assetVersion": "1.5.0",
+      "assetVersion": "1.5.1",
       "name": "GTransfer",
       "level": "basic",
       "useWhen": [
@@ -1883,7 +1883,7 @@
     "g-tree-select": {
       "schemaVersion": "1.4",
       "id": "g-tree-select",
-      "assetVersion": "1.5.0",
+      "assetVersion": "1.5.1",
       "name": "GTreeSelect",
       "level": "basic",
       "useWhen": [
@@ -1914,7 +1914,7 @@
     "g-tree-v2": {
       "schemaVersion": "1.4",
       "id": "g-tree-v2",
-      "assetVersion": "1.5.0",
+      "assetVersion": "1.5.1",
       "name": "GTreeV2",
       "level": "basic",
       "useWhen": [
@@ -1945,7 +1945,7 @@
     "g-tree": {
       "schemaVersion": "1.4",
       "id": "g-tree",
-      "assetVersion": "1.5.0",
+      "assetVersion": "1.5.1",
       "name": "GTree",
       "level": "basic",
       "useWhen": [
@@ -1976,7 +1976,7 @@
     "g-upload": {
       "schemaVersion": "1.4",
       "id": "g-upload",
-      "assetVersion": "1.5.0",
+      "assetVersion": "1.5.1",
       "name": "GUpload",
       "level": "basic",
       "useWhen": [

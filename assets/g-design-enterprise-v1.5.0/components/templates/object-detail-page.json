@@ -1,7 +1,7 @@
 {
   "schemaVersion": "1.4",
   "id": "object-detail-page",
-  "assetVersion": "1.5.0",
+  "assetVersion": "1.5.1",
   "name": "ObjectDetailPage",
   "useWhen": [
     "设备详情",

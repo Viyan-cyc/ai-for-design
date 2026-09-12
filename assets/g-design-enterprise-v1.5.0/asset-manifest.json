@@ -1,7 +1,7 @@
 {
   "schemaVersion": "1.4",
   "assetId": "g-design-enterprise",
-  "assetVersion": "1.5.0",
+  "assetVersion": "1.5.1",
   "name": "G Design Enterprise",
   "framework": "vue3",
   "componentBase": "element-plus@2.13.5",
@@ -45,7 +45,7 @@
     "frontend/element-plus/licenses/THIRD-PARTY-NOTICES.md",
     "frontend/element-plus/tokens/frost-decoration.css"
   ],
-  "sourceReleaseSha256": "1c417bfbd4c718c03d3d21f516768c5571f474eae42c5d33c71bd68f8d30113c",
+  "sourceReleaseSha256": "3fee09ab4505afd3a58dde5f3e9410b6eaf3e699f634e2370d87fdc91a83a9eb",
   "sourceReleaseHashFormat": "manifest-sha256 and sorted path:sha256 lines",
   "sourceLock": "release/source-lock.json",
   "materialRules": "design/frosted-glass.md"

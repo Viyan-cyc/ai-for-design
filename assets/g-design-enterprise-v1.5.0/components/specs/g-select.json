@@ -1,7 +1,7 @@
 {
   "schemaVersion": "1.4",
   "id": "g-select",
-  "assetVersion": "1.5.0",
+  "assetVersion": "1.5.1",
   "name": "GSelect",
   "level": "basic",
   "useWhen": [

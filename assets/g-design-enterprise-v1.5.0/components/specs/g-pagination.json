@@ -1,7 +1,7 @@
 {
   "schemaVersion": "1.4",
   "id": "g-pagination",
-  "assetVersion": "1.5.0",
+  "assetVersion": "1.5.1",
   "name": "GPagination",
   "level": "basic",
   "useWhen": [

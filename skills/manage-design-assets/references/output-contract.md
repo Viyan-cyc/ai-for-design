@@ -1,6 +1,6 @@
 # 资产同步输出约定
 
-`compare_assets.py` 输出 `sync-proposal.json`；`sync_to_library.py` 返回 copied、blocked、dryRun，成功写回另含 manifestVersion 与实际验证范围。人读报告只需摘要、拟修改项、决策依据与实际执行结果。
+`compare_assets.mjs` 输出 `sync-proposal.json`；`sync_to_library.mjs` 返回 copied、blocked、dryRun，成功写回另含 manifestVersion 与实际验证范围。人读报告只需摘要、拟修改项、决策依据与实际执行结果。
 
 ## 提案的维护字段
 
@@ -17,4 +17,4 @@
 
 模板注册还需在原型中提供对应配置与 Schema。脚本先检查路径和文件摘要，在临时库生成 Token、索引并校验，通过后才写入原库；versionPolicy 默认为 keep，可按用户要求选择 patch 或 minor。失败不应作为发布成功；读取 blocked 并修正具体问题。
 
-只同步提案中的源文件，不删除库资产。Token 迭代直接修改库的 design/tokens.json 后构建，不把生成 CSS 当作新的规范源。写回不代表已通过浏览器验收；脚本输出明确标注源码/配置验证范围。完整包发布时另运行包根 scripts/build_release.py --version X.Y.Z 统一版本，并按交付方式构建前端。
+只同步提案中的源文件，不删除库资产。Token 迭代直接修改库的 design/tokens.json 后构建，不把生成 CSS 当作新的规范源。写回不代表已通过浏览器验收；脚本输出明确标注源码/配置验证范围。完整包发布时另运行包根 scripts/build_release.mjs --version X.Y.Z 统一版本，并按交付方式构建前端。

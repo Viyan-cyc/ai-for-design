@@ -1,6 +1,6 @@
 {
   "name": "@g-design/enterprise",
-  "version": "1.5.0",
+  "version": "1.5.1",
   "description": "G Design enterprise UI assets based on Element Plus 2.13.5",
   "type": "module",
   "main": "dist/g-design-enterprise.js",

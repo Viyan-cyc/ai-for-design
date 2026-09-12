@@ -1,13 +1,13 @@
 {
   "schemaVersion": "1.4",
   "packageId": "ai-for-gdesign",
-  "packageVersion": "1.5.0",
+  "packageVersion": "1.5.1",
   "libraries": {
     "g-design-enterprise": {
       "root": "assets/g-design-enterprise-v1.5.0",
       "contract": "asset-library.contract.json",
       "framework": "vue3",
-      "assetVersion": "1.5.0",
+      "assetVersion": "1.5.1",
       "visualStyles": [
         "enterprise-light-dark",
         "aurora-glass",

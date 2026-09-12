@@ -8,7 +8,7 @@
       "const": "g-design-enterprise"
     },
     "assetVersion": {
-      "const": "1.5.0"
+      "const": "1.5.1"
     },
     "directionId": {
       "type": "string",

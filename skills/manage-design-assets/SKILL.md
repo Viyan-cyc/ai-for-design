@@ -17,9 +17,9 @@ description: Maintain G Design tokens, design rules and shared components; compa
 ## 从原型同步可复用组件/模板
 
 1. 读取原型 asset-selection.json 和库契约，核对库与选定资产。
-2. 运行 scripts/compare_assets.py CONTRACT PROTOTYPE LIBRARY -o proposal.json，按 [decision-rules.md](references/decision-rules.md) 区分公共资产和业务私有变化。新增资产提供 reviewed approvedIndexEntry 及配置；计算字段由生成器补齐。
-3. 运行 scripts/sync_to_library.py CONTRACT PROTOTYPE LIBRARY PROPOSAL --dry-run。沿用当前用户对具体变更的授权，未授权时才提交可评审提案确认。
+2. 运行 scripts/compare_assets.mjs CONTRACT PROTOTYPE LIBRARY -o proposal.json，按 [decision-rules.md](references/decision-rules.md) 区分公共资产和业务私有变化。新增资产提供 reviewed approvedIndexEntry 及配置；计算字段由生成器补齐。
+3. 运行 scripts/sync_to_library.mjs CONTRACT PROTOTYPE LIBRARY PROPOSAL --dry-run。沿用当前用户对具体变更的授权，未授权时才提交可评审提案确认。
 4. 已获准的提案设置 approved=true 后执行同步；脚本在临时副本验证再写入，失败保留原库。提案中的布尔值本身不构成用户授权。
-5. 完成必要构建/交互复核，报告验证范围；输出见 [output-contract.md](references/output-contract.md)。包模式同步后运行包根 scripts/build_release.py，使目录索引中的版本一致。
+5. 完成必要构建/交互复核，报告验证范围；输出见 [output-contract.md](references/output-contract.md)。包模式同步后运行包根 scripts/build_release.mjs，使目录索引中的版本一致。
 
 同步脚本处理组件/模板包；Token、共享运行时和图标按第一条路径维护。仅跨阶段任务读取包根 workflow.md，资产修改不会自动触发部署或发布。

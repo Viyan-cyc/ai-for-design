@@ -13,6 +13,4 @@
 
 本包提供源码；dist/、node_modules/ 和独立 SVG 不随包附带。组件库执行 npm run build:library，SVG 使用库内 scripts/export_icons.mjs 按需离线导出。项目应先构建组件库再使用其 npm 导出；生成原型直接使用源码。变更与实测体积见 UPGRADE-LOG.md，当前验证范围见 VALIDATION.md。
 
-> 过渡说明（W3-N5 完成前）：仓库内 `installer/install_skills.py`、`scripts/build_release.py`、`tests/validate_package.py` 等旧 .py 实现暂存待删，一律使用上文的 .mjs 命令；库内个别 .py（如 query_assets.py）为设计师维护兼容保留，查询资产优先用 `scripts/query_assets.mjs`。
-
 色块装饰：规则在毛玻璃专题，参数为 frost-decoration；[离线示例](examples/frosted-color-card.html) 展示重点蓝色卡片与普通卡片的区别。

@@ -75,7 +75,6 @@ function main() {
       'scripts/serve.mjs',
       'scripts/preview/index.html',
       'scripts/verify/whitelists/element-plus',
-      'references/component-plan.schema.json',
       'references/usage.md',
     ];
     for (const rel of required) assert(fs.existsSync(path.join(skill, rel)), `missing skill file: ${rel}`);

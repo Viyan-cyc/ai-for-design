@@ -1,7 +1,7 @@
 {
   "schemaVersion": "1.4",
   "id": "device-management-page",
-  "assetVersion": "1.5.0",
+  "assetVersion": "1.5.1",
   "name": "DeviceManagementPage",
   "useWhen": [
     "设备管理",

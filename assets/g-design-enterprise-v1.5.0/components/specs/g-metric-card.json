@@ -1,7 +1,7 @@
 {
   "schemaVersion": "1.4",
   "id": "g-metric-card",
-  "assetVersion": "1.5.0",
+  "assetVersion": "1.5.1",
   "name": "GMetricCard",
   "level": "business",
   "useWhen": [

@@ -1,7 +1,7 @@
 {
   "schemaVersion": "1.4",
   "id": "g-resource-tree",
-  "assetVersion": "1.5.0",
+  "assetVersion": "1.5.1",
   "name": "GResourceTree",
   "level": "business",
   "useWhen": [

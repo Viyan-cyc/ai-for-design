@@ -1,7 +1,7 @@
 {
   "schemaVersion": "1.4",
   "id": "topology-monitoring-page",
-  "assetVersion": "1.5.0",
+  "assetVersion": "1.5.1",
   "name": "TopologyMonitoringPage",
   "useWhen": [
     "网络监控",

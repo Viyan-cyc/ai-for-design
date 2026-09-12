@@ -1,7 +1,7 @@
 {
   "schemaVersion": "1.4",
   "id": "standard-list-page",
-  "assetVersion": "1.5.0",
+  "assetVersion": "1.5.1",
   "name": "StandardListPage",
   "useWhen": [
     "查询列表",

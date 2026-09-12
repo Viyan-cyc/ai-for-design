@@ -40,4 +40,4 @@ Reject (`action: none`) when:
 
 proposal.versionPolicy 可为 keep（默认）、patch、minor。用户未要求另建版本时使用 keep，在当前版本更新来源哈希；要求兼容修订版时使用 patch；要求新增可复用能力的版本时使用 minor 并重置 patch=0。破坏性升级另行明确，不自动猜测。
 
-同步仅维护选定资产库。包模式同步后运行包根 scripts/build_release.py 对齐包目录及元数据；版本从 manifest 读取，目录名不参与版本判断。
+同步仅维护选定资产库。包模式同步后运行包根 scripts/build_release.mjs 对齐包目录及元数据；版本从 manifest 读取，目录名不参与版本判断。

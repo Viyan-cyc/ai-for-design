@@ -290,7 +290,7 @@ SKILL.md 增加"UI Runtime 选择"步骤（默认 element-plus，用户可指定
 - [x] N2 资产库 8 脚本移植（query_assets.mjs 优先 → build_tokens → build_indexes → 其余 5 个），逐个过 N1 对等验证 (曾书峯/2026-09-12)
 - [x] N3 build_release.mjs + installer/install_skills.mjs（subprocess 调用链改 node）(曾书峯/2026-09-12)
 - [x] N4 测试移植：validate_package.py 重写（含 §8 耦合解除：不再 import 已删 Python）+ validate_coordination.py → .mjs (曾书峯/2026-09-12，10+7 checks PASS)
-- [ ] N5 删除全部 .py：跑一次 `node scripts/build_release.mjs --version 1.5.1` 重锁哈希（D18 约束②）；**阻塞 T7 收尾**
+- [x] N5 删除全部 .py：跑一次 `node scripts/build_release.mjs --version 1.5.1` 重锁哈希（D18 约束②）；**阻塞 T7 收尾** (cyc 代执行/2026-09-12，书峯下班由 W1 代做：manage-design-assets 4 个 .py 先移植为 .mjs（用户批准的拍板项；scan/compare 语义一致、sync 端到端沙箱对照结构一致 413 文件、dry-run/blocked 路径逐字一致）→ git rm 全部 16 个 .py（仓库 0 命中验收）→ build_release --version 1.5.1 重锁 403 哈希 → migration_diff.mjs 退役删除（依赖 .py 对照，使命终结；N1-N4 期间 18/18 全绿的证明已入库）→ validate_package 移除孤儿 component-plan.schema.json 要求（W4 发现 3 落地）→ 文档 .py 引用清零（README 过渡说明/manage-design-assets SKILL+references）→ validate_package 10/10 + validate_coordination 7/7)
 
 ### W4 文档与协议（第 3/4 人或 W2 兼任）
 
