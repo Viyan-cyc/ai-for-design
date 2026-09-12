@@ -102,3 +102,7 @@
   - preview/index.html：删 sass.browser.js/immutable.js 两个 script 标签、compileSass 函数、moduleCache 的 scss/sass 注册；.scss/.sass handleModule 改为直接报错（D22 提示）。三个文件已从仓库删除：base.scss、sass.browser.js（5.4MB）、immutable.js。
   - build.mjs 1b：改为「工作区禁止出现 .scss 与 lang="scss"」（不再读 STYLE_LANG 声明）；build-data.mjs TEXT_EXT 删 .scss。
   - **验证**：重建 t9-verify 工作区——init 产出 base.less/main.js import less/`<style lang="less">`/无任何 .scss；build OK（1 page, 1 components）；负向两条正确 FAIL（混入 bad.scss、页面改 lang="scss"）；build-data OK；无头浏览器 rows=5/tags=5/token 主色 rgb(0,103,209) 生效/boot 无错误。
+- [2026-09-12] (cyc/W1-merge) **合入书峯 W3 N1-N4（merge eb2f495）+ 修复跨队 Windows 入口 bug（021d9e8）**：
+  - 合并冲突两处均为我方超集（.gitignore 旧 3 行版、init.mjs D22 回退 vs 对方空改动），取 ours。
+  - **重要跨队发现 — 入口判断 Windows 兼容 bug（10 处）**：书峯移植的 .mjs 脚本统一用 `import.meta.url === \`file://${fs.realpathSync(process.argv[1])}\`` 判断直接执行，POSIX 下恰好成立（real 以 / 开头拼出三斜杠），**Windows 下永不相等**（realpath 给反斜杠 → file://D:\... vs import.meta.url 的 file:///D:/...），main() 静默跳过、exit 0 假装通过。修复 10 处（tests×2 + 资产库 6 脚本 + installer + scripts/build_release）→ pathToFileURL 规范化。**教训：书峯报的「10 checks PASS」在 Windows 上实际只执行了部分用例**（token 传播用例此前从未真正跑过）；合入后 validate_package 10/10 PASS 才是真全过。W3 N5 删 .py 前建议书峯在 Windows 上重跑一次全套。
+  - 连带：build_tokens.mjs 可跑后，其生成文件头注释（build_tokens.py→.mjs）模板更新落到库内 4 个生成文件 → refresh_release 重锁 511 哈希（sourceReleaseSha256 变更，这是 py→mjs 移植的预期产物，N5 时无需再锁一次版本号，最终重锁走 build_release --version 1.5.1）。
