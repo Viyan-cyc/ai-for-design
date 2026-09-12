@@ -1,0 +1,7 @@
+/* theme-deep-blue — T7 验收用自定义皮肤（协议见本目录 README） */
+html[data-theme="deep-blue"] {
+  --color-brand: #105cf6;
+  --color-brand-hover: #2e71f7;
+  --g-bg-page: #f2f6fb;
+  --g-bg-surface: #ffffff;
+}
