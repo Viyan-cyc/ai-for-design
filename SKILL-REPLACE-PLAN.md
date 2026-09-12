@@ -264,7 +264,7 @@ SKILL.md 增加"UI Runtime 选择"步骤（默认 element-plus，用户可指定
 ### W1 主链路（1 人，最重，建议用户自领）
 
 - [ ] T0 基线提交：全量文件首个 commit，建 main 保护、PR 流程约定 (前置：无任何依赖，立即做)
-- [ ] T1 P0 技术验证：迁移 GButton → init → 复用 → build → 预览跑通（产出：验证结论文档，回填风险 1/2 的结论）
+- [ ] T1 P0 技术验证：迁移 GButton → init → 复用 → build → 预览跑通（产出：验证结论文档，回填风险 1/2 的结论）(cyc/2026-09-12 build 已过，待人工浏览器确认后合入)
 - [ ] T2 从 gts-autin-coder 复制工具链进 skill + 去 gts 化改名（index.gts.html→index.html、data-gts-theme→data-theme、输出文案清理）
 - [ ] T3 EP 2.13.5 落地：preview UMD 替换 + verify/whitelists 三份白名单按 2.13.5 刷新（决策点 C 在此定：官方 dist 或用户提供）
 - [ ] T4 init.mjs 改造：ASSETS_ROOT 参数 + token glob 现取复制 + api/{slug}.js 适配层生成（D16）+ locales.js 单文件模式（D15）

@@ -65,3 +65,8 @@
 ## 结论回写区（执行中随时追加，每条带姓名+日期）
 
 <!-- 格式：- [日期] (姓名/卡号) 结论或问题一句话；细节缩进展开。写完 commit 到本任务分支 -->
+
+- [2026-09-12] (cyc/W1-T1) **T1 P0 技术验证通过**，两项结论如下：
+  - **结论 1 — sfc-loader 兼容性 ✅**：按 component-format v1 迁移的 GButton（纯 JS `defineProps` 对象语法 + 内联 `<style lang="less" scoped>` + `:deep()`）在工作区中 init → build（`OK 1 page, 2 components`）→ 由 vue3-sfc-loader 正常识别为自定义组件并编译。P0 验证页 `tasks/p0-workspace/p0-verify/index.gts.html` 可直接打开确认渲染（含 G 组件与原生 EP 按钮对照、点击计数）。
+  - **结论 2 — token 桥接与 EP 2.13.5 兼容性 ✅（附一个小修正项）**：资产库 `tokens/element-plus.css` 定义 97 个 `--el-*` 桥接变量，与官方 element-plus@2.13.5 dist/index.css（562 个变量）对比，仅 `--el-alert-title-color` / `--el-alert-description-color` 两个变量在 2.13.5 中不存在（2.10.4 中同样不存在——资产库定义的是自设语义变量，非 EP 官方变量；alert 组件在 2.x 中实际读取 `--el-alert-title-font-size` 等结构变量，文字颜色走通用文本变量）。**处理**：这两行对 EP 行为无影响（属无效但无害的赋值），迁移 107 组件时无需处理；W3 做 build_tokens 时保留原样即可，设计师下次更新 tokens.json 可顺手删。另：preview UMD 当前是 EP 2.10.4，T3 换 2.13.5 时按官方 dist 四件套替换，白名单需同步重导。
+  - **W4 可开工**：D1/D2 文档所依赖的两个前置结论均已落定。
