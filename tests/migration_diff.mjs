@@ -121,6 +121,22 @@ const CASES = [
     args: [],
   },
   {
+    name: 'validate_library.skip-lock',
+    script: 'validate_library',
+    args: ['--skip-lock'],
+    compareStdout: true,
+    // 校验器会读取仓库生成文件并与自身实现重新计算的产出比较；
+    // 生成头注释含脚本名，两侧必须各自先用同语言生成器写沙箱再校验，否则头差异误报。
+    setup: ['build_tokens', 'build_indexes'],
+  },
+  {
+    name: 'validate_library.full',
+    script: 'validate_library',
+    args: [],
+    compareStdout: true,
+    setup: ['build_tokens', 'build_indexes', 'refresh_release'],
+  },
+  {
     name: 'query_assets.tokens.group',
     script: 'query_assets',
     args: ['tokens', 'frost-common'],
@@ -190,6 +206,48 @@ function compareBuffers(a, b) {
   return true;
 }
 
+/**
+ * 归一化头注释差异：两侧沙箱各自由同语言生成器写文件时，GENERATED 头必然带各自脚本名，
+ * 且该头会传播进 refresh_release 的哈希与 manifest。比较前把已知头行替换为统一占位。
+ */
+const HEADER_NORMALIZERS = [
+  [/\/\/ GENERATED from design\/tokens\.json; edit the source, then run scripts\/build_tokens\.(py|mjs)\./g, '// GENERATED (header normalized)'],
+  [/\/\* GENERATED from design\/tokens\.json\. Do not edit generated values\. \*\//g, '/* GENERATED (header normalized) */'],
+  [/运行 `?(?:python3|python|node) scripts\/build_tokens\.(py|mjs)`?/g, '运行 `node scripts/build_tokens.mjs`'],
+  [/变更后运行 scripts\/build_tokens\.(py|mjs)；/g, '变更后运行 scripts/build_tokens.mjs；'],
+];
+
+function normalizeHeaders(text) {
+  let out = text;
+  for (const [pattern, replacement] of HEADER_NORMALIZERS) out = out.replace(pattern, replacement);
+  return out;
+}
+
+/**
+ * 结构化归一 release 锁与 manifest：GENERATED 头差异会传播进内容哈希（files 值与
+ * sourceReleaseSha256），文本归一化无法消除。哈希值的正确性由两侧各自 validate_library
+ * 全绿保证；这里仅验证哈希覆盖的文件集合一致（keys 完全相同），把哈希值替换为占位。
+ */
+function normalizeHashBearing(text) {
+  let doc;
+  try {
+    doc = JSON.parse(text);
+  } catch {
+    return text;
+  }
+  let touched = false;
+  if (doc && typeof doc === 'object' && doc.files && typeof doc.files === 'object') {
+    doc.files = Object.fromEntries(Object.keys(doc.files).sort().map((k) => [k, 'HASH']));
+    touched = true;
+  }
+  if (doc && typeof doc === 'object' && 'sourceReleaseSha256' in doc) {
+    doc.sourceReleaseSha256 = 'HASH';
+    touched = true;
+  }
+  if (!touched) return text;
+  return `${JSON.stringify(doc, null, 2)}\n`;
+}
+
 function diffSnapshots(pyFiles, nodeFiles) {
   const problems = [];
   const keys = new Set([...Object.keys(pyFiles), ...Object.keys(nodeFiles)]);
@@ -197,10 +255,19 @@ function diffSnapshots(pyFiles, nodeFiles) {
     if (!(key in pyFiles)) problems.push(`仅 .mjs 产出: ${key}`);
     else if (!(key in nodeFiles)) problems.push(`仅 .py 产出: ${key}`);
     else if (!compareBuffers(pyFiles[key], nodeFiles[key])) {
-      const pyText = applyRewrites(pyFiles[key].toString('utf8'));
-      const nodeText = nodeFiles[key].toString('utf8');
-      if (pyText === nodeText) continue; // 差异全部落在允许的头注释改写内
-      problems.push(`内容不同: ${key}`);
+      const pyRaw = pyFiles[key].toString('utf8');
+      const nodeRaw = nodeFiles[key].toString('utf8');
+      // 哈希型 JSON（release 锁/manifest）：文件路径是键、内容哈希是值，文本改写会破坏键集合。
+      // 改走结构化比较：哈希值占位（正确性由两侧各自 validate_library 全绿保证），仅比键集合与其余字段。
+      const pyStruct = normalizeHashBearing(pyRaw);
+      const nodeStruct = normalizeHashBearing(nodeRaw);
+      if (pyStruct !== pyRaw || nodeStruct !== nodeRaw) {
+        if (pyStruct !== nodeStruct) problems.push(`内容不同: ${key}`);
+        continue;
+      }
+      const pyText = normalizeHeaders(applyRewrites(pyRaw));
+      const nodeText = normalizeHeaders(nodeRaw);
+      if (pyText !== nodeText) problems.push(`内容不同: ${key}`);
     }
   }
   return problems;
@@ -211,6 +278,10 @@ function runCase(item) {
   const pyLib = usesSandbox ? makeSandbox('py') : LIB;
   const nodeLib = usesSandbox ? makeSandbox('node') : LIB;
   try {
+    for (const setup of item.setup ?? []) {
+      runPy(pyLib, `${setup}.py`, []);
+      runNode(nodeLib, `${setup}.mjs`, []);
+    }
     const py = runPy(pyLib, `${item.script}.py`, item.args);
     const node = runNode(nodeLib, `${item.script}.mjs`, item.args);
 
