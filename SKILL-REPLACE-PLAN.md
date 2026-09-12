@@ -236,6 +236,8 @@ SKILL.md 增加"UI Runtime 选择"步骤（默认 element-plus，用户可指定
 
 - **2026-09-12 D22**：样式语言钉死 **less**，D21 作废（T8 交付即废弃）。原因：产品线二次开发硬要求必须是 less；若组件库/模板走 scss，二开拷贝组件时会出现 scss 与 less 并行。全链路（组件库资产 M0 规范、原型模板、预览编译、build 校验）只剩 less 一种语言。影响面：① W2 M0 第 2 条 / M1 转换条款改回 less（源 .scss 内容为扁平规则直接贴入）；② W4 D1 三开关改两开关（组件复用、UI 库），D2 二开依赖固定 npm i -D less；③ W1 T8 已交付的 init --style-lang 参数、sass.browser.js/immutable.js、base.scss、build 1b 双语言校验需回退为 less 单语言形态（无需再支持 scss）；④ T6 collect_component 不受影响（只搬 .vue 不碰样式语言）。
 
+- **2026-09-12 D23**：**最终态 scss 清零**（用户拍板：全仓库不允许存在任何 scss 相关文件；D22 只约束交付链路，不满足）。分三步执行：①（W2-M2.5）丰宁在 w2 分支跑 build_indexes + refresh_release 把 61 组件迁移重锁入库后合 main；②（W3-N5）书峯删全部 .py + build_release --version 1.5.1 重锁，migration_diff 对照框架随之退役（依赖旧 .py 做参照，py 删除即终結；此前 18/18 全绿已证明 py/mjs 产出一致）；③（N5 后一个原子 PR）scss 清零：build_tokens.mjs 不再产出 tokens/index.scss 与 element-plus.scss、改产平铺 tokens/index.css（按现 index.scss 加载顺序聚合，兑现 T3 时代"W3 让库直接产 index.css"建议）；库 src/index.ts / src/main.ts 的 `import '../tokens/index.scss'` 改 index.css；库 package.json 删 sass devDep、exports."./tokens" 从 index.scss 改 index.css（**接口契约变更，须知会设计师**：对设计师交付的 token 入口从 scss 换 css）；init.mjs 删 T9 的"拷 token 后删两个 scss" hack（上游不产 scss 后成死代码）；validate_package 第 6 条"传播到 CSS、Sass"改只验 CSS；build_indexes + refresh_release 重锁一次。保留两类 scss 字样（非 scss 文件）：build.mjs/preview 的禁 scss 守卫报错文案、SKILL-REPLACE-PLAN/任务卡历史记录。执行人默认 W1（cyc），完成后 `find . -name "*.scss"` 全仓库零命中为验收标准。
+
 ## 10. 待决策点
 
 | # | 问题 | 选项与推荐 |
