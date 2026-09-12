@@ -6,7 +6,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -105,7 +105,7 @@ export function refresh(root = ROOT) {
   return hashes;
 }
 
-if (process.argv[1] && import.meta.url === `file://${fs.realpathSync(process.argv[1])}`) {
+if (process.argv[1] && import.meta.url === pathToFileURL(fs.realpathSync(process.argv[1])).href) {
   const count = Object.keys(refresh()).length;
   console.log(`Refreshed ${count} source hashes in release/source-lock.json.`);
 }

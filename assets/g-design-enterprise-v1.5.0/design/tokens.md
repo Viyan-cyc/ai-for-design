@@ -1,6 +1,6 @@
 # Token 数值表（自动生成）
 
-数值唯一来源为 `tokens.json`；此表不能作为第二个编辑入口。运行 `python3 scripts/build_tokens.py` 更新。
+数值唯一来源为 `tokens.json`；此表不能作为第二个编辑入口。运行 `node scripts/build_tokens.mjs` 更新。
 
 ## foundation
 

@@ -6,7 +6,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { outputs as tokenOutputs } from './build_tokens.mjs';
 import { outputs as indexOutputs } from './build_indexes.mjs';
 import { safePath } from './asset_graph.mjs';
@@ -112,4 +112,4 @@ function main() {
   console.log('Library source, token generation, indexes and dependencies are valid.');
 }
 
-if (process.argv[1] && import.meta.url === `file://${fs.realpathSync(process.argv[1])}`) main();
+if (process.argv[1] && import.meta.url === pathToFileURL(fs.realpathSync(process.argv[1])).href) main();

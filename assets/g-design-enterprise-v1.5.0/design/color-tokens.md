@@ -1,6 +1,6 @@
 # H Design 颜色 Token 表（自动生成）
 
-唯一维护源为 [tokens.json](tokens.json)，颜色用法见 [color-rules.md](color-rules.md)。value/usage/codeMapping 变更后运行 scripts/build_tokens.py；不要手改此表。
+唯一维护源为 [tokens.json](tokens.json)，颜色用法见 [color-rules.md](color-rules.md)。value/usage/codeMapping 变更后运行 scripts/build_tokens.mjs；不要手改此表。
 
 包含基础与辅助色、UI 明暗语义、图表方案、代码浅深色及其用途。深色 UI 为项目兼容方案；代码明暗值来自 H Design 语义明细表。
 

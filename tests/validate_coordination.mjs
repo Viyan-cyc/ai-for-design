@@ -15,7 +15,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 import crypto from 'node:crypto';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const LIB = path.join(
@@ -194,7 +194,9 @@ function main() {
   console.log(`Passed ${checks.length} coordination checks.`);
 }
 
-if (process.argv[1] && import.meta.url === `file://${fs.realpathSync(process.argv[1])}`) {
+// Windows 下 fs.realpathSync 返回反斜杠路径，`file://${real}` 永远不等于
+// import.meta.url（file:///D:/...），main() 会静默跳过 — 必须 pathToFileURL 规范化
+if (process.argv[1] && import.meta.url === pathToFileURL(fs.realpathSync(process.argv[1])).href) {
   try {
     main();
   } catch (error) {
