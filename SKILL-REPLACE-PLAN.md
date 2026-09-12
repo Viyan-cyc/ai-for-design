@@ -272,7 +272,7 @@ SKILL.md 增加"UI Runtime 选择"步骤（默认 element-plus，用户可指定
 - [x] T3 EP 2.13.5 落地：preview UMD 替换 + verify/whitelists 三份白名单按 2.13.5 刷新（决策点 C：官方 npm dist。cyc/2026-09-12 commit 1a5f66c：官方 dist 五件套+白名单 116 组件/130 导出/295 图标；连带修复 3 个 preview 缺陷——token index.css 404、api 相对路径层级、sfc-loader 0.9.5 re-export 需预载 mock 模块。无头浏览器实测 token 主色 #0067D1 生效）
 - [x] T4 init.mjs 改造：ASSETS_ROOT 参数 + token glob 现取复制 + api/{slug}.js 适配层生成（D16）+ locales.js 单文件模式（D15）(cyc/2026-09-12，随 T2 完成)
 - [x] T5 build.mjs 改造：token 校验改为工作区 token CSS 实时提取 + 删 rem/px-WARN（D14）+ 页面禁 import mock 校验（D16）(cyc/2026-09-12，随 T2 完成，commit 3ef6db3)
-- [ ] T6 collect_component.mjs：相对 import 递归闭包复制 + 来源注释（D12）
+- [x] T6 collect_component.mjs：相对 import 递归闭包复制 + 来源注释（D12）(cyc/2026-09-12，正向用例全过：GStatusTag 单件、GMonitorPanel→GStatusTag 闭包 2 文件+2 垫片、build 3 components OK；负向全对：types 依赖报缺失/不存在 id/重复复制。预览端到端实测 rows=5、panels=3、3 个 EP tag warning/primary/danger、token #0067D1。两个新发现落 preview：① 目录式命名导入渲染空 → collect 生成 interop 垫片 index.js（两段式 export，规避 sfc-loader 0.9.5 re-export 缺陷）+ getFile 后备 index.js 优先；② loader 把垫片按裸路径记录为模块 → 其内部 './GName.vue' 解析成兄弟路径 '…/GName.vue' → getFile 需补「目录内真实组件」后备（不可回退 index.js，会循环导入）；build.mjs 相应加组件目录式候选)
 - [ ] T7 端到端验收：hybrid/free 各生成一页 + 明暗主题 + 毛玻璃 + 换肤 + 二开视角通读（依赖 W2 的 M2 迁移完成，是最终汇合点）
 - [x] T8 STYLE_LANG 开关（D21）→ **已交付随即被 D22 作废**（cyc/2026-09-12：scss/less 双模曾全链路实测通过，见 W1 卡回写；当日产品线确定二开必须 less，D22 钉死单语言 less，T8 产物需回退）
 - [ ] T9 D22 回退：init 删 --style-lang 参数与 base.scss、main.js 模板固定 import base.less、constants.js 删 STYLE_LANG、preview 删 sass.browser.js/immutable.js 与 scss/sass moduleCache 注册（保留 .scss handleModule 亦可删）、build 1b 改为「工作区禁止出现 .scss 与 lang="scss"」（D22：全链路只剩 less）

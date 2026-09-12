@@ -87,3 +87,12 @@
   - init：`--style-lang scss|less`（默认 scss）→ 只保留对应 base.* 文件 + main.js import 重写 + constants.js 记录 STYLE_LANG + 页面模板 `<style lang>` 跟随；build：1b 节校验全部 SFC `<style lang>` 与 assets/style 下 base 扩展名与声明一致（D21 单语言）；build-data：TEXT_EXT 加 .scss。
   - **浏览器实测（无头 Chrome）**：scss 工作区（4176）5 行表格 + 主色 rgb(25,25,25) token 生效 + 内联样式 scoped 生效 + 注入 $变量/@mixin 后 padding 输出 37px 证明真 sass 编译；less 工作区（4179）同等全过。负向：less 工作区混入 .scss base 文件时 build 正确 FAIL。
   - **W4 注意**：D2 需写二开依赖差异——scss→`npm i -D sass`，less→`npm i -D less`（Vite 零配置，模板 main.js 已 import 对应 base.*）。
+
+- [2026-09-12] (cyc/W1-T6) **collect_component.mjs 落地 + 预览端到端验证通过**：
+  - **功能**：`node collect_component.mjs <assets-root> <component-id> <workspace-src> <target-dir>`。spec 定位入口 .vue → 正则解析相对 import（含 `export … from` / 动态 `import()` / `import type`）→ 递归闭包 → 按每文件自身库内路径段的 level 落位 `{target}/{basic|business|complex}/GName/GName.vue`（D17；入口 level 与 spec.level 交叉校验）→ 每文件插来源注释（版本+库内路径，禁止修改）。
+  - **闭包策略（D20 落地）**：只拷 .vue；index.ts 作为 re-export 跳板继续 walk 但不拷；闭包内出现其他 .ts（types.ts）即迁移 gap → 报缺失清单 FAIL，不静默。
+  - **新发现 1 — 目录式命名导入渲染空（重要）**：`import { GStatusTag } from '…/GStatusTag'` 经 sfc-loader 0.9.5 编译为 `require().GStatusTag` 命名访问，但裸 .vue 编译产物是组件对象本身（无命名属性）→ undefined → 渲染 `<!---->`。修复：collect 为每个组件额外生成 interop 垫片 index.js（两段式 `import GComponent from './GName.vue'` + `export { GComponent as GName }`，规避 re-export 缺陷，同 T3 结论）；getFile 目录式后备 index.js 优先。
+  - **新发现 2 — 垫片路径自指（重要，排查耗时最久）**：loader 把裸目录请求的返回内容按裸路径（如 `/src/components/business/GStatusTag`）记录为模块 → 垫片内部 `'./GStatusTag.vue'` 相对解析成**兄弟路径** `…/GStatusTag.vue`（目录外）→ getFile 需追加「.vue 请求回退目录内真实组件 X/X.vue」的后备。**注意此处绝不能回退 index.js**——垫片请求到自己会循环导入，页面整体静默挂起（preload promise 不 settle、无任何报错）。该症状无 console error，只有 getElementById 全空，排查靠注入 getFile 请求日志定位。
+  - **build.mjs 连带**：相对 import 候选新增组件目录式 `…/{lastSeg}/{Pascal(lastSeg)}.vue`（`/components/business/GStatusTag` → GStatusTag.vue）。
+  - **验证**：正向全过——GStatusTag 单件（1+1 文件）、GMonitorPanel→GStatusTag 闭包（2+2 文件）、build 3 components OK、无头浏览器 rows=5/panels=3/三个面板标题/3 个真实 EP tag（warning/primary/danger）/token #0067D1 生效/boot 无错误。负向全对——types 依赖报缺失清单、不存在 id 报错、重复复制报 target exists。
+  - **垫片性质**：预览运行时兼容文件（非库代码），真实 Vite 工程原生解析目录式命名导入，无需垫片。

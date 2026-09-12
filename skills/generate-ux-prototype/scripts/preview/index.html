@@ -141,6 +141,31 @@
                         return Promise.resolve({ getContentData: function () { return ""; }, type: assetExt });
                     }
                     var content = SRC[clean];
+                    // 目录式 import 后备（复用 G 组件，零改写落位）：
+                    // '…/GStatusTag' → '…/GStatusTag/index.js'（interop 垫片，
+                    //   提供命名出口 —— 裸 .vue 的命名导入拿不到组件）
+                    //                → '…/GStatusTag/GStatusTag.vue'（组件目录式，default 导入用）
+                    if (content === undefined && !/\.[a-z]+$/i.test(clean)) {
+                        var segs = clean.split("/");
+                        var last = segs[segs.length - 1];
+                        var pascal = last.replace(/(^|-)(\w)/g, function (m, a, b) { return b.toUpperCase(); });
+                        var resolved = clean + "/index.js";
+                        if (SRC[resolved] === undefined) {
+                            resolved = clean + "/" + pascal + ".vue";
+                            if (SRC[resolved] === undefined) resolved = null;
+                        }
+                        if (resolved !== null) { clean = resolved; content = SRC[clean]; }
+                    }
+                    // 追加后备：loader 把裸目录请求的返回内容按该裸路径记录为模块，
+                    // 垫片内部的 './GStatusTag.vue' 因此解析成兄弟路径 '…/GStatusTag.vue'
+                    // —— 该路径不存在，但目录内真实组件存在，直接补齐。
+                    // 注意：此处不能回退 index.js，否则垫片请求到自己造成循环导入。
+                    if (content === undefined && /\.vue$/i.test(clean)) {
+                        var base = clean.replace(/\.vue$/i, "");
+                        var last2 = base.slice(base.lastIndexOf("/") + 1);
+                        var resolved2 = base + "/" + last2 + ".vue";
+                        if (SRC[resolved2] !== undefined) { clean = resolved2; content = SRC[clean]; }
+                    }
                     if (content === undefined) {
                         return Promise.reject(new Error("源码映射中找不到 " + clean + " — 修改 src/ 后请重跑 build"));
                     }

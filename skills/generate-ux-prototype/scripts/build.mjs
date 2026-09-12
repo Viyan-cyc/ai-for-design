@@ -272,8 +272,11 @@ for (const file of vueFiles) {
       if (fileMap.has(target + '.js')) continue;
       if (fileMap.has(target + '/index.vue')) continue;
       if (fileMap.has(target + '/index.js')) continue;
+      // component-directory form: import '…/GStatusTag' → GStatusTag/GStatusTag.vue
+      // (reused G components land as {components}/{level}/{GName}/{GName}.vue)
+      if (fileMap.has(target + '/' + pascal(target.split('/').pop()) + '.vue')) continue;
       if (ASSET_EXT.includes(extname(target))) continue; // assets resolve at runtime
-      fail(`${rel}: relative import "${spec}" does not resolve (looked for ${target}[.vue|.js|/index.vue])`);
+      fail(`${rel}: relative import "${spec}" does not resolve (looked for ${target}[.vue|.js|/index.vue|/{Name}.vue])`);
     }
   }
 
