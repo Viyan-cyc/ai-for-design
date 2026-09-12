@@ -1,15 +1,7 @@
 
 # W1 冒烟测试工作区（init 产物，可随时重建，不入库）
 tasks/p0-workspace/p0-verify/
-tasks/p0-workspace/t2-smoke/
-tasks/p0-workspace/t3-smoke/
-tasks/p0-workspace/t3-less/
-tasks/p0-workspace/t8-less-check/
-tasks/p0-workspace/t6-collect/
-
-# npm 源包（T8 组装 sass.browser.js 的输入，见 SKILL-REPLACE-PLAN.md D21）
-immutable-5.1.4.tgz
-sass-1.93.2.tgz
+tasks/p0-workspace/t9-verify/
 
 # W2 build:library 产物与依赖（可随时 npm ci / npm run build:library 重建，不入库）
 assets/g-design-enterprise-v1.5.0/frontend/element-plus/node_modules/
@@ -17,7 +9,6 @@ assets/g-design-enterprise-v1.5.0/frontend/element-plus/dist/
 
 # codegraph 索引（MCP 工具本地缓存，可重建）
 .codegraph/
-tasks/p0-workspace/t9-verify/
 
-# 旧 .py 对照运行垃圾（N1 migration_diff 会跑 .py，产生字节码缓存）
+# 旧 .py 对照运行垃圾（N1 migration_diff 曾跑 .py，产生字节码缓存；N5 后 Python 已清零，留作防御）
 __pycache__/
