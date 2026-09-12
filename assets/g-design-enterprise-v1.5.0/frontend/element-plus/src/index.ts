@@ -7,7 +7,6 @@ import{GTopology}from'./components/complex/GTopology';import{GAlarmTopology}from
 export*from'./components/basic'
 export*from'./components/business'
 export{GTopology,GAlarmTopology,GTimelinePro,GMonitorPanel,GDashboardGrid}
-export*from'./components/complex/GTopology/types'
 export*from'./page-templates'
 export*from'./page-states'
 const{GMessage,GNotification,GLoading,...basicComponents}=Basic

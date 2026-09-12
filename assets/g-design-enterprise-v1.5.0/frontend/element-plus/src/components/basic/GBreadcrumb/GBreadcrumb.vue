@@ -1,3 +1,7 @@
 <template><ElBreadcrumb v-bind="$attrs" ><template v-for="(_,slot) in $slots" #[slot]="scope"><slot :name="slot" v-bind="scope||{}"/></template></ElBreadcrumb></template>
-<script setup lang="ts">import{ElBreadcrumb}from'element-plus';</script>
-<style scoped src="./style.scss"></style>
+<script setup>
+import{ElBreadcrumb}from'element-plus';
+</script>
+<style lang="less" scoped>
+:deep(.el-navigation){font-family:var(--g-font-family)}
+</style>

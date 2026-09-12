@@ -73,3 +73,20 @@
   2. §13 W1-T8 已打勾 ✓(cyc/2026-09-12)，描述含「sass UMD 编译器入 preview」——建议保留 sass 编译器（STYLE_LANG=scss 取值仍可用），仅默认值从 scss 改 less；或去掉 scss 支持只留 less。由 W1 裁决。
   3. §13 W2-M0 描述「以 §5.3 七条为骨架」——§5.3 第 2 条原文是 less（未被 D21 改动），与最终方向一致，不用动。
   4. component-format.md 文档头「依据」已补 D22 引用（本任务所有权文件，M0 执行细节自主改）；待 D22 入 §9 后可与 §9 记录交叉印证。
+- [2026-09-12] (moyuntian/W2-M1) M1 codemod 脚本完成：`assets/g-design-enterprise-v1.5.0/scripts/migrate_components.mjs`（945 行）。关键实现：
+  - 深度配对解析 `defineProps<{...}>`/`defineEmits<{...}>`/`withDefaults(...)`（支持 `Record<string,unknown>` 等嵌套 `<>`，纯正则不够用，手写 `extractAngleBody` + 括号配对）。
+  - TS→JS 转换覆盖全语法面：withDefaults→defineProps 对象语法、defineEmits→数组语法、删 `import type`/局部 `type` 别名/script 内 `export interface`/`as` 断言（深度配对删 `as unknown as Record<...>` 等）/Vue API 泛型 `ref<T>()`→`ref()`/箭头函数参数类型 `(id:string)`→`(id)`。
+  - 内联 style.scss→`<style lang="less" scoped>`、删 types.ts/style.scss、保留 index.ts（D20）、删 index.ts 内 `export type*from'./types'`（GTopology 专用）。
+  - 跨组件 barrel 改默认导入：`import{GTopology}from'../GTopology'`→`import GTopology from'../GTopology/GTopology.vue'`（SFC `<script setup>` 无具名导出，必须默认导入——这是 codemod 第一版踩的坑，纯正则改 `from` 部分保留具名 `{GTopology}` 会导致 vite build 报 "not exported by"）。
+  - 类型别名表 `buildTypeAliasMap`：扫 types.ts + .vue 内局部 `type X='a'|'b'`（GStatusTag 的 `Status`），mapType 查表生成 JSDoc 可选值注释。
+  - 连带耦合（components/ 之外）：src/index.ts 删 `export*from'./components/complex/GTopology/types'`；src/page-types.ts 并入 TopologyStatus/Node/Edge 定义（执行顺序：migrateCoupledFiles 必须在 migrateComponent 之前跑，否则 GTopology/types.ts 已删读不到定义）。
+  - `--check` 校验模式（零变更=合规，给设计师 M3 用）+ 默认迁移模式；产出 migration-report.json（每组件转换项、API 前后签名 diff 必须为空）。
+  - 踩坑记录：① `#` 注释在 .mjs 非法（ESM）→改 `//`；② `[^;]+` 跨行误删后续代码（`type IconNode=...\nconst p=withDefaults(...)` 被当一条删）→改 `[^;\n]+`；③ `defineProps<{}>` 正则 `[^>]*?` 在 `Record<string,unknown>` 的 `>` 误停→深度配对；④ `parseEmitNames` 未去外层 `{}`→`defineEmits<{...}>` 的 emits 提取为空→加去 `{}`；⑤ `statusMatch` 正则 `[^;]+` 跨行→改 `[^;\r\n]+`。
+- [2026-09-12] (moyuntian/W2-M2) M2 全量迁移 + build:library 验证通过：
+  - 全量迁移 61 个组件目录，合规 61/61，API diff 0。
+  - `npm run build:library`（vue-tsc --noEmit && vite build）通过：vue-tsc 类型检查 0 错，vite build 211 模块转换成功，产出 dist/ 3 文件（g-design-enterprise.js 510KB + .umd.cjs 444KB + .css 46KB）。
+  - 验收标准全过：`find components/ -name types.ts -o -name style.scss` 零命中；`grep 'lang="ts"'` 零命中；index.ts 保留 63 个（61 组件级 + 2 barrel）。
+  - 人工抽查 20 个组件（business 13 全查 + complex 5 全查 + basic 2）：GButton/GIcon/GResourceTree/GDataTablePro/GTopology/GAlarmTopology/GFilterBar/GStatusTag/GAdvancedFilter/GBatchActionBar/GDescriptionPanel/GFormSection/GMetricCard/GPageHeader/GPermissionState/GSearchBar/GTableToolbar/GDashboardGrid/GMonitorPanel/GTimelinePro——全部合规，零 TS 残留，样式内联 less scoped，跨组件 import 直指 .vue，存量中文文案完整保留。
+  - 连带耦合处理：src/index.ts 删 GTopology/types 重导出行 ✓；src/page-types.ts 并入 TopologyStatus/Node/Edge 定义 ✓。
+  - 【需拍板】package.json 加 `less` devDependency（回写区 #3 登记）：D22 钉死 less，vite build `lang="less"` 必需 less 预处理器，已 `npm install -D less` 临时装入 node_modules，但 package.json 的 devDependencies 需补登记 `less`（属 assets/ 下非 components/，按决策纪律标「需拍板」）。当前 package.json 已被 npm install -D less 写入，可保留。
+- [2026-09-12] (moyuntian/W2-M2) codemod 脚本支持 `--check` 校验模式（零变更=合规），可直接用于 M3 设计师新组件提交 checklist（component-format.md §12 第 2 条已写明用法）。

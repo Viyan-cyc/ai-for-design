@@ -1,2 +1,4 @@
 <template><el-timeline><el-timeline-item v-for="i in items" :key="i.id" :timestamp="i.time" :type="i.type||'primary'"><strong>{{i.title}}</strong><p>{{i.description}}</p></el-timeline-item></el-timeline></template>
-<script setup lang="ts">export interface TimelineItem{id:string;time:string;title:string;description?:string;type?:'primary'|'success'|'warning'|'danger'|'info'};defineProps<{items:TimelineItem[]}>();</script>
+<script setup>
+defineProps({items:{type:Array,required:true}});
+</script>

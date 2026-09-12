@@ -1,1 +1,3 @@
-<template><GTableToolbar title="示例"/></template><script setup lang="ts">import{GTableToolbar}from'./index';</script>
+<template><GTableToolbar title="示例"/></template><script setup>
+import GTableToolbar from './GTableToolbar.vue';
+</script>

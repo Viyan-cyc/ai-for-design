@@ -561,13 +561,14 @@ function transformScript(scriptBlock, fileDir, compName) {
     return `(${cleaned})`
   })
 
-  // 8. 跨组件 barrel 引用：from'../GTopology' → from'../GTopology/GTopology.vue'
+  // 8. 跨组件 barrel 引用：import{GTopology}from'../GTopology' → import GTopology from'../GTopology/GTopology.vue'
   //    （GAlarmTopology→../GTopology、GMonitorPanel→../../business/GStatusTag 两处）
-  //    规则：from'.../G<Name>' 末尾是 G 大写开头的组件名（无扩展名）→ 补 /G<Name>.vue
-  //    不匹配：from'../GTopology/types'（已被 import type 删除）、from'./types'、from'vue' 等无 G 前缀的
-  content = content.replace(/from\s*['"]((?:\.\.\/)+(?:[a-z]+\/)*)(G[A-Z]\w*)['"]/g, (m, prefix, name) => {
-    const fixed = `from'${prefix}${name}/${name}.vue'`
-    log.push(`barrel 引用改直指 .vue：${m.trim()} → ${fixed}`)
+  //    规则：import{G<Name>}from'.../G<Name>' → import G<Name> from'.../G<Name>/G<Name>.vue'（默认导入，因 SFC <script setup> 无具名导出）
+  //    不匹配：import type{...}（第 1 步已删）、from'vue' 等无 G 前缀的
+  content = content.replace(/import\s*\{\s*(G[A-Z]\w*)\s*\}\s*from\s*['"]((?:\.\.\/)+(?:[a-z]+\/)*)(G[A-Z]\w*)['"]/g, (m, name1, prefix, name2) => {
+    if (name1 !== name2) return m // import 的具名与路径名不一致，不动
+    const fixed = `import ${name1} from'${prefix}${name2}/${name2}.vue'`
+    log.push(`barrel 引用改直指 .vue（默认导入）：${m.trim()} → ${fixed}`)
     return fixed
   })
 
@@ -849,7 +850,7 @@ function migrateCoupledFiles(srcDir, checkMode) {
       if (exists(topoTypesPath)) topoTypesContent = read(topoTypesPath)
       // 提取 TopologyStatus / TopologyNode / TopologyEdge 定义
       const extracted = []
-      const statusMatch = topoTypesContent.match(/export\s+type\s+TopologyStatus\s*=\s*[^;]+;?/)
+      const statusMatch = topoTypesContent.match(/export\s+type\s+TopologyStatus\s*=\s*[^;\r\n]+;?/)
       if (statusMatch) extracted.push(statusMatch[0].replace('export ', '').replace(/;$/, ''))
       const nodeMatch = topoTypesContent.match(/export\s+interface\s+TopologyNode\s*\{[^}]*\}/)
       if (nodeMatch) extracted.push(nodeMatch[0].replace('export ', ''))
@@ -881,6 +882,12 @@ function main() {
 
   // 构建全库类型别名表（用于 mapType 解析 GButtonType 等字面量联合别名）
   gTypeMap = buildTypeAliasMap(componentsDir)
+
+  // 连带耦合（components/ 之外，仅全量模式处理；--component 单组件调试时跳过，避免误动跨 W 文件）
+  // 必须在组件迁移之前跑：migrateCoupledFiles 需读 GTopology/types.ts 提取定义并入 page-types.ts，
+  // 若在组件迁移之后跑，types.ts 已被删除，读不到定义
+  const coupled = args.component ? { coupled: [], transformations: [], manualItems: [] } : migrateCoupledFiles(srcDir, args.check)
+
   const categories = ['basic', 'business', 'complex']
   const reports = []
 
@@ -899,9 +906,6 @@ function main() {
       reports.push(r)
     }
   }
-
-  // 连带耦合（components/ 之外，仅全量模式处理；--component 单组件调试时跳过，避免误动跨 W 文件）
-  const coupled = args.component ? { coupled: [], transformations: [], manualItems: [] } : migrateCoupledFiles(srcDir, args.check)
 
   // 输出 migration-report.json
   const fullReport = {

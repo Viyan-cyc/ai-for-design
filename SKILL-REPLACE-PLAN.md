@@ -280,8 +280,8 @@ SKILL.md 增加"UI Runtime 选择"步骤（默认 element-plus，用户可指定
 ### W2 组件库改造（1 人，与设计师对接，建议第二人）
 
 - [x] M0 输出《组件库改造规范 v1》正式稿：以 §5.3 七条为基础扩写成独立文档 references/component-format.md，给设计师评审签字 (moyuntian/2026-09-12，设计师评审通过定稿)
-- [ ] M1 codemod 迁移脚本：107 组件去 TS/内联 scss/props 对象语法，产出迁移报告（前后组件清单 diff）
-- [ ] M2 存量迁移执行 + 人工抽查 ≥20 个复杂组件（business/complex 全查，basic 抽查）；**阻塞 W1 的 T7**，尽早启动
+- [x] M1 codemod 迁移脚本：107 组件去 TS/内联 scss/props 对象语法，产出迁移报告（前后组件清单 diff）(moyuntian/2026-09-12，scripts/migrate_components.mjs 945 行，深度配对解析+全 TS 语法面覆盖，--check 校验模式给 M3 用)
+- [x] M2 存量迁移执行 + 人工抽查 ≥20 个复杂组件（business/complex 全查，basic 抽查）；**阻塞 W1 的 T7**，尽早启动 (moyuntian/2026-09-12，61 组件全量迁移合规 61/61 API diff 0，build:library 通过，抽查 20 个全合规)
 - [ ] M3 设计师新组件流程交付：给设计师的提交 checklist（按规范写 + 过 codemod 验证），确认后续新组件合规
 
 ### W3 Node 化（1 人，独立性强，可与 W1 并行）

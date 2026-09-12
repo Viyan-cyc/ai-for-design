@@ -1,1 +1,3 @@
-<template><GPageHeader title="示例"/></template><script setup lang="ts">import{GPageHeader}from'./index';</script>
+<template><GPageHeader title="示例"/></template><script setup>
+import GPageHeader from './GPageHeader.vue';
+</script>
