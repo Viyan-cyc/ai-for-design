@@ -70,3 +70,12 @@
   - **结论 1 — sfc-loader 兼容性 ✅**：按 component-format v1 迁移的 GButton（纯 JS `defineProps` 对象语法 + 内联 `<style lang="less" scoped>` + `:deep()`）在工作区中 init → build（`OK 1 page, 2 components`）→ 由 vue3-sfc-loader 正常识别为自定义组件并编译。P0 验证页 `tasks/p0-workspace/p0-verify/index.gts.html` 可直接打开确认渲染（含 G 组件与原生 EP 按钮对照、点击计数）。
   - **结论 2 — token 桥接与 EP 2.13.5 兼容性 ✅（附一个小修正项）**：资产库 `tokens/element-plus.css` 定义 97 个 `--el-*` 桥接变量，与官方 element-plus@2.13.5 dist/index.css（562 个变量）对比，仅 `--el-alert-title-color` / `--el-alert-description-color` 两个变量在 2.13.5 中不存在（2.10.4 中同样不存在——资产库定义的是自设语义变量，非 EP 官方变量；alert 组件在 2.x 中实际读取 `--el-alert-title-font-size` 等结构变量，文字颜色走通用文本变量）。**处理**：这两行对 EP 行为无影响（属无效但无害的赋值），迁移 107 组件时无需处理；W3 做 build_tokens 时保留原样即可，设计师下次更新 tokens.json 可顺手删。另：preview UMD 当前是 EP 2.10.4，T3 换 2.13.5 时按官方 dist 四件套替换，白名单需同步重导。
   - **W4 可开工**：D1/D2 文档所依赖的两个前置结论均已落定。
+
+- [2026-09-12] (cyc/W1-T2+T4) **工具链合入完成**（commit 3ef6db3）：init/build/build-data/serve 四脚本重写 + preview/verify 重组 + 5 个 .py 删除；去 gts 化 grep 零命中；mock 隔离负向测试（.vue 与 .js 双通道）正确 FAIL；init 输出含 ASSETS_VERSION/token manifest/api 适配层/COMPONENT_MODE。
+- [2026-09-12] (cyc/W1-T3) **EP 2.13.5 落地 + 连带修复 3 个 preview 缺陷**（commit 1a5f66c，浏览器确认通过）：
+  - 官方 dist 五件套：EP main/css/zh-cn locale（2.13.5）+ icons 2.3.2 + dayjs 1.11.19；三份白名单按官方产物重导：116 组件（theme-chalk css + 5 个无独立 css 的组件）/ 130 公开导出 / 295 图标。决策点 C 定案：官方 npm dist。
+  - **缺陷 1（重要，资产库侧）**：资产库 token 入口是 index.scss，无 index.css——preview 引用 404，token 层整体失效且无报错（t2-smoke 也中招，靠 fallback 看不出来）。修复：init.mjs 按 index.scss 加载顺序生成平铺 index.css。**W3 注意**：N2 移植 build_tokens.py 时可考虑让资产库直接产出 index.css 平铺版（当前方案是 skill 侧兜底，可用）。
+  - 缺陷 2：init 页面模板 api 相对路径多跳一级（../../../api → ../../api），路由加载即死。
+  - 缺陷 3（重要，工具链侧）：vue3-sfc-loader 0.9.5 对 `export {...} from` re-export 编译产物走 require() 只查 moduleCache 不回落 getFile，而 src/api/{slug}.js 原型态恰是纯 re-export。修复：loader 启动时预载全部 /mock/*.js 注册 moduleCache。**W4 注意**：D2 code-conventions 需写明——src/api/{slug}.js 二开态建议用 `import ... from + export { }` 两段式而非 re-export 简写，避免真实工程外任何直开 HTML 的场景踩同类问题（真实 Vite 工程无此限制）。
+  - 无头浏览器实测：5 行表格渲染、主按钮背景 rgb(0,103,209) = 资产 token #0067D1 生效（EP 默认 #409EFF）、用户浏览器确认渲染正确。
+
