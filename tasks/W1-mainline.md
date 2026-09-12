@@ -87,3 +87,22 @@
   - init：`--style-lang scss|less`（默认 scss）→ 只保留对应 base.* 文件 + main.js import 重写 + constants.js 记录 STYLE_LANG + 页面模板 `<style lang>` 跟随；build：1b 节校验全部 SFC `<style lang>` 与 assets/style 下 base 扩展名与声明一致（D21 单语言）；build-data：TEXT_EXT 加 .scss。
   - **浏览器实测（无头 Chrome）**：scss 工作区（4176）5 行表格 + 主色 rgb(25,25,25) token 生效 + 内联样式 scoped 生效 + 注入 $变量/@mixin 后 padding 输出 37px 证明真 sass 编译；less 工作区（4179）同等全过。负向：less 工作区混入 .scss base 文件时 build 正确 FAIL。
   - **W4 注意**：D2 需写二开依赖差异——scss→`npm i -D sass`，less→`npm i -D less`（Vite 零配置，模板 main.js 已 import 对应 base.*）。
+
+- [2026-09-12] (cyc/W1-T6) **collect_component.mjs 落地 + 预览端到端验证通过**：
+  - **功能**：`node collect_component.mjs <assets-root> <component-id> <workspace-src> <target-dir>`。spec 定位入口 .vue → 正则解析相对 import（含 `export … from` / 动态 `import()` / `import type`）→ 递归闭包 → 按每文件自身库内路径段的 level 落位 `{target}/{basic|business|complex}/GName/GName.vue`（D17；入口 level 与 spec.level 交叉校验）→ 每文件插来源注释（版本+库内路径，禁止修改）。
+  - **闭包策略（D20 落地）**：只拷 .vue；index.ts 作为 re-export 跳板继续 walk 但不拷；闭包内出现其他 .ts（types.ts）即迁移 gap → 报缺失清单 FAIL，不静默。
+  - **新发现 1 — 目录式命名导入渲染空（重要）**：`import { GStatusTag } from '…/GStatusTag'` 经 sfc-loader 0.9.5 编译为 `require().GStatusTag` 命名访问，但裸 .vue 编译产物是组件对象本身（无命名属性）→ undefined → 渲染 `<!---->`。修复：collect 为每个组件额外生成 interop 垫片 index.js（两段式 `import GComponent from './GName.vue'` + `export { GComponent as GName }`，规避 re-export 缺陷，同 T3 结论）；getFile 目录式后备 index.js 优先。
+  - **新发现 2 — 垫片路径自指（重要，排查耗时最久）**：loader 把裸目录请求的返回内容按裸路径（如 `/src/components/business/GStatusTag`）记录为模块 → 垫片内部 `'./GStatusTag.vue'` 相对解析成**兄弟路径** `…/GStatusTag.vue`（目录外）→ getFile 需追加「.vue 请求回退目录内真实组件 X/X.vue」的后备。**注意此处绝不能回退 index.js**——垫片请求到自己会循环导入，页面整体静默挂起（preload promise 不 settle、无任何报错）。该症状无 console error，只有 getElementById 全空，排查靠注入 getFile 请求日志定位。
+  - **build.mjs 连带**：相对 import 候选新增组件目录式 `…/{lastSeg}/{Pascal(lastSeg)}.vue`（`/components/business/GStatusTag` → GStatusTag.vue）。
+  - **验证**：正向全过——GStatusTag 单件（1+1 文件）、GMonitorPanel→GStatusTag 闭包（2+2 文件）、build 3 components OK、无头浏览器 rows=5/panels=3/三个面板标题/3 个真实 EP tag（warning/primary/danger）/token #0067D1 生效/boot 无错误。负向全对——types 依赖报缺失清单、不存在 id 报错、重复复制报 target exists。
+  - **垫片性质**：预览运行时兼容文件（非库代码），真实 Vite 工程原生解析目录式命名导入，无需垫片。
+- [2026-09-12] (cyc/W1-T9) **D22 回退完成 — 全链路只剩 less**：
+  - init.mjs：删 `--style-lang` 参数与 STYLE_LANG 常量逻辑；main.js 固定 import base.less；页面模板固定 `<style lang="less" scoped>`；constants.js 的 STYLE_LANG 改为固定值 `less`（保留导出，二开者可读）；输出行删 STYLE_LANG。
+  - **连带发现 — 资产库 token 自带 .scss**：init 拷 tokens 时带入 index.scss 与 element-plus.scss（Sass 构建期源产物，`@forward var.scss` 编译期定制用），运行态由预编译 element-plus.css 桥接承载，拷进工作区纯冗余且会触发 build 负向 → init 现在删除这两个文件。**W2/W3 注意**：资产库里的 .scss 源产物属于库自身的构建配置，不影响产品线（二开者拿到的是工作区拷贝，已被 init 清掉）；但若 W3 移植 build_tokens.py 时继续产出 .scss，需在 N 任务的交付物说明里写清「.scss 仅存在于资产库，不入工作区」。
+  - preview/index.html：删 sass.browser.js/immutable.js 两个 script 标签、compileSass 函数、moduleCache 的 scss/sass 注册；.scss/.sass handleModule 改为直接报错（D22 提示）。三个文件已从仓库删除：base.scss、sass.browser.js（5.4MB）、immutable.js。
+  - build.mjs 1b：改为「工作区禁止出现 .scss 与 lang="scss"」（不再读 STYLE_LANG 声明）；build-data.mjs TEXT_EXT 删 .scss。
+  - **验证**：重建 t9-verify 工作区——init 产出 base.less/main.js import less/`<style lang="less">`/无任何 .scss；build OK（1 page, 1 components）；负向两条正确 FAIL（混入 bad.scss、页面改 lang="scss"）；build-data OK；无头浏览器 rows=5/tags=5/token 主色 rgb(0,103,209) 生效/boot 无错误。
+- [2026-09-12] (cyc/W1-merge) **合入书峯 W3 N1-N4（merge eb2f495）+ 修复跨队 Windows 入口 bug（021d9e8）**：
+  - 合并冲突两处均为我方超集（.gitignore 旧 3 行版、init.mjs D22 回退 vs 对方空改动），取 ours。
+  - **重要跨队发现 — 入口判断 Windows 兼容 bug（10 处）**：书峯移植的 .mjs 脚本统一用 `import.meta.url === \`file://${fs.realpathSync(process.argv[1])}\`` 判断直接执行，POSIX 下恰好成立（real 以 / 开头拼出三斜杠），**Windows 下永不相等**（realpath 给反斜杠 → file://D:\... vs import.meta.url 的 file:///D:/...），main() 静默跳过、exit 0 假装通过。修复 10 处（tests×2 + 资产库 6 脚本 + installer + scripts/build_release）→ pathToFileURL 规范化。**教训：书峯报的「10 checks PASS」在 Windows 上实际只执行了部分用例**（token 传播用例此前从未真正跑过）；合入后 validate_package 10/10 PASS 才是真全过。W3 N5 删 .py 前建议书峯在 Windows 上重跑一次全套。
+  - 连带：build_tokens.mjs 可跑后，其生成文件头注释（build_tokens.py→.mjs）模板更新落到库内 4 个生成文件 → refresh_release 重锁 511 哈希（sourceReleaseSha256 变更，这是 py→mjs 移植的预期产物，N5 时无需再锁一次版本号，最终重锁走 build_release --version 1.5.1）。

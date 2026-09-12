@@ -5,6 +5,7 @@ tasks/p0-workspace/t2-smoke/
 tasks/p0-workspace/t3-smoke/
 tasks/p0-workspace/t3-less/
 tasks/p0-workspace/t8-less-check/
+tasks/p0-workspace/t6-collect/
 
 # npm 源包（T8 组装 sass.browser.js 的输入，见 SKILL-REPLACE-PLAN.md D21）
 immutable-5.1.4.tgz
@@ -16,3 +17,4 @@ assets/g-design-enterprise-v1.5.0/frontend/element-plus/dist/
 
 # codegraph 索引（MCP 工具本地缓存，可重建）
 .codegraph/
+tasks/p0-workspace/t9-verify/
