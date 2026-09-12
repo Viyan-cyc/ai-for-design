@@ -47,7 +47,7 @@ export default GButton
 - 禁止 `<style scoped src="./style.scss">` 外链；禁止 `@import` 任何外部样式。
 - 样式块声明为 **less**（任务卡 M0 §2 明确 `lang="less"`）：与生成工作区代码约定一致，复用拷贝时零改写。扁平 CSS 本身就是合法 Less——存量 49 个 style.scss 经盘点全部为扁平 CSS（零嵌套、零 `$` 变量、零 `@import`、零 `#{}`），可直接贴入；未来新组件允许使用 Less 嵌套等语法。
 - `:deep()` 是 Vue scoped CSS 语法（非 sass），less 下合法，保留（存量 39 个文件在用）。
-- 库根 `src/index.ts` 引用的 `tokens/index.scss` 不受本规范影响（仍走 sass）。
+- 库根 `src/index.ts` 引用的 `tokens/index.scss`：按 D23 清零计划，库内 scss 将统一清除，最终态无 scss（D23 独立 PR 处理，本规范暂不展开细节）。
 
 ## 3. Script 纯 JS
 

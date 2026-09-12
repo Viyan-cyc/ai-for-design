@@ -28,9 +28,7 @@
       "spec": "components/specs/g-advanced-filter.json",
       "files": [
         "frontend/element-plus/src/components/business/GAdvancedFilter/GAdvancedFilter.vue",
-        "frontend/element-plus/src/components/business/GAdvancedFilter/index.ts",
-        "frontend/element-plus/src/components/business/GAdvancedFilter/style.scss",
-        "frontend/element-plus/src/components/business/GAdvancedFilter/types.ts"
+        "frontend/element-plus/src/components/business/GAdvancedFilter/index.ts"
       ],
       "tokens": [
         "--g-bg-surface",
@@ -63,9 +61,7 @@
       "files": [
         "frontend/element-plus/src/components/complex/GAlarmTopology/GAlarmTopology.vue",
         "frontend/element-plus/src/components/complex/GAlarmTopology/index.ts",
-        "frontend/element-plus/src/components/complex/GTopology/GTopology.vue",
-        "frontend/element-plus/src/components/complex/GTopology/index.ts",
-        "frontend/element-plus/src/components/complex/GTopology/types.ts"
+        "frontend/element-plus/src/components/complex/GTopology/GTopology.vue"
       ],
       "tokens": [
         "--border-width-normal",
@@ -121,9 +117,7 @@
       "spec": "components/specs/g-alert.json",
       "files": [
         "frontend/element-plus/src/components/basic/GAlert/GAlert.vue",
-        "frontend/element-plus/src/components/basic/GAlert/index.ts",
-        "frontend/element-plus/src/components/basic/GAlert/style.scss",
-        "frontend/element-plus/src/components/basic/GAlert/types.ts"
+        "frontend/element-plus/src/components/basic/GAlert/index.ts"
       ],
       "tokens": [
         "--g-font-family"
@@ -154,9 +148,7 @@
       "spec": "components/specs/g-autocomplete.json",
       "files": [
         "frontend/element-plus/src/components/basic/GAutocomplete/GAutocomplete.vue",
-        "frontend/element-plus/src/components/basic/GAutocomplete/index.ts",
-        "frontend/element-plus/src/components/basic/GAutocomplete/style.scss",
-        "frontend/element-plus/src/components/basic/GAutocomplete/types.ts"
+        "frontend/element-plus/src/components/basic/GAutocomplete/index.ts"
       ],
       "tokens": [
         "--g-font-family"
@@ -187,9 +179,7 @@
       "spec": "components/specs/g-badge.json",
       "files": [
         "frontend/element-plus/src/components/basic/GBadge/GBadge.vue",
-        "frontend/element-plus/src/components/basic/GBadge/index.ts",
-        "frontend/element-plus/src/components/basic/GBadge/style.scss",
-        "frontend/element-plus/src/components/basic/GBadge/types.ts"
+        "frontend/element-plus/src/components/basic/GBadge/index.ts"
       ],
       "tokens": [
         "--g-font-family"
@@ -222,9 +212,7 @@
       "spec": "components/specs/g-batch-action-bar.json",
       "files": [
         "frontend/element-plus/src/components/business/GBatchActionBar/GBatchActionBar.vue",
-        "frontend/element-plus/src/components/business/GBatchActionBar/index.ts",
-        "frontend/element-plus/src/components/business/GBatchActionBar/style.scss",
-        "frontend/element-plus/src/components/business/GBatchActionBar/types.ts"
+        "frontend/element-plus/src/components/business/GBatchActionBar/index.ts"
       ],
       "tokens": [
         "--border-width-normal",
@@ -261,9 +249,7 @@
       "spec": "components/specs/g-breadcrumb.json",
       "files": [
         "frontend/element-plus/src/components/basic/GBreadcrumb/GBreadcrumb.vue",
-        "frontend/element-plus/src/components/basic/GBreadcrumb/index.ts",
-        "frontend/element-plus/src/components/basic/GBreadcrumb/style.scss",
-        "frontend/element-plus/src/components/basic/GBreadcrumb/types.ts"
+        "frontend/element-plus/src/components/basic/GBreadcrumb/index.ts"
       ],
       "tokens": [
         "--g-font-family"
@@ -294,9 +280,7 @@
       "spec": "components/specs/g-button.json",
       "files": [
         "frontend/element-plus/src/components/basic/GButton/GButton.vue",
-        "frontend/element-plus/src/components/basic/GButton/index.ts",
-        "frontend/element-plus/src/components/basic/GButton/style.scss",
-        "frontend/element-plus/src/components/basic/GButton/types.ts"
+        "frontend/element-plus/src/components/basic/GButton/index.ts"
       ],
       "tokens": [
         "--g-control-radius",
@@ -328,9 +312,7 @@
       "spec": "components/specs/g-cascader.json",
       "files": [
         "frontend/element-plus/src/components/basic/GCascader/GCascader.vue",
-        "frontend/element-plus/src/components/basic/GCascader/index.ts",
-        "frontend/element-plus/src/components/basic/GCascader/style.scss",
-        "frontend/element-plus/src/components/basic/GCascader/types.ts"
+        "frontend/element-plus/src/components/basic/GCascader/index.ts"
       ],
       "tokens": [
         "--g-font-family"
@@ -361,9 +343,7 @@
       "spec": "components/specs/g-checkbox.json",
       "files": [
         "frontend/element-plus/src/components/basic/GCheckbox/GCheckbox.vue",
-        "frontend/element-plus/src/components/basic/GCheckbox/index.ts",
-        "frontend/element-plus/src/components/basic/GCheckbox/style.scss",
-        "frontend/element-plus/src/components/basic/GCheckbox/types.ts"
+        "frontend/element-plus/src/components/basic/GCheckbox/index.ts"
       ],
       "tokens": [
         "--g-font-family"
@@ -394,9 +374,7 @@
       "spec": "components/specs/g-collapse.json",
       "files": [
         "frontend/element-plus/src/components/basic/GCollapse/GCollapse.vue",
-        "frontend/element-plus/src/components/basic/GCollapse/index.ts",
-        "frontend/element-plus/src/components/basic/GCollapse/style.scss",
-        "frontend/element-plus/src/components/basic/GCollapse/types.ts"
+        "frontend/element-plus/src/components/basic/GCollapse/index.ts"
       ],
       "tokens": [
         "--g-font-family"
@@ -484,9 +462,7 @@
       "spec": "components/specs/g-date-picker.json",
       "files": [
         "frontend/element-plus/src/components/basic/GDatePicker/GDatePicker.vue",
-        "frontend/element-plus/src/components/basic/GDatePicker/index.ts",
-        "frontend/element-plus/src/components/basic/GDatePicker/style.scss",
-        "frontend/element-plus/src/components/basic/GDatePicker/types.ts"
+        "frontend/element-plus/src/components/basic/GDatePicker/index.ts"
       ],
       "tokens": [
         "--g-font-family"
@@ -519,9 +495,7 @@
       "spec": "components/specs/g-description-panel.json",
       "files": [
         "frontend/element-plus/src/components/business/GDescriptionPanel/GDescriptionPanel.vue",
-        "frontend/element-plus/src/components/business/GDescriptionPanel/index.ts",
-        "frontend/element-plus/src/components/business/GDescriptionPanel/style.scss",
-        "frontend/element-plus/src/components/business/GDescriptionPanel/types.ts"
+        "frontend/element-plus/src/components/business/GDescriptionPanel/index.ts"
       ],
       "tokens": [
         "--space-12",
@@ -553,9 +527,7 @@
       "spec": "components/specs/g-dialog.json",
       "files": [
         "frontend/element-plus/src/components/basic/GDialog/GDialog.vue",
-        "frontend/element-plus/src/components/basic/GDialog/index.ts",
-        "frontend/element-plus/src/components/basic/GDialog/style.scss",
-        "frontend/element-plus/src/components/basic/GDialog/types.ts"
+        "frontend/element-plus/src/components/basic/GDialog/index.ts"
       ],
       "tokens": [
         "--g-font-family"
@@ -586,9 +558,7 @@
       "spec": "components/specs/g-drawer.json",
       "files": [
         "frontend/element-plus/src/components/basic/GDrawer/GDrawer.vue",
-        "frontend/element-plus/src/components/basic/GDrawer/index.ts",
-        "frontend/element-plus/src/components/basic/GDrawer/style.scss",
-        "frontend/element-plus/src/components/basic/GDrawer/types.ts"
+        "frontend/element-plus/src/components/basic/GDrawer/index.ts"
       ],
       "tokens": [
         "--g-font-family"
@@ -619,9 +589,7 @@
       "spec": "components/specs/g-dropdown.json",
       "files": [
         "frontend/element-plus/src/components/basic/GDropdown/GDropdown.vue",
-        "frontend/element-plus/src/components/basic/GDropdown/index.ts",
-        "frontend/element-plus/src/components/basic/GDropdown/style.scss",
-        "frontend/element-plus/src/components/basic/GDropdown/types.ts"
+        "frontend/element-plus/src/components/basic/GDropdown/index.ts"
       ],
       "tokens": [
         "--g-font-family"
@@ -652,9 +620,7 @@
       "spec": "components/specs/g-empty.json",
       "files": [
         "frontend/element-plus/src/components/basic/GEmpty/GEmpty.vue",
-        "frontend/element-plus/src/components/basic/GEmpty/index.ts",
-        "frontend/element-plus/src/components/basic/GEmpty/style.scss",
-        "frontend/element-plus/src/components/basic/GEmpty/types.ts"
+        "frontend/element-plus/src/components/basic/GEmpty/index.ts"
       ],
       "tokens": [
         "--g-font-family"
@@ -687,9 +653,7 @@
       "spec": "components/specs/g-filter-bar.json",
       "files": [
         "frontend/element-plus/src/components/business/GFilterBar/GFilterBar.vue",
-        "frontend/element-plus/src/components/business/GFilterBar/index.ts",
-        "frontend/element-plus/src/components/business/GFilterBar/style.scss",
-        "frontend/element-plus/src/components/business/GFilterBar/types.ts"
+        "frontend/element-plus/src/components/business/GFilterBar/index.ts"
       ],
       "tokens": [
         "--border-width-normal",
@@ -727,9 +691,7 @@
       "spec": "components/specs/g-form-section.json",
       "files": [
         "frontend/element-plus/src/components/business/GFormSection/GFormSection.vue",
-        "frontend/element-plus/src/components/business/GFormSection/index.ts",
-        "frontend/element-plus/src/components/business/GFormSection/style.scss",
-        "frontend/element-plus/src/components/business/GFormSection/types.ts"
+        "frontend/element-plus/src/components/business/GFormSection/index.ts"
       ],
       "tokens": [
         "--border-width-normal",
@@ -766,9 +728,7 @@
       "spec": "components/specs/g-form.json",
       "files": [
         "frontend/element-plus/src/components/basic/GForm/GForm.vue",
-        "frontend/element-plus/src/components/basic/GForm/index.ts",
-        "frontend/element-plus/src/components/basic/GForm/style.scss",
-        "frontend/element-plus/src/components/basic/GForm/types.ts"
+        "frontend/element-plus/src/components/basic/GForm/index.ts"
       ],
       "tokens": [
         "--g-font-family"
@@ -800,8 +760,6 @@
       "files": [
         "frontend/element-plus/src/components/basic/GIcon/GIcon.vue",
         "frontend/element-plus/src/components/basic/GIcon/index.ts",
-        "frontend/element-plus/src/components/basic/GIcon/style.scss",
-        "frontend/element-plus/src/components/basic/GIcon/types.ts",
         "frontend/element-plus/src/icons/icon-aliases.json",
         "frontend/element-plus/src/icons/icon-nodes.json"
       ],
@@ -832,9 +790,7 @@
       "spec": "components/specs/g-input-number.json",
       "files": [
         "frontend/element-plus/src/components/basic/GInputNumber/GInputNumber.vue",
-        "frontend/element-plus/src/components/basic/GInputNumber/index.ts",
-        "frontend/element-plus/src/components/basic/GInputNumber/style.scss",
-        "frontend/element-plus/src/components/basic/GInputNumber/types.ts"
+        "frontend/element-plus/src/components/basic/GInputNumber/index.ts"
       ],
       "tokens": [
         "--g-font-family"
@@ -865,9 +821,7 @@
       "spec": "components/specs/g-input.json",
       "files": [
         "frontend/element-plus/src/components/basic/GInput/GInput.vue",
-        "frontend/element-plus/src/components/basic/GInput/index.ts",
-        "frontend/element-plus/src/components/basic/GInput/style.scss",
-        "frontend/element-plus/src/components/basic/GInput/types.ts"
+        "frontend/element-plus/src/components/basic/GInput/index.ts"
       ],
       "tokens": [
         "--g-control-radius"
@@ -898,9 +852,7 @@
       "spec": "components/specs/g-link.json",
       "files": [
         "frontend/element-plus/src/components/basic/GLink/GLink.vue",
-        "frontend/element-plus/src/components/basic/GLink/index.ts",
-        "frontend/element-plus/src/components/basic/GLink/style.scss",
-        "frontend/element-plus/src/components/basic/GLink/types.ts"
+        "frontend/element-plus/src/components/basic/GLink/index.ts"
       ],
       "tokens": [
         "--g-font-family"
@@ -928,8 +880,7 @@
       ],
       "spec": "components/specs/g-loading.json",
       "files": [
-        "frontend/element-plus/src/components/basic/GLoading/index.ts",
-        "frontend/element-plus/src/components/basic/GLoading/types.ts"
+        "frontend/element-plus/src/components/basic/GLoading/index.ts"
       ],
       "tokens": [],
       "dependencies": []
@@ -958,9 +909,7 @@
       "spec": "components/specs/g-menu.json",
       "files": [
         "frontend/element-plus/src/components/basic/GMenu/GMenu.vue",
-        "frontend/element-plus/src/components/basic/GMenu/index.ts",
-        "frontend/element-plus/src/components/basic/GMenu/style.scss",
-        "frontend/element-plus/src/components/basic/GMenu/types.ts"
+        "frontend/element-plus/src/components/basic/GMenu/index.ts"
       ],
       "tokens": [
         "--g-font-family"
@@ -988,8 +937,7 @@
       ],
       "spec": "components/specs/g-message.json",
       "files": [
-        "frontend/element-plus/src/components/basic/GMessage/index.ts",
-        "frontend/element-plus/src/components/basic/GMessage/types.ts"
+        "frontend/element-plus/src/components/basic/GMessage/index.ts"
       ],
       "tokens": [],
       "dependencies": []
@@ -1074,7 +1022,6 @@
       "spec": "components/specs/g-monitor-panel.json",
       "files": [
         "frontend/element-plus/src/components/business/GStatusTag/GStatusTag.vue",
-        "frontend/element-plus/src/components/business/GStatusTag/index.ts",
         "frontend/element-plus/src/components/complex/GMonitorPanel/GMonitorPanel.vue",
         "frontend/element-plus/src/components/complex/GMonitorPanel/index.ts"
       ],
@@ -1117,8 +1064,7 @@
       ],
       "spec": "components/specs/g-notification.json",
       "files": [
-        "frontend/element-plus/src/components/basic/GNotification/index.ts",
-        "frontend/element-plus/src/components/basic/GNotification/types.ts"
+        "frontend/element-plus/src/components/basic/GNotification/index.ts"
       ],
       "tokens": [],
       "dependencies": []
@@ -1149,9 +1095,7 @@
       "spec": "components/specs/g-page-header.json",
       "files": [
         "frontend/element-plus/src/components/business/GPageHeader/GPageHeader.vue",
-        "frontend/element-plus/src/components/business/GPageHeader/index.ts",
-        "frontend/element-plus/src/components/business/GPageHeader/style.scss",
-        "frontend/element-plus/src/components/business/GPageHeader/types.ts"
+        "frontend/element-plus/src/components/business/GPageHeader/index.ts"
       ],
       "tokens": [
         "--border-width-normal",
@@ -1188,9 +1132,7 @@
       "spec": "components/specs/g-pagination.json",
       "files": [
         "frontend/element-plus/src/components/basic/GPagination/GPagination.vue",
-        "frontend/element-plus/src/components/basic/GPagination/index.ts",
-        "frontend/element-plus/src/components/basic/GPagination/style.scss",
-        "frontend/element-plus/src/components/basic/GPagination/types.ts"
+        "frontend/element-plus/src/components/basic/GPagination/index.ts"
       ],
       "tokens": [
         "--g-font-family"
@@ -1223,9 +1165,7 @@
       "spec": "components/specs/g-permission-state.json",
       "files": [
         "frontend/element-plus/src/components/business/GPermissionState/GPermissionState.vue",
-        "frontend/element-plus/src/components/business/GPermissionState/index.ts",
-        "frontend/element-plus/src/components/business/GPermissionState/style.scss",
-        "frontend/element-plus/src/components/business/GPermissionState/types.ts"
+        "frontend/element-plus/src/components/business/GPermissionState/index.ts"
       ],
       "tokens": [
         "--g-bg-surface",
@@ -1257,9 +1197,7 @@
       "spec": "components/specs/g-popconfirm.json",
       "files": [
         "frontend/element-plus/src/components/basic/GPopconfirm/GPopconfirm.vue",
-        "frontend/element-plus/src/components/basic/GPopconfirm/index.ts",
-        "frontend/element-plus/src/components/basic/GPopconfirm/style.scss",
-        "frontend/element-plus/src/components/basic/GPopconfirm/types.ts"
+        "frontend/element-plus/src/components/basic/GPopconfirm/index.ts"
       ],
       "tokens": [
         "--g-font-family"
@@ -1290,9 +1228,7 @@
       "spec": "components/specs/g-popover.json",
       "files": [
         "frontend/element-plus/src/components/basic/GPopover/GPopover.vue",
-        "frontend/element-plus/src/components/basic/GPopover/index.ts",
-        "frontend/element-plus/src/components/basic/GPopover/style.scss",
-        "frontend/element-plus/src/components/basic/GPopover/types.ts"
+        "frontend/element-plus/src/components/basic/GPopover/index.ts"
       ],
       "tokens": [
         "--g-font-family"
@@ -1323,9 +1259,7 @@
       "spec": "components/specs/g-progress.json",
       "files": [
         "frontend/element-plus/src/components/basic/GProgress/GProgress.vue",
-        "frontend/element-plus/src/components/basic/GProgress/index.ts",
-        "frontend/element-plus/src/components/basic/GProgress/style.scss",
-        "frontend/element-plus/src/components/basic/GProgress/types.ts"
+        "frontend/element-plus/src/components/basic/GProgress/index.ts"
       ],
       "tokens": [
         "--g-font-family"
@@ -1356,9 +1290,7 @@
       "spec": "components/specs/g-radio.json",
       "files": [
         "frontend/element-plus/src/components/basic/GRadio/GRadio.vue",
-        "frontend/element-plus/src/components/basic/GRadio/index.ts",
-        "frontend/element-plus/src/components/basic/GRadio/style.scss",
-        "frontend/element-plus/src/components/basic/GRadio/types.ts"
+        "frontend/element-plus/src/components/basic/GRadio/index.ts"
       ],
       "tokens": [
         "--g-font-family"
@@ -1391,9 +1323,7 @@
       "spec": "components/specs/g-resource-tree.json",
       "files": [
         "frontend/element-plus/src/components/business/GResourceTree/GResourceTree.vue",
-        "frontend/element-plus/src/components/business/GResourceTree/index.ts",
-        "frontend/element-plus/src/components/business/GResourceTree/style.scss",
-        "frontend/element-plus/src/components/business/GResourceTree/types.ts"
+        "frontend/element-plus/src/components/business/GResourceTree/index.ts"
       ],
       "tokens": [
         "--border-width-normal",
@@ -1428,9 +1358,7 @@
       "spec": "components/specs/g-result.json",
       "files": [
         "frontend/element-plus/src/components/basic/GResult/GResult.vue",
-        "frontend/element-plus/src/components/basic/GResult/index.ts",
-        "frontend/element-plus/src/components/basic/GResult/style.scss",
-        "frontend/element-plus/src/components/basic/GResult/types.ts"
+        "frontend/element-plus/src/components/basic/GResult/index.ts"
       ],
       "tokens": [
         "--g-font-family"
@@ -1490,9 +1418,7 @@
       "spec": "components/specs/g-select.json",
       "files": [
         "frontend/element-plus/src/components/basic/GSelect/GSelect.vue",
-        "frontend/element-plus/src/components/basic/GSelect/index.ts",
-        "frontend/element-plus/src/components/basic/GSelect/style.scss",
-        "frontend/element-plus/src/components/basic/GSelect/types.ts"
+        "frontend/element-plus/src/components/basic/GSelect/index.ts"
       ],
       "tokens": [
         "--g-font-family"
@@ -1523,9 +1449,7 @@
       "spec": "components/specs/g-skeleton.json",
       "files": [
         "frontend/element-plus/src/components/basic/GSkeleton/GSkeleton.vue",
-        "frontend/element-plus/src/components/basic/GSkeleton/index.ts",
-        "frontend/element-plus/src/components/basic/GSkeleton/style.scss",
-        "frontend/element-plus/src/components/basic/GSkeleton/types.ts"
+        "frontend/element-plus/src/components/basic/GSkeleton/index.ts"
       ],
       "tokens": [
         "--g-font-family"
@@ -1587,9 +1511,7 @@
       "spec": "components/specs/g-steps.json",
       "files": [
         "frontend/element-plus/src/components/basic/GSteps/GSteps.vue",
-        "frontend/element-plus/src/components/basic/GSteps/index.ts",
-        "frontend/element-plus/src/components/basic/GSteps/style.scss",
-        "frontend/element-plus/src/components/basic/GSteps/types.ts"
+        "frontend/element-plus/src/components/basic/GSteps/index.ts"
       ],
       "tokens": [
         "--g-font-family"
@@ -1620,9 +1542,7 @@
       "spec": "components/specs/g-switch.json",
       "files": [
         "frontend/element-plus/src/components/basic/GSwitch/GSwitch.vue",
-        "frontend/element-plus/src/components/basic/GSwitch/index.ts",
-        "frontend/element-plus/src/components/basic/GSwitch/style.scss",
-        "frontend/element-plus/src/components/basic/GSwitch/types.ts"
+        "frontend/element-plus/src/components/basic/GSwitch/index.ts"
       ],
       "tokens": [
         "--g-font-family"
@@ -1655,9 +1575,7 @@
       "spec": "components/specs/g-table-toolbar.json",
       "files": [
         "frontend/element-plus/src/components/business/GTableToolbar/GTableToolbar.vue",
-        "frontend/element-plus/src/components/business/GTableToolbar/index.ts",
-        "frontend/element-plus/src/components/business/GTableToolbar/style.scss",
-        "frontend/element-plus/src/components/business/GTableToolbar/types.ts"
+        "frontend/element-plus/src/components/business/GTableToolbar/index.ts"
       ],
       "tokens": [
         "--font-size-small",
@@ -1689,9 +1607,7 @@
       "spec": "components/specs/g-table.json",
       "files": [
         "frontend/element-plus/src/components/basic/GTable/GTable.vue",
-        "frontend/element-plus/src/components/basic/GTable/index.ts",
-        "frontend/element-plus/src/components/basic/GTable/style.scss",
-        "frontend/element-plus/src/components/basic/GTable/types.ts"
+        "frontend/element-plus/src/components/basic/GTable/index.ts"
       ],
       "tokens": [
         "--g-bg-hover",
@@ -1723,9 +1639,7 @@
       "spec": "components/specs/g-tabs.json",
       "files": [
         "frontend/element-plus/src/components/basic/GTabs/GTabs.vue",
-        "frontend/element-plus/src/components/basic/GTabs/index.ts",
-        "frontend/element-plus/src/components/basic/GTabs/style.scss",
-        "frontend/element-plus/src/components/basic/GTabs/types.ts"
+        "frontend/element-plus/src/components/basic/GTabs/index.ts"
       ],
       "tokens": [
         "--g-font-family"
@@ -1756,9 +1670,7 @@
       "spec": "components/specs/g-tag.json",
       "files": [
         "frontend/element-plus/src/components/basic/GTag/GTag.vue",
-        "frontend/element-plus/src/components/basic/GTag/index.ts",
-        "frontend/element-plus/src/components/basic/GTag/style.scss",
-        "frontend/element-plus/src/components/basic/GTag/types.ts"
+        "frontend/element-plus/src/components/basic/GTag/index.ts"
       ],
       "tokens": [
         "--g-font-family"
@@ -1789,9 +1701,7 @@
       "spec": "components/specs/g-textarea.json",
       "files": [
         "frontend/element-plus/src/components/basic/GTextarea/GTextarea.vue",
-        "frontend/element-plus/src/components/basic/GTextarea/index.ts",
-        "frontend/element-plus/src/components/basic/GTextarea/style.scss",
-        "frontend/element-plus/src/components/basic/GTextarea/types.ts"
+        "frontend/element-plus/src/components/basic/GTextarea/index.ts"
       ],
       "tokens": [
         "--g-font-family"
@@ -1822,9 +1732,7 @@
       "spec": "components/specs/g-time-picker.json",
       "files": [
         "frontend/element-plus/src/components/basic/GTimePicker/GTimePicker.vue",
-        "frontend/element-plus/src/components/basic/GTimePicker/index.ts",
-        "frontend/element-plus/src/components/basic/GTimePicker/style.scss",
-        "frontend/element-plus/src/components/basic/GTimePicker/types.ts"
+        "frontend/element-plus/src/components/basic/GTimePicker/index.ts"
       ],
       "tokens": [
         "--g-font-family"
@@ -1882,9 +1790,7 @@
       "spec": "components/specs/g-tooltip.json",
       "files": [
         "frontend/element-plus/src/components/basic/GTooltip/GTooltip.vue",
-        "frontend/element-plus/src/components/basic/GTooltip/index.ts",
-        "frontend/element-plus/src/components/basic/GTooltip/style.scss",
-        "frontend/element-plus/src/components/basic/GTooltip/types.ts"
+        "frontend/element-plus/src/components/basic/GTooltip/index.ts"
       ],
       "tokens": [
         "--g-font-family"
@@ -1913,8 +1819,7 @@
       "spec": "components/specs/g-topology.json",
       "files": [
         "frontend/element-plus/src/components/complex/GTopology/GTopology.vue",
-        "frontend/element-plus/src/components/complex/GTopology/index.ts",
-        "frontend/element-plus/src/components/complex/GTopology/types.ts"
+        "frontend/element-plus/src/components/complex/GTopology/index.ts"
       ],
       "tokens": [
         "--border-width-normal",
@@ -1968,9 +1873,7 @@
       "spec": "components/specs/g-transfer.json",
       "files": [
         "frontend/element-plus/src/components/basic/GTransfer/GTransfer.vue",
-        "frontend/element-plus/src/components/basic/GTransfer/index.ts",
-        "frontend/element-plus/src/components/basic/GTransfer/style.scss",
-        "frontend/element-plus/src/components/basic/GTransfer/types.ts"
+        "frontend/element-plus/src/components/basic/GTransfer/index.ts"
       ],
       "tokens": [
         "--g-font-family"
@@ -2001,9 +1904,7 @@
       "spec": "components/specs/g-tree-select.json",
       "files": [
         "frontend/element-plus/src/components/basic/GTreeSelect/GTreeSelect.vue",
-        "frontend/element-plus/src/components/basic/GTreeSelect/index.ts",
-        "frontend/element-plus/src/components/basic/GTreeSelect/style.scss",
-        "frontend/element-plus/src/components/basic/GTreeSelect/types.ts"
+        "frontend/element-plus/src/components/basic/GTreeSelect/index.ts"
       ],
       "tokens": [
         "--g-font-family"
@@ -2034,9 +1935,7 @@
       "spec": "components/specs/g-tree-v2.json",
       "files": [
         "frontend/element-plus/src/components/basic/GTreeV2/GTreeV2.vue",
-        "frontend/element-plus/src/components/basic/GTreeV2/index.ts",
-        "frontend/element-plus/src/components/basic/GTreeV2/style.scss",
-        "frontend/element-plus/src/components/basic/GTreeV2/types.ts"
+        "frontend/element-plus/src/components/basic/GTreeV2/index.ts"
       ],
       "tokens": [
         "--g-font-family"
@@ -2067,9 +1966,7 @@
       "spec": "components/specs/g-tree.json",
       "files": [
         "frontend/element-plus/src/components/basic/GTree/GTree.vue",
-        "frontend/element-plus/src/components/basic/GTree/index.ts",
-        "frontend/element-plus/src/components/basic/GTree/style.scss",
-        "frontend/element-plus/src/components/basic/GTree/types.ts"
+        "frontend/element-plus/src/components/basic/GTree/index.ts"
       ],
       "tokens": [
         "--g-font-family"
@@ -2100,9 +1997,7 @@
       "spec": "components/specs/g-upload.json",
       "files": [
         "frontend/element-plus/src/components/basic/GUpload/GUpload.vue",
-        "frontend/element-plus/src/components/basic/GUpload/index.ts",
-        "frontend/element-plus/src/components/basic/GUpload/style.scss",
-        "frontend/element-plus/src/components/basic/GUpload/types.ts"
+        "frontend/element-plus/src/components/basic/GUpload/index.ts"
       ],
       "tokens": [
         "--g-font-family"

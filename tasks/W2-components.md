@@ -90,3 +90,13 @@
   - 连带耦合处理：src/index.ts 删 GTopology/types 重导出行 ✓；src/page-types.ts 并入 TopologyStatus/Node/Edge 定义 ✓。
   - 【需拍板】package.json 加 `less` devDependency（回写区 #3 登记）：D22 钉死 less，vite build `lang="less"` 必需 less 预处理器，已 `npm install -D less` 临时装入 node_modules，但 package.json 的 devDependencies 需补登记 `less`（属 assets/ 下非 components/，按决策纪律标「需拍板」）。当前 package.json 已被 npm install -D less 写入，可保留。
 - [2026-09-12] (moyuntian/W2-M2) codemod 脚本支持 `--check` 校验模式（零变更=合规），可直接用于 M3 设计师新组件提交 checklist（component-format.md §12 第 2 条已写明用法）。
+- [2026-09-12] (moyuntian/W2-M2) **重锁执行**（用户裁决：谁改内容谁刷新锁）：
+  - `node scripts/build_indexes.mjs` → 重新生成 components/index.json（61 组件 source 文件列表变化：types.ts/style.scss 已删，index.files 依赖 dependencyFiles 重算）。
+  - `node scripts/refresh_release.mjs` → 刷新 411 source 哈希（release/source-lock.json）。
+  - `node tests/validate_package.mjs` → 10/10 PASS ✓。
+  - `node tests/validate_coordination.mjs` → **第 3 条 FAIL**：`validate_library.mjs failed: ERROR: Generated output out of date: components/index.json`。
+    - 根因：coordination 测试第 128-129 行 `styleFile = .../GButton/style.scss; fs.appendFileSync(styleFile, '\n/* mutation */\n')`——W2 删了 style.scss，appendFileSync 创建了新文件，build_indexes 重算时 `['index.ts','types.ts','style.scss']` 检测到 style.scss 存在，item.files 变化 → index.json 应重算 → 与副本旧 index.json 不一致报过期。
+    - 【需拍板】tests/validate_coordination.mjs 第 128 行 `style.scss` → `GButton.vue`（主文件，W2 后必存在）。属 W3 所有权（tests/），但 W2 删 style.scss 的直接连带。建议 W2 代改：`style.scss` → `GButton.vue`（或 `index.ts`），测试意图「注册源变更被 refresh 捕获」对任意 source 文件都成立。
+  - component-format.md 第 50 行已按 D23 改「库内 scss 将按 D23 清零，最终态无 scss」。
+  - AI-ENTRY.md 第 17 行 query_assets.py → .mjs 已改（用户裁决批准）。
+- [2026-09-12] (moyuntian/W2-M3) M3 设计师新组件流程：designer-component-guide.md 由用户已写好（未在仓库，待合入）。component-format.md §12 checklist 可直接引用。M3 待 designer-component-guide.md 合入后打勾。
