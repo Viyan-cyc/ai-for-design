@@ -147,4 +147,6 @@ function main() {
   }
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) main();
+// 通过真实路径判断直接执行（os.tmpdir() 返回 /var/... 而 import.meta.url 是 /private/var/...，
+// 直接字符串比较会因 macOS 符号链接失配而静默跳过 main）。
+if (process.argv[1] && import.meta.url === `file://${fs.realpathSync(process.argv[1])}`) main();

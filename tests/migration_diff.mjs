@@ -25,7 +25,10 @@ const LIB = path.join(ROOT, LIB_REL);
 
 /** 逐条替换规则：迁移导致且被允许的文本差异（顺序敏感，先长后短）。 */
 const ALLOWED_REWRITES = [
-  // 生成头注释与文档内嵌命令：python3/python 调用改为 node
+  // 文档内嵌命令：python3/python 调用改为 node
+  [/python3 scripts\//g, 'node scripts/'],
+  [/python scripts\//g, 'node scripts/'],
+  // 生成头注释与文档内嵌命令：脚本名 .py → .mjs
   [/scripts\/build_tokens\.py/g, 'scripts/build_tokens.mjs'],
   [/scripts\/build_indexes\.py/g, 'scripts/build_indexes.mjs'],
   [/scripts\/export_icons\.py/g, 'scripts/export_icons.mjs'],
