@@ -44,7 +44,7 @@
     "frontend/element-plus/licenses/THIRD-PARTY-NOTICES.md",
     "frontend/element-plus/tokens/frost-decoration.css"
   ],
-  "sourceReleaseSha256": "2cc7e5ef1f41cb7524fc48ad89f46f9a094691d44e9c83bc4afd6866b67cddb6",
+  "sourceReleaseSha256": "4001c9d1705ce23d2d88ac752fd26436f7702383d830139e2372863cb32cddab",
   "sourceReleaseHashFormat": "manifest-sha256 and sorted path:sha256 lines",
   "sourceLock": "release/source-lock.json",
   "materialRules": "design/frosted-glass.md"

@@ -1,6 +1,6 @@
 {
   "manifestSha256": "34c0af4dd90572abb0103539b740e7ec7a14ff1ba1cec2fafdc9d918b65bee00",
-  "sourceReleaseSha256": "2cc7e5ef1f41cb7524fc48ad89f46f9a094691d44e9c83bc4afd6866b67cddb6",
+  "sourceReleaseSha256": "4001c9d1705ce23d2d88ac752fd26436f7702383d830139e2372863cb32cddab",
   "files": {
     "README.md": "ba0926b33f26d546ef7186b9429b1e6aa13fc318a3e0af43bb10d30cf6b7747d",
     "asset-library.contract.json": "73940d58ed3a1915981f360cff09986f90cc6db19b94cb6d1f174db1e63e352a",
@@ -399,7 +399,7 @@
     "scripts/export_icons.mjs": "f3e026f4c249c66b3cce3e99c9e676f81efd82fdbcff0b940304af658efa9fcf",
     "scripts/migrate_components.mjs": "196198d05507f30c416c1ecfbbc462d164b5e39cb7f0a41f95177099ac617473",
     "scripts/migration-report.json": "e86922f2f4917ab1e4a0aac196c8d6d13daa323142c00acb85b9930b23b1d3ff",
-    "scripts/query_assets.mjs": "3e2fbbac5e75f2b01f4a8b14f0daaec1e929212afafe0bf8bfeee5c0a3ce7aac",
+    "scripts/query_assets.mjs": "0c4dbf486b2a3e15cbd5afe94dfa03f3001478a42d156b4f93422690d37ecb67",
     "scripts/refresh_release.mjs": "5ddaf6b375b91fedbd4cbd78ab8c3bbf8d87f9ef50143aa32a8b30fd2361ef72",
     "scripts/schema_tools.mjs": "b1ffdae2ee16b2c626f64a28f41a1171f4bdef446345191c8a39ef0b3bd4d784",
     "scripts/validate_library.mjs": "a649d507523ac288ff7035113cc655d3d1b64a33161e50a3f94c1a0eebba237b"

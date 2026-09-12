@@ -72,13 +72,14 @@ skill 目录不存放任何设计数据副本：token、组件、模板、毛玻
 3. 整包模式可直接使用包根；包根 `asset-catalog.json` → `libraries['g-design-enterprise'].root` 定位库目录。
 4. 路径失效时先在用户已知位置查找；仍缺失才询问。
 
-定位后读取 LIBRARY 的 `asset-manifest.json` 与 `asset-library.contract.json`。查询资产用库内脚本（先摘要、选中后再读规范与实现）：
+定位后读取 LIBRARY 的 `asset-manifest.json` 与 `asset-library.contract.json`。查询资产用库内脚本（**全量清单必带 `--brief`**——单行一条 id/name/useWhen，输出量约为完整 JSON 的 1/5；选中后再读单条 spec）：
 
 ```sh
-node LIBRARY/scripts/query_assets.mjs templates --search 列表     # 页面模板摘要
-node LIBRARY/scripts/query_assets.mjs components --search 状态     # 组件摘要
-node LIBRARY/scripts/query_assets.mjs components g-status-tag      # 单个组件 spec（useWhen/level/source）
-node LIBRARY/scripts/query_assets.mjs tokens frost-common          # token 分组（含 frost-*）
+node LIBRARY/scripts/query_assets.mjs templates --brief              # 页面模板清单（单行摘要）
+node LIBRARY/scripts/query_assets.mjs components --brief             # 组件清单（单行摘要）
+node LIBRARY/scripts/query_assets.mjs components --search 状态 --brief  # 搜索 + 单行摘要
+node LIBRARY/scripts/query_assets.mjs components g-status-tag        # 单个组件 spec（useWhen/level/source）
+node LIBRARY/scripts/query_assets.mjs tokens frost-common            # token 分组（含 frost-*）
 ```
 
 规范入口：`design/rules.md`；颜色场景按需读 `design/color-rules.md` 与 `design/color-tokens.md`；毛玻璃见下文「毛玻璃与视觉风格」。
@@ -138,7 +139,9 @@ init 生成的 starter 中 `COMPONENT_MODE` 默认为 `'hybrid'`，确认结果�
 - `views/{slug}/index.vue` 为页面主组件（替换 starter），以组合编排为主。
 - **拆分触发式**：子组件仅在 **>150 行 / 被复用 / 状态复杂** 时才拆出独立文件（常规页面约 4-8 个文件）；页面私有放 `views/{slug}/components/`，跨页复用放 `src/components/`（复用的 G 组件由 collect 平铺落位到 `src/components/GName/`）。
 - **无依赖的文件并行写**：constants.js、locales.js、mock 数据、互不依赖的子组件可在同一轮并行创建。
-- 常量放 `views/{slug}/js/constants.js`（全大写+下划线命名）；页面词条放 `src/locales/pages/{slug}.js`（单文件双语言，见下文 i18n）。
+- **常量放 `views/{slug}/js/constants.js`**（全大写+下划线命名）；页面词条放 `src/locales/pages/{slug}.js`（单文件双语言，见下文 i18n）。
+- **写码前先规划后落笔**：先列出每个待写文件的 imports（含相对路径层级）、使用的 token 变量名、引用的词条 key、模板用到的组件名，再开始写——写码过程中 token/词条以清单为准，避免写完靠 build 返工（token 不存在、t 当函数调用、模板引用未定义词条等高频错全可在此步拦截）。
+- **分批 build 早暴露**：build 毫秒级，不要等全部文件写完才跑——首个子组件 + constants/locales 写完即跑一轮（token 拼写/白名单类错误在第一个组件就暴露），全部写完再跑最终轮。
 
 ### Step 6 — 生成前自检（MANDATORY，build 前必做）
 
@@ -175,6 +178,15 @@ node scripts/build.mjs --dir "{artifact-folder}/{slug}"
 ```sh
 node scripts/serve.mjs --dir "{artifact-folder}/{slug}" --port 8765
 ```
+
+**无头冒烟（推荐，一条命令跑完渲染/token/主题切换校验）**：
+
+```sh
+node scripts/smoke.mjs --dir "{artifact-folder}/{slug}"
+# RESULT: OK | render=1 token=#0067D1 themeSwitch=ok errors=0 missing404=0
+```
+
+前置（每机器一次）：`npm i -g puppeteer-core`；自动探测系统 Chrome/Edge，不下载浏览器。检查项：页面无报错渲染、`--el-color-primary` 解析为资产品牌色、`setTheme('dark')` 明暗切换生效、非 favicon 资源 404 为空。`--selector` 可指定页面特征选择器（默认 `.event-card, .page-root, main, #app .el-button`）。
 
 交付说明需注明：演示假设与未验证项、组件复用 gap（reuse 模式必述）、以及二次开发入口（改 `src/api/{slug}.js` 对接真实接口，页面零改动）。
 

@@ -5,11 +5,14 @@
 ## 资产查询（库内脚本，只读）
 
 ```sh
-node LIBRARY/scripts/query_assets.mjs templates --search 列表     # 页面模板摘要
-node LIBRARY/scripts/query_assets.mjs components g-button         # 单组件 spec
-node LIBRARY/scripts/query_assets.mjs components --search 状态    # 组件搜索
-node LIBRARY/scripts/query_assets.mjs tokens frost-common         # token 分组数值
+node LIBRARY/scripts/query_assets.mjs templates --brief          # 页面模板清单（单行摘要：id/name/useWhen）
+node LIBRARY/scripts/query_assets.mjs components --brief         # 组件清单（单行摘要）
+node LIBRARY/scripts/query_assets.mjs components --search 状态 --brief  # 搜索 + 单行摘要
+node LIBRARY/scripts/query_assets.mjs components g-button        # 单组件 spec（完整）
+node LIBRARY/scripts/query_assets.mjs tokens frost-common        # token 分组数值
 ```
+
+`--brief` 用于全量/搜索清单（输出量约 1/5）；单条 spec 不用。
 
 ## 生成工作区
 
@@ -36,6 +39,11 @@ node SKILL/scripts/build.mjs --dir "{artifact-folder}/{slug}"
 
 node SKILL/scripts/serve.mjs --dir "{artifact-folder}/{slug}" --port 8765
 # 浏览器限制 file:// 动态加载时的备选：http://localhost:8765/index.html
+
+node SKILL/scripts/smoke.mjs --dir "{artifact-folder}/{slug}"
+# 无头冒烟：渲染 + token 品牌色 + 明暗切换 + 资源 404 检查
+# RESULT: OK | render=1 token=#0067D1 themeSwitch=ok errors=0 missing404=0
+# 前置（每机器一次）：npm i -g puppeteer-core；自动探测系统 Chrome/Edge
 ```
 
 ## 毛玻璃示例

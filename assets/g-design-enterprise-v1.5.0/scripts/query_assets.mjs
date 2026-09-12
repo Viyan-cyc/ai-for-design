@@ -112,20 +112,23 @@ function query(kind, key = null, search = null) {
 
 function main() {
   const argv = process.argv.slice(2);
-  // 对齐 argparse：kind ∈ {tokens, components, templates, icons}，key 位置参数可选，--search 命名参数
+  // 对齐 argparse：kind ∈ {tokens, components, templates, icons}，key 位置参数可选，--search 命名参数，--brief 单行摘要
   const choices = ['tokens', 'components', 'templates', 'icons'];
   const positional = [];
   let search = null;
+  let brief = false;
   for (let i = 0; i < argv.length; i += 1) {
     if (argv[i] === '--search') {
       if (i + 1 >= argv.length) {
-        console.error('usage: query_assets.mjs [-h] [--search SEARCH] {tokens,components,templates,icons} [key]');
+        console.error('usage: query_assets.mjs [-h] [--search SEARCH] [--brief] {tokens,components,templates,icons} [key]');
         process.exit(2);
       }
       search = argv[i + 1];
       i += 1;
+    } else if (argv[i] === '--brief') {
+      brief = true;
     } else if (argv[i] === '-h' || argv[i] === '--help') {
-      console.log('usage: query_assets.mjs [-h] [--search SEARCH] {tokens,components,templates,icons} [key]');
+      console.log('usage: query_assets.mjs [-h] [--search SEARCH] [--brief] {tokens,components,templates,icons} [key]');
       process.exit(0);
     } else {
       positional.push(argv[i]);
@@ -137,7 +140,16 @@ function main() {
     process.exit(2);
   }
   try {
-    process.stdout.write(`${JSON.stringify(query(kind, key, search), null, 2)}\n`);
+    const result = query(kind, key, search);
+    if (brief && Array.isArray(result)) {
+      // 单行一条：id + name + useWhen，输出量约为完整 JSON 的 1/5（组件/模板全量清单场景）
+      for (const item of result) {
+        const useWhen = Array.isArray(item.useWhen) ? item.useWhen.join('/') : '';
+        console.log(`${item.id ?? item.name}\t${item.name ?? ''}\t${useWhen}`);
+      }
+      return;
+    }
+    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
   } catch (error) {
     if (error instanceof Error && error.message.startsWith('Unknown ')) {
       console.log(`ERROR: ${error.message}`);
