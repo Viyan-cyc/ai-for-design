@@ -123,7 +123,7 @@ init 生成的 starter 中 `COMPONENT_MODE` 默认为 `'hybrid'`，确认结果�
 ### Step 4 — 组件匹配与复用（hybrid / reuse）
 
 1. 对页面需要的每个能力，用 `query_assets.mjs components --search <关键词>` 圈候选，读 spec 的 `useWhen`/`states` 确认语义匹配。
-2. **命中** → 用 collect 脚本一次性拷贝依赖闭包（自动递归相对 import、落位到 `src/components/{basic|business|complex}/GName/`、加来源注释）：
+2. **命中** → 用 collect 脚本一次性拷贝依赖闭包（自动递归相对 import、落位到 `src/components/GName/`、加来源注释）：
    ```sh
    node scripts/collect_component.mjs <LIBRARY> <component-id> "{slug}/src" "{slug}/src/components"
    ```
@@ -136,7 +136,7 @@ init 生成的 starter 中 `COMPONENT_MODE` 默认为 `'hybrid'`，确认结果�
 在 `SRC_DIR` 下按 [references/code-conventions.md](references/code-conventions.md) 编写页面：
 
 - `views/{slug}/index.vue` 为页面主组件（替换 starter），以组合编排为主。
-- **拆分触发式**：子组件仅在 **>150 行 / 被复用 / 状态复杂** 时才拆出独立文件（常规页面约 4-8 个文件）；页面私有放 `views/{slug}/components/`，跨页复用放 `src/components/`（复用的 G 组件按 collect 落位约定）。
+- **拆分触发式**：子组件仅在 **>150 行 / 被复用 / 状态复杂** 时才拆出独立文件（常规页面约 4-8 个文件）；页面私有放 `views/{slug}/components/`，跨页复用放 `src/components/`（复用的 G 组件由 collect 平铺落位到 `src/components/GName/`）。
 - **无依赖的文件并行写**：constants.js、locales.js、mock 数据、互不依赖的子组件可在同一轮并行创建。
 - 常量放 `views/{slug}/js/constants.js`（全大写+下划线命名）；页面词条放 `src/locales/pages/{slug}.js`（单文件双语言，见下文 i18n）。
 

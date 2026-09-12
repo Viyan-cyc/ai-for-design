@@ -111,15 +111,15 @@ export { fetchList, fetchDetail }
    node scripts/collect_component.mjs <LIBRARY> <component-id> "{slug}/src" "{slug}/src/components"
    ```
    - 自动递归解析相对 import 拷齐依赖闭包；只拷 `GName.vue`（index.ts / examples.vue 不拷，D20）。
-   - **落位**：`src/components/{basic|business|complex}/GName/GName.vue`——与资产库分类名一致，溯源与升级 diff 友好（D17）。页面内 import：
+   - **落位**：`src/components/GName/GName.vue`——平铺（Vue 工程通用习惯，2026-09-12 用户拍板；资产库的 basic/business/complex 分类只保留在来源注释里，不映射成目录）。页面内 import：
      ```js
-     import GStatusTag from '../../components/business/GStatusTag/GStatusTag.vue'
+     import GStatusTag from '../../components/GStatusTag/GStatusTag.vue'
      ```
    - 每个拷入文件自动加来源注释（版本 + 库内路径），如 `<!-- 源: g-design 1.5.0 g-status-tag (…) — 禁止修改；升级走资产库 -->`。
    - 额外生成 `index.js` interop 垫片——预览运行时兼容文件（sfc-loader 0.9.5 的目录式命名导入需要它；真实 Vite 工程原生解析，无需垫片），勿手改勿删。
 3. **禁止改写拷入的组件文件**（含来源注释）。组件不合用时的正确路径：改需求描述走资产库升级（manage-design-assets），或在页面用 wrapper 组件包一层，而不是改拷贝件。build 与人工审查都会盯这条。
 4. 依赖闭包不完整（组件还引用 types.ts 等未迁移文件）时 collect 会 FAIL 并列出缺失清单——这是资产库迁移 gap，如实上报用户，**不要手工内联修复**。
-5. 落位子目录也可按业务自判放 `views/{slug}/components/`（D11），但 G 组件默认走上表分类落位；手写组件不受分类约束。
+5. 组件落位按 Vue 通用规范：复用 G 组件与跨页复用手写组件放 `src/components/`；页面私有组件放 `views/{slug}/components/`（D11）。
 
 ## 8. 相对路径计算（最易错项）
 
@@ -137,7 +137,7 @@ export { fetchList, fetchDetail }
     │   ├── uploads/logo.png               ← 素材
     │   └── images/ran.svg                 ← SVG 图标
     ├── components/
-    │   ├── business/GStatusTag/GStatusTag.vue  ← 复用 G 组件（collect 落位）
+    │   ├── GStatusTag/GStatusTag.vue           ← 复用 G 组件（collect 平铺落位）
     │   └── SharedCard.vue                 ← 手写跨页组件（按需创建）
     ├── locales/lang/zh-CN/common.json     ← 全局共享词条
     └── views/{slug}/
@@ -153,7 +153,7 @@ export { fetchList, fetchDetail }
   素材:        import logo from '../../assets/uploads/logo.png'
   SVG 图标:    import ranIcon from '../../assets/images/ran.svg'
   手写跨页组件: import SharedCard from '../../components/SharedCard.vue'
-  复用 G 组件:  import GStatusTag from '../../components/business/GStatusTag/GStatusTag.vue'
+  复用 G 组件:  import GStatusTag from '../../components/GStatusTag/GStatusTag.vue'
 
 从 views/{slug}/components/StatusTag.vue 引用:
   API 适配层:  import { fetchList } from '../../../api/{slug}.js'
@@ -184,7 +184,7 @@ export { fetchList, fetchDetail }
 | 5 | `import { ElToast } from 'element-plus'` | `import { ElMessage } from 'element-plus'` | 导出名不在白名单 |
 | 6 | `style="color: red"` | class + `<style lang="less">` 定义 | 禁止内联样式 |
 | 7 | `import { fetchList } from '../../../mock/modules/{slug}.js'` | `from '../../api/{slug}.js'` | 页面禁 import mock（D16，build FAIL） |
-| 8 | 直接编辑 `src/components/business/GStatusTag/GStatusTag.vue` | 保持原样；不合用走 wrapper 或资产库升级 | 拷入的 G 组件禁止改写（含来源注释） |
+| 8 | 直接编辑 `src/components/GStatusTag/GStatusTag.vue` | 保持原样；不合用走 wrapper 或资产库升级 | 拷入的 G 组件禁止改写（含来源注释） |
 | 9 | `<style lang="scss">` 或新增 .scss 文件 | `<style lang="less" scoped>` | 样式语言全链路钉死 less（D22） |
 | 10 | `<style>` 内 `:root { --g-x: … }` | 皮肤只放 `src/assets/themes/`；页面局部变量 `--page-*` | token 层与皮肤文件专属 |
 | 11 | `slot-scope="scope"` | `<template #default="{ row }">` | 旧语法编译失败 |

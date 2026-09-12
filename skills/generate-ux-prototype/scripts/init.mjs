@@ -215,6 +215,8 @@ mkdirSync(join(srcDir, 'locales', 'lang', 'zh-CN'), { recursive: true });
 mkdirSync(join(srcDir, 'locales', 'lang', 'en-US'), { recursive: true });
 mkdirSync(join(srcDir, 'api'), { recursive: true });
 mkdirSync(join(srcDir, 'views', slug, 'js'), { recursive: true });
+mkdirSync(join(srcDir, 'components'), { recursive: true });
+writeFileSync(join(srcDir, 'components', '.gitkeep'), '', 'utf8');
 
 // ---------- 6. write starter files ----------
 

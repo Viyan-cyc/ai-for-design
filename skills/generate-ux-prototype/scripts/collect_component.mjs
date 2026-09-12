@@ -5,9 +5,10 @@
 // manual multi-round read+write with one deterministic command (D12).
 //
 // Resolution: spec components/specs/{id}.json → source .vue → regex-scan
-// relative imports → recursive closure → mirror-copy by in-library relative
-// path into {target-dir}/{basic|business|complex}/GName/ (D17, same level
-// directory names as the library). Only GName.vue files are copied (D20:
+// relative imports → recursive closure → copy into {target-dir}/GName/
+// (flat layout, Vue workspace convention; the library's basic/business/
+// complex classification stays in the provenance header). Only GName.vue
+// files are copied (D20:
 // index.ts / examples.vue never copied); a .vue that imports a sibling's
 // types.ts is a migration gap → listed as missing, never silently skipped.
 //
@@ -176,12 +177,11 @@ for (const libFile of vueFiles) {
   if (name !== compDir) {
     fail(`library layout unexpected: ${libFile} (file name must match its directory — component-format v1)`);
   }
-  // target path: {target-dir}/{level}/{compDir}/{name}.vue — level derived
-  // from EACH FILE's own library path (…/components/{level}/GName/), so
-  // dependencies land under the same classification they have in the library
-  // and the entry's relative imports stay resolvable after copy (D17: target
-  // layout mirrors the library's components/{level}/ grouping). The entry's
-  // own level additionally cross-checks against the spec's `level` field.
+  // target path: {target-dir}/{compDir}/{name}.vue — flat layout (Vue
+  // workspace convention, user decision 2026-09-12). The library's
+  // basic/business/complex classification stays in the provenance header,
+  // not mirrored as directories. The spec's `level` field is still
+  // cross-checked against the library path (layout sanity only).
   const seg = libFile.split('/');
   const ci = seg.indexOf('components');
   if (ci === -1 || !seg[ci + 1] || !seg[ci + 2]) {
@@ -191,7 +191,7 @@ for (const libFile of vueFiles) {
   if (libFile === entryLib && fileLevel !== level) {
     fail(`spec level '${level}' does not match library path '${fileLevel}' for ${componentId} — fix the spec or the library layout`);
   }
-  const destAbs = join(targetDir, fileLevel, compDir, `${name}.vue`);
+  const destAbs = join(targetDir, compDir, `${name}.vue`);
   if (existsSync(destAbs)) {
     fail(`target already exists (delete or rename it first): ${destAbs}`);
   }
@@ -199,13 +199,13 @@ for (const libFile of vueFiles) {
   const body = seen.get(libFile).replace(/^\uFEFF/, '');
   mkdirSync(dirname(destAbs), { recursive: true });
   writeFileSync(destAbs, header + body, 'utf8');
-  copied.push(posix.join(fileLevel, compDir, `${name}.vue`).split('\\').join('/'));
+  copied.push(posix.join(compDir, `${name}.vue`).split('\\').join('/'));
   // interop shim: library components import siblings by directory name
   // (`import { GStatusTag } from '../…/GStatusTag'`), but a bare SFC has no
   // named exports. The shim (two-step export — sfc-loader 0.9.5 breaks on
   // `export … from`, see W1-T3) gives the directory a correct named出口.
   // Preview-only file; a real Vite build resolves the same import natively.
-  const shimAbs = join(targetDir, fileLevel, compDir, 'index.js');
+  const shimAbs = join(targetDir, compDir, 'index.js');
   const shimBody =
     `// interop shim — 由 collect_component.mjs 生成，勿手改\n` +
     `import GComponent from './${name}.vue'\n` +
@@ -214,12 +214,12 @@ for (const libFile of vueFiles) {
     fail(`target already exists (delete or rename it first): ${shimAbs}`);
   }
   writeFileSync(shimAbs, shimBody, 'utf8');
-  copied.push(posix.join(fileLevel, compDir, 'index.js').split('\\').join('/'));
+  copied.push(posix.join(compDir, 'index.js').split('\\').join('/'));
 }
 
 // ---------- done ----------
 console.log('RESULT: OK');
-console.log(`ENTRY: ${componentId} → ${posix.join('components', level, entryComponentName)}`);
+console.log(`ENTRY: ${componentId} → ${posix.join('components', entryComponentName)}`);
 console.log(`ASSETS_VERSION: ${assetVersion}`);
 console.log(`FILES: ${copied.length}`);
 for (const c of copied.sort()) console.log(`COPIED: ${c}`);

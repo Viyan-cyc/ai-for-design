@@ -122,7 +122,7 @@ GLoading / GMessage / GNotification 不是模板组件，无 .vue。保持 `inde
 
 ## 10. 复用拷贝约定（生成侧执行，设计师知悉即可）
 
-AI 复用组件 = 拷贝 `GName.vue`（+ 闭包内相对 import 的文件，含 GIcon 的 JSON）到生成工程 `src/components/{basic|business|complex}/`，文件头加一行来源注释：
+AI 复用组件 = 拷贝 `GName.vue`（+ 闭包内相对 import 的文件，含 GIcon 的 JSON）到生成工程 `src/components/GName/`（平铺，库内分类不映射为目录），文件头加一行来源注释：
 
 ```vue
 <!-- 源: g-design v1.5.0 g-button -->
