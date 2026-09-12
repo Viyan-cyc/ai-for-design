@@ -11,21 +11,21 @@
 ## 修改后怎么同步
 
 ```sh
-python3 -B scripts/build_tokens.py
-python3 -B scripts/build_indexes.py
-python3 -B scripts/validate_library.py --skip-lock
-python3 -B scripts/refresh_release.py
-python3 -B scripts/validate_library.py
+node scripts/build_tokens.mjs
+node scripts/build_indexes.mjs
+node scripts/validate_library.mjs --skip-lock
+node scripts/refresh_release.mjs
+node scripts/validate_library.mjs
 ```
 
 前三步生成和检查；refresh_release 只在确认源资产变更后更新锁，不用它掩盖来源异常。前端变更还需在 frontend/element-plus 运行构建和适当交互检查。
 
 修改数值只编辑 design/tokens.json；修改设计规则按通用、颜色、毛玻璃专题分别编辑 design/rules.md、design/color-rules.md、design/frosted-glass.md；修改资产用途/路径编辑 components/specs 或 components/templates；修改实现编辑 frontend/element-plus/src。新增变量同时添加 bindings 声明，生成与检查会发现断开的引用。
 
-可以运行 `python3 scripts/query_assets.py tokens --search frost` 查询分组；查询命令只返回必要内容，避免模型全量读取。
+可以运行 `node scripts/query_assets.mjs tokens --search frost` 查询分组；查询命令只返回必要内容，避免模型全量读取。
 
-发布新包时，用包根目录 scripts/build_release.py --version X.Y.Z 统一更新版本、生成物、索引和来源锁。生成原型读取 manifest 的实际版本，不从文件夹名字推断。
+发布新包时，用包根目录 scripts/build_release.mjs --version X.Y.Z 统一更新版本、生成物、索引和来源锁。生成原型读取 manifest 的实际版本，不从文件夹名字推断。
 
 色彩入口：[颜色使用规范](design/color-rules.md)、[颜色 Token 与用途表](design/color-tokens.md)。后者由 tokens.json 自动生成，无需加载原始附件。
 
-局部毛玻璃材质见 [frosted-glass.md](design/frosted-glass.md)，参数查询 `python3 scripts/query_assets.py tokens --search frost`。
+局部毛玻璃材质见 [frosted-glass.md](design/frosted-glass.md)，参数查询 `node scripts/query_assets.mjs tokens --search frost`。

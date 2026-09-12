@@ -14,7 +14,7 @@
 | 代码语法高亮 | code-light / code-dark | 按语义大类、平台项、明暗主题选色 |
 | 品牌辅助表达或新语义映射 | foundation | 使用基础色阶或独立 `--color-corporate-*` |
 
-在库目录执行 `python3 scripts/query_assets.py tokens semantic-light` 或 `python3 scripts/query_assets.py tokens --color-brand` 可只读取所需内容。
+在库目录执行 `node scripts/query_assets.mjs tokens semantic-light` 或 `node scripts/query_assets.mjs tokens --color-brand` 可只读取所需内容。
 
 ## 品牌高亮、基础色板与公司辅助色
 
@@ -106,4 +106,4 @@ Element Plus 基础样式先加载，再加载生成的 `tokens/index.css`（D23
 
 ## 维护
 
-改色值、变量引用、用途或代码映射：编辑 tokens.json。改选色方法与约束：编辑本文件。执行 `python3 scripts/build_tokens.py` 更新颜色表、全部 Token 表与 CSS/SCSS；发布前按包 README 更新来源锁并校验。原始附件不参与调用、构建或验证，不需要重新加入包中。
+改色值、变量引用、用途或代码映射：编辑 tokens.json。改选色方法与约束：编辑本文件。执行 `node scripts/build_tokens.mjs` 更新颜色表、全部 Token 表与 CSS/SCSS；发布前按包 README 更新来源锁并校验。原始附件不参与调用、构建或验证，不需要重新加入包中。

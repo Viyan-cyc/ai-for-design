@@ -68,6 +68,6 @@
 - 新页面配置使用 `visualStyle: "frosted-glass"`；设备管理模板仅示范前三张指标卡，其他模板先提供柔和头图，不自动把所有内容变成毛玻璃。真实页面仍按面积预算选择。
 - 旧 `aurora-glass` 风格、`--glass-*` 变量和 `.g-glass-*` 类继续可用，统一映射到新材质；新增组件优先使用 frost 命名。
 - 实现入口为 `frontend/element-plus/bindings/frosted.css.tpl`；生成的 `tokens/frosted.css` 由旧 `glass.css` 入口引入，旧项目导入方式不变。
-- 计划示例：包根 `examples/frosted-device-plan.json`。改数值后运行 build_tokens.py；按包 README 更新索引、来源锁并验证。
+- 计划示例：包根 `examples/frosted-device-plan.json`。改数值后运行 build_tokens.mjs；按包 README 更新索引、来源锁并验证。
 
 参考原则来自 [Fluent Acrylic](https://learn.microsoft.com/en-us/windows/apps/design/style/acrylic) 与 [Apple Materials](https://developer.apple.com/design/human-interface-guidelines/materials)；档位和面积是本产品约定，并非平台官方数值。背景模糊机制见 [MDN](https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/Properties/backdrop-filter)，文本对比度依据 [WCAG](https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum.html)。

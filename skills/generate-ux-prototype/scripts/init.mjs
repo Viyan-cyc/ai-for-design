@@ -185,6 +185,7 @@ mkdirSync(join(srcDir, 'locales', 'lang', 'zh-CN'), { recursive: true });
 mkdirSync(join(srcDir, 'locales', 'lang', 'en-US'), { recursive: true });
 mkdirSync(join(srcDir, 'api'), { recursive: true });
 mkdirSync(join(srcDir, 'views', slug, 'js'), { recursive: true });
+mkdirSync(join(srcDir, 'router'), { recursive: true });
 mkdirSync(join(srcDir, 'components'), { recursive: true });
 writeFileSync(join(srcDir, 'components', '.gitkeep'), '', 'utf8');
 
@@ -327,7 +328,7 @@ import { ref, onMounted } from 'vue'
 import { Monitor } from '@element-plus/icons-vue'
 import { fetchList } from '../../api/${slug}.js'
 import { t } from '../../locales/pages/${slug}.js'
-import { COMPONENT_MODE, STATUS_MAP } from './js/constants.js'
+import { STATUS_MAP } from './js/constants.js'
 
 const loading = ref(false)
 const dataList = ref([])
@@ -427,9 +428,6 @@ writeFileSync(
 
 // 组件模式开关（生成时确认）：'reuse' 命中库组件必须复用 | 'hybrid' 命中复用未命中手写 | 'free' 全手写
 export const COMPONENT_MODE = 'hybrid'
-
-// 样式语言（D22）：全工程统一 less，禁止 scss
-export const STYLE_LANG = 'less'
 
 export const STATUS_MAP = {
   running:     { label: '运行中', type: 'success' },
