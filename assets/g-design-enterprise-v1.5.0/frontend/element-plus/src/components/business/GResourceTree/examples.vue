@@ -1,1 +1,3 @@
-<template><GResourceTree :data="data"/></template><script setup lang="ts">import{GResourceTree}from'./index';const data=[{id:1,label:'资源'}];</script>
+<template><GResourceTree :data="data"/></template><script setup>
+import GResourceTree from './GResourceTree.vue';const data=[{id:1,label:'资源'}];
+</script>

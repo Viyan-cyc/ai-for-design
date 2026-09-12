@@ -12,15 +12,15 @@
     <footer><span v-for="i in legend" :key="i.s"><i :class="i.s"/>{{i.l}}</span></footer>
   </section>
 </template>
-<script setup lang="ts">
-import{ref}from'vue';import type{TopologyNode,TopologyEdge}from'./types'
-const p=withDefaults(defineProps<{title?:string;nodes:TopologyNode[];edges:TopologyEdge[]}>(),{title:'拓扑视图'})
-const emit=defineEmits<{(e:'select',id:string):void}>();const zoom=ref(1),selected=ref('')
-const byId=(id:string)=>p.nodes.find(n=>n.id===id)
-const line=(e:TopologyEdge)=>({x1:byId(e.source)?.x,y1:byId(e.source)?.y,x2:byId(e.target)?.x,y2:byId(e.target)?.y})
-const select=(id:string)=>{selected.value=id;emit('select',id)}
+<script setup>
+import{ref}from'vue';const p=defineProps({title:{type:String,default:'拓扑视图'},nodes:{type:Array,required:true},edges:{type:Array,required:true}})
+const emit=defineEmits(["select"]);const zoom=ref(1),selected=ref('')
+const byId=(id)=>p.nodes.find(n=>n.id===id)
+const line=(e)=>({x1:byId(e.source)?.x,y1:byId(e.source)?.y,x2:byId(e.target)?.x,y2:byId(e.target)?.y})
+const select=(id)=>{selected.value=id;emit('select',id)}
 const legend=[{s:'success',l:'正常'},{s:'warning',l:'告警'},{s:'danger',l:'严重'},{s:'offline',l:'离线'}]
-;</script>
-<style scoped>
+;
+</script>
+<style lang="less" scoped>
 .topology{border:var(--border-width-normal) solid var(--g-border);border-radius:var(--radius-medium);background:var(--g-bg-surface);color:var(--g-text-primary)}header,footer{display:flex;align-items:center;justify-content:space-between;padding:var(--space-12) var(--space-16);border-bottom:var(--border-width-normal) solid var(--g-border)}footer{justify-content:flex-start;gap:var(--space-20);border:0;border-top:var(--border-width-normal) solid var(--g-border);font-size:var(--font-size-small)}.topology svg{width:100%;min-height:var(--spec-gtopology-min-height);background:var(--g-bg-page)}.edge{stroke:var(--g-border);stroke-width:2}.edge.warning{stroke:var(--g-warning)}.edge.danger{stroke:var(--g-urgent);stroke-width:3}.edge.flow{stroke-dasharray:8 5;animation:flow 1s linear infinite}.node circle{fill:var(--g-topology-node-normal);stroke:var(--g-bg-surface);stroke-width:4}.node.success circle{fill:var(--g-success)}.node.warning circle{fill:var(--g-warning)}.node.danger circle{fill:var(--g-urgent)}.node.offline circle{fill:var(--g-text-disabled)}.node.selected circle{stroke:var(--g-focus);stroke-width:7}.node text{fill:var(--g-text-primary);font-size:var(--spec-gtopology-font-size)}.node .kind{fill:var(--color-icon-inverse);font-size:var(--spec-gtopology-font-size-2)}footer i{display:inline-block;width:var(--spec-gtopology-width);height:var(--spec-gtopology-height);border-radius:50%;margin-right:var(--space-6);background:var(--g-accent)}footer i.success{background:var(--g-success)}footer i.warning{background:var(--g-warning)}footer i.danger{background:var(--g-urgent)}footer i.offline{background:var(--g-text-disabled)}@keyframes flow{to{stroke-dashoffset:-13}}
 </style>

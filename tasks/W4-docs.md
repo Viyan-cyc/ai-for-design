@@ -64,3 +64,26 @@
 ## 结论回写区（执行中随时追加，每条带姓名+日期）
 
 <!-- 格式：- [日期] (姓名/卡号) 结论或问题一句话；细节缩进展开。写完 commit 到本任务分支 -->
+
+- [2026-09-12] (moyuntian/W4-D1) D1 SKILL.md 重写完成。10 节齐全（frontmatter/技术栈/两开关/Session Context/Output Contract/换肤/How to Use/Generation Workflow 7 步/Modification/毛玻璃/速度条款/References）。关键改动：
+  - 三开关→两开关（D22）：组件复用 reuse/hybrid/free + UI 库 element-plus/SweetUI；记录到 `views/{slug}/js/constants.js` 的 `COMPONENT_MODE` + `UI_RUNTIME`。
+  - token 速查表不内嵌，改「从 `src/assets/tokens/*.css` 现查，build 实时校验兜底」。
+  - 单位 px（D14，无 rem）；样式语言钉死 less（D22）。
+  - 生成流程 7 步：确认开关+布局策略 → init → 组件复用匹配（hybrid/reuse 走 query_assets.mjs + collect_component.mjs）→ Author .vue → 自检 10 条 → build → Output。
+  - 模板参考（§6）改为「结构与完备性对照清单」，配置驱动机制不再使用。
+  - i18n（D15）：每页 `views/{slug}/js/locales.js` 单文件双语言；全局 common.json 仅跨页词条。
+  - mock+api 适配层（D16）：页面只准 import api 层，禁止 import mock/modules。
+- [2026-09-12] (moyuntian/W4-D2) D2 code-conventions.md 完成。8 节：页面代码规范（含相对路径计算表更新到含 api/、tokens/、复用 G 组件落位）/Mock API 模式（REST 语义签名）/API 适配层（正确错误 import 对照 + 两态：原型态 re-export vs 二开态真实请求 + sfc-loader 0.9.5 re-export 缺陷经验 W1-T3）/i18n 单文件双语言（D15）/复用 G 组件约定（collect_component.mjs 用法+落位 src/components/{basic|business|complex}/ D17+来源注释+禁止改写拷入组件 D7）/二开依赖差异（D22：npm i -D less，Vite 零配置）/运行时错误预防/高频错误预防表 15 条（新增「import mock 违规」「直接改拷入的 G 组件」两条，删 gts token 示例与 rem 条目）。
+- [2026-09-12] (moyuntian/W4-D3) D3 ui-runtime.md 完成。三件套接入说明：UMD 目录（`scripts/preview/public/library/{runtime}/`，当前 element-plus 9 文件）/白名单（`scripts/verify/whitelists/{runtime}/` 三份 JSON，EP 规模 116 组件/130 导出/295 图标）/Token 桥接 CSS（资产库 `element-plus.css` 已做好 EP 桥接，SweetUI 接入照此办理）。EP 2.13.5 为当前唯一 runtime，版本钉死（D5）。
+- [2026-09-12] (moyuntian/W4-D4) D4 周边四文件改完：
+  - skill-catalog.json：generate-ux-prototype 的 description 改「Vue 3 + Element Plus 2.13.5 源码交付 + 离线预览 + 验证记录」；outputs 改「Vue 源码工作区 / index.html / build 验证记录」。
+  - AI-ENTRY.md：第 9 行任务路由改「交付 Vue 3 + Element Plus 2.13.5 源码工作区 + 零构建离线预览」。
+  - workflow.md：原型阶段交接重写——删 freeze/handoff 来源锁概念；新增「API 适配层（D16）——二开接入点」「二开说明 5 步」「与上游阶段衔接（requirements.json/insights.json 引用不变，但不产来源锁副本）」。
+  - README.md：安装/使用命令 node 化（`node installer/install_skills.mjs` / `node scripts/build_release.mjs` / `node tests/validate_package.mjs`）；运行依赖声明「仅依赖 Node.js ≥ 20，Python 不再需要（D6/D18）」；EP 2.13.5 钉死；二开依赖差异（`npm i -D less`）。
+  - **【需 W3 协调】**README.md 与 workflow.md 的 node 命令含过渡说明：「W3 N3/N5 移植完成后 .mjs 为正式入口，N5 完成前若 .mjs 尚未就绪可临时用 .py」。当前 query_assets.mjs 已就绪（W3 N2 完成），build_release.mjs / install_skills.mjs / validate_package.mjs / validate_coordination.mjs 待 W3 N3/N4/N5 完成后删 .py。AI-ENTRY.md 第 17 行仍提 `scripts/query_assets.py`——可改 .mjs（已就绪），但属 AI-ENTRY 所有权（非 W4 所有权内？AI-ENTRY.md 在仓库根，D4 任务卡明确列入「周边四文件」范围），已不改该行，待用户裁决。
+- [2026-09-12] (moyuntian/W4-D5) D5 一致性自检三条全过：
+  1. `grep -ri gts` 交付文档零命中：skills/generate-ux-prototype/ 下仅 vue3-sfc-loader.js:113（第三方库内部，非我们的文档）；*.md 命中全在 SKILL-REPLACE-PLAN.md（历史记录豁免）+ tasks/W1-mainline.md + tasks/W4-docs.md（任务卡，非交付文档）。SKILL.md/code-conventions.md/ui-runtime.md/README.md/AI-ENTRY.md/workflow.md 零 gts 命中。
+  2. SKILL.md 提到的脚本/文件全部存在：init.mjs/build.mjs/collect_component.mjs/preview/index.html/whitelists/components.json + 三份 references（code-conventions/component-format/ui-runtime）✓。
+  3. skill-catalog.json entry/outputs 与实际对得上：四个 Skill 的 SKILL.md 全在 ✓；generate-ux-prototype 的 outputs 三项（源码工作区/index.html/验证记录）与 SKILL.md Output Contract 一致 ✓。
+  - 流程描述与脚本实际行为交叉审（自查，非 W1 人审）：init.mjs CLI `--assets-root` ✓、build.mjs `--dir` ✓、collect_component.mjs 四参 ✓、mock 隔离校验已实现 ✓、禁 .scss/lang="scss" 校验已实现（W1-T9）✓。**建议用户安排 W1 的人读一遍 D1/D2 做最终交叉审**（任务卡 D5 第 4 条要求）。
+- [2026-09-12] (moyuntian/W4) 【需拍板】AI-ENTRY.md 第 17 行 `scripts/query_assets.py` 是否改为 `.mjs`：query_assets.mjs 已由 W3 N2 移植就绪，.py 仍在待 N5 删。D4 任务卡「周边四文件」含 AI-ENTRY.md，但仅第 9 行任务路由行明确要求改，第 17 行未提及。已保留 .py 描述，待用户裁决是否一并改 .mjs（属 W3 所有权资产的引用，但 AI-ENTRY.md 是 W4 文件）。

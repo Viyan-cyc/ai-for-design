@@ -3,12 +3,14 @@
     <component :is="node[0]" v-for="(node,index) in iconNodes" :key="index" v-bind="node[1]"/>
   </svg>
 </template>
-<script setup lang="ts">
+<script setup>
 import{computed}from'vue';import nodes from'../../../icons/icon-nodes.json';import aliases from'../../../icons/icon-aliases.json'
-type IconNode=[string,Record<string,string|number>]
-const p=withDefaults(defineProps<{name:string;size?:number|string;strokeWidth?:number;color?:string;label?:string}>(),{size:20,strokeWidth:2,color:'currentColor'})
-const resolved=computed(()=>((aliases as Record<string,string>)[p.name]||p.name).toLowerCase().replace(/_/g,'-'))
-const registry=nodes as unknown as Record<string,IconNode[]>
+
+const p=defineProps({name:{type:String,required:true},size:{type:[String, Number],default:20},strokeWidth:{type:Number,default:2},color:{type:String,default:'currentColor'},label:{type:String}})
+const resolved=computed(()=>((aliases)[p.name]||p.name).toLowerCase().replace(/_/g,'-'))
+const registry=nodes
 const iconNodes=computed(()=>registry[resolved.value]||registry['circle-question-mark'])
 </script>
-<style scoped src="./style.scss"></style>
+<style lang="less" scoped>
+.g-icon{display:inline-block;flex:none;vertical-align:-0.125em;color:inherit}
+</style>

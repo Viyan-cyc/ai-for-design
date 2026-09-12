@@ -125,8 +125,9 @@ function main() {
     passed('documentation-only changes keep the library valid after lock refresh');
     const specsDir = path.join(clone, 'frontend/element-plus/src/components/basic');
     const gButtonDir = fs.readdirSync(specsDir).find((d) => d.toLowerCase() === 'gbutton');
-    const styleFile = path.join(specsDir, gButtonDir, 'style.scss');
-    fs.appendFileSync(styleFile, '\n/* mutation */\n');
+    // W2 删除了 types.ts/style.scss，用 index.ts 作 mutation 目标（主文件必存在，refresh 捕获哈希变化）
+    const sourceFile = path.join(specsDir, gButtonDir, 'index.ts');
+    fs.appendFileSync(sourceFile, '\n// mutation\n');
     refresh(clone);
     // 锁刷新后（refresh 重算全部哈希）校验器不得报锁不匹配——变更已被登记，
     // 但 tokens/indexes 的 canonical 生成物仍须与源一致（旧版 scope='selected' 语义的上半句）。

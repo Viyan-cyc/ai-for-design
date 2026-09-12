@@ -31,13 +31,15 @@
     {
       "id": "generate-ux-prototype",
       "entry": "skills/generate-ux-prototype/SKILL.md",
-      "description": "Create or edit a G Design page from screenshots or requirements using local tokens, components and templates; supports direct reference input.",
+      "description": "Generate Vue 3 + Element Plus 2.13.5 pages from text, screenshots, or HTML; delivers .vue SFC source workspace (views/components/api/mock/locales) + zero-build offline preview + validation record.",
       "inputs": [
-        "参考或需求方向",
-        "指定资产库"
+        "文本描述、截图或 HTML",
+        "指定资产库（ASSETS_ROOT）"
       ],
       "outputs": [
-        "可运行原型、配置、来源及验证记录"
+        "Vue 3 源码工作区（views/components/api/mock/locales）",
+        "零构建离线预览 index.html",
+        "build 验证记录"
       ],
       "skipWhen": "仅需求分析或公共规范维护",
       "nextWhenRequested": null

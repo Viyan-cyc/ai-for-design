@@ -1,4 +1,7 @@
-import type { TopologyNode, TopologyEdge } from './components/complex/GTopology/types'
+type TopologyStatus='normal'|'success'|'warning'|'danger'|'offline'
+interface TopologyNode{id:string;label:string;x:number;y:number;status?:TopologyStatus;kind?:string}
+interface TopologyEdge{id?:string;source:string;target:string;status?:TopologyStatus;flow?:boolean}
+
 export interface PageConfig {
  schemaVersion:string; assetId:string; assetVersion:string; templateId:string; directionId:string;
  title:string; theme:'light'|'dark'; visualStyle:'enterprise-light-dark'|'frosted-glass'|'aurora-glass';

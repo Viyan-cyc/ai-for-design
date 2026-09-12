@@ -1,1 +1,3 @@
-<template><GFormSection title="示例"/></template><script setup lang="ts">import{GFormSection}from'./index';</script>
+<template><GFormSection title="示例"/></template><script setup>
+import GFormSection from './GFormSection.vue';
+</script>
