@@ -3,6 +3,9 @@
 tasks/p0-workspace/p0-verify/
 tasks/p0-workspace/t9-verify/
 
+# skill 试跑产物（生成的工作区交付件，随时可重建，不入库）
+coder/
+
 # W2 build:library 产物与依赖（可随时 npm ci / npm run build:library 重建，不入库）
 assets/g-design-enterprise-v1.5.0/frontend/element-plus/node_modules/
 assets/g-design-enterprise-v1.5.0/frontend/element-plus/dist/
