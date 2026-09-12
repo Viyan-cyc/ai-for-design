@@ -266,7 +266,7 @@ SKILL.md 增加"UI Runtime 选择"步骤（默认 element-plus，用户可指定
 - [ ] T0 基线提交：全量文件首个 commit，建 main 保护、PR 流程约定 (前置：无任何依赖，立即做)
 - [x] T1 P0 技术验证：迁移 GButton → init → 复用 → build → 预览跑通（产出：验证结论文档，回填风险 1/2 的结论）(cyc/2026-09-12，浏览器实测通过：GButton 事件计数正常)
 - [x] T2 从 gts-autin-coder 复制工具链进 skill + 去 gts 化改名（index.gts.html→index.html、data-gts-theme→data-theme、输出文案清理）(cyc/2026-09-12，commit 3ef6db3：4 脚本重写+preview/verify 重组+5 个 .py 删除，grep -ri gts 零命中)
-- [ ] T3 EP 2.13.5 落地：preview UMD 替换 + verify/whitelists 三份白名单按 2.13.5 刷新（决策点 C 在此定：官方 dist 或用户提供）
+- [x] T3 EP 2.13.5 落地：preview UMD 替换 + verify/whitelists 三份白名单按 2.13.5 刷新（决策点 C：官方 npm dist。cyc/2026-09-12 commit 1a5f66c：官方 dist 五件套+白名单 116 组件/130 导出/295 图标；连带修复 3 个 preview 缺陷——token index.css 404、api 相对路径层级、sfc-loader 0.9.5 re-export 需预载 mock 模块。无头浏览器实测 token 主色 #0067D1 生效）
 - [x] T4 init.mjs 改造：ASSETS_ROOT 参数 + token glob 现取复制 + api/{slug}.js 适配层生成（D16）+ locales.js 单文件模式（D15）(cyc/2026-09-12，随 T2 完成)
 - [ ] T5 build.mjs 改造：token 校验改为工作区 token CSS 实时提取 + 删 rem/px-WARN（D14）+ 页面禁 import mock 校验（D16）
 - [ ] T6 collect_component.mjs：相对 import 递归闭包复制 + 来源注释（D12）
