@@ -3,3 +3,9 @@
 tasks/p0-workspace/p0-verify/
 tasks/p0-workspace/t2-smoke/
 tasks/p0-workspace/t3-smoke/
+tasks/p0-workspace/t3-less/
+tasks/p0-workspace/t8-less-check/
+
+# npm 源包（T8 组装 sass.browser.js 的输入，见 SKILL-REPLACE-PLAN.md D21）
+immutable-5.1.4.tgz
+sass-1.93.2.tgz

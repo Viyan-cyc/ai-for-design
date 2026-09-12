@@ -17,7 +17,7 @@
 以 gts-autin-coder SKILL.md 的生成流程为骨架，重写为 generate-ux-prototype。结构大纲：
 
 1. **frontmatter**：name 固定 `generate-ux-prototype`；description 更新（Vue 3 + Element Plus 2.13.5 源码交付 + 离线预览 + 资产库 token/组件复用）。
-2. **技术栈**：Vue 3 `<script setup>` 纯 JS / EP 2.13.5 / Less / px 单位（D14，无 rem）/ Vue Router / 依赖白名单五项。
+2. **技术栈**：Vue 3 `<script setup>` 纯 JS / EP 2.13.5 / 样式语言跟随 STYLE_LANG（D21：scss 默认，init `--style-lang` 可选 less；SKILL.md 增「原型生成选项」节，与组件模式并列呈现三开关：组件复用 reuse/hybrid/free、UI 库 element-plus/SweetUI、样式语言 scss/less）/ px 单位（D14，无 rem）/ Vue Router / 依赖白名单五项。
 3. **资产库定位协议**（沿用原 skill：ASSETS_ROOT → asset-catalog.json → manifest/contract；agents/package-location.json 兜底）——skill 不存设计数据副本，运行时现取（§4.1）。
 4. **生成流程**：需求/截图/HTML 四类输入解析 → 确认组件模式三档开关（§4.3：reuse 必须复用/hybrid 默认/free 全手写；记录到 views/{slug}/js/constants.js 的 COMPONENT_MODE）→ 模板参考（§6：选最近模板读源码提取布局骨架 + criticalInteractions + pageStates 作完备性清单，**配置驱动机制不再使用**）→ `node scripts/init.mjs` → hybrid/reuse 先用 query_assets.mjs 按 specs useWhen 匹配组件（命中 → collect_component.mjs 拷贝，未命中 → 手写并记 gap）→ 写码 → 自检清单 → build → 输出 artifact 链接。修改已生成页面走 Modification 流程不重新生成。
 5. **代码规范引用**：细则全放 references/code-conventions.md（D2），SKILL.md 只留速查与硬规则索引。token 速查表**不内嵌**（D2 决策：从工作区 src/assets/tokens/ 现查，build 实时校验）。
@@ -36,6 +36,7 @@
 - 新增「复用 G 组件约定」节：collect_component.mjs 用法、落位 `src/components/{basic|business|complex}/`（D17）、来源注释、禁止改写拷入的组件文件。
 - 相对路径计算表按新目录结构（含 api/、tokens/）重算。
 - 高频错误预防表：删 token 名错的 gts 示例与 rem 条目，加「import mock 违规」「直接改拷入的 G 组件」两条。
+- 新增「二开依赖差异」节（D21）：工作区 STYLE_LANG 对应真实工程 devDependency——scss→`npm i -D sass`，less→`npm i -D less`（Vite 零配置，main.js 已 import 对应 base.*）；src/api/{slug}.js 二开态用 `import ... from + export { }` 两段式而非 re-export 简写（sfc-loader 0.9.5 re-export 缺陷经验，见 W1-T3 回写）。
 
 ### D3 `references/ui-runtime.md`（1 小时）
 三件套接入说明：`preview/public/library/{runtime}/` UMD 目录规范、`verify/whitelists/{runtime}/` 白名单格式（三份 JSON 的 schema 直接引用现有 element-plus 文件为例）、token 桥接 CSS 要求（语义 token → 该 UI 库变量，参照资产库 element-plus.css 的做法）。SweetUI 接入时照此办理。明确 EP 2.13.5 为当前唯一 runtime。

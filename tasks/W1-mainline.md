@@ -79,3 +79,11 @@
   - 缺陷 3（重要，工具链侧）：vue3-sfc-loader 0.9.5 对 `export {...} from` re-export 编译产物走 require() 只查 moduleCache 不回落 getFile，而 src/api/{slug}.js 原型态恰是纯 re-export。修复：loader 启动时预载全部 /mock/*.js 注册 moduleCache。**W4 注意**：D2 code-conventions 需写明——src/api/{slug}.js 二开态建议用 `import ... from + export { }` 两段式而非 re-export 简写，避免真实工程外任何直开 HTML 的场景踩同类问题（真实 Vite 工程无此限制）。
   - 无头浏览器实测：5 行表格渲染、主按钮背景 rgb(0,103,209) = 资产 token #0067D1 生效（EP 默认 #409EFF）、用户浏览器确认渲染正确。
 
+
+- [2026-09-12] (cyc/W1-T8) **STYLE_LANG 开关落地（scss 默认 + less 双模验证通过）**：
+  - **依赖落地**：npm sass@1.93.2（isomorphic dart2js）+ immutable 5.1.4 UMD 组装为 `sass.browser.js`（5.4MB，暴露 window.sass.compileString）。两个组装坑：① dart.js 结尾无分号，拼接 epilogue 触发 ASI 陷阱，须注入分号；② dart2js 运行时在 window 留下 `exports`/`scheduleImmediate`/`fs` 等 CJS 探测全局，会让后续 UMD（vue3-sfc-loader）误判环境导致 loader 全局丢失，尾部须 delete。npm 源 tgz 不入库（已 gitignore），组装脚本一次性使用。
+  - **关键发现 — sfc-loader 0.9.5 内联 `<style lang="scss">` 处理链**（读源码确认）：① 编译前先 `me(relPath: lang)` 预载模块，moduleCache 未命中才走 getFile —— 不注册就报「源码映射中找不到 scss」；② 内置 scss 预处理器经 `preprocessCustomRequire: e => moduleCache[e]` 取编译器，取的是 `moduleCache['sass']` 并调 **legacy renderSync** API。修复：moduleCache 注册 `scss: {}`（占位满足①）+ `sass` 适配器（renderSync → compileString，满足②）。less 能工作正是同一机制的先例（moduleCache['less']）。
+  - **限制**：dart-sass 浏览器包的 `renderSync` 是 Node 专用（运行时检测直接 throw），必须走 compileString 适配；legacy options 键为 `file` 而非 `filename`。
+  - init：`--style-lang scss|less`（默认 scss）→ 只保留对应 base.* 文件 + main.js import 重写 + constants.js 记录 STYLE_LANG + 页面模板 `<style lang>` 跟随；build：1b 节校验全部 SFC `<style lang>` 与 assets/style 下 base 扩展名与声明一致（D21 单语言）；build-data：TEXT_EXT 加 .scss。
+  - **浏览器实测（无头 Chrome）**：scss 工作区（4176）5 行表格 + 主色 rgb(25,25,25) token 生效 + 内联样式 scoped 生效 + 注入 $变量/@mixin 后 padding 输出 37px 证明真 sass 编译；less 工作区（4179）同等全过。负向：less 工作区混入 .scss base 文件时 build 正确 FAIL。
+  - **W4 注意**：D2 需写二开依赖差异——scss→`npm i -D sass`，less→`npm i -D less`（Vite 零配置，模板 main.js 已 import 对应 base.*）。

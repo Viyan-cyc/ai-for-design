@@ -272,7 +272,7 @@ SKILL.md 增加"UI Runtime 选择"步骤（默认 element-plus，用户可指定
 - [x] T5 build.mjs 改造：token 校验改为工作区 token CSS 实时提取 + 删 rem/px-WARN（D14）+ 页面禁 import mock 校验（D16）(cyc/2026-09-12，随 T2 完成，commit 3ef6db3)
 - [ ] T6 collect_component.mjs：相对 import 递归闭包复制 + 来源注释（D12）
 - [ ] T7 端到端验收：hybrid/free 各生成一页 + 明暗主题 + 毛玻璃 + 换肤 + 二开视角通读（依赖 W2 的 M2 迁移完成，是最终汇合点）
-- [ ] T8 STYLE_LANG 开关（D21）：init --style-lang 参数 + sass UMD 编译器入 preview + 模板/规范双版本 + build 校验 style lang 与 STYLE_LANG 一致（**须在 W2-M1 codemod 开工前完成**）
+- [x] T8 STYLE_LANG 开关（D21）：init --style-lang 参数 + sass UMD 编译器入 preview + 模板/规范双版本 + build 校验 style lang 与 STYLE_LANG 一致（**须在 W2-M1 codemod 开工前完成**）(cyc/2026-09-12：npm sass 1.93.2 组装 sass.browser.js（compileString，规避浏览器包 renderSync 仅限 Node 的限制）+ immutable 5.1.4；moduleCache 注册 sass 适配器/scss 占位打通 sfc-loader 内联 `<style lang="scss">` 处理链；scss/less 双模无头浏览器实测通过，注入 $变量/@mixin 输出 37px 证明真 sass 编译；负向校验 FAIL 正确。W2-M1 可开工)
 
 ### W2 组件库改造（1 人，与设计师对接，建议第二人）
 
