@@ -1,0 +1,80 @@
+/* ============================================================
+   base.css — 基础层（FIXED，与皮肤无关）
+   只包含：字体、滚动条、页面骨架。语义颜色一律由设计资产
+   token 层提供（src/assets/tokens/，init 时从资产库现取）。
+   自定义皮肤放 src/assets/themes/theme-{name}.css。
+   ============================================================ */
+
+/* HarmonyOS Sans 本地字体（位于 src/assets/fonts/） */
+@font-face {
+  font-family: 'HarmonyOS Sans';
+  src: url('../fonts/HarmonyOS_SansSC/Light.woff2') format('woff2');
+  font-weight: 300;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'HarmonyOS Sans';
+  src: url('../fonts/HarmonyOS_SansSC/Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'HarmonyOS Sans';
+  src: url('../fonts/HarmonyOS_SansSC/Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'HarmonyOS Sans';
+  src: url('../fonts/HarmonyOS_SansSC/Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+}
+
+:root {
+  /* 字体栈（资产 token 层的 --g-font-family 优先，此处为兜底） */
+  --g-font-family: 'HarmonyOS Sans', 'Microsoft YaHei', 'PingFang SC', Arial, sans-serif;
+}
+
+/* 页面骨架 */
+html,
+body,
+#app {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--g-font-family);
+  background: var(--g-bg-page, #f5f6f7);
+  color: var(--color-text-primary, #191919);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* 滚动条 */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+  background-color: transparent;
+}
+::-webkit-scrollbar-corner,
+::-webkit-scrollbar-track,
+::-webkit-scrollbar-track-piece {
+  background-color: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background-color: var(--color-border-separator, #dfdfdf);
+  border-radius: 4px;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-text-placeholder, #939393);
+}
