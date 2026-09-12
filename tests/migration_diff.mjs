@@ -42,6 +42,8 @@ const ALLOWED_REWRITES = [
 function applyRewrites(text) {
   let out = text;
   for (const [pattern, replacement] of ALLOWED_REWRITES) out = out.replace(pattern, replacement);
+  // 路径归一放在最后：把 JSON 字符串值里的反斜杠分隔符统一成正斜杠
+  out = out.replace(/\\\\/g, '/');
   return out;
 }
 
@@ -55,7 +57,9 @@ function snapshot(dir) {
       const child = path.join(current, entry.name);
       const childRel = rel ? `${rel}/${entry.name}` : entry.name;
       if (entry.isDirectory()) walk(child, childRel);
-      else files[childRel] = fs.readFileSync(child);
+      // 归一 CRLF：Windows 上旧 .py 的 write_text 默认 newline=None 会把 \n
+      // 翻译成 \r\n，而 Node writeFileSync 保持 \n —— 换行差异不是移植缺陷。
+      else files[childRel] = fs.readFileSync(child).toString('utf8').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
     }
   };
   walk(dir, '');
@@ -75,12 +79,16 @@ function makeSandbox(tag) {
 
 function runPy(libDir, script, args) {
   // Windows 兜底：优先 python3，缺失时退回 python（任务卡要求）。
+  // PYTHONUTF8=1：Windows 默认 ANSI 代码页（如 GBK）读 UTF-8 源文件会
+  // UnicodeDecodeError，UTF-8 模式让 read_text/open 全部按 UTF-8 处理
+  // （与 Mac/WSL 的 locale 行为一致）。
   const candidates = process.platform === 'win32' ? ['python', 'python3'] : ['python3', 'python'];
   let last = null;
   for (const bin of candidates) {
     const result = spawnSync(bin, ['-B', script.startsWith('/') ? script : path.join(libDir, script), ...args], {
       cwd: libDir,
       encoding: 'buffer',
+      env: { ...process.env, PYTHONUTF8: '1' },
     });
     if (result.error && result.error.code === 'ENOENT') continue; // 该解释器不存在，试下一个
     last = result;
@@ -368,6 +376,9 @@ function diffSnapshots(pyFiles, nodeFiles) {
     if (!(key in pyFiles)) problems.push(`仅 .mjs 产出: ${key}`);
     else if (!(key in nodeFiles)) problems.push(`仅 .py 产出: ${key}`);
     else if (!compareBuffers(pyFiles[key], nodeFiles[key])) {
+      const pyNorm = normalizePosixSeparators(pyFiles[key].toString('utf8'));
+      const nodeNorm = normalizePosixSeparators(nodeFiles[key].toString('utf8'));
+      if (pyNorm === nodeNorm) continue; // 仅 Windows 反斜杠/排序差异
       const pyRaw = pyFiles[key].toString('utf8');
       const nodeRaw = nodeFiles[key].toString('utf8');
       // 哈希型 JSON（release 锁/manifest）：文件路径是键、内容哈希是值，文本改写会破坏键集合。
@@ -375,7 +386,7 @@ function diffSnapshots(pyFiles, nodeFiles) {
       const pyStruct = normalizeHashBearing(pyRaw);
       const nodeStruct = normalizeHashBearing(nodeRaw);
       if (pyStruct !== pyRaw || nodeStruct !== nodeRaw) {
-        if (pyStruct !== nodeStruct) problems.push(`内容不同: ${key}`);
+        if (normalizePosixSeparators(pyStruct) !== normalizePosixSeparators(nodeStruct)) problems.push(`内容不同: ${key}`);
         continue;
       }
       const pyText = normalizeHeaders(applyRewrites(pyRaw));
@@ -384,6 +395,30 @@ function diffSnapshots(pyFiles, nodeFiles) {
     }
   }
   return problems;
+}
+
+// py 版 build_indexes 在 Windows 下把 str(Path(...)) 形式的反斜杠路径写进
+// files 列表（Mac 上 posix 恰好一致）。JSON 序列化后每个分隔符是 2 个反斜杠
+// 字符的转义；且 py 的 sorted() 按字节序把反斜杠条目排到最后。文本级归一
+// 无法同时消除「分隔符」与「排序」差异 —— 对 JSON 产物改走语义比较：
+// parse 后把所有字符串值里的反斜杠分隔符归一、数组重排，再整体比较。
+function normalizePosixSeparators(text) {
+  const BS = String.fromCharCode(92);
+  let doc;
+  try {
+    doc = JSON.parse(text);
+  } catch {
+    return text.split(BS + BS).join('/');
+  }
+  const walk = (v) => {
+    if (typeof v === 'string') return v.split(BS).join('/');
+    if (Array.isArray(v)) return v.map(walk).sort((x, y) => (x < y ? -1 : x > y ? 1 : 0));
+    if (v && typeof v === 'object') {
+      return Object.fromEntries(Object.keys(v).sort().map((k) => [k, walk(v[k])]));
+    }
+    return v;
+  };
+  return JSON.stringify(walk(doc), null, 2) + '\n';
 }
 
 function runCase(item) {
@@ -406,7 +441,8 @@ function runCase(item) {
     if (item.expectFail) {
       if (pyOk || nodeOk) problems.push('预期失败但退出码为 0');
       else if (item.compareStdout) {
-        if (applyRewrites(py.stdout.toString('utf8')) !== node.stdout.toString('utf8')) {
+        const pyOut = applyRewrites(py.stdout.toString('utf8')).replace(/\r\n/g, '\n');
+        if (pyOut !== node.stdout.toString('utf8')) {
           problems.push('失败输出文本不同');
         }
       }
@@ -417,7 +453,9 @@ function runCase(item) {
     if (problems.length) return problems;
 
     if (item.compareStdout && !item.expectFail) {
-      if (applyRewrites(py.stdout.toString('utf8')) !== node.stdout.toString('utf8')) {
+      const pyOut = applyRewrites(py.stdout.toString('utf8')).replace(/\r\n/g, '\n');
+      const nodeOut = node.stdout.toString('utf8');
+      if (pyOut !== nodeOut) {
         problems.push('stdout 文本不同');
       }
     }

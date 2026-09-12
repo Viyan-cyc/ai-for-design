@@ -39,7 +39,8 @@ function writeJson(file, data) {
 function command(script, args) {
   // 全部用 node 解释执行；py 安装器也由 node 运行会在 N5 后报错——py 版按 python3 调用。
   if (script.endsWith('.py')) {
-    return spawnSync('python3', [String(script), ...args.map(String)], { encoding: 'utf8' });
+    // py 分支仅 N5 前的过渡期可达；PYTHONUTF8=1 防 Windows ANSI 代码页读 UTF-8 报错
+    return spawnSync('python3', [String(script), ...args.map(String)], { encoding: 'utf8', env: { ...process.env, PYTHONUTF8: '1' } });
   }
   return spawnSync(process.execPath, [String(script), ...args.map(String)], { encoding: 'utf8' });
 }
@@ -51,7 +52,7 @@ function main() {
     const installed = path.join(work, 'installed');
     const installer = path.join(ROOT, 'installer/install_skills.py');
     const installerMjs = path.join(ROOT, 'installer/install_skills.mjs');
-    let result = command(installer, [installed]);
+    let result = command(installerMjs, [installed]);
     assert(result.status === 0, result.stderr);
     const catalog = JSON.parse(fs.readFileSync(path.join(ROOT, 'skill-catalog.json'), 'utf8'));
     for (const s of catalog.skills) {
@@ -65,7 +66,7 @@ function main() {
         assert(s[k] && (Array.isArray(s[k]) ? s[k].length : Object.keys(s[k]).length), `skill ${s.id} lacks ${k}`);
       }
     }
-    assert(command(installer, [installed]).status !== 0, 'second install not rejected');
+    assert(command(installerMjs, [installed]).status !== 0, 'second install not rejected');
     assert(command(installerMjs, [installed, '--rebind']).status === 0, 'mjs rebind failed');
     // 重复安装拒绝与 --rebind 重绑定：py 版安装 + mjs 版重绑定（py 版将随 N5 删除，mjs 是目标实现）。
     passed('four installed Skills locate one package; existing installation is preserved; rebind works');
