@@ -31,13 +31,13 @@
     {
       "id": "generate-ux-prototype",
       "entry": "skills/generate-ux-prototype/SKILL.md",
-      "description": "Create or edit a G Design page from screenshots or requirements using local tokens, components and templates; supports direct reference input.",
+      "description": "Generate or edit a G Design page as real Vue 3 + Element Plus source code from requirements, screenshots or HTML; reuses asset-library tokens and components; delivers a zero-build offline preview.",
       "inputs": [
         "参考或需求方向",
         "指定资产库"
       ],
       "outputs": [
-        "可运行原型、配置、来源及验证记录"
+        "Vue 3 源码工作区（views/components/api/mock/locales）+ 零构建离线预览 + 验证记录"
       ],
       "skipWhen": "仅需求分析或公共规范维护",
       "nextWhenRequested": null

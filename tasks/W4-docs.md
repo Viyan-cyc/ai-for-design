@@ -64,3 +64,15 @@
 ## 结论回写区（执行中随时追加，每条带姓名+日期）
 
 <!-- 格式：- [日期] (姓名/卡号) 结论或问题一句话；细节缩进展开。写完 commit 到本任务分支 -->
+
+- [2026-09-12] (cyc/W4-D1~D5) **D1-D5 全部完成**（分支 w4/d1-d5-docs）：
+  - **D1 SKILL.md 重写**：十节齐全（frontmatter/技术栈/定位协议/生成选项/生成流程 8 步/修改流程/换肤/毛玻璃/UI Runtime/i18n/mock-api/速度条款/速查）。与 §9 决策逐条对照：D12 三开关中两开关落地（组件复用 reuse/hybrid/free + UI 库固定 element-plus；D22 样式语言固定 less 无开关）、D13①②④、D14 px、D15 locales.js、D16 api 适配层、D2/D4/D6/D8/D9/D17/D20/D22 全部体现；token 速查表不内嵌（D2 决策）。白名单数字按实测写 116/130/295（原卡草稿的 121/293 是 gts-autin-coder 旧值）。
+  - **D2 code-conventions.md**：11 节；api 两段式二开写法（W1-T3 结论）、G 组件复用约定（collect 用法/落位/垫片说明/禁止改写）、路径计算表按新结构（api/、tokens/、组件分类落位）重算、高频错误表含「import mock 违规」「直接改拷入 G 组件」「scss」三条新增、二开依赖差异节（npm i -D less + 两段式 + 垫片可删）。
+  - **D3 ui-runtime.md**：三件套表（UMD 目录/白名单格式/桥接 CSS 要求）+ SweetUI 五步接入清单；白名单 schema 以现有 element-plus 三份 JSON 为例。
+  - **D4 周边文件**：skill-catalog.json（generate-ux-prototype description/outputs 改源码交付表述）、AI-ENTRY.md（第 9 行源码交付表述 + query_assets.py→.mjs）、workflow.md（原型阶段交接重写：工作区交付 + api 适配层边界 + 二开说明；freeze/来源锁/handoff 脚本概念清除，跨阶段 requirements/insights 引用不变）、README.md（安装/验证/发布命令全 node 化 + 「仅 Node ≥18」依赖声明 + EP 2.13.5 + N5 过渡说明）。
+  - **D5 自检四条全过**：① grep -ri gts（*.md + skills 全部 SKILL.md/references，除方案文档）零命中；② SKILL.md 提到的脚本/文件逐一存在（package-location.json 为安装时生成物，包内本就不存在，已如实写明）；③ skill-catalog entry/outputs 核对；④ 全部文档 EP 版本号统一 2.13.5、单位口径统一 px。`node tests/validate_package.mjs` 10/10 PASS（含 init/build 冒烟）。
+  - **交叉审代做说明**：D1/D2 的流程描述逐条对照脚本源码（init/build/collect/serve 全部实测：CLI 参数、输出协议行、白名单数、来源注释格式、垫片行为）+ validate_package 冒烟；**请 W1（cyc）在 PR 评审时终审**。
+- [2026-09-12] (cyc/W4) **三个发现（均不阻塞本卡，归属 W1/W3 裁量）**：
+  1. **init.mjs 头注释与实际不符（W1）**：init.mjs 第 25 行注释声称生成 `src/README.md`（接入说明），但 preview 模板中无此文件、init 也不写它（实测 init 产物 src/ 下无 README）。文档侧已规避——workflow.md 二开说明改为引用 `src/api/{slug}.js` 文件头 + code-conventions「二开依赖差异」。建议 W1 二选一：补一个真模板 src/README.md（对二开者更友好），或删掉该行注释。
+  2. **init starter 双语言对象直接插值（W1，轻微）**：starter index.vue 用 `{{ t.title }}`，而 locales.js 的 t.title 是 `{zh,en}` 对象，单独打开 starter 预览会显示 `{"zh":"…","en":"…"}`。AI 生成时会整体替换 starter、不影响交付，但 starter 自身展示异常。建议改 `{{ t.title.zh }}`（code-conventions i18n 节已按 `.zh` 写法示范）。
+  3. **component-plan.schema.json 成为孤儿（W3）**：validate_package.mjs 的 required 清单仍要求 `references/component-plan.schema.json`（旧配置驱动模式的 schema，新流程已废弃）。本次保留该文件未删以满足校验；usage.md/SKILL.md 已不再引用它（task-handoff.schema.json 仍被 workflow.md 交接流程引用，保留）。建议 W3 N5 时从 required 清单移除并删除该文件。

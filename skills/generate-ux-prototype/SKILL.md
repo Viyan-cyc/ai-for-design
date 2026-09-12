@@ -1,31 +1,253 @@
 ---
 name: generate-ux-prototype
-description: Create or edit a G Design page from screenshots or requirements using local tokens, components and templates; supports direct reference input.
+description: Generate or edit a G Design page as real Vue 3 + Element Plus 2.13.5 source code (.vue workspace with api adapter, mock, i18n) plus a zero-build offline preview; tokens and reusable components are fetched live from the local asset library. Accepts text requirements, module descriptions, screenshots or raw HTML. Triggers on "页面生成", "原型", "Vue 页面", "Element Plus", "列表页", "看板", "截图转码".
 ---
 
-# 生成 G Design 原型
+# 生成 G Design 原型（Vue 3 源码交付）
 
-使用指定包中的设计规范与真实组件。先定位资源再按需读取，不全量扫描源码、Word 或所有色板。
+你的产品是**真实 Vue 3 源码工作区**：一组 `.vue` SFC（`<script setup>` 纯 JS）+ Less + 标准 ESM import，写在 `{slug}/src/` 下——代码本身就是交付件，可直接拷入任何 Vue 3 + Element Plus + Vite 工程做二次开发；同时附带零构建离线预览 `{slug}/index.html`（浏览器直接打开）。对话以单个 `<artifact>` 链接结束。
 
-## 输入与读取顺序
+skill 目录不存放任何设计数据副本：token、组件、模板、毛玻璃规则全部在生成时通过资产库定位协议现取（见下文「资产库定位协议」）。设计师发新版资产库，下一次生成自动生效。
 
-- 沿用用户给定的需求、参考图、方向和 `ASSETS_ROOT`。V1.5 接受包根目录、`assets/` 或直接资产库目录。
-- 从 `asset-catalog.json` 定位库，再读取该库的 `asset-manifest.json` 与 `asset-library.contract.json`。
-- 通过库内 `scripts/query_assets.py` 查询所需模板、组件或 Token 分组；规范入口是 `design/rules.md`。颜色场景按需读 `design/color-rules.md` 与生成的 `design/color-tokens.md`；无需原始 Word 或图片。
-- 先选页面结构；默认 `enterprise-light-dark`，需要毛玻璃时选择 `frosted-glass`（旧 `aurora-glass` 兼容）。按需读 `design/frosted-glass.md`，查询 frost-* 分组，按 control/card/overlay 预设局部使用。用户给定的参考图和风格优先；无明确装饰需求时使用企业实色主题。
+## 技术栈
 
-遇到大面积品牌色重点卡片/概览且边角有留白时，按 `design/frosted-glass.md` 的“色块装饰”及 `frost-decoration` 分组自动选择弱装饰；普通大卡片不因尺寸自动装饰，密集数据与功能告警色排除。选定后显式记录属性，保留主卡的蓝底白字。
+- **框架**: Vue 3（`<script setup>` Composition API，纯 JS，无 TS）
+- **UI 库**: Element Plus **2.13.5**（当前唯一 runtime）
+- **路由**: Vue Router 4.x
+- **样式语言**: Less（全链路钉死，无开关；工作区禁止出现任何 scss）
+- **单位**: px（与资产 token 一致；不做 rem 换算）
+- **运行时依赖白名单（裸 import 仅此五项）**: `vue` / `vue-router` / `element-plus` / `@element-plus/icons-vue` / `dayjs`（+ element-plus 子路径；`less` 仅为构建期依赖，非运行时依赖）
 
-## 生成与验证
+## Session Context Caching
 
-1. 创建符合 [component-plan.schema.json](references/component-plan.schema.json) 的计划。使用规范化组件 ID、精确 `assetVersion`、单个 `templateId`，包含全部关键交互。
-2. 如现有模板不适用，按 [usage.md](references/usage.md) 在独立项目资产副本中扩展，补齐规范、配置和验证，再生成。清空已解决的 assetGaps，不强行套用不合适模板。
-3. 运行 `python3 -B scripts/resolve_source_assets.py PLAN ASSETS_ROOT OUTPUT`。它复制完整依赖包并锁定组件、Token 和模板来源。
-4. 读取输出配置 Schema，仅修改 `asset-selection.json` 中的 `configFile`。结构修改应回到项目扩展并重新生成，避免绕过来源锁。
-5. 运行 `python3 -B scripts/validate_source_draft.py OUTPUT ASSETS_ROOT`。进入 selection 中的 `projectRoot`，使用锁定依赖运行 `npm ci`（仅缺依赖时）及 `npm run build`；依赖安装遵守执行环境和当前用户授权。
-6. 如环境提供浏览器验证，检查所选模板的关键交互、明暗主题和与参考图的差异；未实际检查的项目标记未验证，不将构建成功当作视觉还原证明。
-7. 交付一个待评审原型，说明演示假设和实际验证范围。部署仅在用户请求或当前工作流已有授权时执行。
+1. **NEVER re-read** 本会话已读过的文件。
+2. **Design system:** token 不再有速查表——全集见工作区 `src/assets/tokens/*.css`（init 现取），build 实时校验兜底。需要了解 token 语义/规则时读资产库 `design/rules.md`、`design/color-rules.md`。
+3. **Code patterns:** 信任 [references/code-conventions.md](references/code-conventions.md) 的约定与速查，无需外部参考。
+4. **Element Plus API:** 信任你的知识，标准 EP 2.13.5 API。
 
-用户确认 UI 与交互、且浏览器冒烟通过后，才运行 `freeze_design_handoff.py ... --direction-id ID --browser-report REPORT --confirmation-reference REF`。详细调用示例见 [usage.md](references/usage.md)。
+## Output Contract（READ FIRST）
 
-定位共享入口：用户给定包路径优先；否则读取本 Skill 的 `agents/package-location.json`，核对包根 `skill-catalog.json` 的 packageId/packageVersion。整包模式可直接读取上两级的 `AI-ENTRY.md`。仅跨阶段任务按包根 `workflow.md` 交接。路径失效时先在用户已知位置查找；仍缺失才询问。
+`init.mjs` 初始化出的工作区结构（**init 只创建必要文件，其余按需创建**）：
+
+```
+{slug}/
+├── index.html                       # 离线预览加载器（FIXED）
+├── preview-data.js                  # 源码映射（build 自动生成，FIXED）
+├── mock/modules/{slug}.js           # Mock API（init 必建，与 src 同级）
+├── public/library/element-plus/     # EP 2.13.5 预览运行时 UMD（FIXED）
+└── src/                             # ★ 交付件
+    ├── main.js                      # 工程入口（FIXED）
+    ├── App.vue                      # 应用壳：路由出口（init 生成）
+    ├── api/{slug}.js                # ★ 接口适配层（init 必建；二开唯一必改文件）
+    ├── assets/tokens/               # ★ 资产库 token 全套（init 现取复制，勿手改）
+    ├── assets/style/base.less       # Less 基础样式（FIXED）
+    ├── assets/themes/               # 皮肤插槽（base.css + README 协议；自定义皮肤放这里）
+    ├── assets/fonts/                # 字体（FIXED）
+    ├── assets/images/ uploads/      # 按需创建素材
+    ├── locales/                     # 全局共享词条（init 必建：lang/{zh-CN,en-US}/common.json + index.js）
+    ├── router/index.js              # 路由（init 必建 — 内联，无 guards/modules）
+    ├── views/{slug}/                # ★ 页面主目录（init 必建）
+    │   ├── index.vue                # 页面主组件（starter，替换它）
+    │   └── js/constants.js          # 页面常量（含 COMPONENT_MODE）
+    │   └── js/locales.js            # 页面词条（单文件双语言）
+    └── components/                  # 复用 G 组件 / 跨页组件（按需创建）
+```
+
+**Editable vs FIXED:**
+- **You edit ONLY:** `views/**`、`components/**`、`api/**`、`locales/**`、`router/**`、`mock/**`、`assets/uploads/`、`assets/images/`、`assets/themes/`（皮肤文件）。
+- **FIXED:** `main.js`、`App.vue`、`assets/tokens/`、`assets/style/base.less`、`assets/fonts/`、`public/`、`index.html`、`preview-data.js`。
+
+**HARD RULES（src/ 内代码约束，细则见 [references/code-conventions.md](references/code-conventions.md)）:**
+- 标准 ESM：`import { ref } from 'vue'`、`import { ElMessage } from 'element-plus'`；相对路径 import 子组件。
+- 颜色一律资产库 token 变量 `var(--g-*)` / `var(--color-*)`；Element Plus 组件用语义 `type` prop。
+- `<style lang="less" scoped>`；**禁止静态内联 `style="..."`**（`:style` 动态绑定允许）；SFC 样式内禁止定义 `:root`、`[data-theme]`、资产 token（页面局部变量用 `--page-*` 前缀）。
+- 单位一律 px；全工作区禁止 scss / `lang="scss"`。
+- 页面与组件**只准从 `src/api/{slug}.js` 取数**，禁止 import `mock/modules`（build 强制校验）。
+
+## 资产库定位协议
+
+先定位资产库（下称 LIBRARY，内含 `asset-manifest.json`），再按需读取，不全量扫描：
+
+1. **用户给定的 `ASSETS_ROOT` 优先**——可指向包根目录、包内 `assets/` 或 LIBRARY 本身。
+2. 未指定时读本 Skill 的 `agents/package-location.json`（安装模式保存的包绝对路径），核对包根 `skill-catalog.json` 的 packageId/packageVersion。
+3. 整包模式可直接使用包根；包根 `asset-catalog.json` → `libraries['g-design-enterprise'].root` 定位库目录。
+4. 路径失效时先在用户已知位置查找；仍缺失才询问。
+
+定位后读取 LIBRARY 的 `asset-manifest.json` 与 `asset-library.contract.json`。查询资产用库内脚本（先摘要、选中后再读规范与实现）：
+
+```sh
+node LIBRARY/scripts/query_assets.mjs templates --search 列表     # 页面模板摘要
+node LIBRARY/scripts/query_assets.mjs components --search 状态     # 组件摘要
+node LIBRARY/scripts/query_assets.mjs components g-status-tag      # 单个组件 spec（useWhen/level/source）
+node LIBRARY/scripts/query_assets.mjs tokens frost-common          # token 分组（含 frost-*）
+```
+
+规范入口：`design/rules.md`；颜色场景按需读 `design/color-rules.md` 与 `design/color-tokens.md`；毛玻璃见下文「毛玻璃与视觉风格」。
+
+## 生成选项：组件模式开关（生成开始时确认）
+
+生成开始时与用户确认**组件复用模式**（UI 库当前固定 element-plus；样式语言固定 less，均无开关），并记录到 `views/{slug}/js/constants.js` 的 `COMPONENT_MODE`：
+
+| 模式 | 行为 |
+|---|---|
+| `reuse` | 命中库组件**必须**复用；未命中记 gap 并告知用户 |
+| `hybrid`（默认） | 先按组件 spec 的 useWhen 语义匹配；命中→复制复用，未命中→AI 手写 |
+| `free` | 跳过匹配，全部 AI 手写（只守 token + 代码规范约束） |
+
+init 生成的 starter 中 `COMPONENT_MODE` 默认为 `'hybrid'`，确认结果不同时改写该常量。
+
+## 生成流程（All Input Types）
+
+### Step 1 — 输入解析
+
+- **Type 1 页面描述**：分析场景、目标用户、核心问题；扩展完备性（B 端控制台 = 顶栏 + 侧边导航 + 主内容区 + 状态反馈）。
+- **Type 2 模块描述**：单个 UI 块 → 作为独立组件生成 + 页面以展示形态包裹。
+- **Type 3 截图**：分析布局/组件/层级/视觉分区，映射到 Element Plus + 资产 token；**数据保真转录而非发明**——行数列数与图完全一致，逐格独立读取，严禁行间复制。
+- **Type 4 Raw HTML**：解析 DOM/CSS → 原生控件映射 EP 组件，颜色映射最近似 token，重复内容提为数据。
+
+### Step 2 — 模板参考（结构参考 + 完备性清单，只读）
+
+1. 用 `query_assets.mjs templates` 摘要选**最接近**的模板（六套：standard-list / device-management / edit-form / object-detail / topology-monitoring / alarm-impact）。
+2. 读该模板 JSON 的 `criticalInteractions`（搜索/分页/批量等）与 `pageStates`（loading/empty/error/forbidden/partial/ready），再读其 `source` 指向的 `.vue` 源码提取布局骨架。
+3. 以此作为**结构与交互完备性对照清单**，然后按工作区代码规范自由写码——**配置驱动机制已废弃**，不生成、不引用任何模板配置 JSON；模板源码只读不拷贝。
+
+### Step 3 — Init Workspace（MANDATORY）
+
+1. **Confirm {artifact-folder}**：运行时上下文提供的绝对路径；缺失则回退当前工作目录。
+2. **Derive {slug}**：kebab-case ASCII，2–6 段语义英文（"设备管理" → `device-management`）。
+3. **Init**：
+   ```sh
+   node scripts/init.mjs "{artifact-folder}" "{slug}" --assets-root <ASSETS_ROOT>
+   ```
+   `--assets-root` 可省略（自动探测：本包所在仓库布局 → `ASSETS_ROOT` 环境变量 → 当前目录）。成功输出 `RESULT: OK` + `HTML_PATH` + `SRC_DIR` + `PAGE` + `ASSETS_VERSION`。token 全套随即复制到 `src/assets/tokens/`（含毛玻璃 token），并生成 api 适配层、mock 模块、全局词条、路由与 starter 页面。
+
+### Step 4 — 组件匹配与复用（hybrid / reuse）
+
+1. 对页面需要的每个能力，用 `query_assets.mjs components --search <关键词>` 圈候选，读 spec 的 `useWhen`/`states` 确认语义匹配。
+2. **命中** → 用 collect 脚本一次性拷贝依赖闭包（自动递归相对 import、落位到 `src/components/{basic|business|complex}/GName/`、加来源注释）：
+   ```sh
+   node scripts/collect_component.mjs <LIBRARY> <component-id> "{slug}/src" "{slug}/src/components"
+   ```
+   输出 `RESULT: OK` + `FILES`/`COPIED` 清单。拷入的文件**禁止改写**（含来源注释），页面以标准 import 消费。
+3. **未命中** → AI 手写（遵循 code-conventions），组件头注释注明手写原因；`reuse` 模式必须把 gap 汇总告知用户。
+4. 注意：collect 脚本对同一目标重复执行会 FAIL（防覆盖）；组件依赖 types.ts 等未迁移文件时会报缺失清单（资产库迁移 gap），如实上报，不要手工内联修复。
+
+### Step 5 — 写码
+
+在 `SRC_DIR` 下按 [references/code-conventions.md](references/code-conventions.md) 编写页面：
+
+- `views/{slug}/index.vue` 为页面主组件（替换 starter），以组合编排为主。
+- **拆分触发式**：子组件仅在 **>150 行 / 被复用 / 状态复杂** 时才拆出独立文件（常规页面约 4-8 个文件）；页面私有放 `views/{slug}/components/`，跨页复用放 `src/components/`（复用的 G 组件按 collect 落位约定）。
+- **无依赖的文件并行写**：constants.js、locales.js、mock 数据、互不依赖的子组件可在同一轮并行创建。
+- 常量放 `views/{slug}/js/constants.js`（全大写+下划线命名）；页面词条放 `views/{slug}/js/locales.js`（单文件双语言，见下文 i18n）。
+
+### Step 6 — 生成前自检（MANDATORY，build 前必做）
+
+1. 相对 import 层级正确（对照 code-conventions 的路径计算表）
+2. 图标名 / `el-*` 组件名在白名单内（见下文速查）
+3. PascalCase / kebab-case 组件标签都有对应 import
+4. `<style lang="less">` 内无 `:root` / `[data-theme]` / 资产 token 定义；页面局部变量 `--page-*` 前缀
+5. 裸 import 仅白名单五项
+6. `v-for` 有 `:key`；`v-if` 不与 `v-for` 同标签
+7. 无静态内联 `style="..."`（`:style` 动态绑定允许）
+8. 单位 px（无 rem）；无任何 scss
+9. 页面/组件无 `mock/modules` import（只经 `src/api/{slug}.js`）
+10. 拷入的 G 组件文件未被改动（来源注释原样）
+
+### Step 7 — Build & Verify（MANDATORY，自动刷新预览）
+
+```sh
+node scripts/build.mjs --dir "{artifact-folder}/{slug}"
+```
+
+- **Success:** `RESULT: OK` + `OK index.html verified (N pages, M components, K el-tag uses)`
+- **Failure:** `RESULT: FAIL | <文件>: <原因>` → 修复 → 重跑（最多 3 次）
+- **WARN:** hex 颜色、静态内联样式——非阻断，但应修正
+- 校验覆盖：@vue/compiler-sfc 真编译 + `el-*` 白名单(116) + 图标白名单(295) + 导出白名单(130) + 相对 import 解析 + 裸依赖白名单 + ESM 语法 + **token 存在性（从工作区 `src/assets/tokens/` 实时提取）** + 样式卫生 + mock 隔离 + scss 禁用。
+
+### Step 8 — Output
+
+```
+<artifact type="text/link">{HTML_PATH value}</artifact>
+```
+
+直接在浏览器打开 `index.html` 即可预览（file:// 可直接加载）。浏览器限制 file:// 动态加载时用本机服务：
+
+```sh
+node scripts/serve.mjs --dir "{artifact-folder}/{slug}" --port 8765
+```
+
+交付说明需注明：演示假设与未验证项、组件复用 gap（reuse 模式必述）、以及二次开发入口（改 `src/api/{slug}.js` 对接真实接口，页面零改动）。
+
+## Modification Workflow（修改已生成页面）
+
+用户要求修改已生成页面时，**不要重新生成**：
+
+1. **Locate:** `{artifact-folder}/{slug}/src/views/{slug}/...`
+2. **Edit:** 只做请求的改动——未提及内容保持不变。
+3. **Re-verify:** 重跑 `build.mjs` → 输出同一 `<artifact>` link。
+
+## 换肤系统
+
+- 页面消费 token（`src/assets/tokens/` 全套，init 现取）→ 任何皮肤下自动跟随。
+- 明暗协议：`data-theme="light|dark"`；运行时切换 `document.documentElement.setAttribute('data-theme', …)`。
+- 自定义皮肤：`theme-{name}.css` 放 `src/assets/themes/`，按该目录 README 协议注册（`index.html` 换肤插槽追加 `<link>`；真实工程在 `main.js` 皮肤插槽追加 import）。
+
+## 毛玻璃与视觉风格
+
+毛玻璃无特殊机制——它就是 token + 规范文档：
+
+- token（glass / frosted / frost-decoration）随 `src/assets/tokens/` 自动就位，设计师更新自动跟随。
+- 需求涉及毛玻璃时**按需读**资产库 `design/frosted-glass.md`（何时用/不用、control/card/overlay 预设、应用预算），用 `query_assets.mjs tokens frost-common` 查数值。
+- 视觉风格判断沿用主次/内容密度规则：遇到大面积品牌色重点卡片/概览且边角有留白时，按 `design/frosted-glass.md` 的「色块装饰」及 `frost-decoration` 分组选择弱装饰；普通大卡片不因尺寸自动装饰，密集数据与功能告警色排除；选定后显式记录属性，保留主卡的蓝底白字。用户给定的参考图和风格优先；无明确装饰需求时使用企业实色主题。
+
+## UI Runtime 扩展点
+
+默认 runtime 为 **element-plus 2.13.5**。接入其他 UI 库（如 SweetUI）= 按「UMD 目录 / 白名单 / token 桥接 CSS」三件套接入，架构不动；接入说明与清单见 [references/ui-runtime.md](references/ui-runtime.md)。生成流程本身不因 runtime 改变。
+
+## i18n
+
+- **页面级**：每页一个 `views/{slug}/js/locales.js`——单文件双语言对象（zh-CN + en-US 一次写完，en 由 AI 机械翻译顺带产出），模板经 `t.xxx` 引用；写法见 code-conventions「i18n 模式」。
+- **全局**：`src/locales/lang/{zh-CN,en-US}/common.json` 仅存**跨页共享**词条（确认/取消/搜索等，按需追加）。
+- 将来接 vue-i18n 时把两个语言对象拆进 JSON 即可，页面模板零改动。
+
+## Mock 与 API 适配层（D16）
+
+- 页面**只准** `import { fetchList } from '../../api/{slug}.js'`；**禁止 import `mock/modules`**（build 强制 FAIL）。
+- `src/api/{slug}.js` 原型态为一行 re-export mock；mock 函数按 **REST 语义**设计签名（如 `fetchList({keyword,page,pageSize}) → Promise.resolve({list,total})`，返回页面消费的形状，`delay` 模拟网络）。
+- 二次开发 = 只改 `src/api/{slug}.js`（导出名/参数/返回形状不变），页面零改动。细则与二开写法见 code-conventions「API 适配层约定」。
+
+## 速度条款
+
+1. **拆分触发式**：>150 行 / 被复用 / 独立状态复杂才拆文件，常规页面 4-8 个文件；不追求「一个 UI 区块一个文件」。
+2. **并行写**：无依赖文件（constants / locales / mock / 独立子组件）并行创建。
+3. **Mock 混合策略**：手写前 8-10 条保状态多样性，其余 spread / 生成器扩展数量；**截图输入保真转录规则不变**。
+
+## 速查
+
+### 常用图标（import from '@element-plus/icons-vue'，大小写敏感，build 校验 295 白名单）
+
+```
+Search  Plus  Edit  Delete  View  Refresh  Setting  User  Lock  Check
+Close  Warning  InfoFilled  ArrowDown  ArrowUp  ArrowLeft  ArrowRight
+Monitor  Filter  More  Calendar  Bell  Download  Upload
+```
+
+### 常用 el-\* 组件（build 校验 116 白名单，以下最高频）
+
+```
+el-button  el-input  el-select  el-option  el-table  el-table-column
+el-pagination  el-form  el-form-item  el-dialog  el-drawer  el-tag
+el-icon  el-menu  el-container  el-header  el-aside  el-main
+el-row  el-col  el-card  el-tabs  el-tab-pane  el-tooltip  el-dropdown
+```
+
+### Token
+
+不内嵌速查表（避免随设计师更新腐烂）。使用任何 token 前确认其存在于 `src/assets/tokens/*.css`；build 会用同一来源实时校验。token 分组数值用 `query_assets.mjs tokens <group>` 查询。
+
+## References
+
+- **[references/code-conventions.md](references/code-conventions.md)** — 页面代码规范 / API 适配层 / i18n / G 组件复用 / 相对路径计算表 / 高频错误预防 / 二开依赖差异
+- **[references/ui-runtime.md](references/ui-runtime.md)** — UI Runtime 三件套接入说明（SweetUI 预留）
+- **[references/usage.md](references/usage.md)** — 调用示例（五脚本 CLI 速览）

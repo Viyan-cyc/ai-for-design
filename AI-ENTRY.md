@@ -6,7 +6,7 @@
 | --- | --- |
 | 整理需求 | extract-structured-requirements；输出后结束 |
 | 分析体验、流程 | derive-experience-insights；必要时补充需求 |
-| 按截图生成或修改页面 | generate-ux-prototype；已有明确参考可直接开始 |
+| 按截图生成或修改页面 | generate-ux-prototype；交付 Vue 3 源码工作区 + 离线预览；已有明确参考可直接开始 |
 | 从需求到页面 | 需求 → 体验 → 原型；跳过已有有效产物的阶段 |
 | 修改 Token、规则、公共组件 | manage-design-assets；按改动类型选择维护方式 |
 
@@ -14,7 +14,7 @@
 
 只有设计、原型和资产维护任务才定位资产库：用户指定路径优先，否则使用已安装 Skill 的 agents/package-location.json；整包模式使用本目录。通过 asset-catalog.json 定位库，读取 manifest 与 contract，不从文件夹名推断版本。
 
-按需查询库内 scripts/query_assets.py：先摘要，选中后读规范和实现。纯需求提取不加载设计资产。数值维护 design/tokens.json；通用、颜色、毛玻璃规则分别位于 design/rules.md、design/color-rules.md、design/frosted-glass.md；组件/模板规范位于 components；前端实现位于 frontend/element-plus。生成文件不作为第二份维护源。
+按需查询库内 scripts/query_assets.mjs：先摘要，选中后读规范和实现。纯需求提取不加载设计资产。数值维护 design/tokens.json；通用、颜色、毛玻璃规则分别位于 design/rules.md、design/color-rules.md、design/frosted-glass.md；组件/模板规范位于 components；前端实现位于 frontend/element-plus。生成文件不作为第二份维护源。
 
 安装后的 Skill 可自然语言匹配，也可用 $skill-name 显式调用；自动匹配不保证自动运行全部阶段。其他 Skill 未安装时可在本包读取对应入口，无法找到时完成当前阶段并明确缺失能力。
 
