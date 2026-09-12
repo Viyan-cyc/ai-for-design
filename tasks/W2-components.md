@@ -55,3 +55,16 @@
 ## 结论回写区（执行中随时追加，每条带姓名+日期）
 
 <!-- 格式：- [日期] (姓名/卡号) 结论或问题一句话；细节缩进展开。写完 commit 到本任务分支 -->
+
+- [2026-09-12] (moyuntian/W2-M0) M0 正式稿 `skills/generate-ux-prototype/references/component-format.md` 已产出，13 节，待设计师评审签字。现状盘点关键结论：
+  - 组件目录共 61 个（basic 44 / business 13 / complex 5）；主 .vue 58 个（GLoading/GMessage/GNotification 为 service 组件无 .vue）+ examples.vue 49 + style.scss 49 + types.ts 53 + index.ts 63（含 barrel 2）。
+  - style.scss 全部为扁平 CSS（零嵌套、零 `$` 变量、零 `@import`、零 `#{}`），39/49 用 `:deep()`（Vue scoped 语法，非 sass），内联到 less scoped 合法，可直接贴入。
+  - 全库零 hex 字面量；静态内联 `style=` 仅 GDashboardGrid / GMonitorPanel 两处 `:style` 动态绑定（保留）。
+  - TS 语法面很小：无 enum / defineModel / defineExpose；仅 withDefaults（13 处）、类型 import（GButton/GTopology 从 ./types，GAlarmTopology 从 ../GTopology/types）、script 内 `export interface`（4 处：GAdvancedFilter/GDataTablePro/GDescriptionPanel/GTimelinePro，均无外部消费方）、3 处泛型 + 2 处 `as` 断言（均在 GIcon）。
+  - 跨组件相对引用仅 2 处走 barrel（GAlarmTopology→../GTopology、GMonitorPanel→../../business/GStatusTag），GIcon 引 ../../../icons/*.json（约 420KB，不内联）。
+- [2026-09-12] (moyuntian/W2-M0) 【需拍板】发现 3 处 components/ 之外的连带耦合，已登记规范 §9，但属跨 W 所有权（assets/ 下非 components/），M0 仅登记不越界编辑：
+  1. `src/index.ts:10` `export*from'./components/complex/GTopology/types'` —— 删 GTopology/types.ts 会断库构建，须删该行（盘点：TopologyNode/TopologyEdge 仅 page-types.ts 内部使用，无库包外消费方）。
+  2. `src/page-types.ts:1` import 上述两个 interface —— 须把定义并入 page-types.ts 本体。
+  3. `package.json` devDependencies 无 `less` —— 改 `<style lang="less">` 后 vite 编译必需加依赖（备选：纯 `<style scoped>` 免加依赖，但与工作区 less 约定不一致，复用拷贝需改写，不推荐）。
+  → 建议 M1 codemod 一并处理 #1/#2，#3 由用户拍板归属（W2 代改 / W4 / W3）。规范主选 less 方案。
+- [2026-09-12] (moyuntian/W2-M0) 【需拍板】复用闭包契约给 W1/T6：拷 GIcon 时须连带拷 `src/icons/icon-nodes.json` + `icon-aliases.json` 并保持 `../../../icons/` 相对路径（GIcon 跨目录数据依赖，非 .vue）。collect_component.mjs 的递归闭包须覆盖非 .vue 相对 import。规范 §5/§10 已登记。
