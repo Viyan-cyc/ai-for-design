@@ -125,7 +125,7 @@ init 生成的 starter 中 `COMPONENT_MODE` 默认为 `'hybrid'`，确认结果�
 1. 对页面需要的每个能力，用 `query_assets.mjs components --search <关键词>` 圈候选，读 spec 的 `useWhen`/`states` 确认语义匹配。
 2. **命中** → 用 collect 脚本一次性拷贝依赖闭包（自动递归相对 import、落位到 `src/components/GName/`、加来源注释）：
    ```sh
-   node scripts/collect_component.mjs <LIBRARY> <component-id> "{slug}/src" "{slug}/src/components"
+   node scripts/collect_component.mjs [LIBRARY] <component-id> "{slug}/src" "{slug}/src/components"  # LIBRARY 可省略（安装态自动读绑定）
    ```
    输出 `RESULT: OK` + `FILES`/`COPIED` 清单。拷入的文件**禁止改写**（含来源注释），页面以标准 import 消费。
 3. **未命中** → AI 手写（遵循 code-conventions），组件头注释注明手写原因；`reuse` 模式必须把 gap 汇总告知用户。

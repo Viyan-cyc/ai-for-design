@@ -41,11 +41,40 @@ function fail(reason) {
 }
 
 // ---------- args ----------
-const [assetsRootArg, componentId, workspaceSrcArg, targetDirArg] = process.argv.slice(2);
-if (!assetsRootArg || !componentId || !workspaceSrcArg || !targetDirArg) {
-  fail('Usage: node collect_component.mjs <assets-root> <component-id> <workspace-src> <target-dir>');
+// <assets-root> 可省略：安装态自动读 agents/package-location.json 绑定（设计师无需知道包路径）。
+// 省略判定：首参若含 asset-manifest.json 则为显式 assets-root，否则视为 componentId 位移。
+const argv = process.argv.slice(2);
+const hasExplicitRoot = argv.length === 4 && existsSync(join(resolve(argv[0]), 'asset-manifest.json'));
+const [assetsRootArg, componentId, workspaceSrcArg, targetDirArg] = hasExplicitRoot
+  ? argv
+  : [null, ...argv];
+if (!componentId || !workspaceSrcArg || !targetDirArg) {
+  fail('Usage: node collect_component.mjs [assets-root] <component-id> <workspace-src> <target-dir>');
 }
-const assetsRoot = resolve(assetsRootArg);
+// 绑定给的是包根；包根可能本身是库（含 asset-manifest.json）或经 asset-catalog.json 下钻。
+function locateLibrary(p) {
+  p = resolve(p);
+  if (existsSync(join(p, 'asset-manifest.json'))) return p;
+  if (existsSync(join(p, 'asset-catalog.json'))) {
+    const catalog = JSON.parse(readFileSync(join(p, 'asset-catalog.json'), 'utf8'));
+    const libRoot = join(p, catalog.libraries?.['g-design-enterprise']?.root || 'assets');
+    if (existsSync(join(libRoot, 'asset-manifest.json'))) return libRoot;
+  }
+  return null;
+}
+
+let assetsRoot = null;
+if (assetsRootArg) {
+  assetsRoot = locateLibrary(assetsRootArg);
+  if (!assetsRoot) fail(`asset library not found under: ${assetsRootArg}`);
+} else {
+  const bindingPath = join(__dirname, '..', 'agents', 'package-location.json');
+  try {
+    const binding = JSON.parse(readFileSync(bindingPath, 'utf8'));
+    if (binding.packageRoot) assetsRoot = locateLibrary(binding.packageRoot);
+  } catch { /* 未安装态无绑定 */ }
+  if (!assetsRoot) fail('assets-root not given and no agents/package-location.json binding (installed-Skill mode) found');
+}
 const workspaceSrc = resolve(workspaceSrcArg);
 const targetDir = resolve(targetDirArg);
 if (!existsSync(join(assetsRoot, 'asset-manifest.json'))) {

@@ -1,0 +1,120 @@
+/* GENERATED from design/tokens.json. Do not edit generated values. */
+/* H Design 色彩.docx 映射。原文与使用规则：source/h-design-color-spec.md、source/h-design-color-mappings.md。 */
+/* 先加载 Element Plus 基础样式，再加载 tokens/index.scss。 */
+:root,
+[data-theme] {
+  --el-color-primary: var(--color-brand);
+  --el-color-primary-light-3: var(--color-brand-hover);
+  --el-color-primary-light-5: var(--color-brand-disabled);
+  --el-color-primary-light-7: var(--brand-10);
+  --el-color-primary-light-8: var(--color-select);
+  --el-color-primary-light-9: var(--color-select);
+  --el-color-primary-dark-2: var(--color-brand-active);
+  --el-bg-color-page: var(--color-bg-1);
+  --el-bg-color: var(--color-bg-5);
+  --el-bg-color-overlay: var(--color-bg-4);
+  --el-text-color-primary: var(--color-text-primary);
+  --el-text-color-regular: var(--color-text-primary);
+  --el-text-color-secondary: var(--color-text-secondary);
+  --el-text-color-placeholder: var(--color-text-placeholder);
+  --el-text-color-disabled: var(--color-text-disabled);
+  --el-border-color: var(--color-border);
+  --el-border-color-light: var(--color-border-separator);
+  --el-border-color-lighter: var(--color-border-separator-subtle);
+  --el-border-color-extra-light: var(--color-border-separator-subtle);
+  --el-border-color-dark: var(--color-border-hover);
+  --el-border-color-darker: var(--color-border-hover);
+  --el-border-color-hover: var(--color-border-hover);
+  --el-fill-color: var(--color-fill);
+  --el-fill-color-light: var(--color-hover);
+  --el-fill-color-lighter: var(--color-table-zebra);
+  --el-fill-color-extra-light: var(--color-fill-subtle);
+  --el-fill-color-dark: var(--color-fill-disabled);
+  --el-fill-color-darker: var(--color-fill-disabled);
+  --el-fill-color-blank: var(--color-fill-subtle);
+  --el-mask-color: var(--color-bg-mask);
+  --el-mask-color-extra-light: var(--color-bg-mask);
+  --el-overlay-color: var(--color-bg-mask);
+  --el-overlay-color-light: var(--color-bg-mask);
+  --el-overlay-color-lighter: var(--color-bg-mask);
+  --el-disabled-bg-color: var(--color-fill-disabled-subtle);
+  --el-disabled-text-color: var(--color-text-disabled);
+  --el-disabled-border-color: var(--color-border-disabled);
+  --el-border-radius-base: var(--g-control-radius);
+  --el-component-size: var(--g-control-height);
+  --el-color-success: var(--color-success);
+  --el-color-success-light-3: var(--mint-40);
+  --el-color-success-light-5: var(--mint-20);
+  --el-color-success-light-7: var(--mint-10);
+  --el-color-success-light-8: var(--color-success-subtle);
+  --el-color-success-light-9: var(--color-success-subtle);
+  --el-color-success-dark-2: var(--mint-60);
+  --el-color-warning: var(--color-warning);
+  --el-color-warning-light-3: var(--yellow-40);
+  --el-color-warning-light-5: var(--yellow-20);
+  --el-color-warning-light-7: var(--yellow-10);
+  --el-color-warning-light-8: var(--color-warning-subtle);
+  --el-color-warning-light-9: var(--color-warning-subtle);
+  --el-color-warning-dark-2: var(--yellow-60);
+  --el-color-danger: var(--color-error);
+  --el-color-danger-light-3: var(--red-40);
+  --el-color-danger-light-5: var(--red-20);
+  --el-color-danger-light-7: var(--red-10);
+  --el-color-danger-light-8: var(--color-error-subtle);
+  --el-color-danger-light-9: var(--color-error-subtle);
+  --el-color-danger-dark-2: var(--red-60);
+  --el-color-error: var(--color-error);
+  --el-color-error-light-3: var(--red-40);
+  --el-color-error-light-5: var(--red-20);
+  --el-color-error-light-7: var(--red-10);
+  --el-color-error-light-8: var(--color-error-subtle);
+  --el-color-error-light-9: var(--color-error-subtle);
+  --el-color-error-dark-2: var(--red-60);
+  --el-color-info: var(--color-info);
+  --el-color-info-light-3: var(--blue-40);
+  --el-color-info-light-5: var(--blue-20);
+  --el-color-info-light-7: var(--blue-10);
+  --el-color-info-light-8: var(--color-info-subtle);
+  --el-color-info-light-9: var(--color-info-subtle);
+  --el-color-info-dark-2: var(--blue-60);
+}
+.el-button--primary {
+  --el-button-hover-bg-color: var(--color-brand-hover);
+  --el-button-hover-border-color: var(--color-brand-hover);
+  --el-button-active-bg-color: var(--color-brand-active);
+  --el-button-active-border-color: var(--color-brand-active);
+  --el-button-disabled-bg-color: var(--color-brand-disabled);
+  --el-button-disabled-border-color: var(--color-brand-disabled);
+}
+.el-button--primary.is-plain {
+  --el-button-bg-color: var(--color-select);
+  --el-button-hover-bg-color: var(--color-brand-hover);
+  --el-button-hover-border-color: var(--color-brand-hover);
+  --el-button-disabled-bg-color: var(--color-fill-disabled-subtle);
+  --el-button-disabled-border-color: var(--color-border-disabled);
+}
+.el-button--warning {
+  --el-button-text-color: var(--gray-90);
+  --el-button-hover-text-color: var(--gray-90);
+  --el-button-active-text-color: var(--gray-90);
+}
+.el-tag.el-tag--warning {
+  --el-tag-text-color: var(--color-text-primary);
+}
+.el-input,
+.el-textarea,
+.el-select {
+  --el-input-hover-border-color: var(--color-border-hover);
+  --el-input-focus-border-color: var(--color-border-focus);
+  --el-input-bg-color: var(--color-fill-subtle);
+  --el-select-input-focus-border-color: var(--color-border-focus);
+  --el-select-border-color-hover: var(--color-border-hover);
+}
+.el-table {
+  --el-table-header-bg-color: var(--color-table-header);
+  --el-table-row-hover-bg-color: var(--color-hover);
+  --el-table-current-row-bg-color: var(--color-select);
+  --el-table-border-color: var(--color-border);
+  --el-table-header-text-color: var(--color-text-primary);
+}
+.el-table--striped .el-table__body tr.el-table__row--striped td.el-table__cell { background: var(--color-table-zebra); }

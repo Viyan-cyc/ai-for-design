@@ -1,0 +1,61 @@
+/* GENERATED from design/tokens.json. Do not edit generated values. */
+/* H Design 色彩.docx 映射。原文与使用规则：source/h-design-color-spec.md、source/h-design-color-mappings.md。 */
+/* Word 原始 UI 语义；软件产品默认主题。百分比原值转为等价 RGBA。 */
+:root,
+[data-theme="light"] {
+  color-scheme: light;
+  --color-brand: var(--brand-50);
+  --color-brand-hover: var(--brand-40);
+  --color-brand-focus: var(--brand-50);
+  --color-brand-active: var(--brand-60);
+  --color-brand-disabled: var(--brand-20);
+  --color-text-primary: var(--gray-90);
+  --color-text-secondary: var(--gray-50);
+  --color-text-placeholder: var(--gray-30);
+  --color-text-disabled: var(--gray-20);
+  --color-text-inverse: var(--gray-0);
+  --color-icon-primary: var(--gray-90);
+  --color-icon-secondary: var(--gray-50);
+  --color-icon-tertiary: var(--gray-40);
+  --color-icon-placeholder: var(--gray-30);
+  --color-icon-disabled: var(--gray-20);
+  --color-icon-inverse: var(--gray-0);
+  --color-icon-hover: var(--brand-40);
+  --color-icon-focus: var(--brand-50);
+  --color-icon-active: var(--brand-60);
+  --color-border: var(--gray-20);
+  --color-border-hover: var(--gray-90);
+  --color-border-focus: var(--brand-50);
+  --color-border-disabled: var(--gray-20);
+  --color-border-separator: var(--gray-10);
+  --color-border-separator-subtle: var(--gray-05);
+  --color-bg-1: var(--gray-05);
+  --color-bg-2: var(--gray-0);
+  --color-bg-3: var(--gray-0);
+  --color-bg-4: var(--gray-0);
+  --color-bg-5: var(--gray-0);
+  --color-bg-6: rgba(201, 201, 201, 0.20);
+  --color-bg-mask: rgba(25, 25, 25, 0.30);
+  --color-hover: rgba(25, 25, 25, 0.05);
+  --color-table-header: rgba(25, 25, 25, 0.05);
+  --color-fill: rgba(25, 25, 25, 0.05);
+  --color-fill-disabled-subtle: rgba(25, 25, 25, 0.05);
+  --color-table-zebra: rgba(147, 147, 147, 0.05);
+  --color-select: var(--brand-05);
+  --color-fill-subtle: var(--gray-0);
+  --color-fill-disabled: var(--gray-10);
+  --color-error: var(--red-50);
+  --color-alert: var(--orange-50);
+  --color-warning: var(--yellow-50);
+  --color-success: var(--mint-50);
+  --color-info: var(--blue-50);
+  --color-none: var(--gray-30);
+  --color-error-subtle: var(--red-05);
+  --color-alert-subtle: var(--orange-05);
+  --color-warning-subtle: var(--yellow-05);
+  --color-success-subtle: var(--mint-05);
+  --color-info-subtle: var(--brand-05);
+  --color-none-subtle: var(--gray-05);
+  --color-portal-highlight: var(--gray-90);
+  --g-shadow: 0 4px 12px rgba(0,0,0,.10);
+}

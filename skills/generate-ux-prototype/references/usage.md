@@ -14,7 +14,7 @@ node LIBRARY/scripts/query_assets.mjs tokens frost-common         # token 分组
 ## 生成工作区
 
 ```sh
-node SKILL/scripts/init.mjs "{artifact-folder}" "{slug}" --assets-root <ASSETS_ROOT>
+node SKILL/scripts/init.mjs "{artifact-folder}" "{slug}"   # 安装态自动定位资产库；未安装态可加 --assets-root <ASSETS_ROOT>
 # RESULT: OK + HTML_PATH / SRC_DIR / PAGE / ASSETS_VERSION
 ```
 
@@ -23,7 +23,7 @@ node SKILL/scripts/init.mjs "{artifact-folder}" "{slug}" --assets-root <ASSETS_R
 ## 复用组件（hybrid/reuse 命中时）
 
 ```sh
-node SKILL/scripts/collect_component.mjs <LIBRARY> <component-id> "{slug}/src" "{slug}/src/components"
+node SKILL/scripts/collect_component.mjs [LIBRARY] <component-id> "{slug}/src" "{slug}/src/components"  # LIBRARY 可省略（安装态自动读绑定）
 # RESULT: OK + ENTRY / FILES / COPIED 清单（含自动生成的 interop 垫片 index.js）
 ```
 

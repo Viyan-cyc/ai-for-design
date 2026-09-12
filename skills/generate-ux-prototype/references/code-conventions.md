@@ -108,7 +108,7 @@ export { fetchList, fetchDetail }
 1. **匹配**：按 spec 的 `useWhen` 语义匹配（`query_assets.mjs components --search …`）。
 2. **拷贝**（一条命令完成闭包复制，替代手工多轮读写）：
    ```sh
-   node scripts/collect_component.mjs <LIBRARY> <component-id> "{slug}/src" "{slug}/src/components"
+   node scripts/collect_component.mjs [LIBRARY] <component-id> "{slug}/src" "{slug}/src/components"  # LIBRARY 可省略（安装态自动读绑定）
    ```
    - 自动递归解析相对 import 拷齐依赖闭包；只拷 `GName.vue`（index.ts / examples.vue 不拷，D20）。
    - **落位**：`src/components/GName/GName.vue`——平铺（Vue 工程通用习惯，2026-09-12 用户拍板；资产库的 basic/business/complex 分类只保留在来源注释里，不映射成目录）。页面内 import：

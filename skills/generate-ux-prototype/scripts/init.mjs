@@ -113,6 +113,13 @@ function locateAssetLibrary(fromPath) {
 
 const candidates = [];
 if (assetsRootArg) candidates.push(assetsRootArg);
+// 安装态 skill：读 installer 写入的绑定文件（packageRoot = 源包绝对路径），
+// 设计师不用知道包在哪——AI 不传 --assets-root 也能自动定位资产库。
+const bindingPath = join(__dirname, '..', 'agents', 'package-location.json');
+try {
+  const binding = JSON.parse(readFileSync(bindingPath, 'utf8'));
+  if (binding.packageRoot) candidates.push(binding.packageRoot);
+} catch { /* 未安装态（仓库内直跑）无绑定文件，走后续候选 */ }
 candidates.push(resolve(__dirname, '..', '..', '..', '..'));
 candidates.push(process.env.ASSETS_ROOT || resolve(process.cwd()));
 let assetLib = null;

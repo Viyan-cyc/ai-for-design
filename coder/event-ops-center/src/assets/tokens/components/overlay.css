@@ -1,0 +1,9 @@
+/* GENERATED from design/tokens.json. Do not edit generated values. */
+/* H Design 色彩.docx 映射。原文与使用规则：source/h-design-color-spec.md、source/h-design-color-mappings.md。 */
+:root,
+[data-theme] {
+  --g-overlay-bg: var(--color-bg-4);
+  --g-overlay-mask: var(--color-bg-mask);
+  --g-overlay-shadow: var(--g-shadow);
+  --g-overlay-radius: var(--g-radius-lg);
+}

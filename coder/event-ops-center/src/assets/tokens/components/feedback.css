@@ -1,0 +1,11 @@
+/* GENERATED from design/tokens.json. Do not edit generated values. */
+/* H Design 色彩.docx 映射。原文与使用规则：source/h-design-color-spec.md、source/h-design-color-mappings.md。 */
+:root,
+[data-theme] {
+  --g-feedback-info: var(--color-info);
+  --g-feedback-success: var(--color-success);
+  --g-feedback-warning: var(--color-warning);
+  --g-feedback-danger: var(--color-error);
+  --g-feedback-alert: var(--color-alert);
+  --g-feedback-none: var(--color-none);
+}
