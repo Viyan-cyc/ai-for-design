@@ -6,7 +6,7 @@
 | --- | --- |
 | 整理需求 | extract-structured-requirements；输出后结束 |
 | 分析体验、流程 | derive-experience-insights；必要时补充需求 |
-| 按截图生成或修改页面 | generate-ux-prototype；已有明确参考可直接开始 |
+| 按截图生成或修改页面 | generate-ux-prototype；交付 Vue 3 + Element Plus 2.13.5 源码工作区 + 零构建离线预览，已有明确参考可直接开始 |
 | 从需求到页面 | 需求 → 体验 → 原型；跳过已有有效产物的阶段 |
 | 修改 Token、规则、公共组件 | manage-design-assets；按改动类型选择维护方式 |
 
