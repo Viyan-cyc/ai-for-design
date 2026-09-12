@@ -78,7 +78,7 @@ function runPy(libDir, script, args) {
   const candidates = process.platform === 'win32' ? ['python', 'python3'] : ['python3', 'python'];
   let last = null;
   for (const bin of candidates) {
-    const result = spawnSync(bin, ['-B', path.join(libDir, 'scripts', script), ...args], {
+    const result = spawnSync(bin, ['-B', script.startsWith('/') ? script : path.join(libDir, script), ...args], {
       cwd: libDir,
       encoding: 'buffer',
     });
@@ -91,7 +91,7 @@ function runPy(libDir, script, args) {
 }
 
 function runNode(libDir, script, args) {
-  return spawnSync(process.execPath, [path.join(libDir, 'scripts', script), ...args], {
+  return spawnSync(process.execPath, [script.startsWith('/') ? script : path.join(libDir, script), ...args], {
     cwd: libDir,
     encoding: 'buffer',
   });
@@ -135,6 +135,119 @@ const CASES = [
     args: [],
     compareStdout: true,
     setup: ['build_tokens', 'build_indexes', 'refresh_release'],
+  },
+  {
+    // 安装器：两侧对同一真仓库分别安装到独立临时目录，比较安装出的整棵 skill 树。
+    name: 'install_skills.fresh',
+    run: () => {
+      const problems = [];
+      const mk = () => fs.mkdtempSync(path.join(os.tmpdir(), 'n1-install-'));
+      const pyDest = mk();
+      const nodeDest = mk();
+      try {
+        const py = runPy(ROOT, 'installer/install_skills.py', [pyDest]);
+        const node = runNode(ROOT, 'installer/install_skills.mjs', [nodeDest]);
+        if (py.status !== 0) problems.push(`py 退出码 ${py.status}: ${py.stderr.toString('utf8').slice(0, 300)}`);
+        if (node.status !== 0) problems.push(`mjs 退出码 ${node.status}: ${node.stderr.toString('utf8').slice(0, 300)}`);
+        if (problems.length) return problems;
+        problems.push(...diffSnapshots(snapshot(pyDest), snapshot(nodeDest)));
+        return problems;
+      } finally {
+        fs.rmSync(pyDest, { recursive: true, force: true });
+        fs.rmSync(nodeDest, { recursive: true, force: true });
+      }
+    },
+  },
+  {
+    // 二次安装必须拒绝（destination 已有同名 skill）。
+    name: 'install_skills.existing-rejected',
+    run: () => {
+      const problems = [];
+      const mk = () => fs.mkdtempSync(path.join(os.tmpdir(), 'n1-install2-'));
+      const pyDest = mk();
+      const nodeDest = mk();
+      try {
+        runPy(ROOT, 'installer/install_skills.py', [pyDest]);
+        runNode(ROOT, 'installer/install_skills.mjs', [nodeDest]);
+        const py2 = runPy(ROOT, 'installer/install_skills.py', [pyDest]);
+        const node2 = runNode(ROOT, 'installer/install_skills.mjs', [nodeDest]);
+        if (py2.status === 0) problems.push('py 二次安装未拒绝');
+        if (node2.status === 0) problems.push('mjs 二次安装未拒绝');
+        return problems;
+      } finally {
+        fs.rmSync(pyDest, { recursive: true, force: true });
+        fs.rmSync(nodeDest, { recursive: true, force: true });
+      }
+    },
+  },
+  {
+    // build_release --version 重写对照。ROOT 从脚本自身位置推导，因此沙箱必须复制完整仓库结构
+    // （含 scripts/、installer 依赖的 catalog 等）并在沙箱内执行沙箱里的脚本副本。
+    name: 'build_release.version',
+    run: () => {
+      const problems = [];
+      const mk = () => {
+        const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'n1-release-'));
+        for (const f of ['asset-catalog.json', 'skill-catalog.json', 'asset-manifest.yaml', 'validation-results.json']) {
+          fs.cpSync(path.join(ROOT, f), path.join(dir, f));
+        }
+        fs.cpSync(path.join(ROOT, 'examples'), path.join(dir, 'examples'), { recursive: true });
+        fs.cpSync(path.join(ROOT, 'scripts'), path.join(dir, 'scripts'), { recursive: true });
+        fs.cpSync(path.join(ROOT, 'assets'), path.join(dir, 'assets'), {
+          recursive: true,
+          filter: (src) => !src.includes(`${path.sep}node_modules${path.sep}`) && path.basename(src) !== '.DS_Store',
+        });
+        return dir;
+      };
+      const pyRoot = mk();
+      const nodeRoot = mk();
+      try {
+        const py = runPy(pyRoot, 'scripts/build_release.py', ['--version', '1.5.1']);
+        const node = runNode(nodeRoot, 'scripts/build_release.mjs', ['--version', '1.5.1']);
+        if (py.status !== 0) problems.push(`py 退出码 ${py.status}: ${py.stderr.toString('utf8').slice(0, 300)}`);
+        if (node.status !== 0) problems.push(`mjs 退出码 ${node.status}: ${node.stderr.toString('utf8').slice(0, 300)}`);
+        if (problems.length) return problems;
+        problems.push(...diffSnapshots(snapshot(pyRoot), snapshot(nodeRoot)));
+        return problems;
+      } finally {
+        fs.rmSync(pyRoot, { recursive: true, force: true });
+        fs.rmSync(nodeRoot, { recursive: true, force: true });
+      }
+    },
+  },
+  {
+    // 不带 --version：仅刷新生成物并校验，不改版本号。
+    name: 'build_release.noop',
+    run: () => {
+      const problems = [];
+      const mk = () => {
+        const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'n1-release2-'));
+        for (const f of ['asset-catalog.json', 'skill-catalog.json', 'asset-manifest.yaml', 'validation-results.json']) {
+          fs.cpSync(path.join(ROOT, f), path.join(dir, f));
+        }
+        fs.cpSync(path.join(ROOT, 'examples'), path.join(dir, 'examples'), { recursive: true });
+        fs.cpSync(path.join(ROOT, 'scripts'), path.join(dir, 'scripts'), { recursive: true });
+        fs.cpSync(path.join(ROOT, 'assets'), path.join(dir, 'assets'), {
+          recursive: true,
+          filter: (src) => !src.includes(`${path.sep}node_modules${path.sep}`) && path.basename(src) !== '.DS_Store',
+        });
+        return dir;
+      };
+      const pyRoot = mk();
+      const nodeRoot = mk();
+      try {
+        const py = runPy(pyRoot, 'scripts/build_release.py', []);
+        const node = runNode(nodeRoot, 'scripts/build_release.mjs', []);
+        if (py.status !== 0) problems.push(`py 退出码 ${py.status}: ${py.stderr.toString('utf8').slice(0, 300)}`);
+        if (node.status !== 0) problems.push(`mjs 退出码 ${node.status}: ${node.stderr.toString('utf8').slice(0, 300)}`);
+        if (problems.length) return problems;
+        problems.push(...diffSnapshots(snapshot(pyRoot), snapshot(nodeRoot)));
+        return problems;
+      } finally {
+        fs.rmSync(pyRoot, { recursive: true, force: true });
+        fs.rmSync(nodeRoot, { recursive: true, force: true });
+      }
+    },
   },
   {
     name: 'query_assets.tokens.group',
@@ -274,16 +387,18 @@ function diffSnapshots(pyFiles, nodeFiles) {
 }
 
 function runCase(item) {
+  // 自定义 run 的用例（安装器/build_release 等）自行控制两侧执行与比较。
+  if (item.run) return item.run();
   const usesSandbox = item.sandbox !== false;
   const pyLib = usesSandbox ? makeSandbox('py') : LIB;
   const nodeLib = usesSandbox ? makeSandbox('node') : LIB;
   try {
     for (const setup of item.setup ?? []) {
-      runPy(pyLib, `${setup}.py`, []);
-      runNode(nodeLib, `${setup}.mjs`, []);
+      runPy(pyLib, `scripts/${setup}.py`, []);
+      runNode(nodeLib, `scripts/${setup}.mjs`, []);
     }
-    const py = runPy(pyLib, `${item.script}.py`, item.args);
-    const node = runNode(nodeLib, `${item.script}.mjs`, item.args);
+    const py = runPy(pyLib, `scripts/${item.script}.py`, item.args);
+    const node = runNode(nodeLib, `scripts/${item.script}.mjs`, item.args);
 
     const problems = [];
     const pyOk = py.status === 0;
