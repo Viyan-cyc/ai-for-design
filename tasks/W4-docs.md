@@ -65,25 +65,15 @@
 
 <!-- 格式：- [日期] (姓名/卡号) 结论或问题一句话；细节缩进展开。写完 commit 到本任务分支 -->
 
-- [2026-09-12] (moyuntian/W4-D1) D1 SKILL.md 重写完成。10 节齐全（frontmatter/技术栈/两开关/Session Context/Output Contract/换肤/How to Use/Generation Workflow 7 步/Modification/毛玻璃/速度条款/References）。关键改动：
-  - 三开关→两开关（D22）：组件复用 reuse/hybrid/free + UI 库 element-plus/SweetUI；记录到 `views/{slug}/js/constants.js` 的 `COMPONENT_MODE` + `UI_RUNTIME`。
-  - token 速查表不内嵌，改「从 `src/assets/tokens/*.css` 现查，build 实时校验兜底」。
-  - 单位 px（D14，无 rem）；样式语言钉死 less（D22）。
-  - 生成流程 7 步：确认开关+布局策略 → init → 组件复用匹配（hybrid/reuse 走 query_assets.mjs + collect_component.mjs）→ Author .vue → 自检 10 条 → build → Output。
-  - 模板参考（§6）改为「结构与完备性对照清单」，配置驱动机制不再使用。
-  - i18n（D15）：每页 `views/{slug}/js/locales.js` 单文件双语言；全局 common.json 仅跨页词条。
-  - mock+api 适配层（D16）：页面只准 import api 层，禁止 import mock/modules。
-- [2026-09-12] (moyuntian/W4-D2) D2 code-conventions.md 完成。8 节：页面代码规范（含相对路径计算表更新到含 api/、tokens/、复用 G 组件落位）/Mock API 模式（REST 语义签名）/API 适配层（正确错误 import 对照 + 两态：原型态 re-export vs 二开态真实请求 + sfc-loader 0.9.5 re-export 缺陷经验 W1-T3）/i18n 单文件双语言（D15）/复用 G 组件约定（collect_component.mjs 用法+落位 src/components/{basic|business|complex}/ D17+来源注释+禁止改写拷入组件 D7）/二开依赖差异（D22：npm i -D less，Vite 零配置）/运行时错误预防/高频错误预防表 15 条（新增「import mock 违规」「直接改拷入的 G 组件」两条，删 gts token 示例与 rem 条目）。
-- [2026-09-12] (moyuntian/W4-D3) D3 ui-runtime.md 完成。三件套接入说明：UMD 目录（`scripts/preview/public/library/{runtime}/`，当前 element-plus 9 文件）/白名单（`scripts/verify/whitelists/{runtime}/` 三份 JSON，EP 规模 116 组件/130 导出/295 图标）/Token 桥接 CSS（资产库 `element-plus.css` 已做好 EP 桥接，SweetUI 接入照此办理）。EP 2.13.5 为当前唯一 runtime，版本钉死（D5）。
-- [2026-09-12] (moyuntian/W4-D4) D4 周边四文件改完：
-  - skill-catalog.json：generate-ux-prototype 的 description 改「Vue 3 + Element Plus 2.13.5 源码交付 + 离线预览 + 验证记录」；outputs 改「Vue 源码工作区 / index.html / build 验证记录」。
-  - AI-ENTRY.md：第 9 行任务路由改「交付 Vue 3 + Element Plus 2.13.5 源码工作区 + 零构建离线预览」。
-  - workflow.md：原型阶段交接重写——删 freeze/handoff 来源锁概念；新增「API 适配层（D16）——二开接入点」「二开说明 5 步」「与上游阶段衔接（requirements.json/insights.json 引用不变，但不产来源锁副本）」。
-  - README.md：安装/使用命令 node 化（`node installer/install_skills.mjs` / `node scripts/build_release.mjs` / `node tests/validate_package.mjs`）；运行依赖声明「仅依赖 Node.js ≥ 20，Python 不再需要（D6/D18）」；EP 2.13.5 钉死；二开依赖差异（`npm i -D less`）。
-  - **【需 W3 协调】**README.md 与 workflow.md 的 node 命令含过渡说明：「W3 N3/N5 移植完成后 .mjs 为正式入口，N5 完成前若 .mjs 尚未就绪可临时用 .py」。当前 query_assets.mjs 已就绪（W3 N2 完成），build_release.mjs / install_skills.mjs / validate_package.mjs / validate_coordination.mjs 待 W3 N3/N4/N5 完成后删 .py。AI-ENTRY.md 第 17 行仍提 `scripts/query_assets.py`——可改 .mjs（已就绪），但属 AI-ENTRY 所有权（非 W4 所有权内？AI-ENTRY.md 在仓库根，D4 任务卡明确列入「周边四文件」范围），已不改该行，待用户裁决。
-- [2026-09-12] (moyuntian/W4-D5) D5 一致性自检三条全过：
-  1. `grep -ri gts` 交付文档零命中：skills/generate-ux-prototype/ 下仅 vue3-sfc-loader.js:113（第三方库内部，非我们的文档）；*.md 命中全在 SKILL-REPLACE-PLAN.md（历史记录豁免）+ tasks/W1-mainline.md + tasks/W4-docs.md（任务卡，非交付文档）。SKILL.md/code-conventions.md/ui-runtime.md/README.md/AI-ENTRY.md/workflow.md 零 gts 命中。
-  2. SKILL.md 提到的脚本/文件全部存在：init.mjs/build.mjs/collect_component.mjs/preview/index.html/whitelists/components.json + 三份 references（code-conventions/component-format/ui-runtime）✓。
-  3. skill-catalog.json entry/outputs 与实际对得上：四个 Skill 的 SKILL.md 全在 ✓；generate-ux-prototype 的 outputs 三项（源码工作区/index.html/验证记录）与 SKILL.md Output Contract 一致 ✓。
-  - 流程描述与脚本实际行为交叉审（自查，非 W1 人审）：init.mjs CLI `--assets-root` ✓、build.mjs `--dir` ✓、collect_component.mjs 四参 ✓、mock 隔离校验已实现 ✓、禁 .scss/lang="scss" 校验已实现（W1-T9）✓。**建议用户安排 W1 的人读一遍 D1/D2 做最终交叉审**（任务卡 D5 第 4 条要求）。
-- [2026-09-12] (moyuntian/W4) 【需拍板】AI-ENTRY.md 第 17 行 `scripts/query_assets.py` 是否改为 `.mjs`：query_assets.mjs 已由 W3 N2 移植就绪，.py 仍在待 N5 删。D4 任务卡「周边四文件」含 AI-ENTRY.md，但仅第 9 行任务路由行明确要求改，第 17 行未提及。已保留 .py 描述，待用户裁决是否一并改 .mjs（属 W3 所有权资产的引用，但 AI-ENTRY.md 是 W4 文件）。
+- [2026-09-12] (cyc/W4-D1~D5) **D1-D5 全部完成**（分支 w4/d1-d5-docs）：
+  - **D1 SKILL.md 重写**：十节齐全（frontmatter/技术栈/定位协议/生成选项/生成流程 8 步/修改流程/换肤/毛玻璃/UI Runtime/i18n/mock-api/速度条款/速查）。与 §9 决策逐条对照：D12 三开关中两开关落地（组件复用 reuse/hybrid/free + UI 库固定 element-plus；D22 样式语言固定 less 无开关）、D13①②④、D14 px、D15 locales.js、D16 api 适配层、D2/D4/D6/D8/D9/D17/D20/D22 全部体现；token 速查表不内嵌（D2 决策）。白名单数字按实测写 116/130/295（原卡草稿的 121/293 是 gts-autin-coder 旧值）。
+  - **D2 code-conventions.md**：11 节；api 两段式二开写法（W1-T3 结论）、G 组件复用约定（collect 用法/落位/垫片说明/禁止改写）、路径计算表按新结构（api/、tokens/、组件分类落位）重算、高频错误表含「import mock 违规」「直接改拷入 G 组件」「scss」三条新增、二开依赖差异节（npm i -D less + 两段式 + 垫片可删）。
+  - **D3 ui-runtime.md**：三件套表（UMD 目录/白名单格式/桥接 CSS 要求）+ SweetUI 五步接入清单；白名单 schema 以现有 element-plus 三份 JSON 为例。
+  - **D4 周边文件**：skill-catalog.json（generate-ux-prototype description/outputs 改源码交付表述）、AI-ENTRY.md（第 9 行源码交付表述 + query_assets.py→.mjs）、workflow.md（原型阶段交接重写：工作区交付 + api 适配层边界 + 二开说明；freeze/来源锁/handoff 脚本概念清除，跨阶段 requirements/insights 引用不变）、README.md（安装/验证/发布命令全 node 化 + 「仅 Node ≥18」依赖声明 + EP 2.13.5 + N5 过渡说明）。
+  - **D5 自检四条全过**：① grep -ri gts（*.md + skills 全部 SKILL.md/references，除方案文档）零命中；② SKILL.md 提到的脚本/文件逐一存在（package-location.json 为安装时生成物，包内本就不存在，已如实写明）；③ skill-catalog entry/outputs 核对；④ 全部文档 EP 版本号统一 2.13.5、单位口径统一 px。`node tests/validate_package.mjs` 10/10 PASS（含 init/build 冒烟）。
+  - **交叉审代做说明**：D1/D2 的流程描述逐条对照脚本源码（init/build/collect/serve 全部实测：CLI 参数、输出协议行、白名单数、来源注释格式、垫片行为）+ validate_package 冒烟；**请 W1（cyc）在 PR 评审时终审**。
+- [2026-09-12] (cyc/W4) **三个发现（均不阻塞本卡，归属 W1/W3 裁量）**：
+  1. **init.mjs 头注释与实际不符（W1）**：init.mjs 第 25 行注释声称生成 `src/README.md`（接入说明），但 preview 模板中无此文件、init 也不写它（实测 init 产物 src/ 下无 README）。文档侧已规避——workflow.md 二开说明改为引用 `src/api/{slug}.js` 文件头 + code-conventions「二开依赖差异」。建议 W1 二选一：补一个真模板 src/README.md（对二开者更友好），或删掉该行注释。
+  2. **init starter 双语言对象直接插值（W1，轻微）**：starter index.vue 用 `{{ t.title }}`，而 locales.js 的 t.title 是 `{zh,en}` 对象，单独打开 starter 预览会显示 `{"zh":"…","en":"…"}`。AI 生成时会整体替换 starter、不影响交付，但 starter 自身展示异常。建议改 `{{ t.title.zh }}`（code-conventions i18n 节已按 `.zh` 写法示范）。
+  3. **component-plan.schema.json 成为孤儿（W3）**：validate_package.mjs 的 required 清单仍要求 `references/component-plan.schema.json`（旧配置驱动模式的 schema，新流程已废弃）。本次保留该文件未删以满足校验；usage.md/SKILL.md 已不再引用它（task-handoff.schema.json 仍被 workflow.md 交接流程引用，保留）。建议 W3 N5 时从 required 清单移除并删除该文件。
+- [2026-09-12] (cyc/W4-merge) **双 W4 裁决：以 w4/d1-d5-docs（cyc）为准整体覆盖**（merge 冲突 9 文件全取 cyc 版）。背景：丰宁在 w2/m0-spec 分支顺带完成了 W4（随 W2 合入 main f503d83），cyc 在 w4/d1-d5-docs 独立完成，两边并行。裁决依据（实测）：① init 实际只生成 COMPONENT_MODE（init.mjs:449），无 UI_RUNTIME 常量，丰宁版 SKILL.md 的「记录 COMPONENT_MODE + UI_RUNTIME」与实现不符，cyc 版如实写单开关；② 丰宁漏改 usage.md（main 上仍是旧 .py/来源锁内容），cyc 版重写为五脚本 CLI 速览补上缺口；③ cyc 版实测修白名单数字 116/130/295；④ cyc 版三个发现（init 注释不符/starter 插值/schema 孤儿）为增量。从 main 侧保留两个文件未动：references/component-format.md（W2-M0 契约）、references/designer-component-guide.md（设计师指南）——cyc 分支不存在这两个文件，SKILL.md References 已补两行链接。Node 版本口径核实：脚本实际用 fs.cpSync（Node 16.7+），无更高要求，**保留 cyc 版「≥18」**（丰宁版「≥20」无出处）。W1 待办：修 init.mjs 头注释 + starter `{{ t.title.zh }}`（T7 前）。

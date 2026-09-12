@@ -1,87 +1,51 @@
-# UI Runtime 接入说明 — generate-ux-prototype
+# UI Runtime 扩展点（EP / SweetUI 接入说明）
 
-> EP 2.13.5 为当前唯一 runtime（D5 钉死）。SweetUI 本次只留口子，不接入（需求 1）。
-> 接入新 UI 库 = 补三件套，架构不动（§4.4）。
+> 当前唯一 runtime：**Element Plus 2.13.5**（官方 npm dist，决策点 C）。本文是预留口子的接入说明：接入新 UI 库 = 补齐「三件套」，架构不动，SKILL.md 生成流程不变。
 
-## 三件套
+## 三件套构成
 
-按「UI 库」为单位组织三样东西。接入 SweetUI 时照此办理。
+UI 库在预览运行时与 build 校验中的全部痕迹收敛为三样东西，按「UI 库」为单位组织：
 
-### 1. UMD 目录
+| # | 件 | 当前 element-plus 位置 | 内容 |
+|---|---|---|---|
+| 1 | **UMD 运行时目录** | `scripts/preview/public/library/element-plus/` | 浏览器端直接加载的全局构建产物，init 时整目录复制进工作区 `public/library/element-plus/` |
+| 2 | **校验白名单** | `scripts/verify/whitelists/element-plus/*.json` | 三份 JSON：`components.json`(116) / `exports.json`(130) / `icons.json`(295)，build.mjs 逐标签/导出/图标名核对 |
+| 3 | **token 桥接 CSS** | 资产库 `frontend/element-plus/tokens/element-plus.css` | 把资产库语义 token 映射到该 UI 库的 CSS 变量，随 token 全套进工作区 |
 
-`scripts/preview/public/library/{runtime}/`
+## 1. UMD 目录规范
 
-预览态（`index.html` 浏览器直接打开）用 UMD 加载，不入 npm 依赖。当前 element-plus 目录内容：
+`scripts/preview/public/library/{runtime}/` 下放置该 UI 库的浏览器全局构建（UMD/IIFE），`{runtime}` 为库目录名（如 `element-plus`、将来 `sweet-ui`）：
 
-```
-scripts/preview/public/library/element-plus/
-├── vue.global.prod.js                       # Vue 3 运行时
-├── vue-router.global.prod.js                # Vue Router 4
-├── element-plus.full.min.js                 # EP 2.13.5 完整 UMD
-├── element-plus.index.css                   # EP 样式
-├── element-plus-icons-vue.iife.min.js       # EP 图标 2.3.2
-├── element-plus-locale-zh-cn.min.js         # EP 中文语言包
-├── dayjs.min.js                             # dayjs 1.11.19
-├── less.min.js                              # less 浏览器编译器（D22 编译 <style lang="less">）
-└── vue3-sfc-loader.js                       # SFC 加载器 0.9.5
-```
+- 必须包含：库主 JS（如 `element-plus.full.min.js`）、样式（`element-plus.index.css`）、以及其依赖的全局构建（如 `vue.global.prod.js`、`vue-router.global.prod.js`、`dayjs.min.js`、图标包、locale 包、`less.min.js`、`vue3-sfc-loader.js`）。
+- `scripts/preview/index.html` 引用上述文件的方式是**写死的 script/link 标签**（loader 完整性由 build.mjs 校验），接入新 runtime 需同步改写 `preview/index.html` 的第 1 节与本节表中的注册点（moduleCache 的库对象、locale 映射等）。
+- init.mjs 按目录整体复制，新增 runtime 无需改 init。
 
-**SweetUI 接入**：在同级建 `sweet-ui/` 目录，放入 SweetUI 的 UMD 文件。
+## 2. 白名单格式
 
-### 2. 白名单
+`scripts/verify/whitelists/{runtime}/` 下三份 JSON，schema 直接参照现有 element-plus 文件（均为字符串数组）：
 
-`scripts/verify/whitelists/{runtime}/`
+- `components.json` — 模板中允许出现的 `<el-*>` 标签全集（116 个；来源 = 官方 dist 中有独立 theme-chalk css 的组件 + 5 个无独立 css 的组件）。
+- `exports.json` — 允许 `import { … } from '{ui-lib}'` 的导出名全集（130 个）。
+- `icons.json` — 图标包允许的导出名全集（295 个）。
 
-build.mjs 校验用，三份 JSON：
+build.mjs 从 `--dir` 工作区反查 `scripts/verify/whitelists/` 下的当前 runtime 目录（当前写死 `element-plus`）。接入 SweetUI 时：新增 `whitelists/sweet-ui/{components,exports,icons}.json`，并把 build.mjs 的白名单目录与 preview 的 script 标签一并切换；生成流程与 SKILL.md 不变。
 
-| 文件 | 作用 | 当前 element-plus 规模 |
-|---|---|---|
-| `components.json` | 允许的 `<el-*>` 标签白名单 | 116 个 |
-| `exports.json` | 允许的 `import { X } from 'element-plus'` 导出名白名单 | 130 个 |
-| `icons.json` | 允许的 `import { X } from '@element-plus/icons-vue'` 图标名白名单 | 295 个 |
+## 3. token 桥接 CSS 要求
 
-schema 直接引用现有 `scripts/verify/whitelists/element-plus/*.json` 为例。
+桥接文件把资产库语义 token 映射到目标 UI 库的组件变量，使 EP 组件（或目标库组件）自动跟随 `data-theme` 换肤。参照资产库 `element-plus.css` 的做法：`--el-color-primary` 等 97 个 `--el-*` 桥接变量映射自 `--g-*` / `--color-*` 语义层。
 
-**SweetUI 接入**：建 `sweet-ui/` 目录，放三份 JSON（SweetUI 的组件/导出/图标白名单）。
+接入 SweetUI 时写一份 `sweet-ui.css` 桥接：
 
-### 3. Token 桥接 CSS
+1. 放资产库 `frontend/element-plus/tokens/`（或将来独立 `tokens/sweet-ui.css`），init 的 token glob 会自动复制进工作区 `src/assets/tokens/`。
+2. 变量名以目标库官方变量为准（如 `--el-color-primary` ↔ SweetUI 对应变量），值为资产库语义 token `var(--g-…)` / `var(--color-…)`，禁止 hex 直填。
+3. 桥接层只做映射、不新增语义；新语义 token 走资产库 token 体系（design/tokens.json → build_tokens）。
 
-资产库 token 体系是 G Design 自有的 `--g-*` / `--color-*` / `--space-*`，UI 库（EP/SweetUI）有自己的变量（EP 是 `--el-color-primary` 等）。**桥接 = 用 G Design token 映射 UI 库变量**，让 UI 库组件自动跟随 G Design 主题。
+## SweetUI 接入清单（实施时照此办理）
 
-资产库已做好 EP 桥接：`assets/.../tokens/element-plus.css`（+ `.scss` 源产物，Sass 构建期用）。init 时随 `src/assets/tokens/` 全套复制进工作区。
+1. 取得 SweetUI UMD 构建与样式 → 放 `scripts/preview/public/library/sweet-ui/`（含依赖的全局构建）。
+2. 从其官方产物导出三份白名单 → `scripts/verify/whitelists/sweet-ui/`。
+3. 写 token 桥接 CSS（语义 token → SweetUI 变量），纳入资产库 token 层。
+4. preview/index.html 第 1 节 script/link 与 moduleCache 注册切换到 sweet-ui；build.mjs 白名单目录切换。
+5. init.mjs 复制逻辑核对（当前整目录复制 `element-plus/`，无硬编码文件清单，预期能直接复用）。
 
-**SweetUI 接入**：写一份 `sweet-ui-bridge.css`，把 G Design 语义 token 映射到 SweetUI 变量，参照 `element-plus.css` 的做法：
-
-```css
-/* 示例结构（实际按 SweetUI 变量名调整） */
-:root {
-  --sui-color-primary: var(--g-accent);
-  --sui-color-success: var(--g-success);
-  --sui-color-warning: var(--g-warning);
-  --sui-color-danger: var(--g-urgent);
-  --sui-bg-surface: var(--g-bg-surface);
-  --sui-text-primary: var(--g-text-primary);
-  /* ... */
-}
-[data-theme="dark"] {
-  --sui-color-primary: var(--g-accent);  /* 暗色下 token 已切换，桥接不变 */
-  /* ... */
-}
-```
-
-桥接 CSS 放资产库 `tokens/` 下（设计师维护），init 随 token 全套复制进工作区。
-
-## SKILL.md 选择步骤
-
-`UI_RUNTIME` 开关记录到 `views/{slug}/js/constants.js`，默认 `element-plus`。SKILL.md 生成流程确认此值后：
-- `element-plus` → 用现有三件套
-- `sweet-ui` → 需资产库已补齐 SweetUI 三件套（UMD 目录 + 白名单 + 桥接 CSS），否则回退 element-plus 并告知用户
-
-## 版本钉死
-
-- Element Plus **2.13.5**（D5）
-- @element-plus/icons-vue **2.3.2**
-- dayjs **1.11.19**
-- vue3-sfc-loader **0.9.5**（预览专用，真实工程用 Vite 不需要）
-
-升级 EP 版本 = 替换 UMD 五件套 + 刷新三份白名单 + 重跑 P0 验证（token 桥接兼容性）。
+> 设计原则：接入是「补三样 + 切两处引用」，生成流程、工作区结构、代码规范、二次开发方式全部不变。
