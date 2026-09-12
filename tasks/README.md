@@ -57,3 +57,13 @@ PR 由负责人（W1 用户本人）审合。合入后 `git checkout main && git
 1. 不许改 `SKILL-REPLACE-PLAN.md` 正文——只有 §13 打勾除外。
 2. 不许动别的工作流的文件（文件所有权见方案文档 §13）。
 3. 发现的结论/问题**必须落进任务卡回写区**，不许只留在对话里——对话会丢，仓库不会。
+
+## 分支常见坑（三个真实场景）
+
+| 场景 | 正确做法 |
+|---|---|
+| **临时文档改动**（如补 README 说明），不属于你的任务 PR | 先 `git checkout main` → 改 → `git add <file> && git commit && git push` → `git checkout w*/你的分支` 切回。**不要**在自己任务分支上提交无关改动 |
+| 下午开工，别人已合了新 PR | `git checkout main && git pull` 拿最新 → 再建/切分支；开 PR 前若提示冲突，`git fetch origin && git rebase origin/main` |
+| 忘了在哪个分支 | 动手前 `git branch --show-current` 看一眼；提交前再看一眼 |
+
+> 判断标准一句话：**这个改动要不要出现在你自己的 PR 里？要 → 留在分支；不要（纯文档、everyone 都需要的）→ 切 main 提交推走再切回来。**
