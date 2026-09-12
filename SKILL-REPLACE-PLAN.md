@@ -286,10 +286,10 @@ SKILL.md 增加"UI Runtime 选择"步骤（默认 element-plus，用户可指定
 
 ### W3 Node 化（1 人，独立性强，可与 W1 并行）
 
-- [ ] N1 迁移对照框架：跑旧 .py 与新 .mjs、diff 产出的脚本（D18 约束①的工具）
-- [ ] N2 资产库 8 脚本移植（query_assets.mjs 优先 → build_tokens → build_indexes → 其余 5 个），逐个过 N1 对等验证
-- [ ] N3 build_release.mjs + installer/install_skills.mjs（subprocess 调用链改 node）
-- [ ] N4 测试移植：validate_package.py 重写（含 §8 耦合解除：不再 import 已删 Python）+ validate_coordination.py → .mjs
+- [x] N1 迁移对照框架：跑旧 .py 与新 .mjs、diff 产出的脚本（D18 约束①的工具）(曾书峯/2026-09-12，18 用例全 PASS)
+- [x] N2 资产库 8 脚本移植（query_assets.mjs 优先 → build_tokens → build_indexes → 其余 5 个），逐个过 N1 对等验证 (曾书峯/2026-09-12)
+- [x] N3 build_release.mjs + installer/install_skills.mjs（subprocess 调用链改 node）(曾书峯/2026-09-12)
+- [x] N4 测试移植：validate_package.py 重写（含 §8 耦合解除：不再 import 已删 Python）+ validate_coordination.py → .mjs (曾书峯/2026-09-12，10+7 checks PASS)
 - [ ] N5 删除全部 .py：跑一次 `node scripts/build_release.mjs --version 1.5.1` 重锁哈希（D18 约束②）；**阻塞 T7 收尾**
 
 ### W4 文档与协议（第 3/4 人或 W2 兼任）
