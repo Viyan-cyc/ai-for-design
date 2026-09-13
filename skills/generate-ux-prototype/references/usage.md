@@ -1,4 +1,4 @@
-# 调用示例（五脚本 CLI 速览）
+# 调用示例（六脚本 CLI 速览）
 
 `ASSETS_ROOT` 可以指向包根目录、包内 `assets/` 或资产库目录本身（内含 `asset-manifest.json`，如 `assets/g-design-enterprise-v1.5.0`）。下例 `LIBRARY` = 资产库目录，`SKILL` = 本 skill 目录（`skills/generate-ux-prototype`）。
 
@@ -29,6 +29,22 @@ node SKILL/scripts/init.mjs "{artifact-folder}" "{slug}"   # 安装态自动定�
 node SKILL/scripts/collect_component.mjs [LIBRARY] <component-id> "{slug}/src" "{slug}/src/components"  # LIBRARY 可省略（安装态自动读绑定）
 # RESULT: OK + ENTRY / FILES / COPIED 清单（含自动生成的 interop 垫片 index.js）
 ```
+
+## 写码前预检（规划清单一条命令校验）
+
+```sh
+node SKILL/scripts/preflight.mjs --dir "{artifact-folder}/{slug}" \
+  --icons "Search,Bell,CaretRight" \
+  --tokens "--color-brand,--g-bg-surface" \
+  --exports "ElMessage,ElMessageBox" \
+  --imports "views/{slug}/components/GlobalNav.vue=../../../locales/pages/{slug}.js|../js/constants.js,..."
+# RESULT: OK | plan preflight passed — 全过才开写
+# RESULT: FAIL + 逐条问题（含相近项提示）— 修正清单后重跑
+```
+
+- `--imports` 条目格式 `fromFile=rel1|rel2`，fromFile 相对 `src/`（posix 风格）；import 目标须能解析到 `.js`/`.vue`/`index`。
+- token 白名单从工作区 `src/assets/tokens/` 实时提取（与 build 同源）；图标/导出读 skill 自带 JSON 白名单（与 build 同源）。
+- 把本轮要用的全部图标/token/导出/相对 import 一次列全提交，避免写码中途反复查询。
 
 ## 校验与预览
 

@@ -100,6 +100,7 @@ init 生成的 starter 中 `COMPONENT_MODE` 默认为 `'hybrid'`，确认结果�
 
 ### Step 1 — 输入解析
 
+- **意图先行判定**：用户发设计稿/截图并要求「还原 / 重新生成」时，**直接全新生成**（派生新 slug 建新目录），不读取、不比对已生成的旧页面——只有用户明确说「修改 / 对齐已有页面」才走文末 Modification Workflow。误判成修改流程会浪费大量轮次通读旧代码且全部作废。
 - **Type 1 页面描述**：分析场景、目标用户、核心问题；扩展完备性（B 端控制台 = 顶栏 + 侧边导航 + 主内容区 + 状态反馈）。
 - **Type 2 模块描述**：单个 UI 块 → 作为独立组件生成 + 页面以展示形态包裹。
 - **Type 3 截图**：分析布局/组件/层级/视觉分区，映射到 Element Plus + 资产 token；**数据保真转录而非发明**——行数列数与图完全一致，逐格独立读取，严禁行间复制。
@@ -140,7 +141,13 @@ init 生成的 starter 中 `COMPONENT_MODE` 默认为 `'hybrid'`，确认结果�
 - **拆分触发式**：子组件仅在 **>150 行 / 被复用 / 状态复杂** 时才拆出独立文件（常规页面约 4-8 个文件）；页面私有放 `views/{slug}/components/`，跨页复用放 `src/components/`（复用的 G 组件由 collect 平铺落位到 `src/components/GName/`）。
 - **无依赖的文件并行写**：constants.js、locales.js、mock 数据、互不依赖的子组件可在同一轮并行创建。
 - **常量放 `views/{slug}/js/constants.js`**（全大写+下划线命名）；页面词条放 `src/locales/pages/{slug}.js`（单文件双语言，见下文 i18n）。
-- **写码前先规划后落笔**：先列出每个待写文件的 imports（含相对路径层级）、使用的 token 变量名、引用的词条 key、模板用到的组件名，再开始写——写码过程中 token/词条以清单为准，避免写完靠 build 返工（token 不存在、t 当函数调用、模板引用未定义词条等高频错全可在此步拦截）。
+- **写码前先规划后落笔（preflight 强制）**：
+  1. 先列出每个待写文件的 imports——**按目录显式算好相对路径前缀**（`views/{slug}/` 出发上两级 `../../`，`views/{slug}/components/` 出发上三级 `../../../`；components/ 下少写一级是历史最高频 build FAIL 项）。
+  2. 汇总本轮要用的全部 token 变量名、图标名、element-plus 导出名、词条 key，**一次提交 preflight 一条命令校验**（不通过按提示修正清单再跑；禁止写码中途反复 grep/node 查询）：
+     ```sh
+     node scripts/preflight.mjs --dir "{artifact-folder}/{slug}" --icons "..." --tokens "..." --exports "..." --imports "views/{slug}/components/X.vue=../../../locales/pages/{slug}.js|../js/constants.js,..."
+     ```
+  3. `RESULT: OK` 后以清单为准落笔——写码过程中 token/词条/路径以清单为准，不再现场发明。
 - **分批 build 早暴露**：build 毫秒级，不要等全部文件写完才跑——首个子组件 + constants/locales 写完即跑一轮（token 拼写/白名单类错误在第一个组件就暴露），全部写完再跑最终轮。
 
 ### Step 6 — 生成前自检（MANDATORY，build 前必做）
@@ -167,26 +174,28 @@ node scripts/build.mjs --dir "{artifact-folder}/{slug}"
 - **WARN:** hex 颜色、静态内联样式——非阻断，但应修正
 - 校验覆盖：@vue/compiler-sfc 真编译 + `el-*` 白名单(116) + 图标白名单(295) + 导出白名单(130) + 相对 import 解析 + 裸依赖白名单 + ESM 语法 + **token 存在性（从工作区 `src/assets/tokens/` 实时提取）** + 样式卫生 + mock 隔离 + scss 禁用。
 
-### Step 8 — Output
-
-```
-<artifact type="text/link">{HTML_PATH value}</artifact>
-```
-
-直接在浏览器打开 `index.html` 即可预览（file:// 可直接加载）。浏览器限制 file:// 动态加载时用本机服务：
-
-```sh
-node scripts/serve.mjs --dir "{artifact-folder}/{slug}" --port 8765
-```
-
-**无头冒烟（推荐，一条命令跑完渲染/token/主题切换校验）**：
+通过后跑无头冒烟收口：
 
 ```sh
 node scripts/smoke.mjs --dir "{artifact-folder}/{slug}"
 # RESULT: OK | render=1 token=#0067D1 themeSwitch=ok errors=0 missing404=0
 ```
 
-前置（每机器一次）：`npm i -g puppeteer-core`；自动探测系统 Chrome/Edge，不下载浏览器。检查项：页面无报错渲染、`--el-color-primary` 解析为资产品牌色、`setTheme('dark')` 明暗切换生效、非 favicon 资源 404 为空。`--selector` 可指定页面特征选择器（默认 `.event-card, .page-root, main, #app .el-button`）。
+**build + smoke 一轮跑完 = 生成流程结束。** 不再起 serve / curl 探活 / 查杀进程 / 重复验证——smoke 自带渲染、token 品牌色、明暗切换、404 检查并自查进程清理；`serve.mjs` 只在用户明确要求本机预览地址时才启动。
+
+### Step 8 — Output
+
+```
+<artifact type="text/link">{HTML_PATH value}</artifact>
+```
+
+直接在浏览器打开 `index.html` 即可预览（file:// 可直接加载）；用户需要本机预览地址时才启动：
+
+```sh
+node scripts/serve.mjs --dir "{artifact-folder}/{slug}" --port 8765
+```
+
+冒烟前置（每机器一次）：`npm i -g puppeteer-core`；自动探测系统 Chrome/Edge，不下载浏览器。检查项：页面无报错渲染、`--el-color-primary` 解析为资产品牌色、`setTheme('dark')` 明暗切换生效、非 favicon 资源 404 为空。`--selector` 可指定页面特征选择器（默认 `.event-card, .page-root, main, #app .el-button`）。
 
 交付说明需注明：演示假设与未验证项、组件复用 gap（reuse 模式必述）、以及二次开发入口（改 `src/api/{slug}.js` 对接真实接口，页面零改动）。
 
@@ -261,6 +270,6 @@ el-row  el-col  el-card  el-tabs  el-tab-pane  el-tooltip  el-dropdown
 
 - **[references/code-conventions.md](references/code-conventions.md)** — 页面代码规范 / API 适配层 / i18n / G 组件复用 / 相对路径计算表 / 高频错误预防 / 二开依赖差异
 - **[references/ui-runtime.md](references/ui-runtime.md)** — UI Runtime 三件套接入说明（SweetUI 预留）
-- **[references/usage.md](references/usage.md)** — 调用示例（五脚本 CLI 速览）
+- **[references/usage.md](references/usage.md)** — 调用示例（六脚本 CLI 速览：query_assets / init / collect / preflight / build / serve / smoke）
 - **[references/component-format.md](references/component-format.md)** — 组件库改造规范 v1（给设计师的格式契约，W2 产出；AI 复用拷贝时知悉组件格式）
 - **[references/designer-component-guide.md](references/designer-component-guide.md)** — 设计师新组件操作指南（与 component-format.md 配套，含提交前自检 10 条）
