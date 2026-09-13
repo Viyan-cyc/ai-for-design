@@ -171,7 +171,7 @@ export { fetchList, fetchDetail }
 1. `el-select` v-model 值必须在 options 中：初始值必须是某个 `el-option` 的 `value`，否则显示裸值。建议初始值 `''`（配合 `clearable`）。
 2. `el-table` column `prop` 与 data key 匹配：`prop="xxx"` 必须对应数据对象的实际 key，否则列空白。
 3. template 不引用未声明的变量：`<script setup>` 中未定义的变量在模板中不渲染但不报错。
-4. token 使用前确认存在于 `src/assets/tokens/*.css`（可 grep 确认），build 实时校验兜底。
+4. token 使用前提交 preflight.mjs 校验（与 build 同源，禁止 grep tokens 目录现场查）。
 
 ## 10. 高频错误预防（build 拦截项）
 

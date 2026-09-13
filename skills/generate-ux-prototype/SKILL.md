@@ -72,7 +72,7 @@ skill 目录不存放任何设计数据副本：token、组件、模板、毛玻
 3. 整包模式可直接使用包根；包根 `asset-catalog.json` → `libraries['g-design-enterprise'].root` 定位库目录。
 4. 路径失效时先在用户已知位置查找；仍缺失才询问。
 
-定位后读取 LIBRARY 的 `asset-manifest.json` 与 `asset-library.contract.json`。查询资产用库内脚本（**全量清单必带 `--brief`**——单行一条 id/name/useWhen，输出量约为完整 JSON 的 1/5；选中后再读单条 spec）：
+定位后**不要整读** `asset-manifest.json` / `asset-library.contract.json` / `release/source-lock.json`——它们是机器文件（数千行哈希与锁清单，整读一次可吃掉大量上下文），定位正确性由脚本保证。查询资产一律走库内脚本（**全量清单必带 `--brief`**——单行一条 id/name/useWhen，输出量约为完整 JSON 的 1/5；选中后再读单条 spec）：
 
 ```sh
 node LIBRARY/scripts/query_assets.mjs templates --brief              # 页面模板清单（单行摘要）
@@ -82,7 +82,18 @@ node LIBRARY/scripts/query_assets.mjs components g-status-tag        # 单个组
 node LIBRARY/scripts/query_assets.mjs tokens frost-common            # token 分组（含 frost-*）
 ```
 
-规范入口：`design/rules.md`；颜色场景按需读 `design/color-rules.md` 与 `design/color-tokens.md`；毛玻璃见下文「毛玻璃与视觉风格」。
+规范入口：`design/rules.md`。**design/ 文档按需触发，默认一律不读**（SKILL.md 的 HARD RULES 已覆盖日常写码约束）：仅当页面明确涉及对应场景才读对应的那一份——颜色场景读 `design/color-rules.md`、token 数值细读 `design/color-tokens.md`、毛玻璃读 `design/frosted-glass.md`（触发条件见「毛玻璃与视觉风格」）；禁止为"了解设计体系"而通读。
+
+## 上下文预算（读取纪律，生成全程执行）
+
+单页生成的目标预算：**定位+init ≤5k / 模板与组件参考 ≤8k / 写码输出 ~30k / 验证 ≤5k，全程 ≤60-80k**——200k 窗口下留一半余量。执行规则：
+
+1. **禁读清单**（读了也不用于生成，纯浪费）：仓库级 `SKILL-REPLACE-PLAN.md`、`tasks/`、`README.md`、`workflow.md`、`tests/`；资产库的 manifest/contract/source-lock（见上）；模板 config 预设里的数据段（rows/nodes/edges——只读 spec JSON 的 `criticalInteractions` 与 `pageStates`）。
+2. **token 确认只走 preflight.mjs**（与 build 同源），禁止 grep `src/assets/tokens/` 现场查；token 语义疑问也先 preflight，仍解决不了才读对应 design/ 文档的那一节。
+3. **组件 spec 只读命中项**：`--brief` 圈候选 → 只读最终命中的 1-3 条 spec，不逐个通读。
+4. **验证只认脚本输出**：build/smoke 的 `RESULT` 行即终态；FAIL 按行修复重跑，禁止现场手写调试脚本/puppeteer 脚本展开分析——那是把验证变成新的上下文黑洞。
+5. **截图输入节制**：一次一张、必要时裁剪；追问/修改轮次不重发已分析过的图。
+6. **接近预算上限时**：先 `/compact`（安全点：init + collect 完成、开写之前），压缩后凭 SKILL.md + 工作区文件继续，无需重读资产库。
 
 ## 生成选项：组件模式开关（生成开始时确认）
 
@@ -108,8 +119,8 @@ init 生成的 starter 中 `COMPONENT_MODE` 默认为 `'hybrid'`，确认结果�
 
 ### Step 2 — 模板参考（结构参考 + 完备性清单，只读）
 
-1. 用 `query_assets.mjs templates` 摘要选**最接近**的模板（六套：standard-list / device-management / edit-form / object-detail / topology-monitoring / alarm-impact）。
-2. 读该模板 JSON 的 `criticalInteractions`（搜索/分页/批量等）与 `pageStates`（loading/empty/error/forbidden/partial/ready），再读其 `source` 指向的 `.vue` 源码提取布局骨架。
+1. 用 `query_assets.mjs templates --brief` 摘要选**最接近**的模板（六套：standard-list / device-management / edit-form / object-detail / topology-monitoring / alarm-impact）。
+2. **只读**该模板 JSON 的 `criticalInteractions`（搜索/分页/批量等）与 `pageStates`（loading/empty/error/forbidden/partial/ready）两字段，再读其 `source` 指向的 `.vue` 源码提取布局骨架——**config 预设（configs/*.json）的 rows/nodes/edges 等数据段禁读**（纯演示数据，单份即数 KB，对生成无用）。
 3. 以此作为**结构与交互完备性对照清单**，然后按工作区代码规范自由写码——**配置驱动机制已废弃**，不生成、不引用任何模板配置 JSON；模板源码只读不拷贝。
 
 ### Step 3 — Init Workspace（MANDATORY）
@@ -124,7 +135,7 @@ init 生成的 starter 中 `COMPONENT_MODE` 默认为 `'hybrid'`，确认结果�
 
 ### Step 4 — 组件匹配与复用（hybrid / reuse）
 
-1. 对页面需要的每个能力，用 `query_assets.mjs components --search <关键词>` 圈候选，读 spec 的 `useWhen`/`states` 确认语义匹配。
+1. 对页面需要的每个能力，用 `query_assets.mjs components --search <关键词> --brief` 圈候选，**只读最终命中的 1-3 条 spec**（useWhen/states 字段确认语义匹配），不逐个通读。
 2. **命中** → 用 collect 脚本一次性拷贝依赖闭包（自动递归相对 import、落位到 `src/components/GName/`、加来源注释）：
    ```sh
    node scripts/collect_component.mjs [LIBRARY] <component-id> "{slug}/src" "{slug}/src/components"  # LIBRARY 可省略（安装态自动读绑定）
@@ -264,7 +275,7 @@ el-row  el-col  el-card  el-tabs  el-tab-pane  el-tooltip  el-dropdown
 
 ### Token
 
-不内嵌速查表（避免随设计师更新腐烂）。使用任何 token 前确认其存在于 `src/assets/tokens/*.css`；build 会用同一来源实时校验。token 分组数值用 `query_assets.mjs tokens <group>` 查询。
+不内嵌速查表（避免随设计师更新腐烂）。**token 确认只走 preflight.mjs**（与 build 同源实时校验）；token 分组数值用 `query_assets.mjs tokens <group>` 查询（单组，不逐组翻）。
 
 ## References
 
