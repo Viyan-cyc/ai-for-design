@@ -24,7 +24,7 @@
 //   │   ├── App.vue                      # 应用壳
 //   │   ├── api/{slug}.js                # ★ 接口适配层（二开时唯一要改的文件）
 //   │   ├── assets/tokens/               # ★ 设计资产 token（从 ASSETS_ROOT 现取）
-//   │   ├── assets/                      # 主题/字体/样式（FIXED）
+//   │   ├── assets/                      # 主题/样式（FIXED；字体走系统字体栈，不内嵌）
 //   │   ├── locales/                     # 全部语言资源：lang/{zh-CN,en-US}/common.json + pages/{slug}.js
 //   │   ├── router/index.js              # 路由（内联，无 guards/modules）
 //   │   └── views/{slug}/               # ★ 页面主目录

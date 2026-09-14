@@ -42,7 +42,6 @@ skill 目录不存放任何设计数据副本：token、组件、模板、毛玻
     ├── assets/tokens/               # ★ 资产库 token 全套（init 现取复制，勿手改）
     ├── assets/style/base.less       # Less 基础样式（FIXED）
     ├── assets/themes/               # 皮肤插槽（base.css + README 协议；自定义皮肤放这里）
-    ├── assets/fonts/                # 字体（FIXED）
     ├── assets/images/ uploads/      # 按需创建素材
     ├── locales/                     # 全部语言资源（init 必建：lang/{zh-CN,en-US}/common.json + pages/{slug}.js + index.js）
     ├── router/index.js              # 路由（init 必建 — 路径与 history 模式 FIXED，仅 routes 条目可编辑；见下文白页防线）
@@ -54,7 +53,7 @@ skill 目录不存放任何设计数据副本：token、组件、模板、毛玻
 
 **Editable vs FIXED:**
 - **You edit ONLY:** `views/**`、`components/**`、`api/**`、`locales/**`、`router/index.js`（仅路由表条目）、`mock/**`、`assets/uploads/`、`assets/images/`、`assets/themes/`（皮肤文件）。
-- **FIXED:** `main.js`、`App.vue`、`assets/tokens/`、`assets/style/base.less`、`assets/fonts/`、`public/`、`index.html`、`preview-data.js`、`router/index.js` 的文件路径与 history 模式。
+- **FIXED:** `main.js`、`App.vue`、`assets/tokens/`、`assets/style/base.less`、`public/`、`index.html`、`preview-data.js`、`router/index.js` 的文件路径与 history 模式。
 
 **router/index.js 硬约束（白页防线）：** `index.html` 预览加载器按固定路径 `/src/router/index.js` 加载路由模块。不得挪动、改名、内联到 main.js，不得把 `createWebHashHistory` 换成 `createWebHistory`（file:// 下路由匹配失败 → 白页）。只准往 `routes` 数组里加条目。build.mjs 强制校验三项：文件存在、调用 `createRouter`、history 必须是 `createWebHashHistory` 或 `createMemoryHistory`。
 
