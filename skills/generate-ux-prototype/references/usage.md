@@ -1,6 +1,6 @@
 # 调用示例（脚本 CLI 速览）
 
-资产库内嵌于本 skill 的 `library/` 目录——所有脚本自动使用，无需传路径。下例 `SKILL` = 本 skill 目录；`LIBRARY` = `SKILL/library`（仅当用户明确指定外部库时才需要传 `--assets-root <库根>`）。
+资产库内嵌于本 skill 的 `library/` 目录——所有脚本自动使用，无需传路径。下例 `SKILL` = 本 skill 目录；`LIBRARY` = `SKILL/library`。
 
 ## 资产查询（库内脚本，只读）
 
@@ -16,8 +16,6 @@ node LIBRARY/scripts/query_assets.mjs tokens                     # 全部分组�
 node SKILL/scripts/init.mjs "{artifact-folder}" "{slug}"   # 内嵌资产库自动使用，零配置
 # RESULT: OK + HTML_PATH / SRC_DIR / PAGE / ASSETS_VERSION
 ```
-
-`--assets-root <库根>` 仅在用户明确要求外部资产库时才传。
 
 ## 写码前预检（规划清单一条命令校验）
 

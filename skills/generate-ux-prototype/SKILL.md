@@ -66,7 +66,7 @@ skill 本体内嵌资产库（`library/`）：token、毛玻璃规则全部在�
 
 ## 资产库（内嵌，零配置）
 
-资产库内嵌于本 skill 的 `library/` 目录（含 `asset-manifest.json`），skill 装到哪资产就在哪——**所有脚本自动使用内嵌库，无需指定任何路径**。仅当用户明确要求用外部资产库时，给 init 传 `--assets-root <库根>`（或设 `ASSETS_ROOT` 环境变量）覆盖。
+资产库内嵌于本 skill 的 `library/` 目录（含 `asset-manifest.json`），skill 装到哪资产就在哪——**所有脚本自动使用内嵌库，无需指定任何路径**。
 
 不要整读 `asset-manifest.json`（机器文件）；token 查询一律走库内脚本：
 
@@ -95,7 +95,7 @@ node LIBRARY/scripts/query_assets.mjs tokens --search brand          # token 值
 
 | FAIL 信息 | 原因 | 修复 |
 |---|---|---|
-| `asset library not found` / `embedded asset library broken` | skill 内嵌 `library/` 目录缺失或损坏（拷贝安装不完整） | 重装 skill；或显式传 `--assets-root <外部库根>` |
+| `asset library not found` / `embedded asset library broken` | skill 内嵌 `library/` 目录缺失或损坏（拷贝安装不完整） | 重装 skill |
 | `Artifact folder does not exist` | 输出目录未建 | 先创建目录再跑 |
 | `target already exists` | 同名工作区已存在 | 走文末 Modification Workflow |
 | `puppeteer-core not found`（smoke） | 冒烟前置未装 | `npm i -g puppeteer-core` |
@@ -135,7 +135,7 @@ node --version
    ```sh
    node scripts/init.mjs "{artifact-folder}" "{slug}"
    ```
-   内嵌资产库自动使用，`--assets-root` 仅在用户明确指定外部库时才传。成功输出 `RESULT: OK` + `HTML_PATH` + `SRC_DIR` + `PAGE` + `ASSETS_VERSION`。token 全套随即复制到 `src/assets/tokens/`（含毛玻璃 token），并生成 api 适配层、mock 模块、全局词条、路由与 starter 页面。
+   内嵌资产库自动使用，零配置。成功输出 `RESULT: OK` + `HTML_PATH` + `SRC_DIR` + `PAGE` + `ASSETS_VERSION`。token 全套随即复制到 `src/assets/tokens/`（含毛玻璃 token），并生成 api 适配层、mock 模块、全局词条、路由与 starter 页面。
 
 ### Step 3 — 写码
 

@@ -23,7 +23,7 @@
 //   │   ├── main.js                      # 工程入口（FIXED）
 //   │   ├── App.vue                      # 应用壳
 //   │   ├── api/{slug}.js                # ★ 接口适配层（二开时唯一要改的文件）
-//   │   ├── assets/tokens/               # ★ 设计资产 token（从 ASSETS_ROOT 现取）
+//   │   ├── assets/tokens/               # ★ 设计资产 token（从内嵌 library/ 现取）
 //   │   ├── assets/                      # 主题/样式（FIXED；字体走系统字体栈，不内嵌）
 //   │   ├── locales/                     # 全部语言资源：lang/{zh-CN,en-US}/common.json + pages/{slug}.js
 //   │   ├── router/index.js              # 路由（内联，无 guards/modules）
@@ -34,7 +34,7 @@
 //   └── preview-data.js                  # 源码映射（build 自动生成）
 //
 // Usage:
-//   node init.mjs "<artifact-folder>" "<slug>" [--assets-root <path>]
+//   node init.mjs "<artifact-folder>" "<slug>"
 //
 // Output (agent-parseable):
 //   RESULT: OK
@@ -67,12 +67,6 @@ function fail(reason) {
 
 // --- args ---
 const rawArgs = process.argv.slice(2);
-const assetsRootIdx = rawArgs.findIndex((a) => a === '--assets-root' || a === '-a');
-let assetsRootArg;
-if (assetsRootIdx !== -1) {
-  assetsRootArg = rawArgs[assetsRootIdx + 1];
-  rawArgs.splice(assetsRootIdx, 2);
-}
 const args = rawArgs.filter((a) => !a.startsWith('-'));
 let artifactFolder, slug;
 if (args.length === 2) {
@@ -81,7 +75,7 @@ if (args.length === 2) {
   artifactFolder = process.cwd();
   [slug] = args;
 } else {
-  fail('Usage: node init.mjs "<artifact-folder>" "<slug>" [--assets-root <path>]');
+  fail('Usage: node init.mjs "<artifact-folder>" "<slug>"');
 }
 
 if (!existsSync(artifactFolder) || !statSync(artifactFolder).isDirectory()) {
@@ -92,19 +86,11 @@ if (!/^[a-z0-9]+(-[a-z0-9]+){1,5}$/.test(slug)) {
 }
 
 // ---------- 0. locate asset library ----------
-// 资产库内嵌于 skill（library/），skill 目录拷到哪都能用。外部库仅在显式传
-// --assets-root 或 ASSETS_ROOT 环境变量时生效（可指向库根本身）。
+// 资产库内嵌于 skill（library/），skill 目录拷到哪都能用，零配置。
 const embeddedLib = resolve(__dirname, '..', 'library');
 const embeddedManifest = join(embeddedLib, 'asset-manifest.json');
 if (!existsSync(embeddedManifest)) fail(`embedded asset library broken, missing: ${embeddedManifest}`);
-
-let assetLib = { root: embeddedLib, entry: embeddedLib };
-const externalRoot = assetsRootArg || process.env.ASSETS_ROOT;
-if (externalRoot) {
-  const p = resolve(externalRoot);
-  if (existsSync(join(p, 'asset-manifest.json'))) assetLib = { root: p, entry: p };
-  else fail(`--assets-root not an asset library (no asset-manifest.json): ${p}`);
-}
+const assetLib = { root: embeddedLib, entry: embeddedLib };
 const tokensSrc = join(assetLib.root, 'frontend', 'element-plus', 'tokens');
 if (!existsSync(tokensSrc)) fail(`asset library token layer not found: ${tokensSrc}`);
 const manifestPath = join(assetLib.root, 'asset-manifest.json');
