@@ -131,8 +131,23 @@ for (const line of REQUIRED_HTML) {
 }
 if (!/<html[^>]*data-theme=/.test(html)) fail('preview loader broken: <html> has no data-theme attribute');
 
-for (const p of ['App.vue', 'main.js', join('assets', 'themes', 'base.css')]) {
+for (const p of ['App.vue', 'main.js', join('assets', 'themes', 'base.css'), join('router', 'index.js')]) {
   if (!existsSync(join(srcDir, p))) fail(`deliverable incomplete, missing: src/${p}`);
+}
+
+// ---------- 1a. router integrity (index.html hardcodes /src/router/index.js) ----------
+// 预览加载器在 getFile 里按固定路径请求 /src/router/index.js——文件缺失或改名会
+// 直接白页（报 "源码映射中找不到 /src/router/index.js"）。AI 二开时不得挪动该
+// 文件、不得改 history 模式（file:// 下 createWebHistory 路由匹配失败同样白页）。
+const routerSrc = readFileSync(join(srcDir, 'router', 'index.js'), 'utf8');
+if (!/createRouter\s*\(/.test(routerSrc)) {
+  fail('src/router/index.js: must call createRouter(...) — preview loader requires a router instance');
+}
+if (/createWebHistory\s*\(/.test(routerSrc) && !/createWebHashHistory\s*\(/.test(routerSrc)) {
+  fail('src/router/index.js: createWebHistory breaks under file:// — use createWebHashHistory (or createMemoryHistory) so the preview opens directly from disk');
+}
+if (!/export\s+default/.test(routerSrc)) {
+  fail('src/router/index.js: must `export default` the router instance — index.html reads routerMod.default');
 }
 
 const vueFiles = walkFiles(srcDir, ['.vue']);
