@@ -45,7 +45,7 @@ skill 目录不存放任何设计数据副本：token、组件、模板、毛玻
     ├── assets/fonts/                # 字体（FIXED）
     ├── assets/images/ uploads/      # 按需创建素材
     ├── locales/                     # 全部语言资源（init 必建：lang/{zh-CN,en-US}/common.json + pages/{slug}.js + index.js）
-    ├── router/index.js              # 路由（init 必建 — 内联，无 guards/modules）
+    ├── router/index.js              # 路由（init 必建 — 路径与 history 模式 FIXED，仅 routes 条目可编辑；见下文白页防线）
     ├── views/{slug}/                # ★ 页面主目录（init 必建）
     │   ├── index.vue                # 页面主组件（starter，替换它）
     │   └── js/constants.js          # 页面常量（含 COMPONENT_MODE）
@@ -53,8 +53,10 @@ skill 目录不存放任何设计数据副本：token、组件、模板、毛玻
 ```
 
 **Editable vs FIXED:**
-- **You edit ONLY:** `views/**`、`components/**`、`api/**`、`locales/**`、`router/**`、`mock/**`、`assets/uploads/`、`assets/images/`、`assets/themes/`（皮肤文件）。
-- **FIXED:** `main.js`、`App.vue`、`assets/tokens/`、`assets/style/base.less`、`assets/fonts/`、`public/`、`index.html`、`preview-data.js`。
+- **You edit ONLY:** `views/**`、`components/**`、`api/**`、`locales/**`、`router/index.js`（仅路由表条目）、`mock/**`、`assets/uploads/`、`assets/images/`、`assets/themes/`（皮肤文件）。
+- **FIXED:** `main.js`、`App.vue`、`assets/tokens/`、`assets/style/base.less`、`assets/fonts/`、`public/`、`index.html`、`preview-data.js`、`router/index.js` 的文件路径与 history 模式。
+
+**router/index.js 硬约束（白页防线）：** `index.html` 预览加载器按固定路径 `/src/router/index.js` 加载路由模块。不得挪动、改名、内联到 main.js，不得把 `createWebHashHistory` 换成 `createWebHistory`（file:// 下路由匹配失败 → 白页）。只准往 `routes` 数组里加条目。build.mjs 强制校验三项：文件存在、调用 `createRouter`、history 必须是 `createWebHashHistory` 或 `createMemoryHistory`。
 
 **HARD RULES（src/ 内代码约束，细则见 [references/code-conventions.md](references/code-conventions.md)）:**
 - 标准 ESM：`import { ref } from 'vue'`、`import { ElMessage } from 'element-plus'`；相对路径 import 子组件。
@@ -162,6 +164,7 @@ init 生成的 starter 中 `COMPONENT_MODE` 默认为 `'hybrid'`，确认结果�
 8. 单位 px（无 rem）；无任何 scss
 9. 页面/组件无 `mock/modules` import（只经 `src/api/{slug}.js`）
 10. 拷入的 G 组件文件未被改动（来源注释原样）
+11. `src/router/index.js` 未挪动/改名/内联；history 仍为 `createWebHashHistory`（file:// 兼容，build 强制校验）
 
 ### Step 7 — Build & Verify（MANDATORY，自动刷新预览）
 
@@ -172,7 +175,7 @@ node scripts/build.mjs --dir "{artifact-folder}/{slug}"
 - **Success:** `RESULT: OK` + `OK index.html verified (N pages, M components, K el-tag uses)`
 - **Failure:** `RESULT: FAIL | <文件>: <原因>` → 修复 → 重跑（最多 3 次）
 - **WARN:** hex 颜色、静态内联样式——非阻断，但应修正
-- 校验覆盖：@vue/compiler-sfc 真编译 + `el-*` 白名单(116) + 图标白名单(295) + 导出白名单(130) + 相对 import 解析 + 裸依赖白名单 + ESM 语法 + **token 存在性（从工作区 `src/assets/tokens/` 实时提取）** + 样式卫生 + mock 隔离 + scss 禁用。
+- 校验覆盖：@vue/compiler-sfc 真编译 + `el-*` 白名单(116) + 图标白名单(295) + 导出白名单(130) + 相对 import 解析 + 裸依赖白名单 + ESM 语法 + **token 存在性（从工作区 `src/assets/tokens/` 实时提取）** + 样式卫生 + mock 隔离 + scss 禁用 + **router 完整性（文件存在 + createRouter + history 必须 file:// 兼容 + export default）**。
 
 通过后跑无头冒烟收口：
 
