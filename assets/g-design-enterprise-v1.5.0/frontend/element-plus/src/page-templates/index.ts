@@ -1,1 +1,0 @@
-export{default as StandardListPage}from'./StandardListPage';export{default as DeviceManagementPage}from'./DeviceManagementPage';export{default as EditFormPage}from'./EditFormPage';export{default as ObjectDetailPage}from'./ObjectDetailPage';export{default as TopologyMonitoringPage}from'./TopologyMonitoringPage';export{default as AlarmImpactPage}from'./AlarmImpactPage'

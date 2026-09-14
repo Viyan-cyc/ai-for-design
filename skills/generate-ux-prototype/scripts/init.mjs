@@ -29,7 +29,7 @@
 //   │   ├── router/index.js              # 路由（内联，无 guards/modules）
 //   │   └── views/{slug}/               # ★ 页面主目录
 //   │       ├── index.vue                # 页面主组件
-//   │       └── js/constants.js          # 页面常量（含 COMPONENT_MODE）
+//   │       └── js/constants.js          # 页面常量
 //   ├── index.html                       # 离线预览加载器（FIXED）
 //   └── preview-data.js                  # 源码映射（build 自动生成）
 //
@@ -120,13 +120,22 @@ try {
   const binding = JSON.parse(readFileSync(bindingPath, 'utf8'));
   if (binding.packageRoot) candidates.push(binding.packageRoot);
 } catch { /* 未安装态（仓库内直跑）无绑定文件，走后续候选 */ }
-candidates.push(resolve(__dirname, '..', '..', '..', '..'));
 candidates.push(process.env.ASSETS_ROOT || resolve(process.cwd()));
 let assetLib = null;
 for (const c of candidates) {
   if (!c) continue;
   assetLib = locateAssetLibrary(c);
   if (assetLib) break;
+}
+// 仓库内任意 cwd：从脚本位置逐级上溯找锚点（asset-catalog.json 包根 / asset-manifest.json 库根）。
+// skill 目录被挪动或单独分发时依然命中，不依赖固定层级。
+if (!assetLib) {
+  let cur = __dirname;
+  for (let i = 0; i < 12 && !assetLib; i += 1) {
+    cur = resolve(cur, '..');
+    assetLib = locateAssetLibrary(cur);
+    if (cur === resolve(cur, '..')) break; // 到达盘根
+  }
 }
 if (!assetLib) fail(`asset library not found — pass --assets-root <package root | assets dir | library dir>; tried: ${candidates.filter(Boolean).join(', ')}`);
 const tokensSrc = join(assetLib.root, 'frontend', 'element-plus', 'tokens');
@@ -428,14 +437,11 @@ export const t = Object.fromEntries(
   'utf8',
 );
 
-// --- 6h. views/{slug}/js/constants.js (with COMPONENT_MODE, plan §4.3) ---
+// --- 6h. views/{slug}/js/constants.js ---
 writeFileSync(
   join(srcDir, 'views', slug, 'js', 'constants.js'),
   `// ${pageName} — 常量定义
 // 常量命名：全大写 + 下划线（如 ALARM_LEVEL）
-
-// 组件模式开关（生成时确认）：'reuse' 命中库组件必须复用 | 'hybrid' 命中复用未命中手写 | 'free' 全手写
-export const COMPONENT_MODE = 'hybrid'
 
 export const STATUS_MAP = {
   running:     { label: '运行中', type: 'success' },

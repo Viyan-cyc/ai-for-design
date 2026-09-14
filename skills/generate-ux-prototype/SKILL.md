@@ -1,13 +1,13 @@
 ---
 name: generate-ux-prototype
-description: Generate or edit a G Design page as real Vue 3 + Element Plus 2.13.5 source code (.vue workspace with api adapter, mock, i18n) plus a zero-build offline preview; tokens and reusable components are fetched live from the local asset library. Accepts text requirements, module descriptions, screenshots or raw HTML. Triggers on "页面生成", "原型", "Vue 页面", "Element Plus", "列表页", "看板", "截图转码".
+description: Generate or edit a G Design page as real Vue 3 + Element Plus 2.13.5 source code (.vue workspace with api adapter, mock, i18n) plus a zero-build offline preview; design tokens are fetched live from the local asset library. Accepts text requirements, module descriptions, screenshots or raw HTML. Triggers on "页面生成", "原型", "Vue 页面", "Element Plus", "列表页", "看板", "截图转码".
 ---
 
 # 生成 G Design 原型（Vue 3 源码交付）
 
 你的产品是**真实 Vue 3 源码工作区**：一组 `.vue` SFC（`<script setup>` 纯 JS）+ Less + 标准 ESM import，写在 `{slug}/src/` 下——代码本身就是交付件，可直接拷入任何 Vue 3 + Element Plus + Vite 工程做二次开发；同时附带零构建离线预览 `{slug}/index.html`（浏览器直接打开）。对话以单个 `<artifact>` 链接结束。
 
-skill 目录不存放任何设计数据副本：token、组件、模板、毛玻璃规则全部在生成时通过资产库定位协议现取（见下文「资产库定位协议」）。设计师发新版资产库，下一次生成自动生效。
+skill 目录不存放任何设计数据副本：token、毛玻璃规则全部在生成时通过资产库定位协议现取（见下文「资产库定位协议」）。设计师发新版资产库，下一次生成自动生效。
 
 ## 技术栈
 
@@ -47,8 +47,8 @@ skill 目录不存放任何设计数据副本：token、组件、模板、毛玻
     ├── router/index.js              # 路由（init 必建 — 路径与 history 模式 FIXED，仅 routes 条目可编辑；见下文白页防线）
     ├── views/{slug}/                # ★ 页面主目录（init 必建）
     │   ├── index.vue                # 页面主组件（starter，替换它）
-    │   └── js/constants.js          # 页面常量（含 COMPONENT_MODE）
-    └── components/                  # 复用 G 组件 / 跨页组件（按需创建）
+    │   └── js/constants.js          # 页面常量
+    └── components/                  # 跨页复用组件（按需创建）
 ```
 
 **Editable vs FIXED:**
@@ -69,44 +69,28 @@ skill 目录不存放任何设计数据副本：token、组件、模板、毛玻
 先定位资产库（下称 LIBRARY，内含 `asset-manifest.json`），再按需读取，不全量扫描：
 
 1. **用户给定的 `ASSETS_ROOT` 优先**——可指向包根目录、包内 `assets/` 或 LIBRARY 本身。
-2. 未指定时读本 Skill 的 `agents/package-location.json`（安装模式保存的包绝对路径），核对包根 `skill-catalog.json` 的 packageId/packageVersion。
-3. 整包模式可直接使用包根；包根 `asset-catalog.json` → `libraries['g-design-enterprise'].root` 定位库目录。
+2. 未指定时读本 Skill 的 `agents/package-location.json`（安装模式保存的包绝对路径），核对包根 `asset-catalog.json` 的 packageId/packageVersion。
+3. 仓库内直跑可自动定位：脚本从自身位置逐级上溯找 `asset-catalog.json`（包根）→ `libraries['g-design-enterprise'].root` 定位库目录；库根 `asset-manifest.json` 亦可直接命中。
 4. 路径失效时先在用户已知位置查找；仍缺失才询问。
 
-定位后**不要整读** `asset-manifest.json` / `asset-library.contract.json` / `release/source-lock.json`——它们是机器文件（数千行哈希与锁清单，整读一次可吃掉大量上下文），定位正确性由脚本保证。查询资产一律走库内脚本（**全量清单必带 `--brief`**——单行一条 id/name/useWhen，输出量约为完整 JSON 的 1/5；选中后再读单条 spec）：
+定位后**不要整读** `asset-manifest.json`——它是机器文件，定位正确性由脚本保证。token 查询一律走库内脚本：
 
 ```sh
-node LIBRARY/scripts/query_assets.mjs templates --brief              # 页面模板清单（单行摘要）
-node LIBRARY/scripts/query_assets.mjs components --brief             # 组件清单（单行摘要）
-node LIBRARY/scripts/query_assets.mjs components --search 状态 --brief  # 搜索 + 单行摘要
-node LIBRARY/scripts/query_assets.mjs components g-status-tag        # 单个组件 spec（useWhen/level/source）
 node LIBRARY/scripts/query_assets.mjs tokens frost-common            # token 分组（含 frost-*）
+node LIBRARY/scripts/query_assets.mjs tokens --search brand          # token 值搜索
 ```
 
 规范入口：`design/rules.md`。**design/ 文档按需触发，默认一律不读**（SKILL.md 的 HARD RULES 已覆盖日常写码约束）：仅当页面明确涉及对应场景才读对应的那一份——颜色场景读 `design/color-rules.md`、token 数值细读 `design/color-tokens.md`、毛玻璃读 `design/frosted-glass.md`（触发条件见「毛玻璃与视觉风格」）；禁止为"了解设计体系"而通读。
 
 ## 上下文预算（读取纪律，生成全程执行）
 
-单页生成的目标预算：**定位+init ≤5k / 模板与组件参考 ≤8k / 写码输出 ~30k / 验证 ≤5k，全程 ≤60-80k**——200k 窗口下留一半余量。执行规则：
+单页生成的目标预算：**定位+init ≤5k / 写码输出 ~30k / 验证 ≤5k，全程 ≤60-80k**——200k 窗口下留一半余量。执行规则：
 
-1. **禁读清单**（读了也不用于生成，纯浪费）：仓库级 `SKILL-REPLACE-PLAN.md`、`tasks/`、`README.md`、`workflow.md`、`tests/`；资产库的 manifest/contract/source-lock（见上）；模板 config 预设里的数据段（rows/nodes/edges——只读 spec JSON 的 `criticalInteractions` 与 `pageStates`）。
+1. **禁读清单**（读了也不用于生成，纯浪费）：仓库级 `PURE-BRANCH-PLAN.md`、`README.md`；资产库的 `asset-manifest.json`（见上）。
 2. **token 确认只走 preflight.mjs**（与 build 同源），禁止 grep `src/assets/tokens/` 现场查；token 语义疑问也先 preflight，仍解决不了才读对应 design/ 文档的那一节。
-3. **组件 spec 只读命中项**：`--brief` 圈候选 → 只读最终命中的 1-3 条 spec，不逐个通读。
-4. **验证只认脚本输出**：build/smoke 的 `RESULT` 行即终态；FAIL 按行修复重跑，禁止现场手写调试脚本/puppeteer 脚本展开分析——那是把验证变成新的上下文黑洞。
-5. **截图输入节制**：一次一张、必要时裁剪；追问/修改轮次不重发已分析过的图。
-6. **接近预算上限时**：先 `/compact`（安全点：init + collect 完成、开写之前），压缩后凭 SKILL.md + 工作区文件继续，无需重读资产库。
-
-## 生成选项：组件模式开关（生成开始时确认）
-
-生成开始时与用户确认**组件复用模式**（UI 库当前固定 element-plus；样式语言固定 less，均无开关），并记录到 `views/{slug}/js/constants.js` 的 `COMPONENT_MODE`：
-
-| 模式 | 行为 |
-|---|---|
-| `reuse` | 命中库组件**必须**复用；未命中记 gap 并告知用户 |
-| `hybrid`（默认） | 先按组件 spec 的 useWhen 语义匹配；命中→复制复用，未命中→AI 手写 |
-| `free` | 跳过匹配，全部 AI 手写（只守 token + 代码规范约束） |
-
-init 生成的 starter 中 `COMPONENT_MODE` 默认为 `'hybrid'`，确认结果不同时改写该常量。
+3. **验证只认脚本输出**：build/smoke 的 `RESULT` 行即终态；FAIL 按行修复重跑，禁止现场手写调试脚本/puppeteer 脚本展开分析——那是把验证变成新的上下文黑洞。
+4. **截图输入节制**：一次一张、必要时裁剪；追问/修改轮次不重发已分析过的图。
+5. **接近预算上限时**：先 `/compact`（安全点：init 完成开写之前），压缩后凭 SKILL.md + 工作区文件继续，无需重读资产库。
 
 ## 环境纪律（node 归因 + 降级禁令）
 
@@ -116,7 +100,7 @@ init 生成的 starter 中 `COMPONENT_MODE` 默认为 `'hybrid'`，确认结果�
 
 | FAIL 信息 | 原因 | 修复 |
 |---|---|---|
-| `asset library not found` | 资产库路径/绑定问题：包移动过绑定失效、未传 `--assets-root`、cwd 不对 | 重跑 `node installer/setup.mjs` 重绑定，或显式传 `--assets-root` |
+| `asset library not found` | 资产库路径问题：skill 与库分离部署时未传 `--assets-root`、绑定失效、cwd 不对 | 显式传 `--assets-root <库根或包根>`；或把 `agents/package-location.json` 的 packageRoot 指向包根 |
 | `Artifact folder does not exist` | 输出目录未建 | 先创建目录再跑 |
 | `target already exists` | 同名工作区已存在 | 走文末 Modification Workflow |
 | `puppeteer-core not found`（smoke） | 冒烟前置未装 | `npm i -g puppeteer-core` |
@@ -148,13 +132,7 @@ node --version
 - **Type 3 截图**：分析布局/组件/层级/视觉分区，映射到 Element Plus + 资产 token；**数据保真转录而非发明**——行数列数与图完全一致，逐格独立读取，严禁行间复制。
 - **Type 4 Raw HTML**：解析 DOM/CSS → 原生控件映射 EP 组件，颜色映射最近似 token，重复内容提为数据。
 
-### Step 2 — 模板参考（结构参考 + 完备性清单，只读）
-
-1. 用 `query_assets.mjs templates --brief` 摘要选**最接近**的模板（六套：standard-list / device-management / edit-form / object-detail / topology-monitoring / alarm-impact）。
-2. **只读**该模板 JSON 的 `criticalInteractions`（搜索/分页/批量等）与 `pageStates`（loading/empty/error/forbidden/partial/ready）两字段，再读其 `source` 指向的 `.vue` 源码提取布局骨架——**config 预设（configs/*.json）的 rows/nodes/edges 等数据段禁读**（纯演示数据，单份即数 KB，对生成无用）。
-3. 以此作为**结构与交互完备性对照清单**，然后按工作区代码规范自由写码——**配置驱动机制已废弃**，不生成、不引用任何模板配置 JSON；模板源码只读不拷贝。
-
-### Step 3 — Init Workspace（MANDATORY）
+### Step 2 — Init Workspace（MANDATORY）
 
 1. **Confirm {artifact-folder}**：运行时上下文提供的绝对路径；缺失则回退当前工作目录。
 2. **Derive {slug}**：kebab-case ASCII，2–6 段语义英文（"设备管理" → `device-management`）。
@@ -164,23 +142,12 @@ node --version
    ```
    `--assets-root` 可省略（自动探测：本包所在仓库布局 → `ASSETS_ROOT` 环境变量 → 当前目录）。成功输出 `RESULT: OK` + `HTML_PATH` + `SRC_DIR` + `PAGE` + `ASSETS_VERSION`。token 全套随即复制到 `src/assets/tokens/`（含毛玻璃 token），并生成 api 适配层、mock 模块、全局词条、路由与 starter 页面。
 
-### Step 4 — 组件匹配与复用（hybrid / reuse）
-
-1. 对页面需要的每个能力，用 `query_assets.mjs components --search <关键词> --brief` 圈候选，**只读最终命中的 1-3 条 spec**（useWhen/states 字段确认语义匹配），不逐个通读。
-2. **命中** → 用 collect 脚本一次性拷贝依赖闭包（自动递归相对 import、落位到 `src/components/GName/`、加来源注释）：
-   ```sh
-   node scripts/collect_component.mjs [LIBRARY] <component-id> "{slug}/src" "{slug}/src/components"  # LIBRARY 可省略（安装态自动读绑定）
-   ```
-   输出 `RESULT: OK` + `FILES`/`COPIED` 清单。拷入的文件**禁止改写**（含来源注释），页面以标准 import 消费。
-3. **未命中** → AI 手写（遵循 code-conventions），组件头注释注明手写原因；`reuse` 模式必须把 gap 汇总告知用户。
-4. 注意：collect 脚本对同一目标重复执行会 FAIL（防覆盖）；组件依赖 types.ts 等未迁移文件时会报缺失清单（资产库迁移 gap），如实上报，不要手工内联修复。
-
-### Step 5 — 写码
+### Step 3 — 写码
 
 在 `SRC_DIR` 下按 [references/code-conventions.md](references/code-conventions.md) 编写页面：
 
 - `views/{slug}/index.vue` 为页面主组件（替换 starter），以组合编排为主。
-- **拆分触发式**：子组件仅在 **>150 行 / 被复用 / 状态复杂** 时才拆出独立文件（常规页面约 4-8 个文件）；页面私有放 `views/{slug}/components/`，跨页复用放 `src/components/`（复用的 G 组件由 collect 平铺落位到 `src/components/GName/`）。
+- **拆分触发式**：子组件仅在 **>150 行 / 被复用 / 状态复杂** 时才拆出独立文件（常规页面约 4-8 个文件）；页面私有放 `views/{slug}/components/`，跨页复用放 `src/components/`。
 - **无依赖的文件并行写**：constants.js、locales.js、mock 数据、互不依赖的子组件可在同一轮并行创建。
 - **常量放 `views/{slug}/js/constants.js`**（全大写+下划线命名）；页面词条放 `src/locales/pages/{slug}.js`（单文件双语言，见下文 i18n）。
 - **写码前先规划后落笔（preflight 强制）**：
@@ -192,7 +159,7 @@ node --version
   3. `RESULT: OK` 后以清单为准落笔——写码过程中 token/词条/路径以清单为准，不再现场发明。
 - **分批 build 早暴露**：build 毫秒级，不要等全部文件写完才跑——首个子组件 + constants/locales 写完即跑一轮（token 拼写/白名单类错误在第一个组件就暴露），全部写完再跑最终轮。
 
-### Step 6 — 生成前自检（MANDATORY，build 前必做）
+### Step 4 — 生成前自检（MANDATORY，build 前必做）
 
 1. 相对 import 层级正确（对照 code-conventions 的路径计算表）
 2. 图标名 / `el-*` 组件名在白名单内（见下文速查）
@@ -203,10 +170,9 @@ node --version
 7. 无静态内联 `style="..."`（`:style` 动态绑定允许）
 8. 单位 px（无 rem）；无任何 scss
 9. 页面/组件无 `mock/modules` import（只经 `src/api/{slug}.js`）
-10. 拷入的 G 组件文件未被改动（来源注释原样）
-11. `src/router/index.js` 未挪动/改名/内联；history 仍为 `createWebHashHistory`（file:// 兼容，build 强制校验）
+10. `src/router/index.js` 未挪动/改名/内联；history 仍为 `createWebHashHistory`（file:// 兼容，build 强制校验）
 
-### Step 7 — Build & Verify（MANDATORY，自动刷新预览）
+### Step 5 — Build & Verify（MANDATORY，自动刷新预览）
 
 ```sh
 node scripts/build.mjs --dir "{artifact-folder}/{slug}"
@@ -226,7 +192,7 @@ node scripts/smoke.mjs --dir "{artifact-folder}/{slug}"
 
 **build + smoke 一轮跑完 = 生成流程结束。** 不再起 serve / curl 探活 / 查杀进程 / 重复验证——smoke 自带渲染、token 品牌色、明暗切换、404 检查并自查进程清理；`serve.mjs` 只在用户明确要求本机预览地址时才启动。
 
-### Step 8 — Output
+### Step 6 — Output
 
 ```
 <artifact type="text/link">{HTML_PATH value}</artifact>
@@ -240,7 +206,7 @@ node scripts/serve.mjs --dir "{artifact-folder}/{slug}" --port 8765
 
 冒烟前置（每机器一次）：`npm i -g puppeteer-core`；自动探测系统 Chrome/Edge，不下载浏览器。检查项：页面无报错渲染、`--el-color-primary` 解析为资产品牌色、`setTheme('dark')` 明暗切换生效、非 favicon 资源 404 为空。`--selector` 可指定页面特征选择器（默认 `.event-card, .page-root, main, #app .el-button`）。
 
-交付说明需注明：演示假设与未验证项、组件复用 gap（reuse 模式必述）、以及二次开发入口（改 `src/api/{slug}.js` 对接真实接口，页面零改动）。
+交付说明需注明：演示假设与未验证项、以及二次开发入口（改 `src/api/{slug}.js` 对接真实接口，页面零改动）。
 
 ## Modification Workflow（修改已生成页面）
 
@@ -311,8 +277,6 @@ el-row  el-col  el-card  el-tabs  el-tab-pane  el-tooltip  el-dropdown
 
 ## References
 
-- **[references/code-conventions.md](references/code-conventions.md)** — 页面代码规范 / API 适配层 / i18n / G 组件复用 / 相对路径计算表 / 高频错误预防 / 二开依赖差异
+- **[references/code-conventions.md](references/code-conventions.md)** — 页面代码规范 / API 适配层 / i18n / 相对路径计算表 / 高频错误预防 / 二开依赖差异
 - **[references/ui-runtime.md](references/ui-runtime.md)** — UI Runtime 三件套接入说明（SweetUI 预留）
-- **[references/usage.md](references/usage.md)** — 调用示例（六脚本 CLI 速览：query_assets / init / collect / preflight / build / serve / smoke）
-- **[references/component-format.md](references/component-format.md)** — 组件库改造规范 v1（给设计师的格式契约，W2 产出；AI 复用拷贝时知悉组件格式）
-- **[references/designer-component-guide.md](references/designer-component-guide.md)** — 设计师新组件操作指南（与 component-format.md 配套，含提交前自检 10 条）
+- **[references/usage.md](references/usage.md)** — 调用示例（脚本 CLI 速览：query_assets / init / preflight / build / serve / smoke）

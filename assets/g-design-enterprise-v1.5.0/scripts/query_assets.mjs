@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
- * Read only one token group or selected asset specification; never scan all source code.
- * 移植自 scripts/query_assets.py（W3/D18），行为逐条对齐，diff 验证见 tests/migration_diff.mjs。
+ * Read only one token group; never scan all source code.
+ * Pure 分支：只保留 tokens 子命令（icons/components/templates 随组件层移除）。
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -23,133 +23,80 @@ function tokenRules(group) {
   return ['design/rules.md'];
 }
 
-function query(kind, key = null, search = null) {
-  if (kind === 'icons') {
-    const base = path.join(ROOT, 'frontend/element-plus');
-    const entries = JSON.parse(fs.readFileSync(path.join(base, 'assets/icons/lucide/tags.json'), 'utf8'));
-    const aliases = JSON.parse(fs.readFileSync(path.join(base, 'src/icons/icon-aliases.json'), 'utf8'));
-    for (const [name, canonical] of Object.entries(aliases)) {
-      entries[name] = entries[canonical] ?? [];
-    }
-    const needle = (key ?? search ?? '').toLowerCase();
-    const result = Object.keys(entries)
-      .filter((name) => {
-        if (!needle) return true;
-        const tags = entries[name];
-        return name.toLowerCase().includes(needle) || JSON.stringify(tags, null, 0).toLowerCase().includes(needle);
-      })
-      .map((name) => ({ name, canonicalName: aliases[name] ?? name }));
-    if (needle in aliases && !result.some((item) => item.name === needle)) {
-      result.unshift({ name: needle, canonicalName: aliases[needle] });
-    }
-    return { matches: result.slice(0, 20), total: result.length, rules: 'design/icon-rules.md', export: 'scripts/export_icons.mjs' };
-  }
+function queryTokens(key = null, search = null) {
+  const doc = readJson('design/tokens.json');
+  const entries = doc.groups;
 
-  if (kind === 'tokens') {
-    const doc = readJson('design/tokens.json');
-    const entries = doc.groups;
+  if (key in entries) return { group: key, ...entries[key], rules: tokenRules(key) };
 
-    if (key in entries) return { group: key, ...entries[key], rules: tokenRules(key) };
-
-    if (search) {
-      const needle = search.toLowerCase();
-      const matches = [];
-      for (const [group, data] of Object.entries(entries)) {
-        for (const [name, value] of Object.entries(data.tokens)) {
-          const haystack = `${group} ${data.description} ${name} ${JSON.stringify(value)}`.toLowerCase();
-          if (haystack.includes(needle)) matches.push({ group, name, ...value, rules: tokenRules(group) });
-        }
-      }
-      return { matches: matches.slice(0, 20), total: matches.length, next: 'Query an exact token or group for complete values.' };
-    }
-
-    if (key) {
-      const found = {};
-      for (const [group, data] of Object.entries(entries)) {
-        if (key in data.tokens) found[group] = { [key]: data.tokens[key] };
-      }
-      if (Object.keys(found).length === 0) {
-        const needle = key.toLowerCase();
-        const matchingGroups = {};
-        for (const [group, data] of Object.entries(entries)) {
-          if (`${group} ${data.description}`.toLowerCase().includes(needle)) {
-            matchingGroups[group] = { description: data.description, count: Object.keys(data.tokens).length };
-          }
-        }
-        if (Object.keys(matchingGroups).length > 0) {
-          return { matchingGroups, next: 'Query one exact group name for token values.' };
-        }
-        throw new Error(`Unknown token or group: ${key}`);
-      }
-      return found;
-    }
-
-    const summary = {};
+  if (search) {
+    const needle = search.toLowerCase();
+    const matches = [];
     for (const [group, data] of Object.entries(entries)) {
-      if (!search || `${group} ${data.description}`.toLowerCase().includes(search.toLowerCase())) {
-        summary[group] = { description: data.description, count: Object.keys(data.tokens).length };
+      for (const [name, value] of Object.entries(data.tokens)) {
+        const haystack = `${group} ${data.description} ${name} ${JSON.stringify(value)}`.toLowerCase();
+        if (haystack.includes(needle)) matches.push({ group, name, ...value, rules: tokenRules(group) });
       }
     }
-    return summary;
+    return { matches: matches.slice(0, 20), total: matches.length, next: 'Query an exact token or group for complete values.' };
   }
 
-  const file = kind === 'components' ? 'index.json' : 'templates.json';
-  const entries = readJson(`components/${file}`)[kind];
   if (key) {
-    if (!(key in entries)) throw new Error(`Unknown ${kind} id: ${key}`);
-    return entries[key];
-  }
-  return Object.values(entries)
-    .filter((item) => !search || JSON.stringify(item).toLowerCase().includes(search.toLowerCase()))
-    .map((item) => {
-      const picked = {};
-      for (const field of ['id', 'name', 'level', 'useWhen', 'spec']) {
-        if (field in item) picked[field] = item[field];
+    const found = {};
+    for (const [group, data] of Object.entries(entries)) {
+      if (key in data.tokens) found[group] = { [key]: data.tokens[key] };
+    }
+    if (Object.keys(found).length === 0) {
+      const needle = key.toLowerCase();
+      const matchingGroups = {};
+      for (const [group, data] of Object.entries(entries)) {
+        if (`${group} ${data.description}`.toLowerCase().includes(needle)) {
+          matchingGroups[group] = { description: data.description, count: Object.keys(data.tokens).length };
+        }
       }
-      return picked;
-    });
+      if (Object.keys(matchingGroups).length > 0) {
+        return { matchingGroups, next: 'Query one exact group name for token values.' };
+      }
+      throw new Error(`Unknown token or group: ${key}`);
+    }
+    return found;
+  }
+
+  const summary = {};
+  for (const [group, data] of Object.entries(entries)) {
+    if (!search || `${group} ${data.description}`.toLowerCase().includes(search.toLowerCase())) {
+      summary[group] = { description: data.description, count: Object.keys(data.tokens).length };
+    }
+  }
+  return summary;
 }
 
 function main() {
   const argv = process.argv.slice(2);
-  // 对齐 argparse：kind ∈ {tokens, components, templates, icons}，key 位置参数可选，--search 命名参数，--brief 单行摘要
-  const choices = ['tokens', 'components', 'templates', 'icons'];
   const positional = [];
   let search = null;
-  let brief = false;
   for (let i = 0; i < argv.length; i += 1) {
     if (argv[i] === '--search') {
       if (i + 1 >= argv.length) {
-        console.error('usage: query_assets.mjs [-h] [--search SEARCH] [--brief] {tokens,components,templates,icons} [key]');
+        console.error('usage: query_assets.mjs [-h] [--search SEARCH] {tokens} [key]');
         process.exit(2);
       }
       search = argv[i + 1];
       i += 1;
-    } else if (argv[i] === '--brief') {
-      brief = true;
     } else if (argv[i] === '-h' || argv[i] === '--help') {
-      console.log('usage: query_assets.mjs [-h] [--search SEARCH] [--brief] {tokens,components,templates,icons} [key]');
+      console.log('usage: query_assets.mjs [-h] [--search SEARCH] {tokens} [key]');
       process.exit(0);
     } else {
       positional.push(argv[i]);
     }
   }
   const [kind, key = null] = positional;
-  if (!choices.includes(kind)) {
-    console.error(`argument kind: invalid choice: '${kind}' (choose from 'tokens', 'components', 'templates', 'icons')`);
+  if (kind !== 'tokens') {
+    console.error(`argument kind: invalid choice: '${kind}' (pure 分支仅支持 'tokens')`);
     process.exit(2);
   }
   try {
-    const result = query(kind, key, search);
-    if (brief && Array.isArray(result)) {
-      // 单行一条：id + name + useWhen，输出量约为完整 JSON 的 1/5（组件/模板全量清单场景）
-      for (const item of result) {
-        const useWhen = Array.isArray(item.useWhen) ? item.useWhen.join('/') : '';
-        console.log(`${item.id ?? item.name}\t${item.name ?? ''}\t${useWhen}`);
-      }
-      return;
-    }
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+    process.stdout.write(`${JSON.stringify(queryTokens(key, search), null, 2)}\n`);
   } catch (error) {
     if (error instanceof Error && error.message.startsWith('Unknown ')) {
       console.log(`ERROR: ${error.message}`);

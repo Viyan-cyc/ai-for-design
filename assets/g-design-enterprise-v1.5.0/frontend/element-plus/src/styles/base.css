@@ -1,4 +1,0 @@
-*{box-sizing:border-box}body{margin:0;font-family:var(--g-font-family);background:var(--g-bg-page);color:var(--g-text-primary)}.page{padding:var(--space-24);display:grid;gap:var(--space-20)}.page h1{margin:0;font-size:var(--font-size-large)}.page h2{font-size:var(--spec-styles-font-size)}
-
-body{font-size:var(--font-size-normal);line-height:var(--line-height-normal)}[data-theme]{min-height:100vh;background:var(--g-bg-page);color:var(--g-text-primary)}.page-heading{line-height:var(--line-height-large)}
-:is([data-visual-style="frosted-glass"], [data-visual-style="aurora-glass"]) .page-heading {background-color:var(--frost-backdrop-base);background-image:var(--frost-backdrop-gradient);padding:var(--space-24);border-radius:var(--radius-large)}

@@ -101,27 +101,7 @@ export { fetchList, fetchDetail }
   > 单语言页面可直接在 messages 里存字符串 `title: '设备管理'`，展平逻辑已兼容（typeof val === 'string' 直通）。
 - 将来接 vue-i18n：把 messages 的 zh/en 拆进 JSON，页面模板零改动。
 
-## 7. 复用 G 组件约定（D12/D17/D20）
-
-资产库组件（`G*`，basic/business/complex 三类）以**纯拷贝 + 来源注释**方式复用，零改写：
-
-1. **匹配**：按 spec 的 `useWhen` 语义匹配（`query_assets.mjs components --search …`）。
-2. **拷贝**（一条命令完成闭包复制，替代手工多轮读写）：
-   ```sh
-   node scripts/collect_component.mjs [LIBRARY] <component-id> "{slug}/src" "{slug}/src/components"  # LIBRARY 可省略（安装态自动读绑定）
-   ```
-   - 自动递归解析相对 import 拷齐依赖闭包；只拷 `GName.vue`（index.ts / examples.vue 不拷，D20）。
-   - **落位**：`src/components/GName/GName.vue`——平铺（Vue 工程通用习惯，2026-09-12 用户拍板；资产库的 basic/business/complex 分类只保留在来源注释里，不映射成目录）。页面内 import：
-     ```js
-     import GStatusTag from '../../components/GStatusTag/GStatusTag.vue'
-     ```
-   - 每个拷入文件自动加来源注释（版本 + 库内路径），如 `<!-- 源: g-design 1.5.0 g-status-tag (…) — 禁止修改；升级走资产库 -->`。
-   - 额外生成 `index.js` interop 垫片——预览运行时兼容文件（sfc-loader 0.9.5 的目录式命名导入需要它；真实 Vite 工程原生解析，无需垫片），勿手改勿删。
-3. **禁止改写拷入的组件文件**（含来源注释）。组件不合用时的正确路径：改需求描述走资产库升级（manage-design-assets），或在页面用 wrapper 组件包一层，而不是改拷贝件。build 与人工审查都会盯这条。
-4. 依赖闭包不完整（组件还引用 types.ts 等未迁移文件）时 collect 会 FAIL 并列出缺失清单——这是资产库迁移 gap，如实上报用户，**不要手工内联修复**。
-5. 组件落位按 Vue 通用规范：复用 G 组件与跨页复用手写组件放 `src/components/`；页面私有组件放 `views/{slug}/components/`（D11）。
-
-## 8. 相对路径计算（最易错项）
+## 7. 相对路径计算（最易错项）
 
 按 init 后实际目录结构（含 `api/`、`tokens/`）：
 
@@ -137,13 +117,12 @@ export { fetchList, fetchDetail }
     │   ├── uploads/logo.png               ← 素材
     │   └── images/ran.svg                 ← SVG 图标
     ├── components/
-    │   ├── GStatusTag/GStatusTag.vue           ← 复用 G 组件（collect 平铺落位）
     │   └── SharedCard.vue                 ← 手写跨页组件（按需创建）
     ├── locales/lang/zh-CN/common.json     ← 全局共享词条
     └── views/{slug}/
         ├── index.vue                      ← 页面主组件
         ├── components/StatusTag.vue       ← 页面私有子组件（按需创建）
-        └── js/constants.js                ← 常量（含 COMPONENT_MODE）
+        └── js/constants.js                ← 页面常量
 
 从 views/{slug}/index.vue 引用:
   页面子组件:   import StatusTag from './components/StatusTag.vue'
@@ -153,7 +132,6 @@ export { fetchList, fetchDetail }
   素材:        import logo from '../../assets/uploads/logo.png'
   SVG 图标:    import ranIcon from '../../assets/images/ran.svg'
   手写跨页组件: import SharedCard from '../../components/SharedCard.vue'
-  复用 G 组件:  import GStatusTag from '../../components/GStatusTag/GStatusTag.vue'
 
 从 views/{slug}/components/StatusTag.vue 引用:
   API 适配层:  import { fetchList } from '../../../api/{slug}.js'
@@ -166,14 +144,14 @@ export { fetchList, fetchDetail }
 
 （starter `index.vue` 引用 api 层是 `../../api/{slug}.js`——从 `views/{slug}/` 出发上两级到 `src/`，再进 `api/`。）
 
-## 9. 运行时错误预防（build 不覆盖）
+## 8. 运行时错误预防（build 不覆盖）
 
 1. `el-select` v-model 值必须在 options 中：初始值必须是某个 `el-option` 的 `value`，否则显示裸值。建议初始值 `''`（配合 `clearable`）。
 2. `el-table` column `prop` 与 data key 匹配：`prop="xxx"` 必须对应数据对象的实际 key，否则列空白。
 3. template 不引用未声明的变量：`<script setup>` 中未定义的变量在模板中不渲染但不报错。
 4. token 使用前提交 preflight.mjs 校验（与 build 同源，禁止 grep tokens 目录现场查）。
 
-## 10. 高频错误预防（build 拦截项）
+## 9. 高频错误预防（build 拦截项）
 
 | # | 错误写法 | 正确写法 | 原因 |
 |---|---------|---------|------|
@@ -184,20 +162,18 @@ export { fetchList, fetchDetail }
 | 5 | `import { ElToast } from 'element-plus'` | `import { ElMessage } from 'element-plus'` | 导出名不在白名单 |
 | 6 | `style="color: red"` | class + `<style lang="less">` 定义 | 禁止内联样式 |
 | 7 | `import { fetchList } from '../../../mock/modules/{slug}.js'` | `from '../../api/{slug}.js'` | 页面禁 import mock（D16，build FAIL） |
-| 8 | 直接编辑 `src/components/GStatusTag/GStatusTag.vue` | 保持原样；不合用走 wrapper 或资产库升级 | 拷入的 G 组件禁止改写（含来源注释） |
-| 9 | `<style lang="scss">` 或新增 .scss 文件 | `<style lang="less" scoped>` | 样式语言全链路钉死 less（D22） |
-| 10 | `<style>` 内 `:root { --g-x: … }` | 皮肤只放 `src/assets/themes/`；页面局部变量 `--page-*` | token 层与皮肤文件专属 |
-| 11 | `slot-scope="scope"` | `<template #default="{ row }">` | 旧语法编译失败 |
-| 12 | `v-if` 和 `v-for` 同标签 | 分开到不同标签 | 编译错误 |
-| 13 | `src="/assets/uploads/x.png"` | `import img from '../../assets/uploads/x.png'` | 预览无法解析裸路径 |
+| 8 | `<style lang="scss">` 或新增 .scss 文件 | `<style lang="less" scoped>` | 样式语言全链路钉死 less（D22） |
+| 9 | `<style>` 内 `:root { --g-x: … }` | 皮肤只放 `src/assets/themes/`；页面局部变量 `--page-*` | token 层与皮肤文件专属 |
+| 10 | `slot-scope="scope"` | `<template #default="{ row }">` | 旧语法编译失败 |
+| 11 | `v-if` 和 `v-for` 同标签 | 分开到不同标签 | 编译错误 |
+| 12 | `src="/assets/uploads/x.png"` | `import img from '../../assets/uploads/x.png'` | 预览无法解析裸路径 |
 
-## 11. 二开依赖差异（D22）
+## 10. 二开依赖差异（D22）
 
 工作区是标准 Vue 工程，但预览运行时与真实 Vite 工程有三处已知差异，二次开发者需知：
 
 1. **devDependency 固定 `npm i -D less`**：真实工程 Vite 零配置编译 Less（`main.js` 已 `import './assets/style/base.less'`）；无需 sass/其他预处理器。
 2. **api 适配层两段式**：二开 `src/api/{slug}.js` 时用 `import ... from` + `export { }` 两段式，勿用 `export {...} from` re-export 简写（sfc-loader 0.9.5 re-export 缺陷经验，见 W1-T3；真实 Vite 工程无此限制，两段式是双保险）。
-3. **复用 G 组件的 index.js 垫片**是预览专用兼容文件；真实工程可删（Vite 原生解析目录式命名导入），组件本体 `GName.vue` 与页面代码不受影响。
-4. **el-pagination 用 v-model**：预览运行时（sfc-loader 0.9.5）下传单向 `:current-page` / `:page-size` prop 会静默不渲染（组件变注释节点）；写 `v-model:current-page` / `v-model:page-size`（T7 实测。真实 Vite 工程无此限制）。
+3. **el-pagination 用 v-model**：预览运行时（sfc-loader 0.9.5）下传单向 `:current-page` / `:page-size` prop 会静默不渲染（组件变注释节点）；写 `v-model:current-page` / `v-model:page-size`（T7 实测。真实 Vite 工程无此限制）。
 
 真实工程 npm 依赖（`preview/src/main.js` 头部已注释声明）：`vue@^3.4`、`vue-router@^4.4`、`element-plus@2.13.5`、`@element-plus/icons-vue@^2.3`、`dayjs@^1.11`、`less@^4.2`。

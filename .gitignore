@@ -1,17 +1,15 @@
-
-# W1 冒烟测试工作区（init 产物，可随时重建，不入库）
-tasks/p0-workspace/p0-verify/
-tasks/p0-workspace/t9-verify/
-
 # skill 试跑产物（生成的工作区交付件，随时可重建，不入库）
 coder/
+demo-output/
 
-# W2 build:library 产物与依赖（可随时 npm ci / npm run build:library 重建，不入库）
-assets/g-design-enterprise-v1.5.0/frontend/element-plus/node_modules/
-assets/g-design-enterprise-v1.5.0/frontend/element-plus/dist/
+# 冒烟临时工作区
+/tmp/
+
+# macOS 垃圾
+.DS_Store
 
 # codegraph 索引（MCP 工具本地缓存，可重建）
 .codegraph/
 
-# 旧 .py 对照运行垃圾（N1 migration_diff 曾跑 .py，产生字节码缓存；N5 后 Python 已清零，留作防御）
+# Python 字节码缓存（防御）
 __pycache__/

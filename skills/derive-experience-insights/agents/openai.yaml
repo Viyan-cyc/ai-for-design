@@ -1,7 +1,0 @@
-interface:
-  display_name: "AI for Design · 体验洞察"
-  short_description: "由设计师选定需求，形成旅程、洞察及一至多个方向"
-  brand_color: "#45E0CD"
-  default_prompt: "Use $derive-experience-insights to analyze the provided requirements or selected reference and develop one relevant experience direction."
-policy:
-  allow_implicit_invocation: true
