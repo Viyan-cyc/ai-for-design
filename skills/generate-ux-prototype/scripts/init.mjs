@@ -91,53 +91,20 @@ if (!/^[a-z0-9]+(-[a-z0-9]+){1,5}$/.test(slug)) {
   fail(`Slug must be kebab-case ascii, 2-6 hyphen-separated segments: '${slug}'`);
 }
 
-// ---------- 0. locate asset library (plan §4.1 protocol) ----------
-// Resolution order: --assets-root → ./assets (repo layout) → ASSETS_ROOT env.
-// Accepts: package root, package-root/assets, or the asset library directory itself.
-function locateAssetLibrary(fromPath) {
-  const p = resolve(fromPath);
-  // direct library dir (contains asset-manifest.json)
-  if (existsSync(join(p, 'asset-manifest.json'))) return { root: p, entry: p };
-  // package root (contains asset-catalog.json)
-  if (existsSync(join(p, 'asset-catalog.json'))) {
-    const catalog = JSON.parse(readFileSync(join(p, 'asset-catalog.json'), 'utf8'));
-    const libRoot = join(p, catalog.libraries?.['g-design-enterprise']?.root || 'assets');
-    if (existsSync(join(libRoot, 'asset-manifest.json'))) return { root: libRoot, entry: p };
-    // catalog root may itself be the library
-    if (existsSync(join(p, 'assets', 'asset-manifest.json'))) return { root: join(p, 'assets'), entry: p };
-  }
-  // package-root/assets
-  if (existsSync(join(p, 'asset-manifest.json'))) return { root: p, entry: p };
-  return null;
-}
+// ---------- 0. locate asset library ----------
+// 资产库内嵌于 skill（library/），skill 目录拷到哪都能用。外部库仅在显式传
+// --assets-root 或 ASSETS_ROOT 环境变量时生效（可指向库根本身）。
+const embeddedLib = resolve(__dirname, '..', 'library');
+const embeddedManifest = join(embeddedLib, 'asset-manifest.json');
+if (!existsSync(embeddedManifest)) fail(`embedded asset library broken, missing: ${embeddedManifest}`);
 
-const candidates = [];
-if (assetsRootArg) candidates.push(assetsRootArg);
-// 安装态 skill：读 installer 写入的绑定文件（packageRoot = 源包绝对路径），
-// 设计师不用知道包在哪——AI 不传 --assets-root 也能自动定位资产库。
-const bindingPath = join(__dirname, '..', 'agents', 'package-location.json');
-try {
-  const binding = JSON.parse(readFileSync(bindingPath, 'utf8'));
-  if (binding.packageRoot) candidates.push(binding.packageRoot);
-} catch { /* 未安装态（仓库内直跑）无绑定文件，走后续候选 */ }
-candidates.push(process.env.ASSETS_ROOT || resolve(process.cwd()));
-let assetLib = null;
-for (const c of candidates) {
-  if (!c) continue;
-  assetLib = locateAssetLibrary(c);
-  if (assetLib) break;
+let assetLib = { root: embeddedLib, entry: embeddedLib };
+const externalRoot = assetsRootArg || process.env.ASSETS_ROOT;
+if (externalRoot) {
+  const p = resolve(externalRoot);
+  if (existsSync(join(p, 'asset-manifest.json'))) assetLib = { root: p, entry: p };
+  else fail(`--assets-root not an asset library (no asset-manifest.json): ${p}`);
 }
-// 仓库内任意 cwd：从脚本位置逐级上溯找锚点（asset-catalog.json 包根 / asset-manifest.json 库根）。
-// skill 目录被挪动或单独分发时依然命中，不依赖固定层级。
-if (!assetLib) {
-  let cur = __dirname;
-  for (let i = 0; i < 12 && !assetLib; i += 1) {
-    cur = resolve(cur, '..');
-    assetLib = locateAssetLibrary(cur);
-    if (cur === resolve(cur, '..')) break; // 到达盘根
-  }
-}
-if (!assetLib) fail(`asset library not found — pass --assets-root <package root | assets dir | library dir>; tried: ${candidates.filter(Boolean).join(', ')}`);
 const tokensSrc = join(assetLib.root, 'frontend', 'element-plus', 'tokens');
 if (!existsSync(tokensSrc)) fail(`asset library token layer not found: ${tokensSrc}`);
 const manifestPath = join(assetLib.root, 'asset-manifest.json');

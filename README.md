@@ -5,18 +5,23 @@
 ## 目录结构
 
 ```
-├── asset-catalog.json                      # 包根锚点（定位协议用）
-├── assets/g-design-enterprise-v1.5.0/      # 设计资产库
-│   ├── asset-manifest.json                 # 库根锚点 + assetVersion
-│   ├── design/                             # 设计规范与 token 数值源（tokens.json + rules/color-rules/frosted-glass 等）
-│   ├── frontend/element-plus/tokens/       # 生成的 CSS token 层（init 拷入工作区）
-│   └── scripts/query_assets.mjs            # token 分组查询
-└── skills/generate-ux-prototype/           # 唯一 Skill（SKILL.md + 6 脚本 + preview 模板 + references）
+├── skills/generate-ux-prototype/           # 唯一 Skill，自包含可独立分发
+│   ├── SKILL.md                            # Skill 契约
+│   ├── scripts/                            # init / preflight / build / smoke / serve / build-data
+│   ├── preview/                            # 工作区脚手架模板
+│   ├── references/                         # 代码规范等细则
+│   └── library/                            # 内嵌设计资产库
+│       ├── asset-manifest.json             # 库清单 + assetVersion
+│       ├── design/                         # 设计规范与 token 数值源（tokens.json + rules 等）
+│       ├── frontend/element-plus/tokens/   # 生成的 CSS token 层（init 拷入工作区）
+│       └── scripts/query_assets.mjs        # token 分组查询
+├── README.md
+└── PURE-BRANCH-PLAN.md                     # 改造方案存档（可删）
 ```
 
-## 使用
+## 安装与使用
 
-**运行依赖：仅 Node.js ≥ 18。** Skill 与资产库同仓库时零配置：脚本自动从自身位置逐级上溯定位资产库，换任意目录执行都命中。分离部署时传 `--assets-root <包根或库根>`，或维护 `skills/generate-ux-prototype/agents/package-location.json` 绑定。
+**运行依赖：仅 Node.js ≥ 18。** 资产库已内嵌 skill 本体——**把 `skills/generate-ux-prototype/` 整个目录拷进你的 agent 技能库即可，零路径配置**。所有脚本自动使用内嵌库；仅当用户明确要求外部资产库时才传 `--assets-root <库根>`。
 
 ```sh
 node skills/generate-ux-prototype/scripts/init.mjs <artifact-folder> <slug>
@@ -32,8 +37,8 @@ node skills/generate-ux-prototype/scripts/smoke.mjs --dir <artifact-folder>/<slu
 
 ## 排障
 
-AI 说「node 没安装好」多数是误判：脚本输出 `RESULT: FAIL` 恰说明 node 正常，按 SKILL.md「环境纪律」表排查（高频是资产库路径问题，显式传 `--assets-root`）。Windows 装完 node 后 agent PATH 未刷新 → 重启 agent/终端。**无论诊断结果如何，Skill 都不应改出纯 HTML 交付**——那是交付失败。
+AI 说「node 没安装好」多数是误判：脚本输出 `RESULT: FAIL` 恰说明 node 正常，按 SKILL.md「环境纪律」表排查。Windows 装完 node 后 agent PATH 未刷新 → 重启 agent/终端。**无论诊断结果如何，Skill 都不应改出纯 HTML 交付**——那是交付失败。
 
 ## Token 数值更新
 
-`design/tokens.json` 是数值源，`frontend/element-plus/tokens/*.css` 是生成产物快照。本分支不含再生成器（build_tokens.mjs 已随组件层移除）：设计师在上游完整包更新后，整体替换这两个目录即可，下一次生成自动生效。
+`library/design/tokens.json` 是数值源，`library/frontend/element-plus/tokens/*.css` 是生成产物快照。本分支不含再生成器：设计师在上游完整包更新后，整体替换这两个目录即可，下一次生成自动生效。

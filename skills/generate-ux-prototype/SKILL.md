@@ -7,7 +7,7 @@ description: Generate or edit a G Design page as real Vue 3 + Element Plus 2.13.
 
 你的产品是**真实 Vue 3 源码工作区**：一组 `.vue` SFC（`<script setup>` 纯 JS）+ Less + 标准 ESM import，写在 `{slug}/src/` 下——代码本身就是交付件，可直接拷入任何 Vue 3 + Element Plus + Vite 工程做二次开发；同时附带零构建离线预览 `{slug}/index.html`（浏览器直接打开）。对话以单个 `<artifact>` 链接结束。
 
-skill 目录不存放任何设计数据副本：token、毛玻璃规则全部在生成时通过资产库定位协议现取（见下文「资产库定位协议」）。设计师发新版资产库，下一次生成自动生效。
+skill 本体内嵌资产库（`library/`）：token、毛玻璃规则全部在生成时现取（见下文「资产库」）。设计师发新版资产库（整体替换 `library/design/` 与 `library/frontend/element-plus/tokens/`），下一次生成自动生效。
 
 ## 技术栈
 
@@ -64,16 +64,11 @@ skill 目录不存放任何设计数据副本：token、毛玻璃规则全部在
 - 单位一律 px；全工作区禁止 scss / `lang="scss"`。
 - 页面与组件**只准从 `src/api/{slug}.js` 取数**，禁止 import `mock/modules`（build 强制校验）。
 
-## 资产库定位协议
+## 资产库（内嵌，零配置）
 
-先定位资产库（下称 LIBRARY，内含 `asset-manifest.json`），再按需读取，不全量扫描：
+资产库内嵌于本 skill 的 `library/` 目录（含 `asset-manifest.json`），skill 装到哪资产就在哪——**所有脚本自动使用内嵌库，无需指定任何路径**。仅当用户明确要求用外部资产库时，给 init 传 `--assets-root <库根>`（或设 `ASSETS_ROOT` 环境变量）覆盖。
 
-1. **用户给定的 `ASSETS_ROOT` 优先**——可指向包根目录、包内 `assets/` 或 LIBRARY 本身。
-2. 未指定时读本 Skill 的 `agents/package-location.json`（安装模式保存的包绝对路径），核对包根 `asset-catalog.json` 的 packageId/packageVersion。
-3. 仓库内直跑可自动定位：脚本从自身位置逐级上溯找 `asset-catalog.json`（包根）→ `libraries['g-design-enterprise'].root` 定位库目录；库根 `asset-manifest.json` 亦可直接命中。
-4. 路径失效时先在用户已知位置查找；仍缺失才询问。
-
-定位后**不要整读** `asset-manifest.json`——它是机器文件，定位正确性由脚本保证。token 查询一律走库内脚本：
+不要整读 `asset-manifest.json`（机器文件）；token 查询一律走库内脚本：
 
 ```sh
 node LIBRARY/scripts/query_assets.mjs tokens frost-common            # token 分组（含 frost-*）
@@ -100,7 +95,7 @@ node LIBRARY/scripts/query_assets.mjs tokens --search brand          # token 值
 
 | FAIL 信息 | 原因 | 修复 |
 |---|---|---|
-| `asset library not found` | 资产库路径问题：skill 与库分离部署时未传 `--assets-root`、绑定失效、cwd 不对 | 显式传 `--assets-root <库根或包根>`；或把 `agents/package-location.json` 的 packageRoot 指向包根 |
+| `asset library not found` / `embedded asset library broken` | skill 内嵌 `library/` 目录缺失或损坏（拷贝安装不完整） | 重装 skill；或显式传 `--assets-root <外部库根>` |
 | `Artifact folder does not exist` | 输出目录未建 | 先创建目录再跑 |
 | `target already exists` | 同名工作区已存在 | 走文末 Modification Workflow |
 | `puppeteer-core not found`（smoke） | 冒烟前置未装 | `npm i -g puppeteer-core` |
@@ -138,9 +133,9 @@ node --version
 2. **Derive {slug}**：kebab-case ASCII，2–6 段语义英文（"设备管理" → `device-management`）。
 3. **Init**：
    ```sh
-   node scripts/init.mjs "{artifact-folder}" "{slug}" --assets-root <ASSETS_ROOT>
+   node scripts/init.mjs "{artifact-folder}" "{slug}"
    ```
-   `--assets-root` 可省略（自动探测：本包所在仓库布局 → `ASSETS_ROOT` 环境变量 → 当前目录）。成功输出 `RESULT: OK` + `HTML_PATH` + `SRC_DIR` + `PAGE` + `ASSETS_VERSION`。token 全套随即复制到 `src/assets/tokens/`（含毛玻璃 token），并生成 api 适配层、mock 模块、全局词条、路由与 starter 页面。
+   内嵌资产库自动使用，`--assets-root` 仅在用户明确指定外部库时才传。成功输出 `RESULT: OK` + `HTML_PATH` + `SRC_DIR` + `PAGE` + `ASSETS_VERSION`。token 全套随即复制到 `src/assets/tokens/`（含毛玻璃 token），并生成 api 适配层、mock 模块、全局词条、路由与 starter 页面。
 
 ### Step 3 — 写码
 

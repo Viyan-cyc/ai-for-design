@@ -1,6 +1,6 @@
 # 调用示例（脚本 CLI 速览）
 
-`ASSETS_ROOT` 可以指向包根目录、包内 `assets/` 或资产库目录本身（内含 `asset-manifest.json`，如 `assets/g-design-enterprise-v1.5.0`）。下例 `LIBRARY` = 资产库目录，`SKILL` = 本 skill 目录（`skills/generate-ux-prototype`）。
+资产库内嵌于本 skill 的 `library/` 目录——所有脚本自动使用，无需传路径。下例 `SKILL` = 本 skill 目录；`LIBRARY` = `SKILL/library`（仅当用户明确指定外部库时才需要传 `--assets-root <库根>`）。
 
 ## 资产查询（库内脚本，只读）
 
@@ -13,11 +13,11 @@ node LIBRARY/scripts/query_assets.mjs tokens                     # 全部分组�
 ## 生成工作区
 
 ```sh
-node SKILL/scripts/init.mjs "{artifact-folder}" "{slug}"   # 安装态自动定位资产库；未安装态可加 --assets-root <ASSETS_ROOT>
+node SKILL/scripts/init.mjs "{artifact-folder}" "{slug}"   # 内嵌资产库自动使用，零配置
 # RESULT: OK + HTML_PATH / SRC_DIR / PAGE / ASSETS_VERSION
 ```
 
-`--assets-root` 可省略：自动按 `--assets-root` → `agents/package-location.json` 绑定 → 脚本位置逐级上溯找锚点 → `ASSETS_ROOT` 环境变量/当前目录 探测。
+`--assets-root <库根>` 仅在用户明确要求外部资产库时才传。
 
 ## 写码前预检（规划清单一条命令校验）
 
