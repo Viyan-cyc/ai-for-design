@@ -1,6 +1,6 @@
 # 毛玻璃材质
 
-适用：明确需要材质强调的标签、次级按钮、概览卡片和轻量浮层。普通业务页面默认实色。数值唯一来源：[tokens.json](tokens.json)；按需查询 `frost-common`、`frost-light`、`frost-dark`，完整值见生成的 [tokens.md](tokens.md)。
+适用：明确需要材质强调的标签、次级按钮、概览卡片和轻量浮层。普通业务页面默认实色。数值唯一来源：[tokens.json](tokens.json)；按需查询 `frost-common`、`frost-light`、`frost-dark`（完整值由 query_assets 查询或见 tokens.json）。
 
 ## 选择预设
 

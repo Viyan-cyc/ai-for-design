@@ -1,6 +1,6 @@
 # G Design 设计规则
 
-数值唯一维护入口：[tokens.json](tokens.json)。完整数值表：[tokens.md](tokens.md)（生成文件）。分组入口：[index.json](index.json)。颜色用法见 [color-rules.md](color-rules.md)，颜色与用途表见 [color-tokens.md](color-tokens.md)。
+数值唯一维护入口：[tokens.json](tokens.json)。颜色用法见 [color-rules.md](color-rules.md)。
 
 ## 选择与引用
 

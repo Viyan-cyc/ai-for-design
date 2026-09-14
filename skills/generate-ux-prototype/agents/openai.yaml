@@ -1,7 +1,0 @@
-interface:
-  display_name: "AI for Design · UX Prototype"
-  short_description: "调用同源企业资产快速生成高保真静态交互原型"
-  brand_color: "#45E0CD"
-  default_prompt: "Use $generate-ux-prototype to select a compatible local enterprise asset library and create one high-fidelity design-review prototype from my requirements and design direction."
-policy:
-  allow_implicit_invocation: true

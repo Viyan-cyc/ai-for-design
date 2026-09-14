@@ -27,12 +27,12 @@
 
 - `<style lang="less" scoped>`；类名按组件功能命名（简短，如 `.header`、`.kpi-card`、`.filter-bar`），嵌套在根类下；嵌套 ≤ 3 层。
 - 颜色一律资产 token 变量：`var(--g-*)` / `var(--color-*)`（全集见工作区 `src/assets/tokens/*.css`，build 实时校验兜底）；**禁 hex 硬编码**（build WARN）、禁内联 `style="..."`（`:style` 动态绑定仅限需变量计算的场景）。
-- 单位一律 **px**（与资产 token 一致，D14）。无 rem 换算。
+- 单位一律 **px**（与资产 token 一致）。无 rem 换算。
 - Less 变量/混入可用（`assets/style/base.less` 内置常用混入）；SFC 内不 `@import` 外部 .less（预览兼容性）。
 - SFC 样式内禁止定义 `:root`、`[data-theme]`、资产 token（`--g-*`/`--color-*`）；页面局部自定义属性用 `--page-*` 前缀。
 - 换肤协议为资产库的 `data-theme="light|dark"`（详见 SKILL.md「换肤系统」）；自定义皮肤只属于 `src/assets/themes/theme-{name}.css`，不写进 SFC。
 
-## 4. API 适配层约定（D16，页面取数唯一通道）
+## 4. API 适配层约定（页面取数唯一通道）
 
 `init.mjs` 已生成 `src/api/{slug}.js`。**页面与组件只准从这个适配层取数，禁止直接 import `mock/modules`**（build 强制 FAIL）。二次开发时只改 api 文件内容，页面零改动。
 
@@ -55,7 +55,7 @@ export async function fetchList({ keyword = '', page = 1, pageSize = 20 } = {}) 
 }
 ```
 
-**二开写法**（替换 api 文件原型态的 re-export；用 `import ... from` + `export { }` 两段式，勿用 `export {...} from` re-export 简写——sfc-loader 0.9.5 对 re-export 编译产物有缺陷，两段式在「真实工程外直接开 HTML」的场景也安全，见 W1-T3）：
+**二开写法**（替换 api 文件原型态的 re-export；用 `import ... from` + `export { }` 两段式，勿用 `export {...} from` re-export 简写——sfc-loader 0.9.5 对 re-export 编译产物有缺陷，两段式在「真实工程外直接开 HTML」的场景也安全）：
 
 ```js
 // src/api/{slug}.js 二开态示例（request 为自建 axios 实例）
@@ -73,7 +73,7 @@ export { fetchList, fetchDetail }
 
 - 位置 `mock/modules/{slug}.js`（与 src 同级，init 已建）。函数签名按 REST 语义（见上节）；`Promise + setTimeout` 模拟异步。
 - 数据 key 语义化（`deviceName` 禁止 `val1`）；主列表 ≥ 10 条状态多样。
-- **混合策略**（D13④）：手写前 8-10 条保状态多样性，其余用 spread / 生成器扩展数量：
+- **混合策略**：手写前 8-10 条保状态多样性，其余用 spread / 生成器扩展数量：
   ```js
   const more = Array.from({ length: 40 }, (_, i) => ({
     id: String(i + 11), name: `设备-${String(i + 11).padStart(3, '0')}`,
@@ -83,7 +83,7 @@ export { fetchList, fetchDetail }
   ```
 - **截图输入例外**：数据保真转录，行数列数与图完全一致，逐格独立读取，严禁行间复制——不用生成器扩展。
 
-## 6. i18n 模式（D15：locales.js 单文件双语言）
+## 6. i18n 模式（locales.js 单文件双语言）
 
 - **页面级**：每页一个 `src/locales/pages/{slug}.js`（init 已建骨架，与全局词条同在 `src/locales/` 下）。zh + en 一次写完（en 机械翻译顺带产出）。**`messages` 存双语言源，`t` 是按 LANG 展平的字符串**——模板直接 `{{ t.title }}`，**禁止手动 `.zh`**（漏写展平会在界面渲染成 JSON 串）：
   ```js
@@ -161,19 +161,19 @@ export { fetchList, fetchDetail }
 | 4 | `import logo from '../assets/uploads/logo.png'`（从 views/{slug}/ 出发） | `'../../assets/uploads/logo.png'` | 路径少一级 |
 | 5 | `import { ElToast } from 'element-plus'` | `import { ElMessage } from 'element-plus'` | 导出名不在白名单 |
 | 6 | `style="color: red"` | class + `<style lang="less">` 定义 | 禁止内联样式 |
-| 7 | `import { fetchList } from '../../../mock/modules/{slug}.js'` | `from '../../api/{slug}.js'` | 页面禁 import mock（D16，build FAIL） |
-| 8 | `<style lang="scss">` 或新增 .scss 文件 | `<style lang="less" scoped>` | 样式语言全链路钉死 less（D22） |
+| 7 | `import { fetchList } from '../../../mock/modules/{slug}.js'` | `from '../../api/{slug}.js'` | 页面禁 import mock（build FAIL） |
+| 8 | `<style lang="scss">` 或新增 .scss 文件 | `<style lang="less" scoped>` | 样式语言全链路钉死 less |
 | 9 | `<style>` 内 `:root { --g-x: … }` | 皮肤只放 `src/assets/themes/`；页面局部变量 `--page-*` | token 层与皮肤文件专属 |
 | 10 | `slot-scope="scope"` | `<template #default="{ row }">` | 旧语法编译失败 |
 | 11 | `v-if` 和 `v-for` 同标签 | 分开到不同标签 | 编译错误 |
 | 12 | `src="/assets/uploads/x.png"` | `import img from '../../assets/uploads/x.png'` | 预览无法解析裸路径 |
 
-## 10. 二开依赖差异（D22）
+## 10. 二开依赖差异）
 
 工作区是标准 Vue 工程，但预览运行时与真实 Vite 工程有三处已知差异，二次开发者需知：
 
 1. **devDependency 固定 `npm i -D less`**：真实工程 Vite 零配置编译 Less（`main.js` 已 `import './assets/style/base.less'`）；无需 sass/其他预处理器。
-2. **api 适配层两段式**：二开 `src/api/{slug}.js` 时用 `import ... from` + `export { }` 两段式，勿用 `export {...} from` re-export 简写（sfc-loader 0.9.5 re-export 缺陷经验，见 W1-T3；真实 Vite 工程无此限制，两段式是双保险）。
-3. **el-pagination 用 v-model**：预览运行时（sfc-loader 0.9.5）下传单向 `:current-page` / `:page-size` prop 会静默不渲染（组件变注释节点）；写 `v-model:current-page` / `v-model:page-size`（T7 实测。真实 Vite 工程无此限制）。
+2. **api 适配层两段式**：二开 `src/api/{slug}.js` 时用 `import ... from` + `export { }` 两段式，勿用 `export {...} from` re-export 简写（sfc-loader 0.9.5 re-export 缺陷经验；真实 Vite 工程无此限制，两段式是双保险）。
+3. **el-pagination 用 v-model**：预览运行时（sfc-loader 0.9.5）下传单向 `:current-page` / `:page-size` prop 会静默不渲染（组件变注释节点）；写 `v-model:current-page` / `v-model:page-size`（真实 Vite 工程无此限制）。
 
 真实工程 npm 依赖（`preview/src/main.js` 头部已注释声明）：`vue@^3.4`、`vue-router@^4.4`、`element-plus@2.13.5`、`@element-plus/icons-vue@^2.3`、`dayjs@^1.11`、`less@^4.2`。

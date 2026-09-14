@@ -1,6 +1,6 @@
 # H Design 颜色使用规范
 
-由 H Design《色彩》中的正文、UI 配色图、图表规则和代码语义表提炼。使用本文件即可理解规范，无需读取原始文档或图片。当前变量、引用关系、浅深色值和用途见 [颜色 Token 表](color-tokens.md)；唯一数值源为 [tokens.json](tokens.json)。本文件维护选色方法与约束，数值表由脚本生成。
+由 H Design《色彩》中的正文、UI 配色图、图表规则和代码语义表提炼。使用本文件即可理解规范，无需读取原始文档或图片。唯一数值源为 [tokens.json](tokens.json)。本文件维护选色方法与约束。
 
 ## 快速选择
 
@@ -102,7 +102,7 @@ Color Token 按用途命名。业务界面优先引用有语义的 `--color-*`�
 
 通过 `[data-theme="light"]` / `[data-theme="dark"]` 切换语义映射，基础色板身份保持稳定。现有组件用 `--g-*` 转接 `--color-*`；Element Plus 的 primary/success/warning/danger/error/info 对应高亮/成功/提醒/错误/错误/信息。橙色告警单独使用 `--color-alert` 或 `--g-feedback-alert`。主按钮按五种状态使用对应语义，衍生组件状态属于实现适配。
 
-Element Plus 基础样式先加载，再加载生成的 `tokens/index.css`（D23 起 token 层为纯 CSS，无 Sass）。毛玻璃是独立材质，按需读取 [frosted-glass.md](frosted-glass.md)，使用 frost-* 参数；不改变业务功能色。
+Element Plus 基础样式先加载，再加载生成的 `tokens/index.css`（token 层为纯 CSS）。毛玻璃是独立材质，按需读取 [frosted-glass.md](frosted-glass.md)，使用 frost-* 参数；不改变业务功能色。
 
 ## 维护
 

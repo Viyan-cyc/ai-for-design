@@ -4,8 +4,8 @@
 
 ## 最常用入口
 
-- [设计数值](design/tokens.json)、[使用规则](design/rules.md)、[生成数值表](design/tokens.md)
-- 颜色入口：[颜色使用规范](design/color-rules.md)、[颜色 Token 与用途表](design/color-tokens.md)（后者由 tokens.json 自动生成）
+- [设计数值](design/tokens.json)、[使用规则](design/rules.md)
+- 颜色入口：[颜色使用规范](design/color-rules.md)
 - 局部毛玻璃材质见 [frosted-glass.md](design/frosted-glass.md)
 
 ## 查询

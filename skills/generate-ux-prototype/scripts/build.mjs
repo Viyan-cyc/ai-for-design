@@ -160,7 +160,7 @@ if (vueFiles.length === 0) fail('no .vue files under src/');
 const pageIndexes = vueFiles.filter((f) => /[\\/]views[\\/][^\\/]+[\\/]index\.vue$/.test(f));
 if (pageIndexes.length === 0) fail('no page entry found (expected src/views/{kebab}/index.vue)');
 
-// ---------- 1b. style language check (D22) ----------
+// ---------- 1b. style language check ----------
 // Less is the ONLY style language across the whole chain (product-line
 // secondary-development hard requirement). scss anywhere in the workspace is
 // a build failure.
@@ -168,13 +168,13 @@ for (const f of vueFiles) {
   const rel0 = '/' + f.slice(srcDir.length).split('\\').join('/').replace(/^\/+/, '');
   const src = readFileSync(f, 'utf8');
   if (/<style\s+lang="scss"/i.test(src)) {
-    fail(`${rel0}: <style lang="scss"> — style language is less only (D22)`);
+    fail(`${rel0}: <style lang="scss"> — style language is less only`);
   }
 }
 for (const f of cssFiles) {
   if (f.endsWith('.scss')) {
     const rel0 = '/' + f.slice(srcDir.length).split('\\').join('/').replace(/^\/+/, '');
-    fail(`${rel0}: .scss file present — style language is less only (D22)`);
+    fail(`${rel0}: .scss file present — style language is less only`);
   }
 }
 
@@ -199,7 +199,7 @@ let elTagTotal = 0;
 for (const file of vueFiles) {
   const rel = '/' + file.slice(srcDir.length).split('\\').join('/').replace(/^\/+/, '');
 
-  // mock isolation (D16): pages/components must consume src/api/*, never mock/modules
+  // mock isolation: pages/components must consume src/api/*, never mock/modules
   if (rel.startsWith('/views/') || rel.startsWith('/components/')) {
     const source0 = readFileSync(file, 'utf8');
     if (/from\s+['"][^'"]*mock\/modules/.test(source0)) {
@@ -336,7 +336,7 @@ for (const file of vueFiles) {
   }
 }
 
-// ---------- 4b. mock isolation for .js files too (D16) ----------
+// ---------- 4b. mock isolation for .js files too ----------
 for (const file of jsFiles) {
   if (!file.startsWith(srcDir)) continue; // mock/ itself legitimately references mock/modules
   const rel = '/' + file.slice(srcDir.length).split('\\').join('/').replace(/^\/+/, '');

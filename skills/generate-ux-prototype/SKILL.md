@@ -9,21 +9,10 @@ description: Generate or edit a G Design page as real Vue 3 + Element Plus 2.13.
 
 skill 本体内嵌资产库（`library/`）：token、毛玻璃规则全部在生成时现取（见下文「资产库」）。设计师发新版资产库（整体替换 `library/design/` 与 `library/frontend/element-plus/tokens/`），下一次生成自动生效。
 
-## 技术栈
+## 技术栈（钉死，无开关）
 
-- **框架**: Vue 3（`<script setup>` Composition API，纯 JS，无 TS）
-- **UI 库**: Element Plus **2.13.5**（当前唯一 runtime）
-- **路由**: Vue Router 4.x
-- **样式语言**: Less（全链路钉死，无开关；工作区禁止出现任何 scss）
-- **单位**: px（与资产 token 一致；不做 rem 换算）
-- **运行时依赖白名单（裸 import 仅此五项）**: `vue` / `vue-router` / `element-plus` / `@element-plus/icons-vue` / `dayjs`（+ element-plus 子路径；`less` 仅为构建期依赖，非运行时依赖）
-
-## Session Context Caching
-
-1. **NEVER re-read** 本会话已读过的文件。
-2. **Design system:** token 不再有速查表——全集见工作区 `src/assets/tokens/*.css`（init 现取），build 实时校验兜底。需要了解 token 语义/规则时读资产库 `design/rules.md`、`design/color-rules.md`。
-3. **Code patterns:** 信任 [references/code-conventions.md](references/code-conventions.md) 的约定与速查，无需外部参考。
-4. **Element Plus API:** 信任你的知识，标准 EP 2.13.5 API。
+- Vue 3（`<script setup>` 纯 JS 无 TS）+ Element Plus **2.13.5**（唯一 runtime）+ Vue Router 4 + Less + px
+- 裸 import 白名单仅五项：`vue` / `vue-router` / `element-plus` / `@element-plus/icons-vue` / `dayjs`（+ element-plus 子路径；`less` 仅为构建期依赖）
 
 ## Output Contract（READ FIRST）
 
@@ -75,13 +64,13 @@ node LIBRARY/scripts/query_assets.mjs tokens frost-common            # token 分
 node LIBRARY/scripts/query_assets.mjs tokens --search brand          # token 值搜索
 ```
 
-规范入口：`design/rules.md`。**design/ 文档按需触发，默认一律不读**（SKILL.md 的 HARD RULES 已覆盖日常写码约束）：仅当页面明确涉及对应场景才读对应的那一份——颜色场景读 `design/color-rules.md`、token 数值细读 `design/color-tokens.md`、毛玻璃读 `design/frosted-glass.md`（触发条件见「毛玻璃与视觉风格」）；禁止为"了解设计体系"而通读。
+规范入口：`design/rules.md`。**design/ 文档按需触发，默认一律不读**（SKILL.md 的 HARD RULES 已覆盖日常写码约束）：仅当页面明确涉及对应场景才读对应的那一份——颜色场景读 `design/color-rules.md`、毛玻璃读 `design/frosted-glass.md`（触发条件见「毛玻璃与视觉风格」）；禁止为"了解设计体系"而通读。
 
 ## 上下文预算（读取纪律，生成全程执行）
 
 单页生成的目标预算：**定位+init ≤5k / 写码输出 ~30k / 验证 ≤5k，全程 ≤60-80k**——200k 窗口下留一半余量。执行规则：
 
-1. **禁读清单**（读了也不用于生成，纯浪费）：仓库级 `PURE-BRANCH-PLAN.md`、`README.md`；资产库的 `asset-manifest.json`（见上）。
+1. **禁读清单**（读了也不用于生成，纯浪费）：skill 目录外的任何仓库/项目文档；资产库的 `asset-manifest.json`（机器文件，见上）。
 2. **token 确认只走 preflight.mjs**（与 build 同源），禁止 grep `src/assets/tokens/` 现场查；token 语义疑问也先 preflight，仍解决不了才读对应 design/ 文档的那一节。
 3. **验证只认脚本输出**：build/smoke 的 `RESULT` 行即终态；FAIL 按行修复重跑，禁止现场手写调试脚本/puppeteer 脚本展开分析——那是把验证变成新的上下文黑洞。
 4. **截图输入节制**：一次一张、必要时裁剪；追问/修改轮次不重发已分析过的图。
@@ -145,6 +134,7 @@ node --version
 - **拆分触发式**：子组件仅在 **>150 行 / 被复用 / 状态复杂** 时才拆出独立文件（常规页面约 4-8 个文件）；页面私有放 `views/{slug}/components/`，跨页复用放 `src/components/`。
 - **无依赖的文件并行写**：constants.js、locales.js、mock 数据、互不依赖的子组件可在同一轮并行创建。
 - **常量放 `views/{slug}/js/constants.js`**（全大写+下划线命名）；页面词条放 `src/locales/pages/{slug}.js`（单文件双语言，见下文 i18n）。
+- **Mock 混合策略**：手写前 8-10 条保状态多样性，其余 spread / 生成器扩展数量；截图输入时保真转录规则优先。
 - **写码前先规划后落笔（preflight 强制）**：
   1. 先列出每个待写文件的 imports——**按目录显式算好相对路径前缀**（`views/{slug}/` 出发上两级 `../../`，`views/{slug}/components/` 出发上三级 `../../../`；components/ 下少写一级是历史最高频 build FAIL 项）。
   2. 汇总本轮要用的全部 token 变量名、图标名、element-plus 导出名、词条 key，**一次提交 preflight 一条命令校验**（不通过按提示修正清单再跑；禁止写码中途反复 grep/node 查询）：
@@ -235,17 +225,9 @@ node scripts/serve.mjs --dir "{artifact-folder}/{slug}" --port 8765
 - **全局**：`src/locales/lang/{zh-CN,en-US}/common.json` 仅存**跨页共享**词条（确认/取消/搜索等，按需追加）。
 - 将来接 vue-i18n 时把两个语言对象拆进 JSON 即可，页面模板零改动。
 
-## Mock 与 API 适配层（D16）
+## Mock 与 API 适配层
 
-- 页面**只准** `import { fetchList } from '../../api/{slug}.js'`；**禁止 import `mock/modules`**（build 强制 FAIL）。
-- `src/api/{slug}.js` 原型态为一行 re-export mock；mock 函数按 **REST 语义**设计签名（如 `fetchList({keyword,page,pageSize}) → Promise.resolve({list,total})`，返回页面消费的形状，`delay` 模拟网络）。
-- 二次开发 = 只改 `src/api/{slug}.js`（导出名/参数/返回形状不变），页面零改动。细则与二开写法见 code-conventions「API 适配层约定」。
-
-## 速度条款
-
-1. **拆分触发式**：>150 行 / 被复用 / 独立状态复杂才拆文件，常规页面 4-8 个文件；不追求「一个 UI 区块一个文件」。
-2. **并行写**：无依赖文件（constants / locales / mock / 独立子组件）并行创建。
-3. **Mock 混合策略**：手写前 8-10 条保状态多样性，其余 spread / 生成器扩展数量；**截图输入保真转录规则不变**。
+页面**只准** `import { fetchList } from '../../api/{slug}.js'`；**禁止 import `mock/modules`**（build 强制 FAIL）。mock 按 REST 语义设计签名、二开只改 api 文件——细则与二开写法见 code-conventions「API 适配层约定」。
 
 ## 速查
 

@@ -125,7 +125,7 @@ mkdirSync(dest, { recursive: true });
 const srcDir = join(dest, 'src');
 cpSync(scaffoldSrc, srcDir, { recursive: true });
 
-// ---------- 4pre. style language (D22): less only ----------
+// ---------- 4pre. style language: less only ----------
 const mainJsPath = join(srcDir, 'main.js');
 writeFileSync(mainJsPath, readFileSync(mainJsPath, 'utf8').replace(
   /import '\.\/assets\/style\/base\.(less|scss)'/,
@@ -133,7 +133,7 @@ writeFileSync(mainJsPath, readFileSync(mainJsPath, 'utf8').replace(
 ), 'utf8');
 
 // ---------- 4a. copy asset-library token layer (live fetch, glob) ----------
-// D23: the library token layer is pure CSS (entry index.css) — copy verbatim,
+// the library token layer is pure CSS (entry index.css) — copy verbatim,
 // no scss pruning or flattening needed any more.
 cpSync(tokensSrc, join(srcDir, 'assets', 'tokens'), { recursive: true });
 writeFileSync(
@@ -161,7 +161,7 @@ mkdirSync(join(srcDir, 'components'), { recursive: true });
 
 // ---------- 6. write starter files ----------
 
-// --- 6a. mock/modules/{slug}.js (REST-shaped signatures + delay, D16) ---
+// --- 6a. mock/modules/{slug}.js (REST-shaped signatures + delay ---
 writeFileSync(
   join(dest, 'mock', 'modules', `${slug}.js`),
   `// ${pageName} — Mock 数据 + API 请求模拟
@@ -211,7 +211,7 @@ export async function deleteRecord(id) {
   'utf8',
 );
 
-// --- 6b. src/api/{slug}.js — interface adapter (D16) ---
+// --- 6b. src/api/{slug}.js — interface adapter ---
 writeFileSync(
   join(srcDir, 'api', `${slug}.js`),
   `// ${pageName} — 接口适配层（二次开发唯一必改文件）
@@ -366,7 +366,7 @@ onMounted(() => {
   'utf8',
 );
 
-// --- 6g. src/locales/pages/{slug}.js (page entries, D15 — single-file bilingual + flattened t) ---
+// --- 6g. src/locales/pages/{slug}.js (page entries — single-file bilingual + flattened t) ---
 mkdirSync(join(srcDir, 'locales', 'pages'), { recursive: true });
 writeFileSync(
   join(srcDir, 'locales', 'pages', `${slug}.js`),
