@@ -107,7 +107,37 @@ node LIBRARY/scripts/query_assets.mjs tokens frost-common            # token 分
 
 init 生成的 starter 中 `COMPONENT_MODE` 默认为 `'hybrid'`，确认结果不同时改写该常量。
 
+## 环境纪律（node 归因 + 降级禁令）
+
+**交付契约不可降级：任何环境下都禁止「node 不可用所以改为纯 HTML/静态页」的替代交付**——那不是本 Skill 的产物，等于交付失败。环境故障时的唯一正确动作：按下面诊断 → 把结果原样报告用户 → 等待修复；不许自行更换交付形态、不许静默降级。
+
+**`RESULT: FAIL` = 脚本已正常运行后的业务校验失败，与 node 安装无关**（脚本能输出 FAIL 恰恰证明 node 可用）。高频原因与修复：
+
+| FAIL 信息 | 原因 | 修复 |
+|---|---|---|
+| `asset library not found` | 资产库路径/绑定问题：包移动过绑定失效、未传 `--assets-root`、cwd 不对 | 重跑 `node installer/setup.mjs` 重绑定，或显式传 `--assets-root` |
+| `Artifact folder does not exist` | 输出目录未建 | 先创建目录再跑 |
+| `target already exists` | 同名工作区已存在 | 走文末 Modification Workflow |
+| `puppeteer-core not found`（smoke） | 冒烟前置未装 | `npm i -g puppeteer-core` |
+
+连续 FAIL 3 次仍未修复 → 停下把输出原样报告用户，禁止换交付形态。
+
+**node 真缺失时的排查顺序**（仅当 `node --version` 报 command not found 才进入）：
+
+1. 用户确认已安装 → 最可能是 **agent 宿主进程 PATH 未刷新**（Windows 装完 node 后，已启动的 agent/终端拿不到新 PATH；用户自己开新终端 `node --version` 正常，两边都没错）→ 请用户**重启 agent/终端**再试；
+2. 询问安装方式：nvm/fnm 管理时需在当前 shell 先 `nvm use <version>`；
+3. 仍不行才建议安装：`winget install OpenJS.NodeJS.LTS`（要求 ≥18）。
+
 ## 生成流程（All Input Types）
+
+### Step 0 — 环境预检（一行命令）
+
+```sh
+node --version
+```
+
+- 输出 `v` 数字（≥18）→ node 可用；**此后本次会话内任何脚本 FAIL 都不得归因于 node 安装**，按「环境纪律」表内原因排查。
+- `command not found` / 报错 → 进入「环境纪律」的排查顺序，结果报告用户；**全程禁止降级为纯 HTML 交付**。
 
 ### Step 1 — 输入解析
 

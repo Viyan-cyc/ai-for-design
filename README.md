@@ -13,6 +13,8 @@
 
 **上下文占用须知（generate-ux-prototype 页面生成）**：单页生成全程约 60-80k token，建议——① 每生成一个页面开一个新会话（同会话连生成多页必溢出）；② 生成任务不要整包喂仓库文档（SKILL-REPLACE-PLAN/tasks/README 等是维护者文档，Skill 会按需自取资产，无需人工喂）；③ 截图一次一张、裁剪到有效区域，修改轮次不重发旧图；④ 会话接近上限时在「init + 组件拷贝完成、开写之前」手动压缩（/compact）一次最安全；⑤ SKILL.md 内置「上下文预算」条款（读取预算表 + 禁读清单），Skill 会自动遵守，无需人工干预。
 
+**排障：AI 说「node 没安装好」**——多数是误判，两种真实情况：① 脚本输出 `RESULT: FAIL`（尤其 `asset library not found`）被误读为环境问题——FAIL 恰说明 node 正常，是资产库路径/绑定问题，重跑 `node installer/setup.mjs` 或显式传 `--assets-root`；② Windows 装完 node 后 agent 是在安装前启动的，PATH 未刷新——让用户重启 agent/终端即可。让 AI 先跑 `node --version` 归因：有版本号输出就别再怀疑 node。**无论诊断结果如何，Skill 都不应改出纯 HTML 交付**——那是交付失败，正确动作是把诊断输出报告给用户。
+
 本包提供源码；dist/、node_modules/ 和独立 SVG 不随包附带。组件库执行 npm run build:library，SVG 使用库内 scripts/export_icons.mjs 按需离线导出。项目应先构建组件库再使用其 npm 导出；生成原型直接使用源码。变更与实测体积见 UPGRADE-LOG.md，当前验证范围见 VALIDATION.md。
 
 色块装饰：规则在毛玻璃专题，参数为 frost-decoration；[离线示例](examples/frosted-color-card.html) 展示重点蓝色卡片与普通卡片的区别。
