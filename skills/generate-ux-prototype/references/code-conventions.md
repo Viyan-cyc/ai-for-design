@@ -123,46 +123,22 @@ export { fetchList, fetchDetail }
 
 ## 8. 相对路径计算（最易错项）
 
-按 init 后实际目录结构（含 `api/`、`tokens/`）：
+按 init 后实际目录结构计算（结构见 §1-§2；`api/` 在 `src/` 下，与 `views/`、`components/`、`locales/`、`assets/` 同级；`mock/` 与 `src/` 同级）。
 
-```
-{slug}/
-├── mock/
-│   └── modules/{slug}.js                  ← Mock API（只被 src/api/{slug}.js 引用）
-├── index.html                             ← 离线预览加载器
-└── src/
-    ├── api/{slug}.js                      ← ★ 接口适配层（页面取数唯一入口）
-    ├── assets/
-    │   ├── tokens/                        ← 资产 token 全套（FIXED）
-    │   ├── uploads/logo.png               ← 素材
-    │   └── images/ran.svg                 ← SVG 图标
-    ├── components/
-    │   ├── GStatusTag/GStatusTag.vue           ← 复用 G 组件（collect 平铺落位）
-    │   └── SharedCard.vue                 ← 手写跨页组件（按需创建）
-    ├── locales/lang/zh-CN/common.json     ← 全局共享词条
-    └── views/{slug}/
-        ├── index.vue                      ← 页面主组件
-        ├── components/StatusTag.vue       ← 页面私有子组件（按需创建）
-        └── js/constants.js                ← 常量（含 COMPONENT_MODE）
+关键规则：**从 `views/{slug}/` 出发上两级 `../../` 到 `src/`；从 `views/{slug}/components/` 出发上三级 `../../../`**——components/ 下少写一级是历史最高频 build FAIL 项（虽 build 仍会报错，但越早算对越省轮次）。
 
-从 views/{slug}/index.vue 引用:
-  页面子组件:   import StatusTag from './components/StatusTag.vue'
-  常量:        import { STATUS_MAP } from './js/constants.js'
-  页面词条:    import { t } from '../../locales/pages/{slug}.js'
-  API 适配层:  import { fetchList } from '../../api/{slug}.js'
-  素材:        import logo from '../../assets/uploads/logo.png'
-  SVG 图标:    import ranIcon from '../../assets/images/ran.svg'
-  手写跨页组件: import SharedCard from '../../components/SharedCard.vue'
-  复用 G 组件:  import GStatusTag from '../../components/GStatusTag/GStatusTag.vue'
+常见引用：
 
-从 views/{slug}/components/StatusTag.vue 引用:
-  API 适配层:  import { fetchList } from '../../../api/{slug}.js'
-  素材:        import logo from '../../../assets/uploads/logo.png'
-
-从 src/components/SharedCard.vue 引用:
-  API 适配层:  import { fetchList } from '../api/{slug}.js'
-  素材:        import logo from '../assets/uploads/logo.png'
-```
+| 起点 | 目标 | 路径 |
+|---|---|---|
+| `views/{slug}/index.vue` | 页面子组件 | `./components/X.vue` |
+| `views/{slug}/index.vue` | 常量 | `./js/constants.js` |
+| `views/{slug}/index.vue` | 页面词条 | `../../locales/pages/{slug}.js` |
+| `views/{slug}/index.vue` | API 适配层 | `../../api/{slug}.js` |
+| `views/{slug}/index.vue` | 素材 | `../../assets/uploads/x.png` |
+| `views/{slug}/index.vue` | 复用 G 组件 | `../../components/GName/GName.vue` |
+| `views/{slug}/components/X.vue` | API 适配层 | `../../../api/{slug}.js` |
+| `src/components/X.vue` | API 适配层 | `../api/{slug}.js` |
 
 （starter `index.vue` 引用 api 层是 `../../api/{slug}.js`——从 `views/{slug}/` 出发上两级到 `src/`，再进 `api/`。）
 
@@ -173,23 +149,18 @@ export { fetchList, fetchDetail }
 3. template 不引用未声明的变量：`<script setup>` 中未定义的变量在模板中不渲染但不报错。
 4. token 使用前确认存在于 `src/assets/tokens/*.css`（可 grep 确认），build 实时校验兜底。
 
-## 10. 高频错误预防（build 拦截项）
+## 10. 高频错误预防（build 不覆盖项）
+
+build 拦截的(图标名/`el-*`组件名/导出名/scss/slot-scope/v-if+v-for 同标签/mock 隔离)不在此列——那些跑 build 自然报。下表是 **build 不拦、但会静默出 bug 或运行时翻车** 的项:
 
 | # | 错误写法 | 正确写法 | 原因 |
 |---|---------|---------|------|
-| 1 | `import { Searchh } from '@element-plus/icons-vue'` | `import { Search }` | 图标名不在 295 白名单 |
-| 2 | `<el-table-cloumn>` | `<el-table-column>` | 组件名不在 116 白名单 |
-| 3 | `<StatusTag />` 但没 import | `import StatusTag from './components/StatusTag.vue'` | 标签无对应 import |
-| 4 | `import logo from '../assets/uploads/logo.png'`（从 views/{slug}/ 出发） | `'../../assets/uploads/logo.png'` | 路径少一级 |
-| 5 | `import { ElToast } from 'element-plus'` | `import { ElMessage } from 'element-plus'` | 导出名不在白名单 |
-| 6 | `style="color: red"` | class + `<style lang="less">` 定义 | 禁止内联样式 |
-| 7 | `import { fetchList } from '../../../mock/modules/{slug}.js'` | `from '../../api/{slug}.js'` | 页面禁 import mock（D16，build FAIL） |
-| 8 | 直接编辑 `src/components/GStatusTag/GStatusTag.vue` | 保持原样；不合用走 wrapper 或资产库升级 | 拷入的 G 组件禁止改写（含来源注释） |
-| 9 | `<style lang="scss">` 或新增 .scss 文件 | `<style lang="less" scoped>` | 样式语言全链路钉死 less（D22） |
-| 10 | `<style>` 内 `:root { --g-x: … }` | 皮肤只放 `src/assets/themes/`；页面局部变量 `--page-*` | token 层与皮肤文件专属 |
-| 11 | `slot-scope="scope"` | `<template #default="{ row }">` | 旧语法编译失败 |
-| 12 | `v-if` 和 `v-for` 同标签 | 分开到不同标签 | 编译错误 |
-| 13 | `src="/assets/uploads/x.png"` | `import img from '../../assets/uploads/x.png'` | 预览无法解析裸路径 |
+| 1 | `<StatusTag />` 但没 import | `import StatusTag from './components/StatusTag.vue'` | 标签无对应 import,模板不渲染但不报错 |
+| 2 | `import logo from '../assets/uploads/logo.png'`(从 views/{slug}/ 出发) | `'../../assets/uploads/logo.png'` | 路径少一级,build 解析失败但易看错目录层级 |
+| 3 | `style="color: red"` | class + `<style lang="less">` 定义 | 禁止内联静态样式(build WARN 不拦,应主动避免) |
+| 4 | 直接编辑 `src/components/GStatusTag/GStatusTag.vue` | 保持原样;不合用走 wrapper 或资产库升级 | 拷入的 G 组件禁止改写(含来源注释) |
+| 5 | `<style>` 内 `:root { --g-x: … }` | 皮肤只放 `src/assets/themes/`;页面局部变量 `--page-*` | token 层与皮肤文件专属 |
+| 6 | `src="/assets/uploads/x.png"` | `import img from '../../assets/uploads/x.png'` | 预览无法解析裸路径 |
 
 ## 11. 二开依赖差异（D22）
 

@@ -3,7 +3,7 @@
 // 依据：
 // - SKILL-REPLACE-PLAN.md §5（组件复用方案）、D7（库端改造）、D20（index.ts 保留）、D22（less 钉死）
 // - tasks/W2-components.md M1
-// - skills/generate-ux-prototype/references/component-format.md v1
+// - skills/generate-ux-prototype/docs/for-designers/component-format.md v1
 //
 // 用法：
 //   node migrate_components.mjs [--root <components 父目录>] [--check] [--component <GName>]

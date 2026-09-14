@@ -4,7 +4,7 @@
 
 交接只存当前有效引用：projectId、mode、selectedDirectionId、inputs、assumptions、openQuestions、artifacts、validation、userConfirmation。inputs 项包含 kind、path、sha256；结构化需求/体验产物优先 JSON，字段见各 Skill 的模板。路径相对于交接文件；不复制原始附件进技能包。
 
-规范 Schema 位于 skills/generate-ux-prototype/references/task-handoff.schema.json。mode=direct-reference 时无需上游分析文件；mode=staged 时必须提供 requirements 和 insights。体验文件的 selectedDirectionId 必须出现在 designDirections 中，且匹配交接文件及原型阶段的 directionId。每个阶段沿用 projectId 和已有条目 ID。
+规范 Schema 位于 skills/generate-ux-prototype/docs/handoff/task-handoff.schema.json。mode=direct-reference 时无需上游分析文件；mode=staged 时必须提供 requirements 和 insights。体验文件的 selectedDirectionId 必须出现在 designDirections 中，且匹配交接文件及原型阶段的 directionId。每个阶段沿用 projectId 和已有条目 ID。
 
 ## 原型阶段交接（generate-ux-prototype）
 
