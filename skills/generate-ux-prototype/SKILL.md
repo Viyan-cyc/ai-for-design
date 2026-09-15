@@ -52,6 +52,7 @@ skill 本体内嵌资产库（`library/`）：token、毛玻璃规则全部在�
 - 颜色一律资产库 token 变量 `var(--g-*)` / `var(--color-*)`；Element Plus 组件用语义 `type` prop。
 - `<style lang="less" scoped>`；**禁止静态内联 `style="..."`**（`:style` 动态绑定允许）；SFC 样式内禁止定义 `:root`、`[data-theme]`、资产 token（页面局部变量用 `--page-*` 前缀）。
 - 单位一律 px；全工作区禁止 scss / `lang="scss"`。
+- 页面流式自适应（L1+L2 默认：容器不写死宽度 + 栅格断点；细则见 code-conventions「自适应规范」）。
 - 页面与组件**只准从 `src/api/{slug}.js` 取数**，禁止 import `mock/modules`（build 强制校验）。
 
 ## 资产库（内嵌，零配置）
@@ -146,7 +147,7 @@ node --version
 
 ### Step 4 — 生成前自检（MANDATORY，build 前必做）
 
-preflight + HARD RULES + 白名单已机械覆盖语法/命名/样式类错误；人工只核对 build **不覆盖**的运行时项（细则见 [references/code-conventions.md](references/code-conventions.md) §8）：
+preflight + HARD RULES + 白名单已机械覆盖语法/命名/样式类错误；人工只核对 build **不覆盖**的运行时项（细则见 [references/code-conventions.md](references/code-conventions.md) §9）：
 
 1. `el-select` 初始值在 options 内、`el-table` 的 `prop` 与数据 key 匹配
 2. template 引用的变量在 `<script setup>` 中已声明；`v-for` 有 `:key`
@@ -223,6 +224,6 @@ node scripts/serve.mjs --dir "{artifact-folder}/{slug}" --port 8765
 
 ## References
 
-- **[references/code-conventions.md](references/code-conventions.md)** — 页面代码规范 / API 适配层 / i18n / 相对路径计算表 / 高频错误预防 / 二开依赖差异
+- **[references/code-conventions.md](references/code-conventions.md)** — 页面代码规范 / 自适应规范 / API 适配层 / i18n / 相对路径计算表 / 高频错误预防 / 二开依赖差异
 - **[references/ui-runtime.md](references/ui-runtime.md)** — UI Runtime 三件套接入说明（SweetUI 预留）
 - **[references/usage.md](references/usage.md)** — 调用示例（脚本 CLI 速览：query_assets / init / preflight / build / serve / smoke）

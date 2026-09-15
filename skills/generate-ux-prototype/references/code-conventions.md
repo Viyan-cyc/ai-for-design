@@ -32,7 +32,27 @@
 - SFC 样式内禁止定义 `:root`、`[data-theme]`、资产 token（`--g-*`/`--color-*`）；页面局部自定义属性用 `--page-*` 前缀。
 - 换肤协议为资产库的 `data-theme="light|dark"`（详见 SKILL.md「换肤系统」）；自定义皮肤只属于 `src/assets/themes/theme-{name}.css`，不写进 SFC。
 
-## 4. API 适配层约定（页面取数唯一通道）
+## 4. 自适应规范（L1+L2，默认必做）
+
+页面流式自适应：宽度 1280-1920 均正常呈现，窗口拖窄时成排卡片自动降列换行；移动端 H5 布局明确不承诺。**px 单位不变**，自适应靠容器纪律 + 栅格断点 + `min()` 表达式，禁止 rem/viewport 换算、禁止整页 zoom/scale、禁止页面级 `min-width`+横滚兜底。
+
+1. **容器**：`.page-root` 只用 padding，不设 width/min-width；B 端壳 `el-aside` 固定 208-220px（可折叠），`el-main` 流式。
+2. **成排卡片**（KPI 行、统计卡）：`el-row :gutter="16"` + `el-col` 断点降列——
+
+   ```html
+   <el-row :gutter="16">
+     <el-col v-for="kpi in kpis" :key="kpi.label" :xs="24" :sm="12" :md="8" :lg="6">
+       <div class="kpi-card">…</div>
+     </el-col>
+   </el-row>
+   ```
+3. **表格**：`el-table` 默认流式，禁止给表格或列写死 width；列用 `min-width`，空间不足时表格**内部**出滚动条（EP 内建，零成本）。
+4. **筛选行**：inline form + `flex-wrap: wrap`，控件定宽不写死（如 `width: 200px` 可以，`width: 100%` 撑爆一行不行）。
+5. **对话框**：`width="min(720px, 92%)"` 模式，按内容选 480/720/960 基准，禁止超过视口的固定宽度。
+6. **媒体查询**仅窄屏布局（L3，用户明确要求时）使用；断点对齐 EP 五档 `<768 / ≥768 / ≥992 / ≥1200 / ≥1920`，禁止自造断点数值。
+7. **截图转码例外**：布局按截图保真还原，但仍按本节纪律做流式，不照抄截图里的固定像素宽度。
+
+## 5. API 适配层约定（页面取数唯一通道）
 
 `init.mjs` 已生成 `src/api/{slug}.js`。**页面与组件只准从这个适配层取数，禁止直接 import `mock/modules`**（build 强制 FAIL）。二次开发时只改 api 文件内容，页面零改动。
 
@@ -60,7 +80,7 @@ export { fetchList, fetchDetail }
 
 导出名、参数、返回形状保持与 mock 一致。
 
-## 5. Mock 数据模式
+## 6. Mock 数据模式
 
 - 位置 `mock/modules/{slug}.js`（与 src 同级，init 已建）。函数签名按 REST 语义（见上节）；`Promise + setTimeout` 模拟异步。
 - 数据 key 语义化（`deviceName` 禁止 `val1`）；主列表 ≥ 10 条状态多样。
@@ -74,7 +94,7 @@ export { fetchList, fetchDetail }
   ```
 - **截图输入例外**：数据保真转录，行数列数与图完全一致，逐格独立读取，严禁行间复制——不用生成器扩展。
 
-## 6. i18n 模式（单文件双语言）
+## 7. i18n 模式（单文件双语言）
 
 - **页面级**：每页一个 `src/locales/pages/{slug}.js`（init 已建骨架，与全局词条同在 `src/locales/` 下）。zh + en 一次写完（en 机械翻译顺带产出）。**`messages` 存双语言源，`t` 是按 LANG 展平的字符串**——模板直接 `{{ t.title }}`，**禁止手动 `.zh`**（漏写展平会在界面渲染成 JSON 串）：
   ```js
@@ -92,7 +112,7 @@ export { fetchList, fetchDetail }
   > 单语言页面可直接在 messages 里存字符串 `title: '设备管理'`，展平逻辑已兼容（typeof val === 'string' 直通）。
 - 将来接 vue-i18n：把 messages 的 zh/en 拆进 JSON，页面模板零改动。
 
-## 7. 相对路径计算（最易错项）
+## 8. 相对路径计算（最易错项）
 
 按 init 后实际目录结构计算（完整树见 SKILL.md「Output Contract」；与本节相关：`src/api/{slug}.js`、`src/locales/pages/{slug}.js`、`src/assets/{uploads,images}/`、`src/components/`、`src/views/{slug}/{components/,js/}`）：
 
@@ -117,14 +137,14 @@ export { fetchList, fetchDetail }
 
 （starter `index.vue` 引用 api 层是 `../../api/{slug}.js`——从 `views/{slug}/` 出发上两级到 `src/`，再进 `api/`。）
 
-## 8. 运行时错误预防（build 不覆盖）
+## 9. 运行时错误预防（build 不覆盖）
 
 1. `el-select` v-model 值必须在 options 中：初始值必须是某个 `el-option` 的 `value`，否则显示裸值。建议初始值 `''`（配合 `clearable`）。
 2. `el-table` column `prop` 与 data key 匹配：`prop="xxx"` 必须对应数据对象的实际 key，否则列空白。
 3. template 不引用未声明的变量：`<script setup>` 中未定义的变量在模板中不渲染但不报错。
 4. token 使用前提交 preflight.mjs 校验（与 build 同源，禁止 grep tokens 目录现场查）。
 
-## 9. 高频错误预防（build 拦截项）
+## 10. 高频错误预防（build 拦截项）
 
 | # | 错误写法 | 正确写法 | 原因 |
 |---|---------|---------|------|
@@ -141,7 +161,7 @@ export { fetchList, fetchDetail }
 | 11 | `v-if` 和 `v-for` 同标签 | 分开到不同标签 | 编译错误 |
 | 12 | `src="/assets/uploads/x.png"` | `import img from '../../assets/uploads/x.png'` | 预览无法解析裸路径 |
 
-## 10. 二开依赖差异
+## 11. 二开依赖差异
 
 工作区是标准 Vue 工程，但预览运行时与真实 Vite 工程有三处已知差异，二次开发者需知：
 
