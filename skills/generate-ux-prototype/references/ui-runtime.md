@@ -40,12 +40,4 @@ build.mjs 从 `--dir` 工作区反查 `scripts/verify/whitelists/` 下的当前 
 2. 变量名以目标库官方变量为准（如 `--el-color-primary` ↔ SweetUI 对应变量），值为资产库语义 token `var(--g-…)` / `var(--color-…)`，禁止 hex 直填。
 3. 桥接层只做映射、不新增语义；新语义 token 走资产库 token 体系（design/tokens.json → build_tokens）。
 
-## SweetUI 接入清单（实施时照此办理）
-
-1. 取得 SweetUI UMD 构建与样式 → 放 `scripts/preview/public/library/sweet-ui/`（含依赖的全局构建）。
-2. 从其官方产物导出三份白名单 → `scripts/verify/whitelists/sweet-ui/`。
-3. 写 token 桥接 CSS（语义 token → SweetUI 变量），纳入资产库 token 层。
-4. preview/index.html 第 1 节 script/link 与 moduleCache 注册切换到 sweet-ui；build.mjs 白名单目录切换。
-5. init.mjs 复制逻辑核对（当前整目录复制 `element-plus/`，无硬编码文件清单，预期能直接复用）。
-
 > 设计原则：接入是「补三样 + 切两处引用」，生成流程、工作区结构、代码规范、二次开发方式全部不变。

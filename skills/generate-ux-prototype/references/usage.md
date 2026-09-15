@@ -48,7 +48,3 @@ node SKILL/scripts/smoke.mjs --dir "{artifact-folder}/{slug}"
 # RESULT: OK | render=1 token=#0067D1 themeSwitch=ok errors=0 missing404=0
 # 前置（每机器一次）：npm i -g puppeteer-core；自动探测系统 Chrome/Edge
 ```
-
-## 毛玻璃示例
-
-需求涉及毛玻璃时：按需读 LIBRARY/design/frosted-glass.md（control/card/overlay 预设与应用预算），`query_assets.mjs tokens frost-common` 查数值；token 文件已随 init 进工作区 `src/assets/tokens/`。

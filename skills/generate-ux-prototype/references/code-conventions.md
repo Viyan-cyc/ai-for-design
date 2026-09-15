@@ -44,16 +44,7 @@ import { fetchList, createRecord } from '../../api/{slug}.js'
 import { fetchList } from '../../../mock/modules/{slug}.js'
 ```
 
-**Mock 函数按 REST 语义设计签名**（原型态与真实接口一致，二开时无需改页面）：
-
-```js
-// mock/modules/{slug}.js — 参数与返回都是页面消费的形状，delay 模拟网络
-export async function fetchList({ keyword = '', page = 1, pageSize = 20 } = {}) {
-  await delay()
-  // …过滤/分页…
-  return { list, total, page, pageSize }
-}
-```
+**Mock 函数按 REST 语义设计签名**（如 `fetchList({ keyword, page, pageSize })` 返回 `{ list, total, page, pageSize }`，`delay` 模拟网络；参数与返回都是页面消费的形状）——init 生成的 mock 文件头部注释自带完整示例。
 
 **二开写法**（替换 api 文件原型态的 re-export；用 `import ... from` + `export { }` 两段式，勿用 `export {...} from` re-export 简写——sfc-loader 0.9.5 对 re-export 编译产物有缺陷，两段式在「真实工程外直接开 HTML」的场景也安全）：
 
@@ -83,7 +74,7 @@ export { fetchList, fetchDetail }
   ```
 - **截图输入例外**：数据保真转录，行数列数与图完全一致，逐格独立读取，严禁行间复制——不用生成器扩展。
 
-## 6. i18n 模式（locales.js 单文件双语言）
+## 6. i18n 模式（单文件双语言）
 
 - **页面级**：每页一个 `src/locales/pages/{slug}.js`（init 已建骨架，与全局词条同在 `src/locales/` 下）。zh + en 一次写完（en 机械翻译顺带产出）。**`messages` 存双语言源，`t` 是按 LANG 展平的字符串**——模板直接 `{{ t.title }}`，**禁止手动 `.zh`**（漏写展平会在界面渲染成 JSON 串）：
   ```js
@@ -103,27 +94,9 @@ export { fetchList, fetchDetail }
 
 ## 7. 相对路径计算（最易错项）
 
-按 init 后实际目录结构（含 `api/`、`tokens/`）：
+按 init 后实际目录结构计算（完整树见 SKILL.md「Output Contract」；与本节相关：`src/api/{slug}.js`、`src/locales/pages/{slug}.js`、`src/assets/{uploads,images}/`、`src/components/`、`src/views/{slug}/{components/,js/}`）：
 
 ```
-{slug}/
-├── mock/
-│   └── modules/{slug}.js                  ← Mock API（只被 src/api/{slug}.js 引用）
-├── index.html                             ← 离线预览加载器
-└── src/
-    ├── api/{slug}.js                      ← ★ 接口适配层（页面取数唯一入口）
-    ├── assets/
-    │   ├── tokens/                        ← 资产 token 全套（FIXED）
-    │   ├── uploads/logo.png               ← 素材
-    │   └── images/ran.svg                 ← SVG 图标
-    ├── components/
-    │   └── SharedCard.vue                 ← 手写跨页组件（按需创建）
-    ├── locales/lang/zh-CN/common.json     ← 全局共享词条
-    └── views/{slug}/
-        ├── index.vue                      ← 页面主组件
-        ├── components/StatusTag.vue       ← 页面私有子组件（按需创建）
-        └── js/constants.js                ← 页面常量
-
 从 views/{slug}/index.vue 引用:
   页面子组件:   import StatusTag from './components/StatusTag.vue'
   常量:        import { STATUS_MAP } from './js/constants.js'
@@ -168,7 +141,7 @@ export { fetchList, fetchDetail }
 | 11 | `v-if` 和 `v-for` 同标签 | 分开到不同标签 | 编译错误 |
 | 12 | `src="/assets/uploads/x.png"` | `import img from '../../assets/uploads/x.png'` | 预览无法解析裸路径 |
 
-## 10. 二开依赖差异）
+## 10. 二开依赖差异
 
 工作区是标准 Vue 工程，但预览运行时与真实 Vite 工程有三处已知差异，二次开发者需知：
 

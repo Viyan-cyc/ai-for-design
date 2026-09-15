@@ -1,6 +1,7 @@
 ---
 name: generate-ux-prototype
 description: Generate or edit a G Design page as real Vue 3 + Element Plus 2.13.5 source code (.vue workspace with api adapter, mock, i18n) plus a zero-build offline preview; design tokens are fetched live from the local asset library. Accepts text requirements, module descriptions, screenshots or raw HTML. Triggers on "页面生成", "原型", "Vue 页面", "Element Plus", "列表页", "看板", "截图转码".
+version: 1.0.0
 ---
 
 # 生成 G Design 原型（Vue 3 源码交付）
@@ -74,7 +75,7 @@ node LIBRARY/scripts/query_assets.mjs tokens --search brand          # token 值
 2. **token 确认只走 preflight.mjs**（与 build 同源），禁止 grep `src/assets/tokens/` 现场查；token 语义疑问也先 preflight，仍解决不了才读对应 design/ 文档的那一节。
 3. **验证只认脚本输出**：build/smoke 的 `RESULT` 行即终态；FAIL 按行修复重跑，禁止现场手写调试脚本/puppeteer 脚本展开分析——那是把验证变成新的上下文黑洞。
 4. **截图输入节制**：一次一张、必要时裁剪；追问/修改轮次不重发已分析过的图。
-5. **接近预算上限时**：先 `/compact`（安全点：init 完成开写之前），压缩后凭 SKILL.md + 工作区文件继续，无需重读资产库。
+5. **接近预算上限时**：先压缩会话上下文（安全点：init 完成开写之前），压缩后凭 SKILL.md + 工作区文件继续，无需重读资产库。
 
 ## 环境纪律（node 归因 + 降级禁令）
 
@@ -90,6 +91,8 @@ node LIBRARY/scripts/query_assets.mjs tokens --search brand          # token 值
 | `puppeteer-core not found`（smoke） | 冒烟前置未装 | `npm i -g puppeteer-core` |
 
 连续 FAIL 3 次仍未修复 → 停下把输出原样报告用户，禁止换交付形态。
+
+**skill 自带文件不是可修改对象**：禁止修改、调试、patch 本 skill 的 `scripts/` 与 `library/` 下任何文件——那是 skill 本体，不是本次任务的产物；疑似脚本缺陷时原样报告用户等待修复，不许就地改或绕过脚本自跑替代验证。
 
 **node 真缺失时的排查顺序**（仅当 `node --version` 报 command not found 才进入）：
 
@@ -128,13 +131,10 @@ node --version
 
 ### Step 3 — 写码
 
-在 `SRC_DIR` 下按 [references/code-conventions.md](references/code-conventions.md) 编写页面：
+在 `SRC_DIR` 下按 [references/code-conventions.md](references/code-conventions.md) 编写页面（组件拆分、常量/i18n/Mock 细则以该文为唯一来源）：
 
 - `views/{slug}/index.vue` 为页面主组件（替换 starter），以组合编排为主。
-- **拆分触发式**：子组件仅在 **>150 行 / 被复用 / 状态复杂** 时才拆出独立文件（常规页面约 4-8 个文件）；页面私有放 `views/{slug}/components/`，跨页复用放 `src/components/`。
 - **无依赖的文件并行写**：constants.js、locales.js、mock 数据、互不依赖的子组件可在同一轮并行创建。
-- **常量放 `views/{slug}/js/constants.js`**（全大写+下划线命名）；页面词条放 `src/locales/pages/{slug}.js`（单文件双语言，见下文 i18n）。
-- **Mock 混合策略**：手写前 8-10 条保状态多样性，其余 spread / 生成器扩展数量；截图输入时保真转录规则优先。
 - **写码前先规划后落笔（preflight 强制）**：
   1. 先列出每个待写文件的 imports——**按目录显式算好相对路径前缀**（`views/{slug}/` 出发上两级 `../../`，`views/{slug}/components/` 出发上三级 `../../../`；components/ 下少写一级是历史最高频 build FAIL 项）。
   2. 汇总本轮要用的全部 token 变量名、图标名、element-plus 导出名、词条 key，**一次提交 preflight 一条命令校验**（不通过按提示修正清单再跑；禁止写码中途反复 grep/node 查询）：
@@ -146,16 +146,10 @@ node --version
 
 ### Step 4 — 生成前自检（MANDATORY，build 前必做）
 
-1. 相对 import 层级正确（对照 code-conventions 的路径计算表）
-2. 图标名 / `el-*` 组件名在白名单内（见下文速查）
-3. PascalCase / kebab-case 组件标签都有对应 import
-4. `<style lang="less">` 内无 `:root` / `[data-theme]` / 资产 token 定义；页面局部变量 `--page-*` 前缀
-5. 裸 import 仅白名单五项
-6. `v-for` 有 `:key`；`v-if` 不与 `v-for` 同标签
-7. 无静态内联 `style="..."`（`:style` 动态绑定允许）
-8. 单位 px（无 rem）；无任何 scss
-9. 页面/组件无 `mock/modules` import（只经 `src/api/{slug}.js`）
-10. `src/router/index.js` 未挪动/改名/内联；history 仍为 `createWebHashHistory`（file:// 兼容，build 强制校验）
+preflight + HARD RULES + 白名单已机械覆盖语法/命名/样式类错误；人工只核对 build **不覆盖**的运行时项（细则见 [references/code-conventions.md](references/code-conventions.md) §8）：
+
+1. `el-select` 初始值在 options 内、`el-table` 的 `prop` 与数据 key 匹配
+2. template 引用的变量在 `<script setup>` 中已声明；`v-for` 有 `:key`
 
 ### Step 5 — Build & Verify（MANDATORY，自动刷新预览）
 
@@ -193,6 +187,8 @@ node scripts/serve.mjs --dir "{artifact-folder}/{slug}" --port 8765
 
 交付说明需注明：演示假设与未验证项、以及二次开发入口（改 `src/api/{slug}.js` 对接真实接口，页面零改动）。
 
+**沟通节奏**：写码/修 FAIL 过程不逐轮汇报，收口时一起说；脚本要装前置或耗时几分钟时先告知用户正在做什么。脚本报错分两类：环境类失败（装不上、node 缺失）原样转述给用户；自己代码的 FAIL 直接修复重跑，不用转述。
+
 ## Modification Workflow（修改已生成页面）
 
 用户要求修改已生成页面时，**不要重新生成**：
@@ -203,17 +199,11 @@ node scripts/serve.mjs --dir "{artifact-folder}/{slug}" --port 8765
 
 ## 换肤系统
 
-- 页面消费 token（`src/assets/tokens/` 全套，init 现取）→ 任何皮肤下自动跟随。
-- 明暗协议：`data-theme="light|dark"`；运行时切换 `document.documentElement.setAttribute('data-theme', …)`。
-- 自定义皮肤：`theme-{name}.css` 放 `src/assets/themes/`，按该目录 README 协议注册（`index.html` 换肤插槽追加 `<link>`；真实工程在 `main.js` 皮肤插槽追加 import）。
+明暗协议 `data-theme="light|dark"`（运行时 `document.documentElement.setAttribute`）；自定义皮肤 `theme-{name}.css` 放 `src/assets/themes/` 按该目录 README 注册。页面消费 token 全套，任何皮肤下自动跟随。
 
 ## 毛玻璃与视觉风格
 
-毛玻璃无特殊机制——它就是 token + 规范文档：
-
-- token（glass / frosted / frost-decoration）随 `src/assets/tokens/` 自动就位，设计师更新自动跟随。
-- 需求涉及毛玻璃时**按需读**资产库 `design/frosted-glass.md`（何时用/不用、control/card/overlay 预设、应用预算），用 `query_assets.mjs tokens frost-common` 查数值。
-- 视觉风格判断沿用主次/内容密度规则：遇到大面积品牌色重点卡片/概览且边角有留白时，按 `design/frosted-glass.md` 的「色块装饰」及 `frost-decoration` 分组选择弱装饰；普通大卡片不因尺寸自动装饰，密集数据与功能告警色排除；选定后显式记录属性，保留主卡的蓝底白字。用户给定的参考图和风格优先；无明确装饰需求时使用企业实色主题。
+毛玻璃就是 token + 规范：token 随 `src/assets/tokens/` 自动就位；需求涉及时**按需读** `design/frosted-glass.md`，数值走 `query_assets.mjs tokens frost-common`。视觉判断：大面积品牌色重点卡片且边角留白时按 frosted-glass.md「色块装饰」选弱装饰；普通大卡片不因尺寸自动装饰，密集数据与告警色排除。用户参考图和风格优先；无明确需求时用企业实色主题。
 
 ## UI Runtime 扩展点
 
@@ -221,36 +211,15 @@ node scripts/serve.mjs --dir "{artifact-folder}/{slug}" --port 8765
 
 ## i18n
 
-- **页面级**：每页一个 `src/locales/pages/{slug}.js`——单文件双语言对象（zh-CN + en-US 一次写完，en 由 AI 机械翻译顺带产出），模板经 `t.xxx` 引用；写法见 code-conventions「i18n 模式」。
-- **全局**：`src/locales/lang/{zh-CN,en-US}/common.json` 仅存**跨页共享**词条（确认/取消/搜索等，按需追加）。
-- 将来接 vue-i18n 时把两个语言对象拆进 JSON 即可，页面模板零改动。
+页面词条每页一个 `src/locales/pages/{slug}.js`（单文件双语言，zh+en 一次写完；写法见 code-conventions「i18n 模式」）；`lang/{zh-CN,en-US}/common.json` 仅存**跨页共享**词条。将来接 vue-i18n 把两个语言对象拆进 JSON，页面模板零改动。
 
 ## Mock 与 API 适配层
 
 页面**只准** `import { fetchList } from '../../api/{slug}.js'`；**禁止 import `mock/modules`**（build 强制 FAIL）。mock 按 REST 语义设计签名、二开只改 api 文件——细则与二开写法见 code-conventions「API 适配层约定」。
 
-## 速查
+## Token 速查
 
-### 常用图标（import from '@element-plus/icons-vue'，大小写敏感，build 校验 295 白名单）
-
-```
-Search  Plus  Edit  Delete  View  Refresh  Setting  User  Lock  Check
-Close  Warning  InfoFilled  ArrowDown  ArrowUp  ArrowLeft  ArrowRight
-Monitor  Filter  More  Calendar  Bell  Download  Upload
-```
-
-### 常用 el-\* 组件（build 校验 116 白名单，以下最高频）
-
-```
-el-button  el-input  el-select  el-option  el-table  el-table-column
-el-pagination  el-form  el-form-item  el-dialog  el-drawer  el-tag
-el-icon  el-menu  el-container  el-header  el-aside  el-main
-el-row  el-col  el-card  el-tabs  el-tab-pane  el-tooltip  el-dropdown
-```
-
-### Token
-
-不内嵌速查表（避免随设计师更新腐烂）。**token 确认只走 preflight.mjs**（与 build 同源实时校验）；token 分组数值用 `query_assets.mjs tokens <group>` 查询（单组，不逐组翻）。
+不内嵌速查表（避免随设计师更新腐烂）。**token 确认只走 preflight.mjs**（与 build 同源实时校验）；token 分组数值用 `query_assets.mjs tokens <group>` 查询（单组，不逐组翻）。图标名 / `el-*` 组件名写错时 preflight 会给相近项提示，按提示修正清单重跑即可。
 
 ## References
 
