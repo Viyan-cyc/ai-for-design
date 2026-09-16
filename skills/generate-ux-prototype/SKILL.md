@@ -150,6 +150,8 @@ node scripts/fetch_icons.mjs --dir "{artifact-folder}/{slug}" --keywords "下载
   3. `RESULT: OK` 后以清单为准落笔——写码过程中 token/词条/路径以清单为准，不再现场发明。
   4. **新建文件的两段式**：规划清单里含本轮才新建的文件（如 `components/RuleDialog.vue`）时，第 2 步的 `--imports` 只填指向**已有文件**的 import，先过一轮 `RESULT: OK`；新建文件写完后，把指向它们的 import 补进清单再跑一轮 preflight 确认。禁止把指向未创建文件的 import 塞进第一轮——那必然 FAIL。
 - **分批 build 早暴露**：build 毫秒级，不要等全部文件写完才跑——首个子组件 + constants/locales 写完即跑一轮（token 拼写/白名单类错误在第一个组件就暴露），全部写完再跑最终轮。
+- **输出轮次纪律（防截断卡死）**：单轮回复夹带大段分析 + 多个大文件是历史最高频的「长时间无动静」元凶——输出超限截断时用户只看到卡住。每个 SFC 文件单独一轮输出；分析文字每轮不超过两三句；单文件超过 ~250 行时拆成 script / template / style 分轮写（`Write` 首轮 + `Edit` 续写）。
+- **会话复用纪律**：同 session 内第二次及以后调用本 skill（换截图重生成、新页面）时，「读纪律」与规范文件**不重读**——上文已读内容仍在上下文，重读纯浪费；直接从 Step 2 init 开始。
 
 ### Step 4 — 生成前自检（MANDATORY，build 前必做）
 
