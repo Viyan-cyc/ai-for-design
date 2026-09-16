@@ -13,6 +13,7 @@ skill 本体内嵌资产库（`library/`）：token、毛玻璃规则全部在�
 ## 技术栈（钉死，无开关）
 
 - Vue 3（`<script setup>` 纯 JS 无 TS）+ Element Plus **2.13.5**（唯一 runtime）+ Vue Router 4 + Less + px
+- 图标来源:IconPlus API（生成时 `fetch_icons.mjs` 获取，存为 `src/assets/icons/*.vue`）
 - 裸 import 白名单仅五项：`vue` / `vue-router` / `element-plus` / `@element-plus/icons-vue` / `dayjs`（+ element-plus 子路径；`less` 仅为构建期依赖）
 
 ## Output Contract（READ FIRST）
@@ -30,6 +31,7 @@ skill 本体内嵌资产库（`library/`）：token、毛玻璃规则全部在�
     ├── App.vue                      # 应用壳：路由出口（init 生成）
     ├── api/{slug}.js                # ★ 接口适配层（init 必建；二开唯一必改文件）
     ├── assets/tokens/               # ★ 资产库 token 全套（init 现取复制，勿手改）
+    ├── assets/icons/                # ★ IconPlus 图标（fetch_icons.mjs 写入 .vue SFC）
     ├── assets/style/base.less       # Less 基础样式（FIXED）
     ├── assets/themes/               # 皮肤插槽（base.css + README 协议；自定义皮肤放这里）
     ├── assets/images/ uploads/      # 按需创建素材
@@ -42,7 +44,7 @@ skill 本体内嵌资产库（`library/`）：token、毛玻璃规则全部在�
 ```
 
 **Editable vs FIXED:**
-- **You edit ONLY:** `views/**`、`components/**`、`api/**`、`locales/**`、`router/index.js`（仅路由表条目）、`mock/**`、`assets/uploads/`、`assets/images/`、`assets/themes/`（皮肤文件）。
+- **You edit ONLY:** `views/**`、`components/**`、`api/**`、`locales/**`、`router/index.js`（仅路由表条目）、`mock/**`、`assets/uploads/`、`assets/images/`、`assets/icons/`（IconPlus 图标）、`assets/themes/`（皮肤文件）。
 - **FIXED:** `main.js`、`App.vue`、`assets/tokens/`、`assets/style/base.less`、`public/`、`index.html`、`preview-data.js`、`router/index.js` 的文件路径与 history 模式。
 
 **router/index.js 硬约束（白页防线）：** `index.html` 预览加载器按固定路径 `/src/router/index.js` 加载路由模块。不得挪动、改名、内联到 main.js，不得把 `createWebHashHistory` 换成 `createWebHistory`（file:// 下路由匹配失败 → 白页）。只准往 `routes` 数组里加条目。build.mjs 强制校验三项：文件存在、调用 `createRouter`、history 必须是 `createWebHashHistory` 或 `createMemoryHistory`。
@@ -129,6 +131,21 @@ node --version
    node scripts/init.mjs "{artifact-folder}" "{slug}"
    ```
    内嵌资产库自动使用，零配置。成功输出 `RESULT: OK` + `HTML_PATH` + `SRC_DIR` + `PAGE` + `ASSETS_VERSION`。token 全套随即复制到 `src/assets/tokens/`（含毛玻璃 token），并生成 api 适配层、mock 模块、全局词条、路由与 starter 页面。
+
+### Step 2.5 — 图标获取（IconPlus，页面需要图标时）
+
+列出页面需要的全部图标关键词（逗号分隔），调用 `fetch_icons.mjs` 批量获取：
+
+```sh
+node scripts/fetch_icons.mjs --dir "{artifact-folder}/{slug}" \
+  --keywords "下载,文件,搜索" \
+  [--base-url "<IconPlus API 地址>"] \
+  [--size 24] [--style "线性"] [--color "GTS_线性_Gray-10"] [--topK 25] [--source-id 6] [--tags "基础图标"]
+```
+
+默认 base-url=`https://octo.hdesign.huawei.com`（无需传参）。图标存为 `src/assets/icons/*.svg`，导入 `import downloadIcon from '../../assets/icons/download.svg'`，用法 `<img :src="downloadIcon" :width="20" :height="20" />`。默认 size=24 / style=线性 / color=GTS_线性_Gray-10。获取后图标文件名写入 preflight `--imports` 校验路径存在性。API 文档详见 [references/icon-plus.md](references/icon-plus.md)。
+
+**连通性降级**：`fetch_icons.mjs` 先检测 API 是否可达（3s 超时）。不可达时自动降级为本地 Lucide 图标（370 个常用 B 端图标，含中文关键词映射），生成相同 `.svg` 格式。输出 `RESULT: FALLBACK | IconPlus API unreachable, using Lucide icons` + `ICONS: ...`——AI 按正常 ICONS 列表 import 即可，用法无差异。
 
 ### Step 3 — 写码
 
@@ -226,4 +243,5 @@ node scripts/serve.mjs --dir "{artifact-folder}/{slug}" --port 8765
 
 - **[references/code-conventions.md](references/code-conventions.md)** — 页面代码规范 / 自适应规范 / API 适配层 / i18n / 相对路径计算表 / 高频错误预防 / 二开依赖差异
 - **[references/ui-runtime.md](references/ui-runtime.md)** — UI Runtime 三件套接入说明（SweetUI 预留）
-- **[references/usage.md](references/usage.md)** — 调用示例（脚本 CLI 速览：query_assets / init / preflight / build / serve / smoke）
+- **[references/usage.md](references/usage.md)** — 调用示例（脚本 CLI 速览：query_assets / init / fetch_icons / preflight / build / serve / smoke）
+- **[references/icon-plus.md](references/icon-plus.md)** — IconPlus 图标 API 文档（getConfig / tags / groups / getIconInfo / getIcon）

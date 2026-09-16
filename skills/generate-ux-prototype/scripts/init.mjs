@@ -24,6 +24,7 @@
 //   │   ├── App.vue                      # 应用壳
 //   │   ├── api/{slug}.js                # ★ 接口适配层（二开时唯一要改的文件）
 //   │   ├── assets/tokens/               # ★ 设计资产 token（从内嵌 library/ 现取）
+//   │   ├── assets/icons/                # ★ IconPlus 图标（fetch_icons.mjs 写入 .vue SFC）
 //   │   ├── assets/                      # 主题/样式（FIXED；字体走系统字体栈，不内嵌）
 //   │   ├── locales/                     # 全部语言资源：lang/{zh-CN,en-US}/common.json + pages/{slug}.js
 //   │   ├── router/index.js              # 路由（内联，无 guards/modules）
@@ -158,6 +159,7 @@ mkdirSync(join(srcDir, 'router'), { recursive: true });
 // 空目录仅存在于磁盘（collect 组件/手写组件落位前保持空）；git 不跟踪空目录无妨——
 // 工作区是交付件不是 git 仓库，不写 .gitkeep 以免混进交付件。
 mkdirSync(join(srcDir, 'components'), { recursive: true });
+mkdirSync(join(srcDir, 'assets', 'icons'), { recursive: true });
 
 // ---------- 6. write starter files ----------
 
@@ -295,7 +297,6 @@ writeFileSync(
   `<script setup>
 // ${pageName} — 页面主组件（交付入口；真实工程中由路由挂载）
 import { ref, onMounted } from 'vue'
-import { Monitor } from '@element-plus/icons-vue'
 import { fetchList } from '../../api/${slug}.js'
 import { t } from '../../locales/pages/${slug}.js'
 import { STATUS_MAP } from './js/constants.js'
@@ -326,7 +327,7 @@ onMounted(() => {
       <template #header>
         <div class="header">
           <span class="title">{{ t.title }}</span>
-          <el-button type="primary" :icon="Monitor" @click="fetchData">{{ t.refresh }}</el-button>
+          <el-button type="primary" @click="fetchData">{{ t.refresh }}</el-button>
         </div>
       </template>
       <el-table :data="dataList" v-loading="loading">
@@ -440,7 +441,8 @@ if (!result.ok) fail(result.reason);
 // ---------- 8a. remove empty directories ----------
 // KEEP_EMPTY: src/components 是语义性目录（用户拍板：init 始终创建，collect/手写组件
 // 的落位锚点），空着也要保留，不参与清理。
-const KEEP_EMPTY = new Set([join(srcDir, 'components')]);
+// src/assets/icons 同理：fetch_icons.mjs 写入锚点，空着保留。
+const KEEP_EMPTY = new Set([join(srcDir, 'components'), join(srcDir, 'assets', 'icons')]);
 function removeEmptyDirs(dir) {
   let removed = false;
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
