@@ -85,17 +85,21 @@ if (!pptrRequire) {
 const { launch } = pptrRequire('puppeteer-core');
 
 // ---------- system browser discovery ----------
+// macOS Chrome/Edge 安装为 app bundle（x64 与 arm64 同路径，统一装到 /Applications）
 const CHROME_CANDIDATES = [
   'C:/Program Files/Google/Chrome/Application/chrome.exe',
   'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe',
   process.env.LOCALAPPDATA ? `${process.env.LOCALAPPDATA}/Google/Chrome/Application/chrome.exe` : null,
+  '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
   '/usr/bin/google-chrome',
   '/usr/bin/chromium-browser',
   '/usr/bin/chromium',
+  '/snap/bin/chromium',
 ];
 const EDGE_CANDIDATES = [
   'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe',
   'C:/Program Files/Microsoft/Edge/Application/msedge.exe',
+  '/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge',
   '/usr/bin/microsoft-edge',
 ];
 const executablePath = [...CHROME_CANDIDATES, ...EDGE_CANDIDATES].filter(Boolean).find((p) => existsSync(p));

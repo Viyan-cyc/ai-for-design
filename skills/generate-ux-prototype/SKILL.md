@@ -101,7 +101,7 @@ version: 1.1.0
 
 **node 真缺失时的排查顺序**（仅当 `node --version` 报 command not found 才进入）：①用户确认已装 → 多半是 agent 宿主进程 PATH 未刷新（Windows 装完 node 已启动的终端拿不到新 PATH），请用户重启 agent/终端；②nvm/fnm 管理需先 `nvm use <version>`；③仍不行建议 `winget install OpenJS.NodeJS.LTS`（≥18）。
 
-**编译器依赖住共享池，不在 skill 包里**：`@vue/compiler-sfc` 依赖树（~19MB）由 `scripts/setup-compiler.mjs` 安装到用户机器共享池（Windows `%LOCALAPPDATA%\OctoAgent\ux-prototype\`），skill 目录内只有 `verify/compiler/package.json`（声明真源）+ `PLACEHOLDER.md`（哨兵：在 = 未安装）。init/build 第 0 步经 `ensure-compiler.mjs` 校验（1 秒），缺失时 `RESULT: FAIL | COMPILER_DEPS_MISSING` + 一条 HINT 命令——**按 HINT 执行 setup 后重跑即可，禁止因依赖缺失改用其他编译/交付方式**。registry 四档回落：`--registry` 参数 → `OCTO_NPM_REGISTRY` 环境变量 → 内网镜像 → 公网 npmjs（后两档自动逐个探测可达性，内网外网同一份 skill 零配置）；npm 完全不可用的机器用 `--from=<compiler-deps.zip>` 离线通道。
+**编译器依赖住共享池，不在 skill 包里**：`@vue/compiler-sfc` 依赖树（~19MB，纯 JS 无原生二进制，Windows/macOS(x64/arm64)/Linux 同一份）由 `scripts/setup-compiler.mjs` 安装到用户机器共享池（Windows `%LOCALAPPDATA%\OctoAgent\ux-prototype\`；macOS `~/Library/Application Support/OctoAgent/ux-prototype/`；Linux `$XDG_DATA_HOME`（默认 `~/.local/share`）`/OctoAgent/ux-prototype/`），skill 目录内只有 `verify/compiler/package.json`（声明真源）+ `PLACEHOLDER.md`（哨兵：在 = 未安装）。init/build 第 0 步经 `ensure-compiler.mjs` 校验（1 秒），缺失时 `RESULT: FAIL | COMPILER_DEPS_MISSING` + 一条 HINT 命令——**按 HINT 执行 setup 后重跑即可，禁止因依赖缺失改用其他编译/交付方式**。registry 四档回落：`--registry` 参数 → `OCTO_NPM_REGISTRY` 环境变量 → 内网镜像 → 公网 npmjs（后两档自动逐个探测可达性，内网外网同一份 skill 零配置）；npm 完全不可用的机器用 `--from=<compiler-deps.zip>` 离线通道。
 
 ## 生成流程（All Input Types）
 
