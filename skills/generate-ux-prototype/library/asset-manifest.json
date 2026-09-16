@@ -1,51 +1,31 @@
 {
-  "schemaVersion": "1.4",
+  "schemaVersion": "2.0",
   "assetId": "g-design-enterprise",
-  "assetVersion": "1.5.1",
+  "assetVersion": "2.2.1",
   "name": "G Design Enterprise",
   "framework": "vue3",
   "componentBase": "element-plus@2.13.5",
   "projectRoot": "frontend/element-plus",
-  "designSource": "design/tokens.json",
-  "designRules": "design/rules.md",
-  "componentIndex": "components/index.json",
-  "templateIndex": "components/templates.json",
-  "interactionIndex": "components/interactions.json",
+  "designSource": "docs/design-language/样式Token/设计系统.md",
+  "designSourceVersion": "v2.2.1",
+  "designIndex": "docs/design-language/00索引.md",
+  "tokensSchema": "library/tokens.json (gts-flat-dtcg/1, extract-tokens.mjs 产物)",
   "themes": [
     "light",
     "dark"
   ],
   "visualStyles": [
     "enterprise-light-dark",
-    "frosted-glass",
-    "aurora-glass"
+    "frosted-glass"
   ],
-  "prototypeBaseFiles": [
-    "frontend/element-plus/package.json",
-    "frontend/element-plus/package-lock.json",
-    "frontend/element-plus/tsconfig.json",
-    "frontend/element-plus/vite.preview.config.ts",
-    "frontend/element-plus/index.html",
+  "tokenFiles": [
     "frontend/element-plus/tokens/index.css",
-    "frontend/element-plus/tokens/semantic-dark.css",
+    "frontend/element-plus/tokens/primitive.css",
+    "frontend/element-plus/tokens/semantic.css",
     "frontend/element-plus/tokens/charts.css",
     "frontend/element-plus/tokens/code.css",
-    "frontend/element-plus/tokens/primitive.css",
-    "frontend/element-plus/tokens/glass.css",
-    "frontend/element-plus/tokens/semantic-light.css",
-    "frontend/element-plus/tokens/element-plus.css",
-    "frontend/element-plus/tokens/component.css",
-    "frontend/element-plus/tokens/components/overlay.css",
-    "frontend/element-plus/tokens/components/form.css",
-    "frontend/element-plus/tokens/components/feedback.css",
-    "frontend/element-plus/tokens/components/data.css",
-    "frontend/element-plus/tokens/frosted.css",
-    "frontend/element-plus/licenses/LUCIDE-LICENSE",
-    "frontend/element-plus/licenses/THIRD-PARTY-NOTICES.md",
-    "frontend/element-plus/tokens/frost-decoration.css"
+    "frontend/element-plus/tokens/frost.css",
+    "frontend/element-plus/tokens/element-plus.css"
   ],
-  "sourceReleaseSha256": "4001c9d1705ce23d2d88ac752fd26436f7702383d830139e2372863cb32cddab",
-  "sourceReleaseHashFormat": "manifest-sha256 and sorted path:sha256 lines",
-  "sourceLock": "release/source-lock.json",
-  "materialRules": "design/frosted-glass.md"
+  "notes": "设计唯一来源在仓库 docs/design-language/（设计师迭代处）；library/tokens.json 与 tokens/*.css 均为派生产物，再生管线见 library/README.md。frost 档为 G 1.5.1 回填过渡基线，待设计师补齐。"
 }

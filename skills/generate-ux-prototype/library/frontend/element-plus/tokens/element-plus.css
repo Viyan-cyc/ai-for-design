@@ -1,6 +1,5 @@
-/* GENERATED from design/tokens.json. Do not edit generated values. */
-/* H Design 色彩.docx 映射。原文与使用规则：source/h-design-color-spec.md、source/h-design-color-mappings.md。 */
-/* 先加载 Element Plus 基础样式，再加载 tokens/index.scss。 */
+/* EP 桥：Element Plus 组件内部读 --el-*（官方换肤机制）。全仓唯一一份；手写锚点，generate 不重写规则段。
+   先加载 Element Plus 基础样式，再加载本目录 tokens/index.css。 */
 :root,
 [data-theme] {
   --el-color-primary: var(--color-brand);
@@ -40,8 +39,8 @@
   --el-disabled-bg-color: var(--color-fill-disabled-subtle);
   --el-disabled-text-color: var(--color-text-disabled);
   --el-disabled-border-color: var(--color-border-disabled);
-  --el-border-radius-base: var(--g-control-radius);
-  --el-component-size: var(--g-control-height);
+  --el-border-radius-base: var(--radius-size-normal);
+  --el-component-size: 32px;
   --el-color-success: var(--color-success);
   --el-color-success-light-3: var(--mint-40);
   --el-color-success-light-5: var(--mint-20);
@@ -77,6 +76,7 @@
   --el-color-info-light-8: var(--color-info-subtle);
   --el-color-info-light-9: var(--color-info-subtle);
   --el-color-info-dark-2: var(--blue-60);
+  --el-font-family: var(--font-family-zh);
 }
 .el-button--primary {
   --el-button-hover-bg-color: var(--color-brand-hover);

@@ -10,8 +10,7 @@
    ```css
    html[data-theme="deep-blue"] {
      --color-brand: #105cf6;
-     --g-bg-page: #f2f6fb;
-     /* 全部 token 清单见 src/assets/tokens/semantic-light.css */
+     /* 全部 token 清单见 src/assets/tokens/semantic.css（token 本体）与 primitive.css（字面值） */
    }
    ```
 3. **注册**：在 `index.html` 的「自定义皮肤插槽」注释处追加一行：
@@ -20,9 +19,9 @@
    ```
    真实工程在 `main.js` 的皮肤插槽处追加对应 import。
 4. **运行时切换**：`document.documentElement.setAttribute('data-theme', '{skin-name}')`。
-5. **token 覆盖**：皮肤只需覆盖要改的 token，未覆盖的自动继承 `src/assets/tokens/` 的亮色默认值。深色皮肤记得覆盖 `--color-bg-*` 文本/背景组与 `--g-mix-base`（改向深色表面色）。
+5. **token 覆盖**：皮肤只需覆盖要改的 token，未覆盖的自动继承 `src/assets/tokens/` 的亮色默认值。深色皮肤记得覆盖 `--color-bg-*` / `--color-text-*` 等语义组（改向深色表面色）。
 
 ## 注意
 
-- **不要在本目录定义 `--g-*` / `--color-*` 之外的新 token 体系**；页面局部变量用 `--page-*` 前缀。
+- **不要在本目录定义 `--color-*` / `--space-size-*` / `--radius-size-*` 等资产 token 体系**；页面局部变量用 `--page-*` 前缀。
 - build.mjs 会校验：SFC `<style>` 中禁止定义 `:root`、`[data-theme]`、资产 token——它们只属于 token 层与皮肤文件。

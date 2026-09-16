@@ -5,9 +5,9 @@
 ## 资产查询（库内脚本，只读）
 
 ```sh
-node LIBRARY/scripts/query_assets.mjs tokens frost-common        # token 分组数值
-node LIBRARY/scripts/query_assets.mjs tokens --search brand      # token 值搜索
-node LIBRARY/scripts/query_assets.mjs tokens                     # 全部分组摘要
+node LIBRARY/scripts/query_tokens.mjs --name color-brand         # 查单个 token（含深色/紧凑值）
+node LIBRARY/scripts/query_tokens.mjs --search frost             # token 子串搜索（名+描述+值）
+node LIBRARY/scripts/query_tokens.mjs --list                     # 分组摘要（按前缀统计）
 ```
 
 ## 生成工作区
@@ -22,7 +22,7 @@ node SKILL/scripts/init.mjs "{artifact-folder}" "{slug}"   # 内嵌资产库自�
 ```sh
 node SKILL/scripts/preflight.mjs --dir "{artifact-folder}/{slug}" \
   --icons "Search,Bell,CaretRight" \
-  --tokens "--color-brand,--g-bg-surface" \
+  --tokens "--color-brand,--space-size-16" \
   --exports "ElMessage,ElMessageBox" \
   --imports "views/{slug}/components/GlobalNav.vue=../../../locales/pages/{slug}.js|../js/constants.js,..."
 # RESULT: OK | plan preflight passed — 全过才开写

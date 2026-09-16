@@ -15,7 +15,7 @@
 //                   files; bare imports restricted to the allowed dependency set
 //   5. JS check    — src/**/*.js parsed as ESM (node --check)
 //   6. Style check — SFC <style>: no :root/[data-theme]/asset-token definitions
-//                   (custom skins live in src/assets/themes/); var(--g-*/--color-*)
+//                   (custom skins live in src/assets/themes/); var(--color-*)
 //                   must be defined in src/assets/tokens/; hardcoded hex -> WARN
 //   7. Mock isolation — src/ must not import mock/modules (pages consume src/api/*)
 //
@@ -418,7 +418,7 @@ for (const file of vueFiles) {
     for (const m of block.content.matchAll(/--page-[a-z0-9-]+\s*:/g)) definedTokens.add(m[0].replace(/\s*:/, ''));
     cssHaystacks.push(block.content);
     const hexes = (block.content.match(/#[0-9a-fA-F]{3,8}\b/g) || []).length;
-    if (hexes) warn(`${rel}: ${hexes} hardcoded hex color(s) in <style> : prefer asset token vars (--g-*/--color-*)`);
+    if (hexes) warn(`${rel}: ${hexes} hardcoded hex color(s) in <style> : prefer asset token vars (--color-*)`);
   }
   if (descriptor.template) cssHaystacks.push(descriptor.template.content);
 }

@@ -26,13 +26,15 @@
 ## 3. 样式规范
 
 - `<style lang="less" scoped>`；类名按组件功能命名（简短，如 `.header`、`.kpi-card`、`.filter-bar`），嵌套在根类下；嵌套 ≤ 3 层。
-- 颜色一律资产 token 变量：`var(--g-*)` / `var(--color-*)`（全集见工作区 `src/assets/tokens/*.css`，build 实时校验兜底）；**禁 hex 硬编码**（build WARN）、禁内联 `style="..."`（`:style` 动态绑定仅限需变量计算的场景）。
+- 颜色一律资产 token 变量：`var(--color-*)`，尺寸/字体/投影 `var(--space-size-*)` / `var(--radius-size-*)` / `var(--font-size-*)` / `var(--shadow-*)`（全集见工作区 `src/assets/tokens/*.css`，build 实时校验兜底）；**禁 hex 硬编码**（build WARN）、禁内联 `style="..."`（`:style` 动态绑定仅限需变量计算的场景）。
 - 单位一律 **px**（与资产 token 一致）。无 rem 换算。
 - Less 变量/混入可用（`assets/style/base.less` 内置常用混入）；SFC 内不 `@import` 外部 .less（预览兼容性）。
-- SFC 样式内禁止定义 `:root`、`[data-theme]`、资产 token（`--g-*`/`--color-*`）；页面局部自定义属性用 `--page-*` 前缀。
+- SFC 样式内禁止定义 `:root`、`[data-theme]`、资产 token（`--color-*`/`--space-size-*` 等）；页面局部自定义属性用 `--page-*` 前缀。
 - 换肤协议为资产库的 `data-theme="light|dark"`（详见 SKILL.md「换肤系统」）；自定义皮肤只属于 `src/assets/themes/theme-{name}.css`，不写进 SFC。
 
-## 4. 自适应规范（L1+L2，默认必做）
+## 4. 自适应规范（实现纪律，默认必做）
+
+> 设计真值（画布、栅格、断点、密度）在 `docs/design-language/设计规范/响应式与无障碍.md` 与 `页面布局.md`（设计师维护）；本节只是该真值在 EP 工作区的实现纪律。冲突时以设计真值为准。
 
 页面流式自适应：宽度 1280-1920 均正常呈现，窗口拖窄时成排卡片自动降列换行；移动端 H5 布局明确不承诺。**px 单位不变**，自适应靠容器纪律 + 栅格断点 + `min()` 表达式，禁止 rem/viewport 换算、禁止整页 zoom/scale、禁止页面级 `min-width`+横滚兜底。
 
@@ -49,7 +51,7 @@
 3. **表格**：`el-table` 默认流式，禁止给表格或列写死 width；列用 `min-width`，空间不足时表格**内部**出滚动条（EP 内建，零成本）。
 4. **筛选行**：inline form + `flex-wrap: wrap`，控件定宽不写死（如 `width: 200px` 可以，`width: 100%` 撑爆一行不行）。
 5. **对话框**：`width="min(720px, 92%)"` 模式，按内容选 480/720/960 基准，禁止超过视口的固定宽度。
-6. **媒体查询**仅窄屏布局（L3，用户明确要求时）使用；断点对齐 EP 五档 `<768 / ≥768 / ≥992 / ≥1200 / ≥1920`，禁止自造断点数值。
+6. **媒体查询**仅窄屏布局（用户明确要求时）使用；断点对齐 EP 五档 `<768 / ≥768 / ≥992 / ≥1200 / ≥1920`，禁止自造断点数值。
 7. **截图转码例外**：布局按截图保真还原，但仍按本节纪律做流式，不照抄截图里的固定像素宽度。
 
 ## 5. API 适配层约定（页面取数唯一通道）
@@ -156,7 +158,7 @@ export { fetchList, fetchDetail }
 | 6 | `style="color: red"` | class + `<style lang="less">` 定义 | 禁止内联样式 |
 | 7 | `import { fetchList } from '../../../mock/modules/{slug}.js'` | `from '../../api/{slug}.js'` | 页面禁 import mock（build FAIL） |
 | 8 | `<style lang="scss">` 或新增 .scss 文件 | `<style lang="less" scoped>` | 样式语言全链路钉死 less |
-| 9 | `<style>` 内 `:root { --g-x: … }` | 皮肤只放 `src/assets/themes/`；页面局部变量 `--page-*` | token 层与皮肤文件专属 |
+| 9 | `<style>` 内 `:root { --color-x: … }` | 皮肤只放 `src/assets/themes/`；页面局部变量 `--page-*` | token 层与皮肤文件专属 |
 | 10 | `slot-scope="scope"` | `<template #default="{ row }">` | 旧语法编译失败 |
 | 11 | `v-if` 和 `v-for` 同标签 | 分开到不同标签 | 编译错误 |
 | 12 | `src="/assets/uploads/x.png"` | `import img from '../../assets/uploads/x.png'` | 预览无法解析裸路径 |

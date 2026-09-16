@@ -8,7 +8,7 @@
 // 用法（--dir 为已 init 的工作区；其余参数可重复，值为逗号分隔清单）：
 //   node preflight.mjs --dir "{slug}" \
 //     --icons "Search,Bell,CaretRight" \
-//     --tokens "--color-brand,--g-bg-surface" \
+//     --tokens "--color-brand,--space-size-16" \
 //     --exports "ElMessage,ElMessageBox" \
 //     --imports "views/{slug}/components/GlobalNav.vue=../../../locales/pages/{slug}.js|../../api/{slug}.js,..."
 //

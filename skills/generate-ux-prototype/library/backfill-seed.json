@@ -1,0 +1,779 @@
+{
+  "schemaVersion": "1.4",
+  "assetId": "g-design-enterprise",
+  "seedFrom": "G Design 1.5.1（设计师 2026-09-16 口头答复\"用旧版值\"，工程回填过渡基线；设计师正式修订文档后由 md 行取代）",
+  "groups": {
+    "frost-common": {
+      "description": "毛玻璃公共参数：control/card/overlay 离散档位；不改变文字透明度。",
+      "tokens": {
+        "--frost-blur-control": {
+          "value": "12px",
+          "type": "dimension",
+          "usage": "轻雾：标签与次级按钮",
+          "source": "G Design / 毛玻璃材质规范"
+        },
+        "--frost-blur-card": {
+          "value": "20px",
+          "type": "dimension",
+          "usage": "标准磨砂：概览与指标卡",
+          "source": "G Design / 毛玻璃材质规范"
+        },
+        "--frost-blur-overlay": {
+          "value": "28px",
+          "type": "dimension",
+          "usage": "厚雾：菜单与轻量浮层",
+          "source": "G Design / 毛玻璃材质规范"
+        },
+        "--frost-saturate-neutral": {
+          "value": "100%",
+          "type": "css-value",
+          "usage": "默认不放大背景饱和度",
+          "source": "G Design / 毛玻璃材质规范"
+        },
+        "--frost-saturate-muted": {
+          "value": "95%",
+          "type": "css-value",
+          "usage": "复杂背景可选去艳",
+          "source": "G Design / 毛玻璃材质规范"
+        },
+        "--frost-border-width": {
+          "value": "var(--border-width-normal)",
+          "type": "reference",
+          "usage": "边界宽度沿用标准边框",
+          "source": "G Design / 毛玻璃材质规范"
+        },
+        "--frost-alpha-hover-delta": {
+          "value": "0.04",
+          "type": "number",
+          "usage": "交互悬浮仅增加背景填充 alpha",
+          "source": "G Design / 毛玻璃材质规范"
+        },
+        "--frost-alpha-active-delta": {
+          "value": "0.08",
+          "type": "number",
+          "usage": "交互按下仅增加背景填充 alpha",
+          "source": "G Design / 毛玻璃材质规范"
+        },
+        "--frost-transition-duration": {
+          "value": "120ms",
+          "type": "duration",
+          "usage": "仅过渡填充与阴影",
+          "source": "G Design / 毛玻璃材质规范"
+        },
+        "--frost-transition-easing": {
+          "value": "ease-out",
+          "type": "css-value",
+          "usage": "克制过渡",
+          "source": "G Design / 毛玻璃材质规范"
+        }
+      }
+    },
+    "frost-light": {
+      "description": "浅色毛玻璃：中性填充、薄染色、柔和渐变及实色回退。",
+      "tokens": {
+        "--frost-neutral-rgb": {
+          "value": "255, 255, 255",
+          "type": "css-value",
+          "usage": "毛玻璃中性填充的 RGB 通道",
+          "source": "G Design / 毛玻璃材质规范"
+        },
+        "--frost-alpha-control": {
+          "value": "0.68",
+          "type": "number",
+          "usage": "当前主题 control 填充不透明度",
+          "source": "G Design / 毛玻璃材质规范"
+        },
+        "--frost-surface-control": {
+          "value": "rgba(var(--frost-neutral-rgb), var(--frost-alpha-control))",
+          "type": "color",
+          "usage": "control 中性磨砂表面",
+          "source": "G Design / 毛玻璃材质规范"
+        },
+        "--frost-shadow-control": {
+          "value": "0 2px 6px rgba(35, 48, 72, .04)",
+          "type": "shadow",
+          "usage": "control 轻量层级阴影",
+          "source": "G Design / 毛玻璃材质规范"
+        },
+        "--frost-alpha-card": {
+          "value": "0.76",
+          "type": "number",
+          "usage": "当前主题 card 填充不透明度",
+          "source": "G Design / 毛玻璃材质规范"
+        },
+        "--frost-surface-card": {
+          "value": "rgba(var(--frost-neutral-rgb), var(--frost-alpha-card))",
+          "type": "color",
+          "usage": "card 中性磨砂表面",
+          "source": "G Design / 毛玻璃材质规范"
+        },
+        "--frost-shadow-card": {
+          "value": "0 6px 18px rgba(35, 48, 72, .06)",
+          "type": "shadow",
+          "usage": "card 轻量层级阴影",
+          "source": "G Design / 毛玻璃材质规范"
+        },
+        "--frost-alpha-overlay": {
+          "value": "0.84",
+          "type": "number",
+          "usage": "当前主题 overlay 填充不透明度",
+          "source": "G Design / 毛玻璃材质规范"
+        },
+        "--frost-surface-overlay": {
+          "value": "rgba(var(--frost-neutral-rgb), var(--frost-alpha-overlay))",
+          "type": "color",
+          "usage": "overlay 中性磨砂表面",
+          "source": "G Design / 毛玻璃材质规范"
+        },
+        "--frost-shadow-overlay": {
+          "value": "0 10px 28px rgba(35, 48, 72, .10)",
+          "type": "shadow",
+          "usage": "overlay 轻量层级阴影",
+          "source": "G Design / 毛玻璃材质规范"
+        },
+        "--frost-tint-blue": {
+          "value": "rgba(111, 142, 184, 0.08)",
+          "type": "color",
+          "usage": "淡彩染色层；覆盖在中性填充之上，不表示业务状态",
+          "source": "G Design / 毛玻璃材质规范"
+        },
+        "--frost-tint-lavender": {
+          "value": "rgba(147, 134, 175, 0.06)",
+          "type": "color",
+          "usage": "淡彩染色层；覆盖在中性填充之上，不表示业务状态",
+          "source": "G Design / 毛玻璃材质规范"
+        },
+        "--frost-tint-teal": {
+          "value": "rgba(111, 153, 145, 0.05)",
+          "type": "color",
+          "usage": "淡彩染色层；覆盖在中性填充之上，不表示业务状态",
+          "source": "G Design / 毛玻璃材质规范"
+        },
+        "--frost-border": {
+          "value": "rgba(88, 108, 138, .14)",
+          "type": "color",
+          "usage": "细边界，仅辅助分层；焦点另用品牌语义",
+          "source": "G Design / 毛玻璃材质规范"
+        },
+        "--frost-backdrop-base": {
+          "value": "#F4F6FA",
+          "type": "color",
+          "usage": "受控背景的中性基底",
+          "source": "G Design / 毛玻璃材质规范"
+        },
+        "--frost-backdrop-blue": {
+          "value": "rgba(152, 177, 211, 0.28)",
+          "type": "color",
+          "usage": "背景氛围色；大范围淡出，避免明显色块",
+          "source": "G Design / 毛玻璃材质规范"
+        },
+        "--frost-backdrop-lavender": {
+          "value": "rgba(177, 167, 206, 0.18)",
+          "type": "color",
+          "usage": "背景氛围色；大范围淡出，避免明显色块",
+          "source": "G Design / 毛玻璃材质规范"
+        },
+        "--frost-backdrop-teal": {
+          "value": "rgba(155, 189, 185, 0.1)",
+          "type": "color",
+          "usage": "背景氛围色；大范围淡出，避免明显色块",
+          "source": "G Design / 毛玻璃材质规范"
+        },
+        "--frost-backdrop-gradient": {
+          "value": "radial-gradient(ellipse 70% 100% at 15% 20%, var(--frost-backdrop-blue) 0%, transparent 72%), radial-gradient(ellipse 65% 90% at 90% 75%, var(--frost-backdrop-lavender) 0%, transparent 75%)",
+          "type": "gradient",
+          "usage": "父级背景图层，叠加在 backdrop-base 上；默认静态",
+          "source": "G Design / 毛玻璃材质规范"
+        },
+        "--frost-surface-solid": {
+          "value": "#F7F9FC",
+          "type": "color",
+          "usage": "不支持模糊、减少透明度或主动回退时使用完全不透明表面",
+          "source": "G Design / 毛玻璃材质规范"
+        }
+      }
+    },
+    "frost-dark": {
+      "description": "深色毛玻璃：中性填充、薄染色、柔和渐变及实色回退。",
+      "tokens": {
+        "--frost-neutral-rgb": {
+          "value": "24, 28, 36",
+          "type": "css-value",
+          "usage": "毛玻璃中性填充的 RGB 通道",
+          "source": "G Design / 毛玻璃材质规范"
+        },
+        "--frost-alpha-control": {
+          "value": "0.64",
+          "type": "number",
+          "usage": "当前主题 control 填充不透明度",
+          "source": "G Design / 毛玻璃材质规范"
+        },
+        "--frost-surface-control": {
+          "value": "rgba(var(--frost-neutral-rgb), var(--frost-alpha-control))",
+          "type": "color",
+          "usage": "control 中性磨砂表面",
+          "source": "G Design / 毛玻璃材质规范"
+        },
+        "--frost-shadow-control": {
+          "value": "0 2px 6px rgba(0, 0, 0, .12)",
+          "type": "shadow",
+          "usage": "control 轻量层级阴影",
+          "source": "G Design / 毛玻璃材质规范"
+        },
+        "--frost-alpha-card": {
+          "value": "0.72",
+          "type": "number",
+          "usage": "当前主题 card 填充不透明度",
+          "source": "G Design / 毛玻璃材质规范"
+        },
+        "--frost-surface-card": {
+          "value": "rgba(var(--frost-neutral-rgb), var(--frost-alpha-card))",
+          "type": "color",
+          "usage": "card 中性磨砂表面",
+          "source": "G Design / 毛玻璃材质规范"
+        },
+        "--frost-shadow-card": {
+          "value": "0 6px 18px rgba(0, 0, 0, .18)",
+          "type": "shadow",
+          "usage": "card 轻量层级阴影",
+          "source": "G Design / 毛玻璃材质规范"
+        },
+        "--frost-alpha-overlay": {
+          "value": "0.8",
+          "type": "number",
+          "usage": "当前主题 overlay 填充不透明度",
+          "source": "G Design / 毛玻璃材质规范"
+        },
+        "--frost-surface-overlay": {
+          "value": "rgba(var(--frost-neutral-rgb), var(--frost-alpha-overlay))",
+          "type": "color",
+          "usage": "overlay 中性磨砂表面",
+          "source": "G Design / 毛玻璃材质规范"
+        },
+        "--frost-shadow-overlay": {
+          "value": "0 10px 28px rgba(0, 0, 0, .24)",
+          "type": "shadow",
+          "usage": "overlay 轻量层级阴影",
+          "source": "G Design / 毛玻璃材质规范"
+        },
+        "--frost-tint-blue": {
+          "value": "rgba(111, 142, 184, 0.1)",
+          "type": "color",
+          "usage": "淡彩染色层；覆盖在中性填充之上，不表示业务状态",
+          "source": "G Design / 毛玻璃材质规范"
+        },
+        "--frost-tint-lavender": {
+          "value": "rgba(147, 134, 175, 0.08)",
+          "type": "color",
+          "usage": "淡彩染色层；覆盖在中性填充之上，不表示业务状态",
+          "source": "G Design / 毛玻璃材质规范"
+        },
+        "--frost-tint-teal": {
+          "value": "rgba(111, 153, 145, 0.07)",
+          "type": "color",
+          "usage": "淡彩染色层；覆盖在中性填充之上，不表示业务状态",
+          "source": "G Design / 毛玻璃材质规范"
+        },
+        "--frost-border": {
+          "value": "rgba(255, 255, 255, .14)",
+          "type": "color",
+          "usage": "细边界，仅辅助分层；焦点另用品牌语义",
+          "source": "G Design / 毛玻璃材质规范"
+        },
+        "--frost-backdrop-base": {
+          "value": "#171C25",
+          "type": "color",
+          "usage": "受控背景的中性基底",
+          "source": "G Design / 毛玻璃材质规范"
+        },
+        "--frost-backdrop-blue": {
+          "value": "rgba(152, 177, 211, 0.16)",
+          "type": "color",
+          "usage": "背景氛围色；大范围淡出，避免明显色块",
+          "source": "G Design / 毛玻璃材质规范"
+        },
+        "--frost-backdrop-lavender": {
+          "value": "rgba(177, 167, 206, 0.1)",
+          "type": "color",
+          "usage": "背景氛围色；大范围淡出，避免明显色块",
+          "source": "G Design / 毛玻璃材质规范"
+        },
+        "--frost-backdrop-teal": {
+          "value": "rgba(155, 189, 185, 0.06)",
+          "type": "color",
+          "usage": "背景氛围色；大范围淡出，避免明显色块",
+          "source": "G Design / 毛玻璃材质规范"
+        },
+        "--frost-backdrop-gradient": {
+          "value": "radial-gradient(ellipse 70% 100% at 15% 20%, var(--frost-backdrop-blue) 0%, transparent 72%), radial-gradient(ellipse 65% 90% at 90% 75%, var(--frost-backdrop-lavender) 0%, transparent 75%)",
+          "type": "gradient",
+          "usage": "父级背景图层，叠加在 backdrop-base 上；默认静态",
+          "source": "G Design / 毛玻璃材质规范"
+        },
+        "--frost-surface-solid": {
+          "value": "#202631",
+          "type": "color",
+          "usage": "不支持模糊、减少透明度或主动回退时使用完全不透明表面",
+          "source": "G Design / 毛玻璃材质规范"
+        }
+      }
+    },
+    "frost-decoration": {
+      "description": "品牌色块的白色毛玻璃装饰：重点卡片与宽幅概览；稀疏内容时由 AI 按规则选用。",
+      "tokens": {
+        "--frost-decor-blur": {
+          "value": "var(--frost-blur-control)",
+          "type": "reference",
+          "usage": "装饰图形使用控件模糊档位；不模糊文字",
+          "source": "G Design / 事件中心蓝色卡片已选视觉效果"
+        },
+        "--frost-decor-fill-start": {
+          "value": "rgba(255, 255, 255, 0.10)",
+          "type": "color",
+          "usage": "白色磨砂图形高光端",
+          "source": "G Design / 事件中心蓝色卡片已选视觉效果"
+        },
+        "--frost-decor-fill-end": {
+          "value": "rgba(255, 255, 255, 0.025)",
+          "type": "color",
+          "usage": "白色磨砂图形淡出端",
+          "source": "G Design / 事件中心蓝色卡片已选视觉效果"
+        },
+        "--frost-decor-border": {
+          "value": "rgba(255, 255, 255, 0.13)",
+          "type": "color",
+          "usage": "细描边，不加发光轮廓",
+          "source": "G Design / 事件中心蓝色卡片已选视觉效果"
+        },
+        "--frost-decor-ink": {
+          "value": "var(--gray-0White)",
+          "type": "reference",
+          "usage": "品牌色底上的统一白色文字；数字按字号和字重区分",
+          "source": "G Design / 事件中心蓝色卡片已选视觉效果"
+        },
+        "--frost-decor-brand-start": {
+          "value": "var(--brand-50)",
+          "type": "reference",
+          "usage": "品牌重点区域起始色，明暗主题均保留强调",
+          "source": "G Design / 事件中心蓝色卡片已选视觉效果"
+        },
+        "--frost-decor-brand-end": {
+          "value": "color-mix(in srgb, var(--brand-50) 55%, var(--brand-40))",
+          "type": "css-value",
+          "usage": "同色相轻微提亮，避免浅蓝端削弱白字对比",
+          "source": "G Design / 事件中心蓝色卡片已选视觉效果"
+        },
+        "--frost-decor-brand-gradient": {
+          "value": "linear-gradient(115deg, var(--frost-decor-brand-start) 0%, var(--frost-decor-brand-start) 30%, var(--frost-decor-brand-end) 100%)",
+          "type": "gradient",
+          "usage": "重点卡片低幅度蓝到浅蓝渐变",
+          "source": "G Design / 事件中心蓝色卡片已选视觉效果"
+        },
+        "--frost-decor-shape-gradient": {
+          "value": "linear-gradient(145deg, var(--frost-decor-fill-start), var(--frost-decor-fill-end))",
+          "type": "gradient",
+          "usage": "装饰图形内部的透明白色渐变",
+          "source": "G Design / 事件中心蓝色卡片已选视觉效果"
+        },
+        "--frost-decor-scale-card": {
+          "value": "1",
+          "type": "number",
+          "usage": "卡片预设，最多两个边角图形",
+          "source": "G Design / 事件中心蓝色卡片已选视觉效果"
+        },
+        "--frost-decor-scale-panel": {
+          "value": "1.35",
+          "type": "number",
+          "usage": "宽幅概览预设，放大既有图形而非增加数量",
+          "source": "G Design / 事件中心蓝色卡片已选视觉效果"
+        },
+        "--frost-decor-circle-size": {
+          "value": "146px",
+          "type": "dimension",
+          "usage": "右上角圆形直径，实际宽度不超过宿主的 52%",
+          "source": "G Design / 事件中心蓝色卡片已选视觉效果"
+        },
+        "--frost-decor-circle-top": {
+          "value": "-88px",
+          "type": "dimension",
+          "usage": "圆形上移并裁切，保留内容留白",
+          "source": "G Design / 事件中心蓝色卡片已选视觉效果"
+        },
+        "--frost-decor-circle-right": {
+          "value": "2px",
+          "type": "dimension",
+          "usage": "圆形右侧位置",
+          "source": "G Design / 事件中心蓝色卡片已选视觉效果"
+        },
+        "--frost-decor-tile-size": {
+          "value": "86px",
+          "type": "dimension",
+          "usage": "右侧磨砂圆角图形尺寸，实际宽度不超过宿主的 32%",
+          "source": "G Design / 事件中心蓝色卡片已选视觉效果"
+        },
+        "--frost-decor-tile-top": {
+          "value": "42px",
+          "type": "dimension",
+          "usage": "右侧图形上边距",
+          "source": "G Design / 事件中心蓝色卡片已选视觉效果"
+        },
+        "--frost-decor-tile-right": {
+          "value": "-52px",
+          "type": "dimension",
+          "usage": "右侧图形外移并裁切",
+          "source": "G Design / 事件中心蓝色卡片已选视觉效果"
+        },
+        "--frost-decor-tile-radius": {
+          "value": "var(--radius-xx-large)",
+          "type": "reference",
+          "usage": "装饰图形圆角；宿主仍沿用原组件圆角",
+          "source": "G Design / 事件中心蓝色卡片已选视觉效果"
+        },
+        "--frost-decor-tile-rotation": {
+          "value": "-24deg",
+          "type": "css-value",
+          "usage": "固定轻微旋转，无持续动画",
+          "source": "G Design / 事件中心蓝色卡片已选视觉效果"
+        }
+      }
+    },
+    "semantic-dark": {
+      "description": "[data-theme=\"dark\"]",
+      "tokens": {
+        "--color-brand": {
+          "value": "var(--brand-40)",
+          "type": "reference",
+          "source": "项目兼容 / 深色 UI",
+          "usage": "软件产品组件高亮色，默认态；深色 UI 为项目兼容映射"
+        },
+        "--color-brand-hover": {
+          "value": "var(--brand-30)",
+          "type": "reference",
+          "source": "项目兼容 / 深色 UI",
+          "usage": "强调色悬浮态；深色 UI 为项目兼容映射"
+        },
+        "--color-brand-focus": {
+          "value": "var(--brand-40)",
+          "type": "reference",
+          "source": "项目兼容 / 深色 UI",
+          "usage": "强调色选中态及焦点态；深色 UI 为项目兼容映射"
+        },
+        "--color-brand-active": {
+          "value": "var(--brand-50)",
+          "type": "reference",
+          "source": "项目兼容 / 深色 UI",
+          "usage": "强调色按下态；深色 UI 为项目兼容映射"
+        },
+        "--color-brand-disabled": {
+          "value": "var(--brand-80)",
+          "type": "reference",
+          "source": "项目兼容 / 深色 UI",
+          "usage": "强调色禁用态；深色 UI 为项目兼容映射"
+        },
+        "--color-text-primary": {
+          "value": "var(--gray-05)",
+          "type": "reference",
+          "source": "项目兼容 / 深色 UI",
+          "usage": "主要文本；深色 UI 为项目兼容映射"
+        },
+        "--color-text-secondary": {
+          "value": "var(--gray-30)",
+          "type": "reference",
+          "source": "项目兼容 / 深色 UI",
+          "usage": "次要文本；深色 UI 为项目兼容映射"
+        },
+        "--color-text-placeholder": {
+          "value": "var(--gray-40)",
+          "type": "reference",
+          "source": "项目兼容 / 深色 UI",
+          "usage": "占位文本；深色 UI 为项目兼容映射"
+        },
+        "--color-text-disabled": {
+          "value": "var(--gray-60)",
+          "type": "reference",
+          "source": "项目兼容 / 深色 UI",
+          "usage": "禁用文本；深色 UI 为项目兼容映射"
+        },
+        "--color-text-inverse": {
+          "value": "var(--gray-0)",
+          "type": "reference",
+          "source": "项目兼容 / 深色 UI",
+          "usage": "反白文本；深色 UI 为项目兼容映射"
+        },
+        "--color-icon-primary": {
+          "value": "var(--gray-05)",
+          "type": "reference",
+          "source": "项目兼容 / 深色 UI",
+          "usage": "主要图标；整体层级与文本匹配；深色 UI 为项目兼容映射"
+        },
+        "--color-icon-secondary": {
+          "value": "var(--gray-30)",
+          "type": "reference",
+          "source": "项目兼容 / 深色 UI",
+          "usage": "次要图标；深色 UI 为项目兼容映射"
+        },
+        "--color-icon-tertiary": {
+          "value": "var(--gray-40)",
+          "type": "reference",
+          "source": "项目兼容 / 深色 UI",
+          "usage": "三级图标；深色 UI 为项目兼容映射"
+        },
+        "--color-icon-placeholder": {
+          "value": "var(--gray-40)",
+          "type": "reference",
+          "source": "项目兼容 / 深色 UI",
+          "usage": "占位图标；深色 UI 为项目兼容映射"
+        },
+        "--color-icon-disabled": {
+          "value": "var(--gray-60)",
+          "type": "reference",
+          "source": "项目兼容 / 深色 UI",
+          "usage": "禁用图标；深色 UI 为项目兼容映射"
+        },
+        "--color-icon-inverse": {
+          "value": "var(--gray-0)",
+          "type": "reference",
+          "source": "项目兼容 / 深色 UI",
+          "usage": "反白图标；深色 UI 为项目兼容映射"
+        },
+        "--color-icon-hover": {
+          "value": "var(--brand-30)",
+          "type": "reference",
+          "source": "项目兼容 / 深色 UI",
+          "usage": "图标悬浮态；深色 UI 为项目兼容映射"
+        },
+        "--color-icon-focus": {
+          "value": "var(--brand-40)",
+          "type": "reference",
+          "source": "项目兼容 / 深色 UI",
+          "usage": "图标选中态；深色 UI 为项目兼容映射"
+        },
+        "--color-icon-active": {
+          "value": "var(--brand-50)",
+          "type": "reference",
+          "source": "项目兼容 / 深色 UI",
+          "usage": "图标按下态；深色 UI 为项目兼容映射"
+        },
+        "--color-border": {
+          "value": "var(--gray-60)",
+          "type": "reference",
+          "source": "项目兼容 / 深色 UI",
+          "usage": "默认边框；深色 UI 为项目兼容映射"
+        },
+        "--color-border-hover": {
+          "value": "var(--gray-30)",
+          "type": "reference",
+          "source": "项目兼容 / 深色 UI",
+          "usage": "悬浮边框；深色 UI 为项目兼容映射"
+        },
+        "--color-border-focus": {
+          "value": "var(--brand-40)",
+          "type": "reference",
+          "source": "项目兼容 / 深色 UI",
+          "usage": "选中或焦点边框；深色 UI 为项目兼容映射"
+        },
+        "--color-border-disabled": {
+          "value": "var(--gray-70)",
+          "type": "reference",
+          "source": "项目兼容 / 深色 UI",
+          "usage": "禁用边框；深色 UI 为项目兼容映射"
+        },
+        "--color-border-separator": {
+          "value": "var(--gray-70)",
+          "type": "reference",
+          "source": "项目兼容 / 深色 UI",
+          "usage": "分割线；深色 UI 为项目兼容映射"
+        },
+        "--color-border-separator-subtle": {
+          "value": "var(--gray-80)",
+          "type": "reference",
+          "source": "项目兼容 / 深色 UI",
+          "usage": "浅版分割线；深色 UI 为项目兼容映射"
+        },
+        "--color-bg-1": {
+          "value": "var(--gray-100)",
+          "type": "reference",
+          "source": "项目兼容 / 深色 UI",
+          "usage": "页面背景；深色 UI 为项目兼容映射"
+        },
+        "--color-bg-2": {
+          "value": "var(--gray-90)",
+          "type": "reference",
+          "source": "项目兼容 / 深色 UI",
+          "usage": "侧边导航或侧滑面板；深色 UI 为项目兼容映射"
+        },
+        "--color-bg-3": {
+          "value": "var(--gray-90)",
+          "type": "reference",
+          "source": "项目兼容 / 深色 UI",
+          "usage": "侧滑面板；深色 UI 为项目兼容映射"
+        },
+        "--color-bg-4": {
+          "value": "var(--gray-90)",
+          "type": "reference",
+          "source": "项目兼容 / 深色 UI",
+          "usage": "下拉面板及弹窗；深色 UI 为项目兼容映射"
+        },
+        "--color-bg-5": {
+          "value": "var(--gray-90)",
+          "type": "reference",
+          "source": "项目兼容 / 深色 UI",
+          "usage": "白色卡片；深色 UI 为项目兼容映射"
+        },
+        "--color-bg-6": {
+          "value": "rgba(201, 201, 201, 0.20)",
+          "type": "color",
+          "source": "项目兼容 / 深色 UI",
+          "usage": "带背景色卡片；按图中的 gray-20 20% 解释，旁注 #FFFFFF 冲突另存；深色 UI 为项目兼容映射"
+        },
+        "--color-bg-mask": {
+          "value": "rgba(0, 0, 0, 0.70)",
+          "type": "color",
+          "source": "项目兼容 / 深色 UI",
+          "usage": "遮罩：gray-90 30%；深色 UI 为项目兼容映射"
+        },
+        "--color-hover": {
+          "value": "rgba(255, 255, 255, 0.05)",
+          "type": "color",
+          "source": "项目兼容 / 深色 UI",
+          "usage": "通用悬浮态；gray-90 5%；深色 UI 为项目兼容映射"
+        },
+        "--color-table-header": {
+          "value": "rgba(255, 255, 255, 0.05)",
+          "type": "color",
+          "source": "项目兼容 / 深色 UI",
+          "usage": "表头背景；gray-90 5%；深色 UI 为项目兼容映射"
+        },
+        "--color-fill": {
+          "value": "rgba(255, 255, 255, 0.05)",
+          "type": "color",
+          "source": "项目兼容 / 深色 UI",
+          "usage": "步骤条未开始、单选块未选、图片与文件上传默认填充；gray-90 5%；深色 UI 为项目兼容映射"
+        },
+        "--color-fill-disabled-subtle": {
+          "value": "rgba(255, 255, 255, 0.05)",
+          "type": "color",
+          "source": "项目兼容 / 深色 UI",
+          "usage": "含描边的标准按钮、输入框、搜索框、选择器禁用填充；gray-90 5%；深色 UI 为项目兼容映射"
+        },
+        "--color-table-zebra": {
+          "value": "rgba(147, 147, 147, 0.05)",
+          "type": "color",
+          "source": "项目兼容 / 深色 UI",
+          "usage": "表格斑马纹背景；gray-40 5%；深色 UI 为项目兼容映射"
+        },
+        "--color-select": {
+          "value": "var(--brand-90)",
+          "type": "reference",
+          "source": "项目兼容 / 深色 UI",
+          "usage": "通用选中填充；深色 UI 为项目兼容映射"
+        },
+        "--color-fill-subtle": {
+          "value": "transparent",
+          "type": "css-value",
+          "source": "项目兼容 / 深色 UI",
+          "usage": "输入框等浅色模式有背景、深色模式无背景的填充；深色 UI 为项目兼容映射"
+        },
+        "--color-fill-disabled": {
+          "value": "var(--gray-70)",
+          "type": "reference",
+          "source": "项目兼容 / 深色 UI",
+          "usage": "不含描边的单选块、页签、滚动条及默认标签禁用填充；深色 UI 为项目兼容映射"
+        },
+        "--color-error": {
+          "value": "var(--red-50)",
+          "type": "reference",
+          "source": "项目兼容 / 深色 UI",
+          "usage": "高关注度：错误；深色 UI 为项目兼容映射"
+        },
+        "--color-alert": {
+          "value": "var(--orange-50)",
+          "type": "reference",
+          "source": "项目兼容 / 深色 UI",
+          "usage": "高关注度：告警，搭配文字；深色 UI 为项目兼容映射"
+        },
+        "--color-warning": {
+          "value": "var(--yellow-50)",
+          "type": "reference",
+          "source": "项目兼容 / 深色 UI",
+          "usage": "高关注度：提醒，搭配文字；深色 UI 为项目兼容映射"
+        },
+        "--color-success": {
+          "value": "var(--mint-50)",
+          "type": "reference",
+          "source": "项目兼容 / 深色 UI",
+          "usage": "中关注度：成功；深色 UI 为项目兼容映射"
+        },
+        "--color-info": {
+          "value": "var(--blue-50)",
+          "type": "reference",
+          "source": "项目兼容 / 深色 UI",
+          "usage": "中关注度：信息；深色 UI 为项目兼容映射"
+        },
+        "--color-none": {
+          "value": "var(--gray-30)",
+          "type": "reference",
+          "source": "项目兼容 / 深色 UI",
+          "usage": "中关注度：失效；深色 UI 为项目兼容映射"
+        },
+        "--color-error-subtle": {
+          "value": "var(--red-90)",
+          "type": "reference",
+          "source": "项目兼容 / 深色 UI",
+          "usage": "低关注度：错误弱背景；深色 UI 为项目兼容映射"
+        },
+        "--color-alert-subtle": {
+          "value": "var(--orange-90)",
+          "type": "reference",
+          "source": "项目兼容 / 深色 UI",
+          "usage": "低关注度：告警弱背景；深色 UI 为项目兼容映射"
+        },
+        "--color-warning-subtle": {
+          "value": "var(--yellow-90)",
+          "type": "reference",
+          "source": "项目兼容 / 深色 UI",
+          "usage": "低关注度：提醒弱背景；深色 UI 为项目兼容映射"
+        },
+        "--color-success-subtle": {
+          "value": "var(--mint-90)",
+          "type": "reference",
+          "source": "项目兼容 / 深色 UI",
+          "usage": "低关注度：成功弱背景；深色 UI 为项目兼容映射"
+        },
+        "--color-info-subtle": {
+          "value": "var(--brand-90)",
+          "type": "reference",
+          "source": "项目兼容 / 深色 UI",
+          "usage": "低关注度：信息弱背景；规范指定 brand-05；深色 UI 为项目兼容映射"
+        },
+        "--color-none-subtle": {
+          "value": "var(--gray-80)",
+          "type": "reference",
+          "source": "项目兼容 / 深色 UI",
+          "usage": "低关注度：失效弱背景；深色 UI 为项目兼容映射"
+        },
+        "--color-portal-highlight": {
+          "value": "var(--gray-90)",
+          "type": "reference",
+          "source": "H Design / 用于门户官网",
+          "usage": "门户官网组件高亮色；不替代软件产品的蓝色高亮"
+        },
+        "--g-shadow": {
+          "value": "0 4px 12px rgba(0,0,0,.35)",
+          "type": "shadow",
+          "source": "V1.3 tokens/semantic-dark.css",
+          "usage": "组件层级兼容投影；随主题调整透明度"
+        }
+      }
+    },
+    "semantic-light-backfill": {
+      "tokens": {
+        "--color-bg-6": {
+          "value": "rgba(201, 201, 201, 0.20)",
+          "type": "color",
+          "usage": "带背景色卡片（设计师 2026-09-16 答复\"用旧版值\"；取 gray-20/20% 解释，弃 #FFFFFF 旁注）"
+        }
+      }
+    }
+  }
+}

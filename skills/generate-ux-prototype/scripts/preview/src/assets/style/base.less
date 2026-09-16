@@ -1,7 +1,7 @@
 // ============================================================
 // base.less — 项目基础样式层（Less）
 // 包含：Less 变量、混入、通用工具类
-// 颜色一律走设计资产 token（var(--g-*) / var(--color-*)），此处只做结构性样式
+// 颜色一律走设计资产 token（var(--color-*)），此处只做结构性样式
 // 尺寸单位：px（与资产 token 一致）
 // ============================================================
 
@@ -18,9 +18,9 @@
 @font-size-lg: 16px;
 @font-size-xl: 28px;
 
-@radius-sm: var(--radius-small, 4px);
-@radius-md: var(--radius-medium, 6px);
-@radius-lg: var(--g-radius-lg, 8px);
+@radius-sm: var(--radius-size-small, 2px);
+@radius-md: var(--radius-size-normal, 4px);
+@radius-lg: var(--radius-size-medium, 8px);
 
 // ---- Less 混入 ----
 .flex-center() {

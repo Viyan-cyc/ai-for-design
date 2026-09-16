@@ -1,19 +1,36 @@
-# G Design Enterprise V1.5（内嵌资产库）
+# 资产库（library/，派生产物 + 工程侧自有资产）
 
-本目录内嵌于 generate-ux-prototype skill，两个区域：**design** 管数值与规则，**frontend/element-plus/tokens** 管生成的 CSS token 层（init 拷入工作区）。
+本目录内嵌于 generate-ux-prototype skill。**设计唯一来源在 `docs/design-language/`**（设计师迭代处）；本目录除 `patterns/` 与 `frontend/element-plus/docs/`（工程侧自有资产）外，全部可由管线再生——删了重跑脚本即恢复。
+
+## 结构
+
+| 路径 | 性质 | 说明 |
+| --- | --- | --- |
+| `tokens.json` | 派生（extract 产物） | 设计系统.md token 表 → DTCG JSON（schema `gts-flat-dtcg/1`），入库可审 diff |
+| `backfill-seed.json` | 过渡回填源 | 设计师 2026-09-16 答复"用旧版值"的回填数据：frost 四组（G 1.5.1 已验证值）+ 旧 semantic-dark 54 值 + color-bg-6 旧值；设计师正式修订文档后逐项退役 |
+| `frontend/element-plus/tokens/` | 派生（generate 产物） | CSS 七件：index / primitive / semantic / charts / code / frost / element-plus（桥） |
+| `patterns/` | **工程侧自有** | 页面模式（列表页骨架、六态壳与反馈闭环）+ patterns-index 速查表 |
+| `frontend/element-plus/docs/` | **工程侧自有** | 组件方言文档（el-form / el-dialog / el-tag，按需读） |
 
 ## 最常用入口
 
-- [设计数值](design/tokens.json)、[使用规则](design/rules.md)
-- 颜色入口：[颜色使用规范](design/color-rules.md)
-- 局部毛玻璃材质见 [frosted-glass.md](design/frosted-glass.md)
+- [页面模式速查](patterns/patterns-index.md)——写页面前扫一眼，命中场景才读对应 pattern
+- 组件方言文档：[frontend/element-plus/docs/](frontend/element-plus/docs/)
+- token 数值本体：[tokens.json](tokens.json)（脚本查询，不整读）
 
 ## 查询
 
 ```sh
-node scripts/query_assets.mjs tokens --search frost   # token 分组查询；只返回必要内容，避免模型全量读取
+node scripts/query_tokens.mjs --search brand   # token 查询；只返回必要内容，避免全量读取
 ```
 
-## 数值更新（pure 分支）
+## 再生成（设计师更新 design-language 后运行）
 
-本库是上游完整包的快照：`design/tokens.json` 为数值源，`frontend/element-plus/tokens/*.css` 为生成产物。本分支不含再生成器（build_tokens 等脚本已随组件层移除）——设计师在上游更新后整体替换 design/ 与 frontend/element-plus/tokens/ 即可；生成原型读取 manifest 的实际版本，不从文件夹名字推断。
+```sh
+node scripts/extract-tokens.mjs --source "../../../docs/design-language/样式Token/设计系统.md" --out tokens.json --seed backfill-seed.json --sourceVersion v2.2.1
+node scripts/generate-css.mjs --tokens tokens.json --out frontend/element-plus/tokens
+# 然后跑 build/smoke 门禁（见 SKILL.md）
+```
+
+- `--seed` 为过渡回填（backfill-seed.json：frost 值 + 深色语义 52 值 + color-bg-6，均按设计师 2026-09-16 答复"用旧版值"）；设计师在文档中正式给出对应行后，从种子中删去对应组即可。
+- `color-bg-6` 待设计师定值，extract 自动进黑名单不出 CSS。

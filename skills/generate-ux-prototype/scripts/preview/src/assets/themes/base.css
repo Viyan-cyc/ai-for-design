@@ -6,10 +6,9 @@
    ============================================================ */
 
 :root {
-  /* 字体栈（资产 token 层的 --g-font-family 优先，此处为兜底）。
-     不内嵌字体文件——'HarmonyOS Sans' 命中用户系统已装字体包，
-     未安装时按栈回退微软雅黑/PingFang。 */
-  --g-font-family: 'HarmonyOS Sans', 'Microsoft YaHei', 'PingFang SC', Arial, sans-serif;
+  /* 字体栈兜底：资产 token 层 --font-family-zh 优先生效（element-plus.css 桥把它接到 --el-font-family）。
+     不内嵌字体文件——未装 HarmonyOS Sans 时按栈回退微软雅黑/PingFang。 */
+  font-family: 'HarmonyOS Sans', 'Microsoft YaHei', 'PingFang SC', Arial, sans-serif;
 }
 
 /* 页面骨架 */
@@ -22,8 +21,7 @@ body,
 }
 
 body {
-  font-family: var(--g-font-family);
-  background: var(--g-bg-page, #f5f6f7);
+  background: var(--color-bg-1, #f5f6f7);
   color: var(--color-text-primary, #191919);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;

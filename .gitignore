@@ -1,6 +1,7 @@
 # skill 试跑产物（生成的工作区交付件，随时可重建，不入库）
 coder/
 demo-output/
+design/
 
 # 冒烟临时工作区
 /tmp/

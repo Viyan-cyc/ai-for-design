@@ -163,15 +163,17 @@ try {
   checks.tokenOk = /^#[0-9a-f]{6}$/i.test(checks.brandColor);
 
   // theme switch (asset-library protocol: data-theme on <html>)
+  // dark probe uses --code-background (design-source dark value: #FAFAFA/#131416) —
+  // semantic bg tokens currently have no design-sourced dark overrides.
   const before = await page.evaluate(() => ({
     theme: document.documentElement.getAttribute('data-theme'),
-    bg: getComputedStyle(document.body).backgroundColor,
+    bg: getComputedStyle(document.documentElement).getPropertyValue('--code-background').trim(),
   }));
   await page.evaluate(() => window.setTheme && window.setTheme('dark'));
   await new Promise((r) => setTimeout(r, 500));
   const after = await page.evaluate(() => ({
     theme: document.documentElement.getAttribute('data-theme'),
-    bg: getComputedStyle(document.body).backgroundColor,
+    bg: getComputedStyle(document.documentElement).getPropertyValue('--code-background').trim(),
   }));
   checks.themeSwitch = before.theme !== after.theme && before.bg !== after.bg;
   // restore light for any follow-up screenshot

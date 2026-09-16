@@ -32,12 +32,12 @@ build.mjs 从 `--dir` 工作区反查 `scripts/verify/whitelists/` 下的当前 
 
 ## 3. token 桥接 CSS 要求
 
-桥接文件把资产库语义 token 映射到目标 UI 库的组件变量，使 EP 组件（或目标库组件）自动跟随 `data-theme` 换肤。参照资产库 `element-plus.css` 的做法：`--el-color-primary` 等 97 个 `--el-*` 桥接变量映射自 `--g-*` / `--color-*` 语义层。
+桥接文件把资产库语义 token 映射到目标 UI 库的组件变量，使 EP 组件（或目标库组件）自动跟随 `data-theme` 换肤。参照资产库 `element-plus.css` 的做法：`--el-color-primary` 等桥接变量映射自 `--color-*` 语义层与基础 token。
 
 接入 SweetUI 时写一份 `sweet-ui.css` 桥接：
 
 1. 放资产库 `frontend/element-plus/tokens/`（或将来独立 `tokens/sweet-ui.css`），init 的 token glob 会自动复制进工作区 `src/assets/tokens/`。
-2. 变量名以目标库官方变量为准（如 `--el-color-primary` ↔ SweetUI 对应变量），值为资产库语义 token `var(--g-…)` / `var(--color-…)`，禁止 hex 直填。
-3. 桥接层只做映射、不新增语义；新语义 token 走资产库 token 体系（design/tokens.json → build_tokens）。
+2. 变量名以目标库官方变量为准（如 `--el-color-primary` ↔ SweetUI 对应变量），值为资产库语义 token `var(--color-…)`，禁止 hex 直填。
+3. 桥接层只做映射、不新增语义；新语义 token 走资产库 token 体系（设计系统.md → extract → tokens.json → generate）。
 
 > 设计原则：接入是「补三样 + 切两处引用」，生成流程、工作区结构、代码规范、二次开发方式全部不变。
