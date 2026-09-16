@@ -193,6 +193,7 @@ mkdirSync(join(srcDir, 'router'), { recursive: true });
 // 空目录仅存在于磁盘（collect 组件/手写组件落位前保持空）；git 不跟踪空目录无妨——
 // 工作区是交付件不是 git 仓库，不写 .gitkeep 以免混进交付件。
 mkdirSync(join(srcDir, 'components'), { recursive: true });
+mkdirSync(join(srcDir, 'assets', 'icons'), { recursive: true });
 
 // ---------- 5a. starter icon placeholder ----------
 // starter 页 import 了 assets/icons/refresh.svg；init 不联网 fetch，落一个内联
@@ -489,7 +490,7 @@ if (!result.ok) fail(result.reason);
 // ---------- 8a. remove empty directories ----------
 // KEEP_EMPTY: src/components 是语义性目录（用户拍板：init 始终创建，collect/手写组件
 // 的落位锚点），空着也要保留，不参与清理。
-const KEEP_EMPTY = new Set([join(srcDir, 'components')]);
+const KEEP_EMPTY = new Set([join(srcDir, 'components'), join(srcDir, 'assets', 'icons')]);
 function removeEmptyDirs(dir) {
   let removed = false;
   for (const entry of readdirSync(dir, { withFileTypes: true })) {

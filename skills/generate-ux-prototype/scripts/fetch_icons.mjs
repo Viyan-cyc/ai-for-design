@@ -111,7 +111,7 @@ function toKebabName(iconName) {
 }
 
 function processSvg(svgString) {
-  let svg = String(svgString).replace(/^\\uFEFF/, '').trim();
+  let svg = String(svgString).replace(/^\uFEFF/, '').trim();
   const tagMatch = svg.match(/<svg\b[^>]*>/i);
   if (tagMatch) {
     const originalTag = tagMatch[0];
