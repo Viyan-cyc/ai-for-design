@@ -13,7 +13,7 @@ version: 1.1.0
 ## 技术栈（钉死，无开关）
 
 - Vue 3（`<script setup>` 纯 JS 无 TS）+ Element Plus **2.13.5**（唯一 runtime）+ Vue Router 4 + Less + px
-- 裸 import 白名单仅五项：`vue` / `vue-router` / `element-plus` / `@element-plus/icons-vue` / `dayjs`（+ element-plus 子路径；`less` 仅为构建期依赖）
+- 裸 import 白名单仅四项：`vue` / `vue-router` / `element-plus` / `dayjs`（+ element-plus 子路径；`less` 仅为构建期依赖）。**图标一律走 fetch_icons（IconPlus/Lucide），禁止 `@element-plus/icons-vue`**
 
 ## Output Contract（READ FIRST）
 
@@ -122,9 +122,9 @@ version: 1.1.0
    ```
    资产包自动定位（init 从自身位置逐级向上找 `assets/`；跨盘/不在上级时加 `--assets-root <dir>`，成功后自动写入 skill 根 `assets-path.json`，下次免传）。成功输出 `RESULT: OK` + `HTML_PATH` + `SRC_DIR` + `PAGE` + `ASSETS_VERSION` + `ASSETS_ROOT`（后续 pattern/设计规范/token 查询路径的前缀）。token 全套随即复制到 `src/assets/tokens/`（含毛玻璃 token），并生成 api 适配层、mock 模块、全局词条、路由与 starter 页面。
 
-### Step 2.5 — 图标获取（页面需要业务图标时）
+### Step 2.5 — 图标获取（MANDATORY，页面用图标必经）
 
-页面需要非 EP 内置的业务图标（卡片操作、状态图标等）时，列全关键词，用 `fetch_icons.mjs` 批量获取（**先 fetch 下载 .svg，再连同其他清单一起跑 preflight 校验路径**）：
+页面所有业务图标一律用 `fetch_icons.mjs` 获取——**内网走华为 IconPlus，外网自动降级 Lucide**（探测 `https://octo.hdesign.huawei.com` 不通即切 Lucide，从公开 CDN 在线拉 SVG），**禁止 `@element-plus/icons-vue`**（白名单不含它，build 直接 FAIL）。写码前列全关键词，先 fetch 再 preflight：
 
 ```sh
 node scripts/fetch_icons.mjs --dir "{artifact-folder}/{slug}" --keywords "下载,刷新,搜索"
@@ -132,7 +132,7 @@ node scripts/fetch_icons.mjs --dir "{artifact-folder}/{slug}" --keywords "下载
 
 - **内网**：走华为 IconPlus API（默认 `https://octo.hdesign.huawei.com`，无需传参），存为 `src/assets/icons/*.svg`（`ic_public_download` → `public-download.svg`，kebab-case 剥 `ic_` 前缀）。
 - **外网**：IconPlus 不可达（3s 超时）自动降级为 **Lucide**——从公开 CDN 在线拉取 SVG，**本地不打包图标资源**（中文关键词经内置字典译成英文图标名）。输出 `RESULT: FALLBACK | ... used Lucide icons from network` + `ICONS: ...`，用法与内网无差异。
-- **用法**：`import downloadIcon from '../../assets/icons/download.svg'` + `<img :src="downloadIcon" :width="20" :height="20" />`（无需 `@element-plus/icons-vue` import，build 只放行 .svg 素材 import）。获取后把图标文件名写进 preflight `--imports` 校验路径存在。API 文档见 [references/icon-api.md](references/icon-api.md)。
+- **用法**：`import downloadIcon from '../../assets/icons/download.svg'` + `<img :src="downloadIcon" :width="20" :height="20" />`。**先 fetch 下载 .svg，再连同其他清单一起跑 preflight `--imports` 校验路径存在**。API 文档见 [references/icon-api.md](references/icon-api.md)。
 
 ### Step 3 — 写码
 
@@ -143,9 +143,9 @@ node scripts/fetch_icons.mjs --dir "{artifact-folder}/{slug}" --keywords "下载
 - **写码前先规划后落笔（preflight 强制）**：
   0. 按上方「读纪律」表：页面场景命中 pattern / 方言文档的，先读再落笔。
   1. 先列出每个待写文件的 imports——**按目录显式算好相对路径前缀**（`views/{slug}/` 出发上两级 `../../`，`views/{slug}/components/` 出发上三级 `../../../`；components/ 下少写一级是历史最高频 build FAIL 项）。
-  2. 汇总本轮要用的全部 token 变量名、EP 内置图标名、element-plus 导出名、词条 key，**一次提交 preflight 一条命令校验**（不通过按提示修正清单再跑；禁止写码中途反复 grep/node 查询）。**旗标各管各的，不混装**：`--icons` 只填 `@element-plus/icons-vue` 内置图标名（业务图标走 `fetch_icons.mjs` + `--imports` 校验 .svg，见 Step 2.5）；`--exports` 只填 element-plus 导出名（vue 的 ref/computed 等不进任何清单）；`--tokens` 每项带 `--` 前缀（`--color-brand` 而非 `color-brand`）；`--imports`（可选，本轮有新增 import 目标才填）格式 `fromFile=rel1|rel2`，多项逗号分隔：
+  2. 汇总本轮要用的全部 token 变量名、element-plus 导出名、词条 key，**一次提交 preflight 一条命令校验**（不通过按提示修正清单再跑；禁止写码中途反复 grep/node 查询）。**旗标各管各的，不混装**：`--exports` 只填 element-plus 导出名（vue 的 ref/computed 等不进任何清单）；`--tokens` 每项带 `--` 前缀（`--color-brand` 而非 `color-brand`）；`--imports`（可选，本轮有新增 import 目标才填）格式 `fromFile=rel1|rel2`，多项逗号分隔（图标 .svg 也走这里校验，见 Step 2.5）：
      ```sh
-     node scripts/preflight.mjs --dir "{artifact-folder}/{slug}" --icons "Search,Bell" --tokens "--color-brand,--space-size-16" --exports "ElMessage,ElMessageBox" --imports "views/{slug}/components/X.vue=../../../locales/pages/{slug}.js|../js/constants.js"
+     node scripts/preflight.mjs --dir "{artifact-folder}/{slug}" --tokens "--color-brand,--space-size-16" --exports "ElMessage,ElMessageBox" --imports "views/{slug}/components/X.vue=../../../locales/pages/{slug}.js|../js/constants.js,views/{slug}/index.vue=../../assets/icons/download.svg"
      ```
   3. `RESULT: OK` 后以清单为准落笔——写码过程中 token/词条/路径以清单为准，不再现场发明。
   4. **新建文件的两段式**：规划清单里含本轮才新建的文件（如 `components/RuleDialog.vue`）时，第 2 步的 `--imports` 只填指向**已有文件**的 import，先过一轮 `RESULT: OK`；新建文件写完后，把指向它们的 import 补进清单再跑一轮 preflight 确认。禁止把指向未创建文件的 import 塞进第一轮——那必然 FAIL。
@@ -207,7 +207,7 @@ node scripts/smoke.mjs --dir "{artifact-folder}/{slug}"
 ## Token / 图标查询
 
 - token 数值用 `query_tokens.mjs` 查询（按名/搜索/分组摘要，不整读 tokens.json）。
-- 图标：EP 内置图标名、`el-*` 组件名写错时 preflight 会给相近项提示，按提示修正清单重跑即可；业务图标用 `fetch_icons.mjs` 获取（见 Step 2.5），无需猜名。
+- 图标全走 `fetch_icons.mjs`（IconPlus/Lucide，见 Step 2.5），无需猜名；`el-*` 组件名写错时 preflight/build 会给相近项提示，按提示修正重跑即可。
 
 ```sh
 node assets/scripts/query_tokens.mjs --name color-brand   # 查单个 token（含深色值）

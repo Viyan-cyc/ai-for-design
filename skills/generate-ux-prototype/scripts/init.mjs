@@ -194,6 +194,16 @@ mkdirSync(join(srcDir, 'router'), { recursive: true });
 // 工作区是交付件不是 git 仓库，不写 .gitkeep 以免混进交付件。
 mkdirSync(join(srcDir, 'components'), { recursive: true });
 
+// ---------- 5a. starter icon placeholder ----------
+// starter 页 import 了 assets/icons/refresh.svg；init 不联网 fetch，落一个内联
+// 占位 SVG（几何图形，非真实图标）保证开箱可 build；正式图标由 fetch_icons.mjs 覆盖。
+mkdirSync(join(srcDir, 'assets', 'icons'), { recursive: true });
+writeFileSync(
+  join(srcDir, 'assets', 'icons', 'refresh.svg'),
+  '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/></svg>',
+  'utf8',
+);
+
 // ---------- 6. write starter files ----------
 
 // --- 6a. mock/modules/{slug}.js (REST-shaped signatures + delay ---
@@ -331,11 +341,12 @@ writeFileSync(
   join(srcDir, 'views', slug, 'index.vue'),
   `<script setup>
 // ${pageName} — 页面主组件（交付入口；真实工程中由路由挂载）
+// starter 用 refresh.svg 占位演示图标用法；正式图标用 fetch_icons.mjs 拉取后替换
 import { ref, onMounted } from 'vue'
-import { Monitor } from '@element-plus/icons-vue'
 import { fetchList } from '../../api/${slug}.js'
 import { t } from '../../locales/pages/${slug}.js'
 import { STATUS_MAP } from './js/constants.js'
+import refreshIcon from '../../assets/icons/refresh.svg'
 
 const loading = ref(false)
 const dataList = ref([])
@@ -363,7 +374,8 @@ onMounted(() => {
       <template #header>
         <div class="header">
           <span class="title">{{ t.title }}</span>
-          <el-button type="primary" :icon="Monitor" @click="fetchData">{{ t.refresh }}</el-button>
+          <img :src="refreshIcon" :width="20" :height="20" alt="refresh" />
+          <el-button type="primary" @click="fetchData">{{ t.refresh }}</el-button>
         </div>
       </template>
       <el-table :data="dataList" v-loading="loading">

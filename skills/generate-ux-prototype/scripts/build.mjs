@@ -10,9 +10,10 @@
 //                   bad directives, bad expressions)
 //   3. Tag check   — <el-*> tags against the official Element Plus whitelist;
 //                   PascalCase tags must be imported components or valid icons
-//   4. Import check — 'element-plus' names / '@element-plus/icons-vue' names against
-//                   official export lists; relative imports must resolve to real
-//                   files; bare imports restricted to the allowed dependency set
+//   4. Import check — 'element-plus' names against the official export list;
+//                   relative imports must resolve to real files; bare imports
+//                   restricted to the allowed dependency set (icons come from
+//                   fetch_icons.mjs as .svg — @element-plus/icons-vue is banned)
 //   5. JS check    — src/**/*.js parsed as ESM (node --check)
 //   6. Style check — SFC <style>: no :root/[data-theme]/asset-token definitions
 //                   (custom skins live in src/assets/themes/); var(--color-*)
@@ -80,14 +81,10 @@ const EP_COMPONENTS = new Set(
 const EP_EXPORTS = new Set(
   JSON.parse(readFileSync(join(__dirname, 'verify', 'whitelists', 'element-plus', 'exports.json'), 'utf8')),
 );
-const EP_ICONS = new Set(
-  JSON.parse(readFileSync(join(__dirname, 'verify', 'whitelists', 'element-plus', 'icons.json'), 'utf8')),
-);
 const ALLOWED_BARE = new Set([
   'vue',
   'vue-router',
   'element-plus',
-  '@element-plus/icons-vue',
   'dayjs',
   'less',
 ]);
@@ -279,12 +276,7 @@ for (const file of vueFiles) {
         }
       }
       if (spec === '@element-plus/icons-vue') {
-        for (const n of names) {
-          if (!EP_ICONS.has(n)) {
-            const hints = [...EP_ICONS].filter((x) => x.toLowerCase().startsWith(n.toLowerCase().slice(0, 4))).slice(0, 4);
-            error(`${rel}: unknown icon "${n}"${hints.length ? ` : did you mean ${hints.join(', ')}?` : ''}`);
-          }
-        }
+        error(`${rel}: "@element-plus/icons-vue" is banned — icons come from IconPlus/Lucide via fetch_icons.mjs (use \`import icon from '../../assets/icons/xxx.svg'\` + <img :src="icon" />)`);
       }
     } else {
       // relative import resolution
@@ -326,8 +318,7 @@ for (const file of vueFiles) {
     // must be imported in this file (components AND icons alike — the preview
     // registers nothing globally, so unimported tags cannot render)
     if (importedNames.has(tag)) continue;
-    const iconHint = EP_ICONS.has(tag) ? ' (it is a valid icon name — add `import { ' + tag + ' } from \'@element-plus/icons-vue\'`)' : '';
-    error(`${rel}: <${tag}> is not imported${iconHint}`);
+    error(`${rel}: <${tag}> is not imported`);
   }
   // kebab-case usage of imported PascalCase components (e.g. <status-tag>)
   for (const m of tplContent.matchAll(/<((?!el-)[a-z][a-z0-9]*-[a-z0-9-]*)[\s/>]/g)) {

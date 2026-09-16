@@ -7,14 +7,14 @@
 //
 // 用法（--dir 为已 init 的工作区；其余参数可重复，值为逗号分隔清单）：
 //   node preflight.mjs --dir "{slug}" \
-//     --icons "Search,Bell,CaretRight" \
 //     --tokens "--color-brand,--space-size-16" \
 //     --exports "ElMessage,ElMessageBox" \
 //     --imports "views/{slug}/components/GlobalNav.vue=../../../locales/pages/{slug}.js|../../api/{slug}.js,..."
 //
 // 输出：RESULT: OK（全过）| RESULT: FAIL + 逐条问题清单（含相近项提示）。
-// 设计约束：不内嵌任何 token/图标速查表 —— 图标与导出读 skill 自带白名单 JSON，
+// 设计约束：不内嵌任何 token 速查表 —— 导出读 skill 自带白名单 JSON，
 // token 与 build.mjs 同源，从工作区 src/assets/tokens/ 实时提取。
+// 图标不走本脚本的 --icons（EP 图标已禁用）；IconPlus/Lucide 的 .svg 走 --imports 校验文件存在。
 
 import { readFileSync, existsSync, readdirSync, statSync } from 'node:fs';
 import { join, resolve, dirname, sep } from 'node:path';
@@ -31,7 +31,7 @@ function argValue(name) {
 }
 const dirArg = argValue('--dir');
 if (!dirArg) {
-  console.error('Usage: node preflight.mjs --dir <workspace> [--icons "A,B"] [--tokens "--x,--y"] [--exports "A,B"] [--imports "file=rel1|rel2,..."]');
+  console.error('Usage: node preflight.mjs --dir <workspace> [--tokens "--x,--y"] [--exports "A,B"] [--imports "file=rel1|rel2,..."]');
   process.exit(2);
 }
 const workDir = resolve(dirArg);
@@ -42,9 +42,6 @@ if (!existsSync(srcDir)) {
 }
 
 // ---------- whitelists (same files build.mjs uses) ----------
-const EP_ICONS = new Set(
-  JSON.parse(readFileSync(join(__dirname, 'verify', 'whitelists', 'element-plus', 'icons.json'), 'utf8')),
-);
 const EP_EXPORTS = new Set(
   JSON.parse(readFileSync(join(__dirname, 'verify', 'whitelists', 'element-plus', 'exports.json'), 'utf8')),
 );
@@ -86,7 +83,6 @@ function checkList(raw, kind, pool) {
   }
 }
 
-checkList(argValue('--icons'), 'icon', EP_ICONS);
 checkList(argValue('--exports'), 'element-plus export', EP_EXPORTS);
 checkList(argValue('--tokens'), 'token', definedTokens);
 
