@@ -47,7 +47,7 @@
 | topK | number | 否 | 每个关键词返回数量，默认5 |
 | category | string | 否 | 图标类别，与keyword拼接为‘category_keyword’搜索 |
 | source_id | number | 否 | 来源ID |
-| group_id | string | 否 | 分组ID，支持逗号分隔多个值，如`132,333`,从config的group中选取id（可选） |
+| group_id | string | 否 | 分组ID，支持逗号分隔多个值，如`132,333` |
 | businessData | string | 否 | 业务数据，JSON字符串格式，传递给向量搜索接口（可选） |
 ### 响应
 ```json
