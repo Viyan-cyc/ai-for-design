@@ -58,12 +58,22 @@ import {
 import { join, resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { refresh } from './build-data.mjs';
+import { resolveCompilerModules } from './compiler-paths.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 function fail(reason) {
   console.log(`RESULT: FAIL | ${reason}`);
   process.exit(1);
+}
+
+// --- step 0: compiler deps ensure（只判断不修复；缺失给 HINT 早失败，不白建工作区） ---
+{
+  const found = resolveCompilerModules();
+  if (!found.ok) {
+    console.log(`HINT: node "${join(__dirname, 'setup-compiler.mjs')}"   # 首装约 10-30s（内网 npm 源），装完重跑 init`);
+    fail(`@vue/compiler-sfc 依赖树未安装（已找过: ${found.candidates.join(' , ')}）`);
+  }
 }
 
 // --- args ---
