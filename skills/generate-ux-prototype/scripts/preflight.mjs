@@ -106,6 +106,12 @@ if (importsArg) {
     for (const rel of pair.slice(eq + 1).split('|').map((s) => s.trim()).filter(Boolean)) {
       const resolved = posix.normalize(posix.join(fromDir, rel));
       const base = join(srcDir, ...resolved.split('/'));
+      const ext = resolved.slice(resolved.lastIndexOf('.'));
+      // 素材 import（IconPlus/Lucide 图标等 .svg）只要文件存在即通过，不参与 .js/.vue/index 解析
+      if (['.svg', '.png', '.jpg', '.jpeg', '.gif', '.webp', '.ico', '.bmp'].includes(ext)) {
+        if (!existsSync(base)) problems.push(`unresolved asset import ${fromFile} <- "${rel}" (no file at src/${resolved})`);
+        continue;
+      }
       const candidates = [base, `${base}.js`, `${base}.vue`, join(base, 'index.vue'), join(base, 'index.js')];
       if (!candidates.some((c) => existsSync(c))) {
         problems.push(`unresolved import ${fromFile} <- "${rel}" (resolves to src/${resolved}, no .js/.vue/index found)`);

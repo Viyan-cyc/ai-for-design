@@ -16,9 +16,9 @@
 1. `<script setup>` Composition API；`defineProps` / `defineEmits` 声明组件契约；纯 JS 无 TS 标注。
 2. **拆分触发式**：子组件仅在 **>150 行 / 被复用 / 独立状态复杂** 时拆出独立文件，常规页面约 4-8 个文件。页面私有放 `views/{slug}/components/`，跨页复用放 `src/components/`。
 3. `index.vue` 做组合层：布局编排 + 子组件引用 + 事件协调；`<script setup>` 控制在 ~80 行内，业务逻辑、数据请求、复杂计算拆到子组件或 `views/{slug}/js/use-*.js`（composable）。
-4. **imports 顺序**: vue → vue-router → element-plus → @element-plus/icons-vue → dayjs → 相对子组件/素材/api/constants。
+4. **imports 顺序**: vue → vue-router → element-plus → @element-plus/icons-vue → dayjs → 相对子组件/素材/api/constants（含 .svg 图标导入）。
 5. 常量放 `views/{slug}/js/constants.js`，全大写+下划线命名（`ALARM_LEVEL`、`STATUS_MAP`）。
-6. 图标：`import { Search, Plus } from '@element-plus/icons-vue'`；用法 `<el-icon :size="20"><Search /></el-icon>` 或 `:icon="Search"`。
+6. 图标：EP 内置图标 `import { Search, Plus } from '@element-plus/icons-vue'`，用法 `<el-icon :size="20"><Search /></el-icon>` 或 `:icon="Search"`；业务图标走 IconPlus（生成时 `fetch_icons.mjs` 获取，存 `src/assets/icons/*.svg`），导入 `import downloadIcon from '../../assets/icons/download.svg'`，用法 `<img :src="downloadIcon" :width="20" :height="20" />`。命名规则：`ic_public_download` → `public-download.svg`（kebab-case，`ic_` 前缀剥离）。
 7. 反馈：轻提示 `ElMessage`；危险操作 `ElMessageBox.confirm(..., { type: 'warning' })`；表格 `v-loading`；空态 `el-empty`。
 8. 表格：`el-table` + `el-table-column`；自定义列 `<template #default="{ row }">`；操作列 `fixed="right"` ≤3 个按钮（多了收进 `el-dropdown`）；≥8 条数据配 `el-pagination`。
 9. 图片素材：`import logo from '../../assets/uploads/logo.png'` 或 `import icon from '../../assets/images/ran.svg'`（禁止裸路径 `src="/assets/..."`）。
@@ -117,7 +117,7 @@ export { fetchList, fetchDetail }
 
 ## 8. 相对路径计算（最易错项）
 
-按 init 后实际目录结构计算（完整树见 SKILL.md「Output Contract」；与本节相关：`src/api/{slug}.js`、`src/locales/pages/{slug}.js`、`src/assets/{uploads,images}/`、`src/components/`、`src/views/{slug}/{components/,js/}`）：
+按 init 后实际目录结构计算（完整树见 SKILL.md「Output Contract」；与本节相关：`src/api/{slug}.js`、`src/locales/pages/{slug}.js`、`src/assets/{uploads,images,icons}/`、`src/components/`、`src/views/{slug}/{components/,js/}`）：
 
 ```
 从 views/{slug}/index.vue 引用:
@@ -127,11 +127,13 @@ export { fetchList, fetchDetail }
   API 适配层:  import { fetchList } from '../../api/{slug}.js'
   素材:        import logo from '../../assets/uploads/logo.png'
   SVG 图标:    import ranIcon from '../../assets/images/ran.svg'
+  IconPlus 图标: import downloadIcon from '../../assets/icons/download.svg'
   手写跨页组件: import SharedCard from '../../components/SharedCard.vue'
 
 从 views/{slug}/components/StatusTag.vue 引用:
   API 适配层:  import { fetchList } from '../../../api/{slug}.js'
   素材:        import logo from '../../../assets/uploads/logo.png'
+  IconPlus 图标: import downloadIcon from '../../../assets/icons/download.svg'
 
 从 src/components/SharedCard.vue 引用:
   API 适配层:  import { fetchList } from '../api/{slug}.js'
@@ -155,6 +157,7 @@ export { fetchList, fetchDetail }
 | # | 错误写法 | 正确写法 | 原因 |
 |---|---------|---------|------|
 | 1 | `import logo from '../assets/uploads/logo.png'`（从 views/{slug}/ 出发） | `'../../assets/uploads/logo.png'` | 路径少一级 |
+| 1b | IconPlus 图标 import 路径少一级 | `import downloadIcon from '../../assets/icons/download.svg'`（从 `views/{slug}/` 出发上两级） | fetch 后先 preflight 校验 |
 | 2 | `import { fetchList } from '../../../mock/modules/{slug}.js'` | `from '../../api/{slug}.js'` | 页面禁 import mock（build FAIL） |
 | 3 | `<style lang="scss">` 或新增 .scss 文件 | `<style lang="less" scoped>` | 样式语言全链路钉死 less |
 | 4 | `<style>` 内 `:root { --color-x: … }` | 皮肤只放 `src/assets/themes/`；页面局部变量 `--page-*` | token 层与皮肤文件专属 |

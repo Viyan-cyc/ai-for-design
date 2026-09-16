@@ -4,7 +4,7 @@
 // 管线第二步：assets/tokens.json（extract 产物，gts-flat-dtcg schema）
 //   → 本脚本 → frontend/element-plus/tokens/ 七件（init 原样拷给工作区）
 //
-// 产物（替换旧 12 件为 7 件）：
+// 产物（7 件 CSS + token-index.md）：
 //   index.css          入口 @import
 //   primitive.css      基础色板/尺寸/字体/阴影/边框字面值
 //   semantic.css       语义 var() 链（--color-*，浅色为默认主题）
@@ -12,6 +12,7 @@
 //   code.css           代码高亮（浅色默认 + data-theme="dark"）
 //   frost.css          毛玻璃 token + 规则层（种子值来自 extract 回填）
 //   element-plus.css   bridge：--el-* → --color-*（手写一次不再动的锚点，脚本只核对不生成规则段）
+//   token-index.md     token 真名索引（只名不含值，AI 写码前读；init 随 tokens 目录拷给工作区）
 //
 // 不再产出（旧集退役项，第 10 步删除）：
 //   semantic-dark.css  旧深色语义映射是工程自造值，GTS 2.2 深色 UI 未定义；data-theme="dark"
@@ -568,6 +569,74 @@ function genIndex(sourceVersion) {
   return L.join('\n') + '\n';
 }
 
+// ---------- token-index.md ----------
+// 从 tokens.json 抽全部 token 名、按组归类，只名不含值。AI 写码前读它照抄真名（var(--xxx)），
+// 禁止凭规律猜；init 随 tokens 目录原样拷给工作区。毛玻璃 frost-* 归专项（见文末指引）。
+const INDEX_GROUPS = [
+  { title: '品牌色 color-brand', match: (n) => n.startsWith('color-brand'), sort: 'alpha' },
+  { title: '文字色 color-text', match: (n) => n.startsWith('color-text'), sort: 'alpha' },
+  { title: '图标色 color-icon', match: (n) => n.startsWith('color-icon'), sort: 'alpha' },
+  { title: '边框 color-border', match: (n) => n.startsWith('color-border'), sort: 'alpha' },
+  { title: '背景 color-bg', match: (n) => n.startsWith('color-bg'), sort: 'alpha' },
+  { title: '填充 color-fill', match: (n) => n.startsWith('color-fill'), sort: 'alpha' },
+  { title: '悬浮/选中 color-hover / color-select', match: (n) => n.startsWith('color-hover') || n.startsWith('color-select'), sort: 'alpha' },
+  { title: '表格 color-table', match: (n) => n.startsWith('color-table'), sort: 'alpha' },
+  { title: '状态色 color-error / alert / warning / success / info / none', match: (n) => /^color-(error|alert|warning|success|info|none)/.test(n), sort: 'alpha' },
+  { title: '图表 color-chart', match: (n) => n.startsWith('color-chart'), sort: 'num' },
+  { title: '中性灰 gray（明度大则深）', match: (n) => n.startsWith('gray-'), sort: 'num' },
+  { title: '品牌色板 brand', match: (n) => n.startsWith('brand-'), sort: 'num' },
+  { title: '彩色板 rose~pink（各 05~90，明度大则深）', match: (n) => /^(rose|red|orange|yellow|green|mint|cyan|blue|indigo|purple|pink)-/.test(n), sort: 'num' },
+  { title: '公司色 company', match: (n) => n.startsWith('company-'), sort: 'alpha' },
+  { title: '代码高亮 code', match: (n) => n.startsWith('code-'), sort: 'alpha' },
+  { title: '字号 font-size', match: (n) => n.startsWith('font-size'), sort: 'tier' },
+  { title: '行高 font-line-height（与字号同档成对）', match: (n) => n.startsWith('font-line-height'), sort: 'tier' },
+  { title: '字重 font-weight', match: (n) => n.startsWith('font-weight'), sort: 'alpha' },
+  { title: '字体 font-family', match: (n) => n.startsWith('font-family'), sort: 'alpha' },
+  { title: '间距 space-size', match: (n) => n.startsWith('space-size'), sort: 'num' },
+  { title: '圆角 radius-size', match: (n) => n.startsWith('radius-size'), sort: 'tier' },
+  { title: '边框宽 border-width', match: (n) => n.startsWith('border-width'), sort: 'tier' },
+  { title: '边框样式 border-style', match: (n) => n.startsWith('border-style'), sort: 'alpha' },
+  { title: '阴影 shadow', match: (n) => n.startsWith('shadow-'), sort: 'alpha' },
+];
+
+const TIER_ORDER = ['small', 'normal', 'normal1', 'medium', 'big', 'big1', 'big2', 'big3', 'big4', 'big5', 'big6', 'full', 'none', 'independent'];
+
+function tierRank(name) {
+  const i = TIER_ORDER.indexOf(name.split('-').pop());
+  return i === -1 ? 999 : i;
+}
+function numKey(name) {
+  const m = name.match(/-(\d+)$/);
+  return m ? Number(m[1]) : 0;
+}
+function sortGroup(names, sort) {
+  if (sort === 'tier') names.sort((a, b) => tierRank(a) - tierRank(b) || a.localeCompare(b));
+  else if (sort === 'num') names.sort((a, b) => numKey(a) - numKey(b) || a.localeCompare(b));
+  else names.sort((a, b) => a.localeCompare(b));
+}
+
+function genTokenIndex(tokens, sourceVersion) {
+  const names = Object.keys(tokens);
+  const used = new Set();
+  const L = ['# Token 真名索引', '',
+    `> 由 generate-css.mjs 从 tokens.json 自动生成（${sourceVersion}），只列名字、不含值；值由 CSS 解析。`,
+    '> 写 `var(--xxx)` 时从这里照抄真名，禁止凭规律猜；毛玻璃 frost-* 见文末。', ''];
+  for (const g of INDEX_GROUPS) {
+    const group = names.filter((n) => g.match(n) && !used.has(n));
+    group.forEach((n) => used.add(n));
+    if (!group.length) continue;
+    sortGroup(group, g.sort);
+    L.push(`## ${g.title}`, group.map((n) => `--${n}`).join('  '), '');
+  }
+  const rest = names.filter((n) => !used.has(n) && !n.startsWith('frost-'));
+  if (rest.length) { sortGroup(rest, 'alpha'); L.push('## 其他', rest.map((n) => `--${n}`).join('  '), ''); }
+  const frost = names.filter((n) => n.startsWith('frost-'));
+  L.push(`## 毛玻璃 frost（${frost.length} 个，专项场景，不逐条列）`,
+    '> 档位/预算/装饰规范见设计系统 §7；取具体名用 `node assets/scripts/query_tokens.mjs --search frost`。',
+    '> 常用四参数：--frost-blur-card / --frost-alpha-card / --frost-surface-card / --frost-shadow-card。');
+  return L.join('\n') + '\n';
+}
+
 // ---------- main ----------
 const args = parseArgs(process.argv);
 if (!args.tokens || !args.out) {
@@ -623,11 +692,12 @@ mkdirSync(args.out, { recursive: true });
 for (const [file, text] of Object.entries(pieces)) {
   writeFileSync(path.join(args.out, file), text, 'utf8');
 }
+writeFileSync(path.join(args.out, 'token-index.md'), genTokenIndex(tokens, sourceVersion), 'utf8');
 
 // 报告：深色覆盖统计
 const darkCount = Object.values(tokens).filter((t) => t.$extensions?.gts?.dark).length;
 const darkBackfill = Object.values(tokens).filter((t) => t.$extensions?.gts?.darkSource === 'backfill-g1.5.1').length;
-console.log(`generated ${Object.keys(pieces).length} files → ${args.out}`);
+console.log(`generated ${Object.keys(pieces).length} CSS + token-index.md → ${args.out}`);
 console.log(`  dark overrides: ${darkCount} tokens (工程回填 ${darkBackfill})`);
 console.log(`  frost seed: ${Object.values(tokens).filter((t) => t.$extensions?.gts?.source === 'backfill-g1.5.1').length} tokens (backfill-g1.5.1)`);
 console.log(`  bridge check: ${bridgeVars.length} vars, all defined ✓`);

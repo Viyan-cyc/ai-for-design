@@ -32,7 +32,7 @@ version: 1.1.0
     ├── assets/tokens/               # ★ 资产库 token 全套（init 现取复制，勿手改）
     ├── assets/style/base.less       # Less 基础样式（FIXED）
     ├── assets/themes/               # 皮肤插槽（base.css + README 协议；自定义皮肤放这里）
-    ├── assets/images/ uploads/      # 按需创建素材
+    ├── assets/images/ uploads/ icons/  # 按需创建素材；icons/ 存 IconPlus/Lucide 图标（fetch_icons.mjs 写入 *.svg）
     ├── locales/                     # 全部语言资源（init 必建：lang/{zh-CN,en-US}/common.json + pages/{slug}.js + index.js）
     ├── router/index.js              # 路由（init 必建 — 路径与 history 模式 FIXED，仅 routes 条目可编辑；见下文白页防线）
     ├── views/{slug}/                # ★ 页面主目录（init 必建）
@@ -42,7 +42,7 @@ version: 1.1.0
 ```
 
 **Editable vs FIXED:**
-- **You edit ONLY:** `views/**`、`components/**`、`api/**`、`locales/**`、`router/index.js`（仅路由表条目）、`mock/**`、`assets/uploads/`、`assets/images/`、`assets/themes/`（皮肤文件）。
+- **You edit ONLY:** `views/**`、`components/**`、`api/**`、`locales/**`、`router/index.js`（仅路由表条目）、`mock/**`、`assets/uploads/`、`assets/images/`、`assets/icons/`（IconPlus/Lucide 图标）、`assets/themes/`（皮肤文件）。
 - **FIXED:** `main.js`、`App.vue`、`assets/tokens/`、`assets/style/base.less`、`public/`、`index.html`、`preview-data.js`、`router/index.js` 的文件路径与 history 模式。
 
 **router/index.js 硬约束（白页防线）：** `index.html` 预览加载器按固定路径 `/src/router/index.js` 加载路由模块。不得挪动、改名、内联到 main.js，不得把 `createWebHashHistory` 换成 `createWebHistory`（file:// 下路由匹配失败 → 白页）。只准往 `routes` 数组里加条目。build.mjs 强制校验三项：文件存在、调用 `createRouter`、history 必须是 `createWebHashHistory` 或 `createMemoryHistory`。
@@ -74,12 +74,8 @@ version: 1.1.0
 
 ## Token 消耗纪律（GTS 生成规则）
 
-- token 值**永不进上下文**：写 `var(--color-brand)` 让 CSS 解析；**token 确认只走 preflight.mjs**（与 build 同源），禁止为"确认值"读设计系统.md 全文、禁止 grep tokens 目录现场查。
-- **按命名骨架写，不探测**：token 命名是两层结构，按骨架组词第一轮就能命中——
-  - 语义层 `color-{对象}-{角色}`：bg / text / icon / border 是对象（如 `--color-text-primary`、`--color-bg-mask`），brand / error / warning / success / info 是角色（如 `--color-brand-hover`、`--color-error-subtle`）。**没有** danger/banner/gradient/fill/focus-ring 这类 UI 行话词。
-  - 色板层 `{色名}-{明度}`：`--blue-50`、`--gray-0`~`--gray-100`、`--brand-05` 等（明度数字大的深）。
-  - 尺寸类按规律直写：`--space-size-N`、`--font-size-*`、`--radius-size-*`、`--shadow-*`。
-  - 以上骨架仍查不到的（frost/公司色等）才用 `query_tokens.mjs --search`，禁止逐个探测式查询（每轮一轮 Bash，纯磨蹭）。
+- token 值**永不进上下文**：写 `var(--color-brand)` 让 CSS 解析；值不对由 build/preflight 兜底校验，禁止为"确认值"读设计系统.md 全文。
+- **token 名从索引取，不凭规律猜**：写码前读工作区 `src/assets/tokens/token-index.md`（init 已随 tokens 拷入，全部真名按组列出，照抄即可）。索引里没有的（frost/公司色等专项）才用 `query_tokens.mjs --search`，禁止逐个探测式查询、禁止按前缀自行组词。
 - token 名保持设计师原拼写与大小写；**禁造未定义值**——通配形式（如 `--frost-blur-*`）必须展开为实际存在的具体 token。
 - 字号与行高**成对使用**（`font-size-big` ↔ `font-line-height-big`），不混搭别档行高。
 - 间距分常规/紧凑两套，**按表取值不按比例缩放**；组件内间距标注含边框宽（`padding + border-width` = 目标间距）。
@@ -119,12 +115,24 @@ version: 1.1.0
 
 1. **环境预检**：`node --version` 输出 `v` 数字（≥18）→ node 可用，此后本次会话任何脚本 FAIL 都不得归因 node 安装；`command not found` → 进入「环境纪律」排查，结果报告用户，全程禁止降级为纯 HTML 交付。
 2. **Confirm {artifact-folder}**：运行时上下文提供的绝对路径；缺失则回退当前工作目录。
-3. **Derive {slug}**：kebab-case ASCII，2–6 段语义英文（"设备管理" → `device-management`）。
+3. **Derive {slug}**：kebab-case ASCII，1–6 段语义英文（"设备管理" → `device-management`；单段如 `login`、`test8` 也合法）。
 4. **Init**：
    ```sh
    node scripts/init.mjs "{artifact-folder}" "{slug}"
    ```
    资产包自动定位（init 从自身位置逐级向上找 `assets/`；跨盘/不在上级时加 `--assets-root <dir>`，成功后自动写入 skill 根 `assets-path.json`，下次免传）。成功输出 `RESULT: OK` + `HTML_PATH` + `SRC_DIR` + `PAGE` + `ASSETS_VERSION` + `ASSETS_ROOT`（后续 pattern/设计规范/token 查询路径的前缀）。token 全套随即复制到 `src/assets/tokens/`（含毛玻璃 token），并生成 api 适配层、mock 模块、全局词条、路由与 starter 页面。
+
+### Step 2.5 — 图标获取（页面需要业务图标时）
+
+页面需要非 EP 内置的业务图标（卡片操作、状态图标等）时，列全关键词，用 `fetch_icons.mjs` 批量获取（**先 fetch 下载 .svg，再连同其他清单一起跑 preflight 校验路径**）：
+
+```sh
+node scripts/fetch_icons.mjs --dir "{artifact-folder}/{slug}" --keywords "下载,刷新,搜索"
+```
+
+- **内网**：走华为 IconPlus API（默认 `https://octo.hdesign.huawei.com`，无需传参），存为 `src/assets/icons/*.svg`（`ic_public_download` → `public-download.svg`，kebab-case 剥 `ic_` 前缀）。
+- **外网**：IconPlus 不可达（3s 超时）自动降级为 **Lucide**——从公开 CDN 在线拉取 SVG，**本地不打包图标资源**（中文关键词经内置字典译成英文图标名）。输出 `RESULT: FALLBACK | ... used Lucide icons from network` + `ICONS: ...`，用法与内网无差异。
+- **用法**：`import downloadIcon from '../../assets/icons/download.svg'` + `<img :src="downloadIcon" :width="20" :height="20" />`（无需 `@element-plus/icons-vue` import，build 只放行 .svg 素材 import）。获取后把图标文件名写进 preflight `--imports` 校验路径存在。API 文档见 [references/icon-api.md](references/icon-api.md)。
 
 ### Step 3 — 写码
 
@@ -135,9 +143,9 @@ version: 1.1.0
 - **写码前先规划后落笔（preflight 强制）**：
   0. 按上方「读纪律」表：页面场景命中 pattern / 方言文档的，先读再落笔。
   1. 先列出每个待写文件的 imports——**按目录显式算好相对路径前缀**（`views/{slug}/` 出发上两级 `../../`，`views/{slug}/components/` 出发上三级 `../../../`；components/ 下少写一级是历史最高频 build FAIL 项）。
-  2. 汇总本轮要用的全部 token 变量名、图标名、element-plus 导出名、词条 key，**一次提交 preflight 一条命令校验**（不通过按提示修正清单再跑；禁止写码中途反复 grep/node 查询）。**旗标各管各的，不混装**：`--icons` 只填图标名；`--exports` 只填 element-plus 导出名（vue 的 ref/computed 等不进任何清单）；`--tokens` 每项带 `--` 前缀（`--color-brand` 而非 `color-brand`）；`--imports` 格式 `fromFile=rel1|rel2`：
+  2. 汇总本轮要用的全部 token 变量名、EP 内置图标名、element-plus 导出名、词条 key，**一次提交 preflight 一条命令校验**（不通过按提示修正清单再跑；禁止写码中途反复 grep/node 查询）。**旗标各管各的，不混装**：`--icons` 只填 `@element-plus/icons-vue` 内置图标名（业务图标走 `fetch_icons.mjs` + `--imports` 校验 .svg，见 Step 2.5）；`--exports` 只填 element-plus 导出名（vue 的 ref/computed 等不进任何清单）；`--tokens` 每项带 `--` 前缀（`--color-brand` 而非 `color-brand`）；`--imports`（可选，本轮有新增 import 目标才填）格式 `fromFile=rel1|rel2`，多项逗号分隔：
      ```sh
-     node scripts/preflight.mjs --dir "{artifact-folder}/{slug}" --icons "..." --tokens "..." --exports "..." --imports "views/{slug}/components/X.vue=../../../locales/pages/{slug}.js|../js/constants.js,..."
+     node scripts/preflight.mjs --dir "{artifact-folder}/{slug}" --icons "Search,Bell" --tokens "--color-brand,--space-size-16" --exports "ElMessage,ElMessageBox" --imports "views/{slug}/components/X.vue=../../../locales/pages/{slug}.js|../js/constants.js"
      ```
   3. `RESULT: OK` 后以清单为准落笔——写码过程中 token/词条/路径以清单为准，不再现场发明。
   4. **新建文件的两段式**：规划清单里含本轮才新建的文件（如 `components/RuleDialog.vue`）时，第 2 步的 `--imports` 只填指向**已有文件**的 import，先过一轮 `RESULT: OK`；新建文件写完后，把指向它们的 import 补进清单再跑一轮 preflight 确认。禁止把指向未创建文件的 import 塞进第一轮——那必然 FAIL。
@@ -198,7 +206,8 @@ node scripts/smoke.mjs --dir "{artifact-folder}/{slug}"
 
 ## Token / 图标查询
 
-token 数值用 `query_tokens.mjs` 查询（按名/搜索/分组摘要，不整读 tokens.json）；图标名 / `el-*` 组件名写错时 preflight 会给相近项提示，按提示修正清单重跑即可。
+- token 数值用 `query_tokens.mjs` 查询（按名/搜索/分组摘要，不整读 tokens.json）。
+- 图标：EP 内置图标名、`el-*` 组件名写错时 preflight 会给相近项提示，按提示修正清单重跑即可；业务图标用 `fetch_icons.mjs` 获取（见 Step 2.5），无需猜名。
 
 ```sh
 node assets/scripts/query_tokens.mjs --name color-brand   # 查单个 token（含深色值）
@@ -209,4 +218,5 @@ node assets/scripts/query_tokens.mjs --list               # 分组摘要
 ## References
 
 - **[references/code-conventions.md](references/code-conventions.md)** — 页面代码规范 / 自适应规范 / API 适配层 / i18n / 相对路径计算表 / 高频错误预防 / 二开依赖差异
+- **[references/icon-api.md](references/icon-api.md)** — IconPlus 图标 API 文档（getConfig / getIconInfo / getIcon）+ 外网 Lucide 网络降级说明
 - **[assets/design-language/00索引.md](../../assets/design-language/00索引.md)**（随 assets/ 分发）— 设计真值路由入口：组件规范 51 份 + 设计规范 7 份 + 设计系统.md

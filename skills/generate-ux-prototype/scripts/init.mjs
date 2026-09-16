@@ -87,8 +87,8 @@ if (args.length === 2) {
 if (!existsSync(artifactFolder) || !statSync(artifactFolder).isDirectory()) {
   fail(`Artifact folder does not exist or is not a directory: ${artifactFolder}`);
 }
-if (!/^[a-z0-9]+(-[a-z0-9]+){1,5}$/.test(slug)) {
-  fail(`Slug must be kebab-case ascii, 2-6 hyphen-separated segments: '${slug}'`);
+if (!/^[a-z0-9]+(-[a-z0-9]+){0,5}$/.test(slug)) {
+  fail(`Slug must be kebab-case ascii, 1-6 hyphen-separated segments: '${slug}'`);
 }
 
 // ---------- 0. locate asset library ----------
@@ -501,4 +501,6 @@ console.log(`SRC_DIR: ${resolve(srcDir)}`);
 console.log(`PAGE: ${pageName}`);
 console.log(`ASSETS_VERSION: ${assetVersion}`);
 console.log(`ASSETS_ROOT: ${resolve(assetLibRoot)}`);
+console.log(`FILES: index.html, preview-data.js, public/library/**, mock/modules/${slug}.js, src/{main.js,App.vue,api/${slug}.js,router/index.js,locales/**,views/${slug}/{index.vue,js/constants.js},assets/{tokens/**,style/base.less,themes/**}}`);
+console.log(`NOTE: src/views/${slug}/index.vue 是 starter（替换它）；src/api/${slug}.js 是二开唯一必改文件`);
 process.exit(0);

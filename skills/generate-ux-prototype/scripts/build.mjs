@@ -57,9 +57,13 @@ if (!dir) {
 const root = resolve(dir);
 
 const warns = [];
+const errors = [];
 function fail(msg) {
   console.log(`RESULT: FAIL | ${msg}`);
   process.exit(1);
+}
+function error(msg) {
+  errors.push(msg);
 }
 function warn(msg) {
   warns.push(msg);
@@ -108,6 +112,20 @@ function walkFiles(dirPath, exts, out = []) {
   return out;
 }
 const pascal = (s) => s.replace(/(^|-)(\w)/g, (m, a, b) => b.toUpperCase());
+function parseMessagesKeys(text) {
+  const start = text.indexOf('export const messages');
+  if (start === -1) return new Set();
+  const brace = text.indexOf('{', start);
+  if (brace === -1) return new Set();
+  const end = text.indexOf('\n}', brace);
+  const body = end === -1 ? text.slice(brace + 1) : text.slice(brace + 1, end);
+  const keys = new Set();
+  for (const line of body.split('\n')) {
+    const m = line.match(/^\s*(\w+)\s*:/);
+    if (m) keys.add(m[1]);
+  }
+  return keys;
+}
 
 // ---------- 1. structure ----------
 const htmlPath = join(root, 'index.html');
@@ -127,27 +145,30 @@ const REQUIRED_HTML = [
   '<script src="./preview-data.js"></script>',
 ];
 for (const line of REQUIRED_HTML) {
-  if (!html.includes(line)) fail(`preview loader integrity broken, missing: ${line}`);
+  if (!html.includes(line)) error(`preview loader integrity broken, missing: ${line}`);
 }
-if (!/<html[^>]*data-theme=/.test(html)) fail('preview loader broken: <html> has no data-theme attribute');
+if (!/<html[^>]*data-theme=/.test(html)) error('preview loader broken: <html> has no data-theme attribute');
 
 for (const p of ['App.vue', 'main.js', join('assets', 'themes', 'base.css'), join('router', 'index.js')]) {
-  if (!existsSync(join(srcDir, p))) fail(`deliverable incomplete, missing: src/${p}`);
+  if (!existsSync(join(srcDir, p))) error(`deliverable incomplete, missing: src/${p}`);
 }
 
 // ---------- 1a. router integrity (index.html hardcodes /src/router/index.js) ----------
 // 预览加载器在 getFile 里按固定路径请求 /src/router/index.js——文件缺失或改名会
 // 直接白页（报 "源码映射中找不到 /src/router/index.js"）。AI 二开时不得挪动该
 // 文件、不得改 history 模式（file:// 下 createWebHistory 路由匹配失败同样白页）。
-const routerSrc = readFileSync(join(srcDir, 'router', 'index.js'), 'utf8');
-if (!/createRouter\s*\(/.test(routerSrc)) {
-  fail('src/router/index.js: must call createRouter(...) — preview loader requires a router instance');
-}
-if (/createWebHistory\s*\(/.test(routerSrc) && !/createWebHashHistory\s*\(/.test(routerSrc)) {
-  fail('src/router/index.js: createWebHistory breaks under file:// — use createWebHashHistory (or createMemoryHistory) so the preview opens directly from disk');
-}
-if (!/export\s+default/.test(routerSrc)) {
-  fail('src/router/index.js: must `export default` the router instance — index.html reads routerMod.default');
+const routerPath = join(srcDir, 'router', 'index.js');
+if (existsSync(routerPath)) {
+  const routerSrc = readFileSync(routerPath, 'utf8');
+  if (!/createRouter\s*\(/.test(routerSrc)) {
+    error('src/router/index.js: must call createRouter(...) — preview loader requires a router instance');
+  }
+  if (/createWebHistory\s*\(/.test(routerSrc) && !/createWebHashHistory\s*\(/.test(routerSrc)) {
+    error('src/router/index.js: createWebHistory breaks under file:// — use createWebHashHistory (or createMemoryHistory) so the preview opens directly from disk');
+  }
+  if (!/export\s+default/.test(routerSrc)) {
+    error('src/router/index.js: must `export default` the router instance — index.html reads routerMod.default');
+  }
 }
 
 const vueFiles = walkFiles(srcDir, ['.vue']);
@@ -156,9 +177,9 @@ const cssFiles = walkFiles(srcDir, ['.css', '.less', '.scss']);
 if (hasMock) {
   jsFiles = [...jsFiles, ...walkFiles(mockDir, ['.js'])];
 }
-if (vueFiles.length === 0) fail('no .vue files under src/');
+if (vueFiles.length === 0) error('no .vue files under src/');
 const pageIndexes = vueFiles.filter((f) => /[\\/]views[\\/][^\\/]+[\\/]index\.vue$/.test(f));
-if (pageIndexes.length === 0) fail('no page entry found (expected src/views/{kebab}/index.vue)');
+if (pageIndexes.length === 0) error('no page entry found (expected src/views/{kebab}/index.vue)');
 
 // ---------- 1b. style language check ----------
 // Less is the ONLY style language across the whole chain (product-line
@@ -168,13 +189,13 @@ for (const f of vueFiles) {
   const rel0 = '/' + f.slice(srcDir.length).split('\\').join('/').replace(/^\/+/, '');
   const src = readFileSync(f, 'utf8');
   if (/<style\s+lang="scss"/i.test(src)) {
-    fail(`${rel0}: <style lang="scss"> — style language is less only`);
+    error(`${rel0}: <style lang="scss"> — style language is less only`);
   }
 }
 for (const f of cssFiles) {
   if (f.endsWith('.scss')) {
     const rel0 = '/' + f.slice(srcDir.length).split('\\').join('/').replace(/^\/+/, '');
-    fail(`${rel0}: .scss file present — style language is less only`);
+    error(`${rel0}: .scss file present — style language is less only`);
   }
 }
 
@@ -203,14 +224,14 @@ for (const file of vueFiles) {
   if (rel.startsWith('/views/') || rel.startsWith('/components/')) {
     const source0 = readFileSync(file, 'utf8');
     if (/from\s+['"][^'"]*mock\/modules/.test(source0)) {
-      fail(`${rel}: imports mock/modules directly — pages must import from src/api/{slug}.js (adapter layer)`);
+      error(`${rel}: imports mock/modules directly — pages must import from src/api/{slug}.js (adapter layer)`);
     }
   }
 
   const source = readFileSync(file, 'utf8');
   const { descriptor, errors } = sfc.parse(source, { filename: file });
-  if (errors.length) fail(`${rel}: SFC parse error: ${errors.map((e) => e.message).join('; ')}`);
-  if (!descriptor.template) fail(`${rel}: no <template> block`);
+  if (errors.length) error(`${rel}: SFC parse error: ${errors.map((e) => e.message).join('; ')}`);
+  if (!descriptor.template) { error(`${rel}: no <template> block`); continue; }
 
   // script compile + binding metadata
   let bindings = {};
@@ -220,7 +241,7 @@ for (const file of vueFiles) {
       const compiled = sfc.compileScript(descriptor, { id: 'data-v-verify', templateOptions: { id: 'data-v-verify' } });
       bindings = compiled.bindings || {};
     } catch (e) {
-      fail(`${rel}: script compile error: ${e.message}`);
+      error(`${rel}: script compile error: ${e.message}`);
     }
   }
 
@@ -232,7 +253,7 @@ for (const file of vueFiles) {
     compilerOptions: { bindingMetadata: bindings },
   });
   if (tpl.errors.length) {
-    fail(`${rel}: template compile error: ${tpl.errors.map((e) => String(e.message || e)).join('; ')}`);
+    error(`${rel}: template compile error: ${tpl.errors.map((e) => String(e.message || e)).join('; ')}`);
   }
 
   // imports (from raw script text — covers default/named/side-effect)
@@ -250,18 +271,18 @@ for (const file of vueFiles) {
       const base = spec.split('/')[0] === '@element-plus' ? spec.split('/').slice(0, 2).join('/') : spec.split('/')[0];
       const allowed = ALLOWED_BARE.has(spec) || (base === 'element-plus' && /^element-plus\//.test(spec));
       if (!allowed) {
-        fail(`${rel}: bare import "${spec}" not allowed — deliverable deps are limited to: ${[...ALLOWED_BARE].join(', ')} (+ element-plus subpaths)`);
+        error(`${rel}: bare import "${spec}" not allowed — deliverable deps are limited to: ${[...ALLOWED_BARE].join(', ')} (+ element-plus subpaths)`);
       }
       if (spec === 'element-plus') {
         for (const n of names) {
-          if (!EP_EXPORTS.has(n)) fail(`${rel}: unknown Element Plus export "${n}" (imported from 'element-plus')`);
+          if (!EP_EXPORTS.has(n)) error(`${rel}: unknown Element Plus export "${n}" (imported from 'element-plus')`);
         }
       }
       if (spec === '@element-plus/icons-vue') {
         for (const n of names) {
           if (!EP_ICONS.has(n)) {
             const hints = [...EP_ICONS].filter((x) => x.toLowerCase().startsWith(n.toLowerCase().slice(0, 4))).slice(0, 4);
-            fail(`${rel}: unknown icon "${n}"${hints.length ? ` : did you mean ${hints.join(', ')}?` : ''}`);
+            error(`${rel}: unknown icon "${n}"${hints.length ? ` : did you mean ${hints.join(', ')}?` : ''}`);
           }
         }
       }
@@ -285,7 +306,7 @@ for (const file of vueFiles) {
       // (reused G components land as {components}/{level}/{GName}/{GName}.vue)
       if (fileMap.has(target + '/' + pascal(target.split('/').pop()) + '.vue')) continue;
       if (ASSET_EXT.includes(extname(target))) continue; // assets resolve at runtime
-      fail(`${rel}: relative import "${spec}" does not resolve (looked for ${target}[.vue|.js|/index.vue|/{Name}.vue])`);
+      error(`${rel}: relative import "${spec}" does not resolve (looked for ${target}[.vue|.js|/index.vue|/{Name}.vue])`);
     }
   }
 
@@ -295,7 +316,7 @@ for (const file of vueFiles) {
   for (const tag of usedEl) {
     if (!EP_COMPONENTS.has(tag)) {
       const candidates = [...EP_COMPONENTS].filter((c) => c.startsWith(tag.split('-').slice(0, 2).join('-'))).slice(0, 5);
-      fail(`${rel}: unknown Element Plus tag <${tag}>${candidates.length ? ` : did you mean ${candidates.join(', ')}?` : ''}`);
+      error(`${rel}: unknown Element Plus tag <${tag}>${candidates.length ? ` : did you mean ${candidates.join(', ')}?` : ''}`);
     }
   }
   elTagTotal += usedEl.size;
@@ -306,13 +327,13 @@ for (const file of vueFiles) {
     // registers nothing globally, so unimported tags cannot render)
     if (importedNames.has(tag)) continue;
     const iconHint = EP_ICONS.has(tag) ? ' (it is a valid icon name — add `import { ' + tag + ' } from \'@element-plus/icons-vue\'`)' : '';
-    fail(`${rel}: <${tag}> is not imported${iconHint}`);
+    error(`${rel}: <${tag}> is not imported${iconHint}`);
   }
   // kebab-case usage of imported PascalCase components (e.g. <status-tag>)
   for (const m of tplContent.matchAll(/<((?!el-)[a-z][a-z0-9]*-[a-z0-9-]*)[\s/>]/g)) {
     const tag = m[1];
     if (importedNames.has(pascal(tag))) continue;
-    fail(`${rel}: unknown component tag <${tag}> — no matching import found`);
+    error(`${rel}: unknown component tag <${tag}> — no matching import found`);
   }
 
   // inline style check: warn on style="..." (not :style="..." which is dynamic binding)
@@ -327,11 +348,33 @@ for (const file of vueFiles) {
 
   // style blocks
   for (const [i, block] of descriptor.styles.entries()) {
-    if (/:root\s*\{/.test(block.content)) fail(`${rel}: <style> #${i + 1} must not define :root (asset tokens live in src/assets/tokens/)`);
-    if (/data-theme/.test(block.content)) fail(`${rel}: <style> #${i + 1} must not touch [data-theme] (custom skins live in src/assets/themes/)`);
+    if (/:root\s*\{/.test(block.content)) error(`${rel}: <style> #${i + 1} must not define :root (asset tokens live in src/assets/tokens/)`);
+    if (/data-theme/.test(block.content)) error(`${rel}: <style> #${i + 1} must not touch [data-theme] (custom skins live in src/assets/themes/)`);
     for (const dm of block.content.matchAll(/--[a-z][a-z0-9-]+\s*:/g)) {
       const tok = dm[0].replace(/\s*:/, '');
-      if (!tok.startsWith('--page-')) fail(`${rel}: <style> #${i + 1} defines "${tok}" : page-local custom props must be prefixed --page- (asset tokens belong in src/assets/tokens/)`);
+      if (!tok.startsWith('--page-')) error(`${rel}: <style> #${i + 1} defines "${tok}" : page-local custom props must be prefixed --page- (asset tokens belong in src/assets/tokens/)`);
+    }
+  }
+
+  // i18n key existence: every t.key referenced must be declared in that page's messages
+  const tImport = scriptText.match(/import\s+\{[^}]*\bt\b[^}]*\}\s+from\s*['"]([^'"]+locales\/pages\/[^'"]+)['"]/);
+  if (tImport) {
+    const baseDir = rel.slice(0, rel.lastIndexOf('/'));
+    const stack = [];
+    for (const p of (baseDir + '/' + tImport[1]).split('/')) {
+      if (p === '' || p === '.') continue;
+      else if (p === '..') stack.pop();
+      else stack.push(p);
+    }
+    let localeAbs = join(srcDir, ...stack);
+    if (!existsSync(localeAbs) && extname(localeAbs) !== '.js') localeAbs += '.js';
+    if (existsSync(localeAbs)) {
+      const keys = parseMessagesKeys(readFileSync(localeAbs, 'utf8'));
+      const usedKeys = new Set([...source.matchAll(/\bt\.([A-Za-z_$][\w$]*)/g)].map((m) => m[1]));
+      for (const k of usedKeys) {
+        if (keys.has(k)) continue;
+        error(`${rel}: uses t.${k} but it is not a key in ${tImport[1]}`);
+      }
     }
   }
 }
@@ -343,7 +386,7 @@ for (const file of jsFiles) {
   if (!rel.startsWith('/views/') && !rel.startsWith('/components/')) continue;
   const text0 = readFileSync(file, 'utf8');
   if (/from\s+['"][^'"]*mock\/modules/.test(text0)) {
-    fail(`${rel}: imports mock/modules directly — pages must import from src/api/{slug}.js (adapter layer)`);
+    error(`${rel}: imports mock/modules directly — pages must import from src/api/{slug}.js (adapter layer)`);
   }
 }
 
@@ -367,7 +410,7 @@ try {
     const tmpFile = join(tmp, rel.replace(/\//g, '_') + '.mjs');
     writeFileSync(tmpFile, text, 'utf8');
     const res = spawnSync(process.execPath, ['--check', tmpFile], { encoding: 'utf8' });
-    if (res.status !== 0) fail(`${rel}: ESM syntax error: ${(res.stderr || '').split('\n').filter(Boolean).slice(-1)[0] || res.status}`);
+    if (res.status !== 0) error(`${rel}: ESM syntax error: ${(res.stderr || '').split('\n').filter(Boolean).slice(-1)[0] || res.status}`);
 
     for (const m of codeText.matchAll(/(?:import\s+[^;]*?from\s*|import\s*)['"]([^'"]+)['"]/g)) {
       const spec = m[1];
@@ -381,12 +424,12 @@ try {
         }
         const target = '/' + stack.join('/');
         if (![target, target + '.js', target + '.css', target + '/index.js'].some((t) => fileMap.has(t))) {
-          if (!ASSET_EXT.includes(extname(target))) fail(`${rel}: relative import "${spec}" does not resolve`);
+          if (!ASSET_EXT.includes(extname(target))) error(`${rel}: relative import "${spec}" does not resolve`);
         }
       } else {
         const base = spec.split('/')[0] === '@element-plus' ? spec.split('/').slice(0, 2).join('/') : spec.split('/')[0];
         const allowed = ALLOWED_BARE.has(spec) || (base === 'element-plus' && /^element-plus\//.test(spec));
-        if (!allowed) fail(`${rel}: bare import "${spec}" not allowed — deliverable deps are limited to: ${[...ALLOWED_BARE].join(', ')} (+ element-plus subpaths)`);
+        if (!allowed) error(`${rel}: bare import "${spec}" not allowed — deliverable deps are limited to: ${[...ALLOWED_BARE].join(', ')} (+ element-plus subpaths)`);
       }
     }
   }
@@ -428,13 +471,20 @@ for (const text of cssHaystacks) {
     if (definedTokens.has(tok)) continue;
     if (tok.startsWith('--page-')) continue; // page-local, already collected above
     if (tok.startsWith('--el-')) continue; // EP internal vars are bridged by the asset token layer
-    fail(`unknown token var(${tok}) : tokens are defined in src/assets/tokens/*.css (extracted from the asset library at init time)`);
+    error(`unknown token var(${tok}) : tokens are defined in src/assets/tokens/*.css (extracted from the asset library at init time)`);
   }
 }
 
 // ---------- done ----------
-const pageCount = pageIndexes.length;
 for (const w of warns) console.log(`WARN: ${w}`);
+if (errors.length) {
+  const shown = errors.slice(0, 20);
+  console.log(`RESULT: FAIL | ${shown.length} problem(s) found:`);
+  for (const e of shown) console.log(`  - ${e}`);
+  if (errors.length > shown.length) console.log(`  ... and ${errors.length - shown.length} more`);
+  process.exit(1);
+}
+const pageCount = pageIndexes.length;
 console.log('RESULT: OK');
 console.log(`OK index.html verified (${pageCount} page${pageCount > 1 ? 's' : ''}, ${vueFiles.length - pageCount} components, ${elTagTotal} el-tag uses)`);
 process.exit(0);
