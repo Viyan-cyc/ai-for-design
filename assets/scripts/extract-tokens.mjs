@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 // extract-tokens.mjs — 设计系统.md token 表 → tokens.json（gts-flat-dtcg schema）
 //
-// 管线第一步：docs/design-language/样式Token/设计系统.md（唯一来源，设计师迭代处）
-//   → 本脚本 → library/tokens.json（入库，diff 可审）
+// 管线第一步：assets/design-language/样式Token/设计系统.md（唯一来源，设计师迭代处）
+//   → 本脚本 → assets/tokens.json（入库，diff 可审）
 //   → generate-css.mjs（第二步）→ frontend/element-plus/tokens/*.css
 //
 // schema（meta.schema = "gts-flat-dtcg/1"）：
@@ -12,7 +12,7 @@
 //   - 语义色纯色用别名（CSS 输出保持 var() 链，设计师改色阶 → 语义层自动跟随）；
 //     含透明度时无法用 var() 合成，$value 落 rgba 字面值 + $extensions.gts.ref/alpha 记录来源
 //   - frost：md 当前为通配符行（--frost-blur-* 等），不可逐 token 解析；
-//     过渡期用 --seed 从 library/backfill-seed.json 回填（G 1.5.1 已验证值），
+//     过渡期用 --seed 从 assets/backfill-seed.json 回填（G 1.5.1 已验证值），
 //     设计师补齐正式行后由本脚本解析取代
 //   - semantic-dark：GTS 2.2 语义表只有浅色；深色 54 值按设计师答复（2026-09-16"用旧版值"）
 //     从同一种子回填到同名浅色 token 的 gts.dark（generate 据此出 [data-theme="dark"] 块）。

@@ -3,6 +3,9 @@ coder/
 demo-output/
 design/
 
+# 外置资产包路径记忆（init.mjs 收到 --assets-root 后自动写入，机器本地态）
+skills/generate-ux-prototype/assets-path.json
+
 # 冒烟临时工作区
 /tmp/
 

@@ -6,10 +6,10 @@
   "framework": "vue3",
   "componentBase": "element-plus@2.13.5",
   "projectRoot": "frontend/element-plus",
-  "designSource": "docs/design-language/样式Token/设计系统.md",
+  "designSource": "assets/design-language/样式Token/设计系统.md",
   "designSourceVersion": "v2.2.1",
-  "designIndex": "docs/design-language/00索引.md",
-  "tokensSchema": "library/tokens.json (gts-flat-dtcg/1, extract-tokens.mjs 产物)",
+  "designIndex": "assets/design-language/00索引.md",
+  "tokensSchema": "assets/tokens.json (gts-flat-dtcg/1, assets/scripts/extract-tokens.mjs 产物)",
   "themes": [
     "light",
     "dark"
@@ -27,5 +27,5 @@
     "frontend/element-plus/tokens/frost.css",
     "frontend/element-plus/tokens/element-plus.css"
   ],
-  "notes": "设计唯一来源在仓库 docs/design-language/（设计师迭代处）；library/tokens.json 与 tokens/*.css 均为派生产物，再生管线见 library/README.md。frost 档为 G 1.5.1 回填过渡基线，待设计师补齐。"
+  "notes": "设计唯一来源在 assets/design-language/（设计师迭代处，随包分发）；assets/tokens.json 与 tokens/*.css 均为派生产物，再生管线见 assets/README.md（设计师更新后自行运行 assets/scripts/）。frost 档为 G 1.5.1 回填过渡基线，待设计师补齐。"
 }

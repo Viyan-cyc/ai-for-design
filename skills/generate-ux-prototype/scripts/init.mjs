@@ -23,7 +23,7 @@
 //   │   ├── main.js                      # 工程入口（FIXED）
 //   │   ├── App.vue                      # 应用壳
 //   │   ├── api/{slug}.js                # ★ 接口适配层（二开时唯一要改的文件）
-//   │   ├── assets/tokens/               # ★ 设计资产 token（从内嵌 library/ 现取）
+//   │   ├── assets/tokens/               # ★ 设计资产 token（从仓库 assets/ 现取）
 //   │   ├── assets/                      # 主题/样式（FIXED；字体走系统字体栈，不内嵌）
 //   │   ├── locales/                     # 全部语言资源：lang/{zh-CN,en-US}/common.json + pages/{slug}.js
 //   │   ├── router/index.js              # 路由（内联，无 guards/modules）
@@ -34,7 +34,7 @@
 //   └── preview-data.js                  # 源码映射（build 自动生成）
 //
 // Usage:
-//   node init.mjs "<artifact-folder>" "<slug>"
+//   node init.mjs "<artifact-folder>" "<slug>" [--assets-root <dir>]
 //
 // Output (agent-parseable):
 //   RESULT: OK
@@ -42,6 +42,7 @@
 //   SRC_DIR: <absolute path to {slug}/src>
 //   PAGE: <PascalCase page name>
 //   ASSETS_VERSION: <asset library version>
+//   ASSETS_ROOT: <resolved asset package root — all assets/… paths in SKILL.md are relative to it>
 //   RESULT: FAIL | <reason>
 
 import {
@@ -67,7 +68,12 @@ function fail(reason) {
 
 // --- args ---
 const rawArgs = process.argv.slice(2);
-const args = rawArgs.filter((a) => !a.startsWith('-'));
+let assetsRootArg = null;
+const args = [];
+for (let i = 0; i < rawArgs.length; i++) {
+  if (rawArgs[i] === '--assets-root') { assetsRootArg = rawArgs[++i]; }
+  else if (!rawArgs[i].startsWith('-')) args.push(rawArgs[i]);
+}
 let artifactFolder, slug;
 if (args.length === 2) {
   [artifactFolder, slug] = args;
@@ -75,7 +81,7 @@ if (args.length === 2) {
   artifactFolder = process.cwd();
   [slug] = args;
 } else {
-  fail('Usage: node init.mjs "<artifact-folder>" "<slug>"');
+  fail('Usage: node init.mjs "<artifact-folder>" "<slug>" [--assets-root <dir>]');
 }
 
 if (!existsSync(artifactFolder) || !statSync(artifactFolder).isDirectory()) {
@@ -86,14 +92,43 @@ if (!/^[a-z0-9]+(-[a-z0-9]+){1,5}$/.test(slug)) {
 }
 
 // ---------- 0. locate asset library ----------
-// 资产库内嵌于 skill（library/），skill 目录拷到哪都能用，零配置。
-const embeddedLib = resolve(__dirname, '..', 'library');
-const embeddedManifest = join(embeddedLib, 'asset-manifest.json');
-if (!existsSync(embeddedManifest)) fail(`embedded asset library broken, missing: ${embeddedManifest}`);
-const assetLib = { root: embeddedLib, entry: embeddedLib };
+// 解析顺序：① --assets-root <dir>；② skill 根 assets-path.json（首次用 ① 成功后自动写入，
+// 跨盘/异地放置只需告诉一次）；③ 从脚本位置逐级向上探测 assets/（标记防误命中同名目录）。
+const CONFIG_PATH = join(__dirname, '..', 'assets-path.json');
+function isAssetsDir(dir) {
+  return !!dir && existsSync(join(dir, 'asset-manifest.json')) && existsSync(join(dir, 'frontend', 'element-plus', 'tokens'));
+}
+function readConfigRoot() {
+  try {
+    const v = JSON.parse(readFileSync(CONFIG_PATH, 'utf8')).assetsRoot;
+    return typeof v === 'string' && isAssetsDir(v) ? v : null;
+  } catch { return null; }
+}
+function locateAssets() {
+  let dir = __dirname;
+  for (;;) {
+    if (isAssetsDir(join(dir, 'assets'))) return join(dir, 'assets');
+    const parent = dirname(dir);
+    if (parent === dir) return null;
+    dir = parent;
+  }
+}
+const configRoot = readConfigRoot();
+const assetLibRoot = assetsRootArg ? resolve(assetsRootArg) : (configRoot || locateAssets());
+if (!isAssetsDir(assetLibRoot)) {
+  if (assetsRootArg) fail(`asset library not found at --assets-root: ${assetLibRoot}`);
+  fail('asset library not found: 逐级向上未找到 assets/，也没读到有效的 assets-path.json。把 assets/ 放到 skill 上级任一层，或传 --assets-root <dir>（成功后自动记住，下次免传）');
+}
+const manifestPath = join(assetLibRoot, 'asset-manifest.json');
+// 显式指定且与记忆不同 → 回写配置（会话间持久；walk-up 命中不写，保持自愈）
+if (assetsRootArg && resolve(assetLibRoot) !== (configRoot ? resolve(configRoot) : null)) {
+  try {
+    writeFileSync(CONFIG_PATH, JSON.stringify({ assetsRoot: resolve(assetLibRoot) }, null, 2) + '\n', 'utf8');
+  } catch { /* 配置写失败不阻断生成 */ }
+}
+const assetLib = { root: assetLibRoot, entry: assetLibRoot };
 const tokensSrc = join(assetLib.root, 'frontend', 'element-plus', 'tokens');
 if (!existsSync(tokensSrc)) fail(`asset library token layer not found: ${tokensSrc}`);
-const manifestPath = join(assetLib.root, 'asset-manifest.json');
 let assetVersion = 'unknown';
 try {
   assetVersion = JSON.parse(readFileSync(manifestPath, 'utf8')).assetVersion || assetVersion;
@@ -465,4 +500,5 @@ console.log(`HTML_PATH: ${resolve(join(dest, 'index.html'))}`);
 console.log(`SRC_DIR: ${resolve(srcDir)}`);
 console.log(`PAGE: ${pageName}`);
 console.log(`ASSETS_VERSION: ${assetVersion}`);
+console.log(`ASSETS_ROOT: ${resolve(assetLibRoot)}`);
 process.exit(0);

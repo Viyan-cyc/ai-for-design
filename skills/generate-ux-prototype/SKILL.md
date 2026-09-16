@@ -8,7 +8,7 @@ version: 1.1.0
 
 交付件 = **真实 Vue 3 源码工作区**：`.vue` SFC（`<script setup>` 纯 JS）+ Less + 标准 ESM import，写在 `{slug}/src/` 下，可直接拷入任何 Vue 3 + Element Plus + Vite 工程二次开发；附带零构建离线预览 `{slug}/index.html`（浏览器直接打开）。对话以单个 `<artifact>` 链接结束。
 
-skill 内嵌资产库（`library/`）：token CSS 全部在生成时现取（见下文「资产库」）；设计规范真值在仓库 `docs/design-language/`（设计师迭代处，本 skill 只读消费）。
+资产库是独立分发包 `assets/`（设计侧维护：design-language 设计真值、pattern、el-docs、token 管线产物都在里面，更新后设计侧自行跑 `assets/scripts/` 再生；本 skill 只读消费）。**skill 与 assets 各自分发、任意放置**：init 从自身位置逐级向上自动定位资产包并输出 `ASSETS_ROOT:`，本文所有 `assets/…` 路径一律相对该根；跨盘/不在上级时 `--assets-root <dir>` 指定一次即被记住（存 skill 根 `assets-path.json`）。token CSS 全部在生成时现取；设计规范真值在包内 `design-language/`（设计师迭代处）。
 
 ## 技术栈（钉死，无开关）
 
@@ -60,16 +60,17 @@ skill 内嵌资产库（`library/`）：token CSS 全部在生成时现取（见
 
 | 场景 | 读什么 | 位置 |
 | --- | --- | --- |
-| 列表页（筛选 + 表格 + 分页，设备/工单/任务/用户等一切查询场景） | [pattern-list-page.md](library/patterns/pattern-list-page.md) 先读再落笔；五段骨架 + 数据编排 + 状态列映射（STATUS_MAP 节） | `library/patterns/` |
-| 取数 / 保存 / 删除 / 批量等异步或写操作（**必读**；弹窗表单读其反馈细则节） | [pattern-states-feedback.md](library/patterns/pattern-states-feedback.md) 六态壳 + 反馈闭环 | `library/patterns/` |
+| 列表页（筛选 + 表格 + 分页，设备/工单/任务/用户等一切查询场景） | [pattern-list-page.md](../../assets/patterns/pattern-list-page.md) 先读再落笔；五段骨架 + 数据编排 + 状态列映射（STATUS_MAP 节） | `assets/patterns/` |
+| 取数 / 保存 / 删除 / 批量等异步或写操作（**必读**；弹窗表单读其反馈细则节） | [pattern-states-feedback.md](../../assets/patterns/pattern-states-feedback.md) 六态壳 + 反馈闭环 | `assets/patterns/` |
 | 纯静态展示页（无取数、无写操作） | 不读 pattern，遵守 code-conventions 即可 | — |
-| 组件的用途/状态/"不要"（设计语义拿不准） | 对应组件规范（入口 `组件索引.md`） | `docs/design-language/组件规范/` |
-| 组件方言写法拿不准 | 方言文档（探测：仅 el-form/el-dialog/el-tag 三篇存在） | `library/frontend/element-plus/docs/` |
-| 毛玻璃需求 | 设计系统 §7（档位/预算/装饰；§7.6 色块装饰判断）+ `query_tokens.mjs --search frost` | `docs/design-language/样式Token/设计系统.md#frosted-glass` |
+| 组件的用途/状态/"不要"（设计语义拿不准） | 对应组件规范（入口 `组件索引.md`） | `assets/design-language/组件规范/` |
+| 组件方言写法拿不准 | 方言文档（探测：仅 el-form/el-dialog/el-tag 三篇存在） | `assets/frontend/element-plus/docs/` |
+| 毛玻璃需求 | 设计系统 §7（档位/预算/装饰；§7.6 色块装饰判断）+ `query_tokens.mjs --search frost` | `assets/design-language/样式Token/设计系统.md#frosted-glass` |
 
 - 模式覆盖：查询列表/设备管理/新建编辑由两篇 pattern 覆盖；详情/报警/拓扑类页面仍读 pattern-states-feedback.md（六态与反馈对所有页面类型生效）。
 - **探测不到 = 无坑**：方言文档不存在的组件不代表没有规范——设计语义查组件规范，写法按 EP 官方 API + preflight 校验，不臆造。
 - 组件规范/方言文档需要多份时**批量并行一次读完**。
+- 表中 `assets/…` 路径相对资产包根——根 = init 输出的 `ASSETS_ROOT:`（分发时任意的实际位置），不是固定磁盘路径。
 
 ## Token 消耗纪律（GTS 生成规则）
 
@@ -89,7 +90,7 @@ skill 内嵌资产库（`library/`）：token CSS 全部在生成时现取（见
 
 单页目标预算：**定位+init ≤5k / 写码 ~30k / 验证 ≤5k / 规范按需 ≤10k，全程 ≤70-90k**。执行规则：
 
-1. **禁读清单**（读了也不用于生成，纯浪费）：skill 目录外的任何仓库/项目文档；`asset-manifest.json` 与 `tokens.json`（机器文件）；设计系统.md 全文（token 值不进上下文）。
+1. **禁读清单**（读了也不用于生成，纯浪费）：「读纪律」未命中的任何仓库/项目文档；`asset-manifest.json` 与 `tokens.json`（机器文件）；设计系统.md 全文（token 值不进上下文）。
 2. **验证只认脚本输出**：build/smoke 的 `RESULT` 行即终态；FAIL 按行修复重跑，禁止现场手写调试脚本/puppeteer 脚本展开分析。
 3. **截图输入节制**：一次一张、必要时裁剪；追问/修改轮次不重发已分析过的图。
 4. **接近预算上限时**：先压缩会话上下文（安全点：init 完成开写之前），压缩后凭 SKILL.md + 工作区文件继续，无需重读资产库。
@@ -98,9 +99,9 @@ skill 内嵌资产库（`library/`）：token CSS 全部在生成时现取（见
 
 **交付契约不可降级：任何环境下都禁止「node 不可用所以改为纯 HTML/静态页」的替代交付**——那不是本 Skill 的产物，等于交付失败。环境故障时的唯一正确动作：按下面诊断 → 把结果原样报告用户 → 等待修复；不许自行更换交付形态、不许静默降级。
 
-**`RESULT: FAIL` = 脚本已正常运行后的业务校验失败，与 node 安装无关**（能输出 FAIL 恰恰证明 node 可用）。高频原因：`asset library not found`/`embedded asset library broken` = skill 拷贝安装不完整，重装；`Artifact folder does not exist` = 先建目录；`target already exists` = 走 Modification Workflow；`puppeteer-core not found` = `npm i -g puppeteer-core`。连续 FAIL 3 次仍未修复 → 停下把输出原样报告用户，禁止换交付形态。
+**`RESULT: FAIL` = 脚本已正常运行后的业务校验失败，与 node 安装无关**（能输出 FAIL 恰恰证明 node 可用）。高频原因：`asset library not found` = 逐级向上没找到资产包、也无有效 `assets-path.json`——向用户要 assets 完整路径后给 init 传 `--assets-root <dir>`（成功自动记住），或把 assets/ 放到 skill 上级任一层；`Artifact folder does not exist` = 先建目录；`target already exists` = 走 Modification Workflow；`puppeteer-core not found` = `npm i -g puppeteer-core`。连续 FAIL 3 次仍未修复 → 停下把输出原样报告用户，禁止换交付形态。
 
-**skill 自带文件不是可修改对象**：禁止修改、调试、patch 本 skill 的 `scripts/` 与 `library/` 下任何文件——那是 skill 本体，不是本次任务的产物；疑似脚本缺陷时原样报告用户等待修复，不许就地改或绕过脚本自跑替代验证。
+**skill 自带文件不是可修改对象**：禁止修改、调试、patch 本 skill 的 `scripts/` 与资产包内任何文件——那是 skill 本体与设计侧资产，不是本次任务的产物（例外：skill 根的 `assets-path.json` 是 init 自动写入的路径记忆，非源码）；疑似脚本缺陷时原样报告用户等待修复，不许就地改或绕过脚本自跑替代验证。
 
 **node 真缺失时的排查顺序**（仅当 `node --version` 报 command not found 才进入）：①用户确认已装 → 多半是 agent 宿主进程 PATH 未刷新（Windows 装完 node 已启动的终端拿不到新 PATH），请用户重启 agent/终端；②nvm/fnm 管理需先 `nvm use <version>`；③仍不行建议 `winget install OpenJS.NodeJS.LTS`（≥18）。
 
@@ -123,7 +124,7 @@ skill 内嵌资产库（`library/`）：token CSS 全部在生成时现取（见
    ```sh
    node scripts/init.mjs "{artifact-folder}" "{slug}"
    ```
-   内嵌资产库自动使用，零配置。成功输出 `RESULT: OK` + `HTML_PATH` + `SRC_DIR` + `PAGE` + `ASSETS_VERSION`。token 全套随即复制到 `src/assets/tokens/`（含毛玻璃 token），并生成 api 适配层、mock 模块、全局词条、路由与 starter 页面。
+   资产包自动定位（init 从自身位置逐级向上找 `assets/`；跨盘/不在上级时加 `--assets-root <dir>`，成功后自动写入 skill 根 `assets-path.json`，下次免传）。成功输出 `RESULT: OK` + `HTML_PATH` + `SRC_DIR` + `PAGE` + `ASSETS_VERSION` + `ASSETS_ROOT`（后续 pattern/设计规范/token 查询路径的前缀）。token 全套随即复制到 `src/assets/tokens/`（含毛玻璃 token），并生成 api 适配层、mock 模块、全局词条、路由与 starter 页面。
 
 ### Step 3 — 写码
 
@@ -200,12 +201,12 @@ node scripts/smoke.mjs --dir "{artifact-folder}/{slug}"
 token 数值用 `query_tokens.mjs` 查询（按名/搜索/分组摘要，不整读 tokens.json）；图标名 / `el-*` 组件名写错时 preflight 会给相近项提示，按提示修正清单重跑即可。
 
 ```sh
-node LIBRARY/scripts/query_tokens.mjs --name color-brand   # 查单个 token（含深色值）
-node LIBRARY/scripts/query_tokens.mjs --search frost       # 子串搜索（名+描述+值）
-node LIBRARY/scripts/query_tokens.mjs --list               # 分组摘要
+node assets/scripts/query_tokens.mjs --name color-brand   # 查单个 token（含深色值）
+node assets/scripts/query_tokens.mjs --search frost       # 子串搜索（名+描述+值）
+node assets/scripts/query_tokens.mjs --list               # 分组摘要
 ```
 
 ## References
 
 - **[references/code-conventions.md](references/code-conventions.md)** — 页面代码规范 / 自适应规范 / API 适配层 / i18n / 相对路径计算表 / 高频错误预防 / 二开依赖差异
-- **docs/design-language/00索引.md**（仓库内，仓库外分发时不可用）— 设计真值路由入口：组件规范 51 份 + 设计规范 7 份 + 设计系统.md
+- **[assets/design-language/00索引.md](../../assets/design-language/00索引.md)**（随 assets/ 分发）— 设计真值路由入口：组件规范 51 份 + 设计规范 7 份 + 设计系统.md
