@@ -140,10 +140,10 @@ node --version
 node scripts/fetch_icons.mjs --dir "{artifact-folder}/{slug}" \
   --keywords "下载,文件,搜索" \
   [--base-url "<IconPlus API 地址>"] \
-  [--size 24] [--style "线性"] [--color "GTS_线性_Gray-10"] [--topK 25] [--source-id 6] [--tags "..."]
+  [--size 24] [--style "线性"] [--color "GTS_线性_Gray-10"] [--topK 25] [--source-id 6] [--tags "基础图标"]
 ```
 
-默认 base-url=`https://octo.hdesign.huawei.com`（无需传参）。`--tags` 不传时自动调 tags 接口获取全部标签拼接搜索（覆盖所有分类）。color 与 style 不匹配时自动修正。图标存为 `src/assets/icons/*.svg`，导入 `import downloadIcon from '../../assets/icons/download.svg'`，用法 `<img :src="downloadIcon" :width="20" :height="20" />`。默认 size=24 / style=线性 / color=GTS_线性_Gray-10。获取后图标文件名写入 preflight `--imports` 校验路径存在性。API 文档详见 [references/icon-plus.md](references/icon-plus.md)。
+默认 base-url=`https://octo.hdesign.huawei.com`（无需传参）。图标存为 `src/assets/icons/*.svg`，导入 `import downloadIcon from '../../assets/icons/download.svg'`，用法 `<img :src="downloadIcon" :width="20" :height="20" />`。默认 size=24 / style=线性 / color=GTS_线性_Gray-10 / tags=基础图标。获取后图标文件名写入 preflight `--imports` 校验路径存在性。API 文档详见 [references/icon-plus.md](references/icon-plus.md)。
 
 **连通性降级**：`fetch_icons.mjs` 先检测 API 是否可达（3s 超时）。不可达时自动降级为本地 Lucide 图标（370 个常用 B 端图标，含中文关键词映射），生成相同 `.svg` 格式。输出 `RESULT: FALLBACK | IconPlus API unreachable, using Lucide icons` + `ICONS: ...`——AI 按正常 ICONS 列表 import 即可，用法无差异。
 

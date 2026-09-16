@@ -30,7 +30,7 @@ node SKILL/scripts/fetch_icons.mjs --dir "{artifact-folder}/{slug}" \
 # RESULT: FAIL | <reason>
 ```
 
-默认 base-url=`https://octo.hdesign.huawei.com`（无需传参）；`--keywords` 逗号分隔批量搜索，支持中文关键词。默认 size=24 / style=线性 / color=GTS_线性_Gray-10。`--tags` 不传时自动调 tags 接口获取全部标签拼接搜索（覆盖所有分类）；传了则用指定值。color 与 style 不匹配时自动修正。已存在的 `.svg` 默认跳过（SKIP），`--force` 覆盖。生成的文件名规则：`ic_public_download` → `public-download.svg`。写码前批量获取，获取后 `import downloadIcon from '../../assets/icons/download.svg'`，用法 `<img :src="downloadIcon" :width="20" :height="20" />`。
+默认 base-url=`https://octo.hdesign.huawei.com`（无需传参）；`--keywords` 逗号分隔批量搜索，支持中文关键词。默认 size=24 / style=线性 / color=GTS_线性_Gray-10 / tags=基础图标。已存在的 `.svg` 默认跳过（SKIP），`--force` 覆盖。生成的文件名规则：`ic_public_download` → `public-download.svg`。写码前批量获取，获取后 `import downloadIcon from '../../assets/icons/download.svg'`，用法 `<img :src="downloadIcon" :width="20" :height="20" />`。
 
 **连通性降级**：API 不可达时自动切换本地 Lucide 图标（370 个常用 B 端图标，内置中文→英文关键词映射），生成相同 `.svg` 格式。输出 `RESULT: FALLBACK | IconPlus API unreachable, using Lucide icons`，AI 按 ICONS 列表正常 import，用法无差异。
 

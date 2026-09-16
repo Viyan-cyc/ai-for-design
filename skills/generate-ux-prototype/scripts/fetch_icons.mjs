@@ -5,12 +5,10 @@
 //
 // API flow (per icon-plus.md):
 //   0. Connectivity check  → if unreachable, switch to Lucide fallback
-//   1. getConfig    → validate size/style/color against config
-//   1b. validate color matches style (auto-correct if mismatch)
-//   2. tags         → fetch all tags, join for getIconInfo search
-//   3. getIconInfo  → search icons by keyword, collect URLs
-//   4. getIcon      → fetch SVG content by URL
-//   5. Save .svg    → raw SVG file into src/assets/icons/
+//   1. getConfig    → validate size/style/color against config (warn only)
+//   2. getIconInfo  → search icons by keyword, collect URLs
+//   3. getIcon      → fetch SVG content by URL
+//   4. Save .svg    → raw SVG file into src/assets/icons/
 //
 // Lucide fallback:
 //   Reads bundled lucide-icons.json (~370 icons), matches keywords against
@@ -54,7 +52,7 @@ const baseUrl = argValue('--base-url') || 'https://octo.hdesign.huawei.com';
 const keywords = argValue('--keywords');
 const size = argValue('--size') || '24';
 const style = argValue('--style') || '线性';
-let color = argValue('--color') || 'GTS_线性_Gray-10';
+const color = argValue('--color') || 'GTS_线性_Gray-10';
 const topK = parseInt(argValue('--topK') || '25', 10);
 const sourceId = parseInt(argValue('--source-id') || '6', 10);
 const apiTags = argValue('--tags') || '基础图标';
@@ -274,6 +272,7 @@ try {
   fail(`getConfig failed: ${e.message}`);
 }
 
+// Validate params against config (warn only, do not modify)
 const validSizes = (config.size || []).map((s) => s.key);
 const validStyles = (config.style || []).map((s) => s.value);
 const validColors = (config.colors || []).map((c) => c.id);
@@ -288,39 +287,9 @@ if (validColors.length && !validColors.includes(color)) {
   console.warn(`WARN: color "${color}" not in config colors (proceeding anyway)`);
 }
 
-// ---------- 1b. validate color matches style ----------
-// config.colors[].style must match the requested style (e.g. 线性 color for 线性 style)
-const colorObj = (config.colors || []).find((c) => c.id === color);
-if (colorObj && colorObj.style && colorObj.style !== style) {
-  // Auto-correct: find a color that matches the requested style
-  const matched = (config.colors || []).find((c) => c.style === style);
-  if (matched) {
-    console.warn(`WARN: color "${color}" style is "${colorObj.style}", not "${style}" — auto-corrected to "${matched.id}"`);
-    color = matched.id;
-  } else {
-    console.warn(`WARN: color "${color}" style is "${colorObj.style}", not "${style}" — no matching color found, proceeding anyway`);
-  }
-}
-
-// ---------- 2. get tags (for getIconInfo tags param) ----------
-// API doc: tags is required for getIconInfo. Fetch all tags and join them
-// so search covers all categories, unless user explicitly passes --tags.
-let searchTags = apiTags;
-if (!argValue('--tags')) {
-  try {
-    const tagsUrl = `${API_BASE}/lib-resource-service/api/resources/tags?source_id=${sourceId}&type=icon`;
-    console.log(`GET ${tagsUrl}`);
-    const tagsResp = await fetchJson(tagsUrl);
-    if (tagsResp.items && tagsResp.items.length) {
-      searchTags = tagsResp.items.join(',');
-      console.log(`Tags fetched: ${searchTags}`);
-    }
-  } catch (e) {
-    console.warn(`WARN: tags API failed (${e.message}), using default "${searchTags}"`);
-  }
-}
-
-// ---------- 3. getIconInfo ----------
+// ---------- 2. getIconInfo ----------
+// API doc params: keyword(必填), topK(选填,默认5), source_id(必填),
+//                 group_id(选填), type(必填,固定icon), tags(必填)
 let iconInfo;
 try {
   const params = new URLSearchParams({
@@ -328,7 +297,7 @@ try {
     topK: String(topK),
     source_id: String(sourceId),
     type: 'icon',
-    tags: searchTags,
+    tags: apiTags,
   });
   const infoUrl = `${API_BASE}/assetRepository/iconPlus/getIconInfo?${params}`;
   console.log(`GET ${infoUrl}`);
