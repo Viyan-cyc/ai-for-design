@@ -19,7 +19,7 @@
 //     --keywords "下载,文件,搜索" \
 //     [--base-url "https://octo.hdesign.huawei.com"] \
 //     [--size 24] [--style "线性"] [--color "GTS_线性_Gray-10"] \
-//     [--topK 25] [--source-id 6] [--category "basic"] [--group-id "132,333"] [--file-type svg] [--force]
+//     [--topK 1] [--source-id 6] [--category "basic"] [--group-id "132,333"] [--file-type svg] [--force]
 //
 // Output (agent-parseable):
 //   RESULT: OK + ICONS: download.svg,search.svg,...
@@ -53,7 +53,7 @@ const keywords = argValue('--keywords');
 const size = argValue('--size') || '24';
 const style = argValue('--style') || '线性';
 const color = argValue('--color') || 'GTS_线性_Gray-10';
-const topK = parseInt(argValue('--topK') || '25', 10);
+const topK = parseInt(argValue('--topK') || '1', 10);
 const sourceId = parseInt(argValue('--source-id') || '6', 10);
 const category = argValue('--category');
 const groupId = argValue('--group-id');
@@ -307,14 +307,18 @@ try {
   fail(`getIconInfo failed: ${e.message}`);
 }
 
+// 每个关键词只取 score 最高的 1 个图标（按需下载，不囤积搜索结果）
 const seen = new Set();
 const uniqueIcons = [];
 for (const group of (Array.isArray(iconInfo) ? iconInfo : [])) {
-  for (const icon of (group.icons || [])) {
-    if (!icon.url || seen.has(icon.url)) continue;
-    seen.add(icon.url);
-    uniqueIcons.push({ name: icon.name, url: icon.url, category: icon.category || '' });
-  }
+  const icons = (group.icons || []).filter((i) => i.url);
+  if (icons.length === 0) continue;
+  // 按 score 降序，取第一个
+  icons.sort((a, b) => (b.score || 0) - (a.score || 0));
+  const best = icons[0];
+  if (seen.has(best.url)) continue;
+  seen.add(best.url);
+  uniqueIcons.push({ name: best.name, url: best.url, category: best.category || '' });
 }
 
 if (uniqueIcons.length === 0) {
