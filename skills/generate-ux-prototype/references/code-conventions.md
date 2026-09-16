@@ -38,7 +38,7 @@
 
 页面流式自适应：宽度 1280-1920 均正常呈现，窗口拖窄时成排卡片自动降列换行；移动端 H5 布局明确不承诺。**px 单位不变**，自适应靠容器纪律 + 栅格断点 + `min()` 表达式，禁止 rem/viewport 换算、禁止整页 zoom/scale、禁止页面级 `min-width`+横滚兜底。
 
-1. **容器**：`.page-root` 只用 padding，不设 width/min-width；B 端壳 `el-aside` 固定 208-220px（可折叠），`el-main` 流式。
+1. **容器**：`.page-root` 只用 padding，不设 width/min-width；B 端壳 `el-aside` 固定 208-220px（可折叠），`el-main` 流式。`el-container` 一律显式 `direction="vertical"`（探测机制对自定义组件包裹的 `el-header` 失效，见 §9.5）。
 2. **成排卡片**（KPI 行、统计卡）：`el-row :gutter="16"` + `el-col` 断点降列——
 
    ```html
@@ -49,10 +49,11 @@
    </el-row>
    ```
 3. **表格**：`el-table` 默认流式，禁止给表格或列写死 width；列用 `min-width`，空间不足时表格**内部**出滚动条（EP 内建，零成本）。
-4. **筛选行**：inline form + `flex-wrap: wrap`，控件定宽不写死（如 `width: 200px` 可以，`width: 100%` 撑爆一行不行）。
-5. **对话框**：`width="min(720px, 92%)"` 模式，按内容选 480/720/960 基准，禁止超过视口的固定宽度。
-6. **媒体查询**仅窄屏布局（用户明确要求时）使用；断点对齐 EP 五档 `<768 / ≥768 / ≥992 / ≥1200 / ≥1920`，禁止自造断点数值。
-7. **截图转码例外**：布局按截图保真还原，但仍按本节纪律做流式，不照抄截图里的固定像素宽度。
+4. **grid/flex 包宽内容**：grid/flex 容器包表格等宽内容时，子项默认 `min-width: auto` 会被内容的 min-content 宽度撑破容器（el-table 内建滚动随之失效）。grid 轨道一律写 `minmax(0, 1fr)` 禁止裸 `auto` 轨道；flex 子项加 `min-width: 0`。
+5. **筛选行**：inline form + `flex-wrap: wrap`，控件定宽不写死（如 `width: 200px` 可以，`width: 100%` 撑爆一行不行）。
+6. **对话框**：`width="min(720px, 92%)"` 模式，按内容选 480/720/960 基准，禁止超过视口的固定宽度。
+7. **媒体查询**仅窄屏布局（用户明确要求时）使用；断点对齐 EP 五档 `<768 / ≥768 / ≥992 / ≥1200 / ≥1920`，禁止自造断点数值。
+8. **截图转码例外**：布局按截图保真还原，但仍按本节纪律做流式，不照抄截图里的固定像素宽度。
 
 ## 5. API 适配层约定（页面取数唯一通道）
 
@@ -145,30 +146,27 @@ export { fetchList, fetchDetail }
 2. `el-table` column `prop` 与 data key 匹配：`prop="xxx"` 必须对应数据对象的实际 key，否则列空白。
 3. template 不引用未声明的变量：`<script setup>` 中未定义的变量在模板中不渲染但不报错。
 4. token 使用前提交 preflight.mjs 校验（与 build 同源，禁止 grep tokens 目录现场查）。
+5. `el-container` 显式 `direction="vertical"`：EP 靠**直接子节点**出现 `el-header`/`el-footer` 探测纵向布局，`el-header` 被包进自定义组件（如 `<TopNav>`）后探测失效，容器退化为横向 flex，顶栏被挤成一列。B 端壳（顶栏 + 侧栏）一律显式写 `direction="vertical"`，不依赖探测。
 
 ## 10. 高频错误预防（build 拦截项）
 
+拼写类（图标/组件/导出名错、标签未 import）不用背表——preflight 会给相近项提示，按提示修正重跑即可。下表只列 preflight 提示不覆盖、或极易犯的项：
+
 | # | 错误写法 | 正确写法 | 原因 |
 |---|---------|---------|------|
-| 1 | `import { Searchh } from '@element-plus/icons-vue'` | `import { Search }` | 图标名不在 295 白名单 |
-| 2 | `<el-table-cloumn>` | `<el-table-column>` | 组件名不在 116 白名单 |
-| 3 | `<StatusTag />` 但没 import | `import StatusTag from './components/StatusTag.vue'` | 标签无对应 import |
-| 4 | `import logo from '../assets/uploads/logo.png'`（从 views/{slug}/ 出发） | `'../../assets/uploads/logo.png'` | 路径少一级 |
-| 5 | `import { ElToast } from 'element-plus'` | `import { ElMessage } from 'element-plus'` | 导出名不在白名单 |
-| 6 | `style="color: red"` | class + `<style lang="less">` 定义 | 禁止内联样式 |
-| 7 | `import { fetchList } from '../../../mock/modules/{slug}.js'` | `from '../../api/{slug}.js'` | 页面禁 import mock（build FAIL） |
-| 8 | `<style lang="scss">` 或新增 .scss 文件 | `<style lang="less" scoped>` | 样式语言全链路钉死 less |
-| 9 | `<style>` 内 `:root { --color-x: … }` | 皮肤只放 `src/assets/themes/`；页面局部变量 `--page-*` | token 层与皮肤文件专属 |
-| 10 | `slot-scope="scope"` | `<template #default="{ row }">` | 旧语法编译失败 |
-| 11 | `v-if` 和 `v-for` 同标签 | 分开到不同标签 | 编译错误 |
-| 12 | `src="/assets/uploads/x.png"` | `import img from '../../assets/uploads/x.png'` | 预览无法解析裸路径 |
+| 1 | `import logo from '../assets/uploads/logo.png'`（从 views/{slug}/ 出发） | `'../../assets/uploads/logo.png'` | 路径少一级 |
+| 2 | `import { fetchList } from '../../../mock/modules/{slug}.js'` | `from '../../api/{slug}.js'` | 页面禁 import mock（build FAIL） |
+| 3 | `<style lang="scss">` 或新增 .scss 文件 | `<style lang="less" scoped>` | 样式语言全链路钉死 less |
+| 4 | `<style>` 内 `:root { --color-x: … }` | 皮肤只放 `src/assets/themes/`；页面局部变量 `--page-*` | token 层与皮肤文件专属 |
+| 5 | `slot-scope="scope"` | `<template #default="{ row }">` | 旧语法编译失败 |
+| 6 | `v-if` 和 `v-for` 同标签 | 分开到不同标签 | 编译错误 |
+| 7 | `src="/assets/uploads/x.png"` | `import img from '../../assets/uploads/x.png'` | 预览无法解析裸路径 |
 
 ## 11. 二开依赖差异
 
 工作区是标准 Vue 工程，但预览运行时与真实 Vite 工程有三处已知差异，二次开发者需知：
 
 1. **devDependency 固定 `npm i -D less`**：真实工程 Vite 零配置编译 Less（`main.js` 已 `import './assets/style/base.less'`）；无需 sass/其他预处理器。
-2. **api 适配层两段式**：二开 `src/api/{slug}.js` 时用 `import ... from` + `export { }` 两段式，勿用 `export {...} from` re-export 简写（sfc-loader 0.9.5 re-export 缺陷经验；真实 Vite 工程无此限制，两段式是双保险）。
-3. **el-pagination 用 v-model**：预览运行时（sfc-loader 0.9.5）下传单向 `:current-page` / `:page-size` prop 会静默不渲染（组件变注释节点）；写 `v-model:current-page` / `v-model:page-size`（真实 Vite 工程无此限制）。
+2. **api 适配层两段式 + el-pagination 用 v-model**：二开 `src/api/{slug}.js` 用 §5 的两段式写法（sfc-loader 0.9.5 re-export 缺陷经验，真实 Vite 工程无此限制）；el-pagination 传单向 `:current-page`/`:page-size` prop 会静默不渲染，必须写 `v-model:current-page` / `v-model:page-size`（真实 Vite 工程无此限制）。
 
 真实工程 npm 依赖（`preview/src/main.js` 头部已注释声明）：`vue@^3.4`、`vue-router@^4.4`、`element-plus@2.13.5`、`@element-plus/icons-vue@^2.3`、`dayjs@^1.11`、`less@^4.2`。

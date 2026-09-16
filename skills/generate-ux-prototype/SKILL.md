@@ -1,14 +1,14 @@
 ---
 name: generate-ux-prototype
-description: Generate or edit a G Design page as real Vue 3 + Element Plus 2.13.5 source code (.vue workspace with api adapter, mock, i18n) plus a zero-build offline preview; design tokens are fetched live from the local asset library. Accepts text requirements, module descriptions, screenshots or raw HTML. Triggers on "页面生成", "原型", "Vue 页面", "Element Plus", "列表页", "看板", "截图转码".
-version: 1.0.0
+description: 生成或修改 G Design 页面原型：真实 Vue 3 + Element Plus 2.13.5 源码工作区（.vue SFC 纯 JS + api 适配层 + mock + i18n + 零构建离线预览，可拷入真实工程二次开发）。接受文字需求、模块描述、截图、Raw HTML。Triggers: 页面生成、原型、Vue 页面、Element Plus、列表页、看板、截图转码.
+version: 1.1.0
 ---
 
 # 生成 G Design 原型（Vue 3 源码交付）
 
-你的产品是**真实 Vue 3 源码工作区**：一组 `.vue` SFC（`<script setup>` 纯 JS）+ Less + 标准 ESM import，写在 `{slug}/src/` 下——代码本身就是交付件，可直接拷入任何 Vue 3 + Element Plus + Vite 工程做二次开发；同时附带零构建离线预览 `{slug}/index.html`（浏览器直接打开）。对话以单个 `<artifact>` 链接结束。
+交付件 = **真实 Vue 3 源码工作区**：`.vue` SFC（`<script setup>` 纯 JS）+ Less + 标准 ESM import，写在 `{slug}/src/` 下，可直接拷入任何 Vue 3 + Element Plus + Vite 工程二次开发；附带零构建离线预览 `{slug}/index.html`（浏览器直接打开）。对话以单个 `<artifact>` 链接结束。
 
-skill 本体内嵌资产库（`library/`）：token CSS 全部在生成时现取（见下文「资产库」）；设计规范真值在仓库 `docs/design-language/`（设计师迭代处，本 skill 只读消费）。
+skill 内嵌资产库（`library/`）：token CSS 全部在生成时现取（见下文「资产库」）；设计规范真值在仓库 `docs/design-language/`（设计师迭代处，本 skill 只读消费）。
 
 ## 技术栈（钉死，无开关）
 
@@ -47,7 +47,8 @@ skill 本体内嵌资产库（`library/`）：token CSS 全部在生成时现取
 
 **router/index.js 硬约束（白页防线）：** `index.html` 预览加载器按固定路径 `/src/router/index.js` 加载路由模块。不得挪动、改名、内联到 main.js，不得把 `createWebHashHistory` 换成 `createWebHistory`（file:// 下路由匹配失败 → 白页）。只准往 `routes` 数组里加条目。build.mjs 强制校验三项：文件存在、调用 `createRouter`、history 必须是 `createWebHashHistory` 或 `createMemoryHistory`。
 
-**HARD RULES（src/ 内代码约束，细则见 [references/code-conventions.md](references/code-conventions.md)）:**
+## HARD RULES（src/ 内代码约束，细则见 [references/code-conventions.md](references/code-conventions.md)）
+
 - 标准 ESM：`import { ref } from 'vue'`、`import { ElMessage } from 'element-plus'`；相对路径 import 子组件。
 - 颜色一律资产库 token 变量 `var(--color-*)`（尺寸/字体/投影用 `--space-size-*`/`--radius-size-*`/`--font-size-*`/`--shadow-*`）；Element Plus 组件用语义 `type` prop。
 - `<style lang="less" scoped>`；**禁止静态内联 `style="..."`**（`:style` 动态绑定允许）；SFC 样式内禁止定义 `:root`、`[data-theme]`、资产 token（页面局部变量用 `--page-*` 前缀）。
@@ -55,98 +56,70 @@ skill 本体内嵌资产库（`library/`）：token CSS 全部在生成时现取
 - 页面流式自适应（默认：容器不写死宽度 + 栅格断点；实现细则见 code-conventions「自适应规范」，设计真值在 design-language 响应式与无障碍.md）。
 - 页面与组件**只准从 `src/api/{slug}.js` 取数**，禁止 import `mock/modules`（build 强制校验）。
 
-## 资产库（内嵌，零配置）
-
-资产库内嵌于本 skill 的 `library/` 目录，skill 装到哪资产就在哪——**所有脚本自动使用内嵌库，无需指定任何路径**。库内除 `patterns/` 与 `frontend/element-plus/docs/` 外全部为派生产物（再生管线见 library/README.md）。
-
-不要整读 `asset-manifest.json`（机器文件）；token 查询一律走库内脚本：
-
-```sh
-node LIBRARY/scripts/query_tokens.mjs --name color-brand        # 查单个 token
-node LIBRARY/scripts/query_tokens.mjs --search frost            # token 搜索
-```
-
-### 双索引读纪律（默认一律不读，命中才读）
-
-库内与设计真值文档**按需触发，默认一律不读**（HARD RULES 已覆盖日常写码约束）：
+## 读纪律（默认一律不读，命中才读；本 session 已读的文件禁重读）
 
 | 场景 | 读什么 | 位置 |
 | --- | --- | --- |
-| 页面场景命中速查表 | 对应 pattern（先读再落笔） | `library/patterns/`（入口 `patterns-index.md`，约 15 行） |
-| 组件的用途/状态/"不要"（设计语义拿不准） | 对应组件规范 | `docs/design-language/组件规范/`（入口 `组件索引.md`） |
-| 毛玻璃需求 | 设计系统 §7 | `docs/design-language/样式Token/设计系统.md#frosted-glass` |
-| 组件方言写法拿不准 | 对应方言文档（探测：仅 el-form/el-dialog/el-tag 三篇存在） | `library/frontend/element-plus/docs/` |
+| 列表页（筛选 + 表格 + 分页，设备/工单/任务/用户等一切查询场景） | [pattern-list-page.md](library/patterns/pattern-list-page.md) 先读再落笔；五段骨架 + 数据编排 + 状态列映射（STATUS_MAP 节） | `library/patterns/` |
+| 取数 / 保存 / 删除 / 批量等异步或写操作（**必读**；弹窗表单读其反馈细则节） | [pattern-states-feedback.md](library/patterns/pattern-states-feedback.md) 六态壳 + 反馈闭环 | `library/patterns/` |
+| 纯静态展示页（无取数、无写操作） | 不读 pattern，遵守 code-conventions 即可 | — |
+| 组件的用途/状态/"不要"（设计语义拿不准） | 对应组件规范（入口 `组件索引.md`） | `docs/design-language/组件规范/` |
+| 组件方言写法拿不准 | 方言文档（探测：仅 el-form/el-dialog/el-tag 三篇存在） | `library/frontend/element-plus/docs/` |
+| 毛玻璃需求 | 设计系统 §7（档位/预算/装饰；§7.6 色块装饰判断）+ `query_tokens.mjs --search frost` | `docs/design-language/样式Token/设计系统.md#frosted-glass` |
 
-**session 缓存纪律**：本 session 已读过的文件禁重读；组件规范/方言文档需要多份时批量并行一次读完。
+- 模式覆盖：查询列表/设备管理/新建编辑由两篇 pattern 覆盖；详情/报警/拓扑类页面仍读 pattern-states-feedback.md（六态与反馈对所有页面类型生效）。
+- **探测不到 = 无坑**：方言文档不存在的组件不代表没有规范——设计语义查组件规范，写法按 EP 官方 API + preflight 校验，不臆造。
+- 组件规范/方言文档需要多份时**批量并行一次读完**。
 
-**探测不到 = 无坑**：方言文档不存在的组件不代表没有规范——设计语义查组件规范，写法按 EP 官方 API + preflight 校验，不臆造。
+## Token 消耗纪律（GTS 生成规则）
 
-### Token 消耗纪律（GTS 生成规则）
-
-- token 值**永不进上下文**：写 `var(--color-brand)` 让 CSS 解析，语义拿不准先 preflight 再 query 脚本，禁止为"确认值"读设计系统.md 全文。
+- token 值**永不进上下文**：写 `var(--color-brand)` 让 CSS 解析；**token 确认只走 preflight.mjs**（与 build 同源），禁止为"确认值"读设计系统.md 全文、禁止 grep tokens 目录现场查。
+- **按命名骨架写，不探测**：token 命名是两层结构，按骨架组词第一轮就能命中——
+  - 语义层 `color-{对象}-{角色}`：bg / text / icon / border 是对象（如 `--color-text-primary`、`--color-bg-mask`），brand / error / warning / success / info 是角色（如 `--color-brand-hover`、`--color-error-subtle`）。**没有** danger/banner/gradient/fill/focus-ring 这类 UI 行话词。
+  - 色板层 `{色名}-{明度}`：`--blue-50`、`--gray-0`~`--gray-100`、`--brand-05` 等（明度数字大的深）。
+  - 尺寸类按规律直写：`--space-size-N`、`--font-size-*`、`--radius-size-*`、`--shadow-*`。
+  - 以上骨架仍查不到的（frost/公司色等）才用 `query_tokens.mjs --search`，禁止逐个探测式查询（每轮一轮 Bash，纯磨蹭）。
 - token 名保持设计师原拼写与大小写；**禁造未定义值**——通配形式（如 `--frost-blur-*`）必须展开为实际存在的具体 token。
 - 字号与行高**成对使用**（`font-size-big` ↔ `font-line-height-big`），不混搭别档行高。
 - 间距分常规/紧凑两套，**按表取值不按比例缩放**；组件内间距标注含边框宽（`padding + border-width` = 目标间距）。
 - 透明叠加（`color-hover` 等 rgba 值）与合成色（`color-mix`）不互换，各用各的 token。
 - 用户要求与规范冲突时**指出差异**，不把用户说法表述成规范；布局规范未规定处用项目约定（code-conventions），不臆造设计规则。
 
-## 上下文预算（读取纪律，生成全程执行）
+## 上下文预算（生成全程执行）
 
-单页生成的目标预算：**定位+init ≤5k / 写码输出 ~30k / 验证 ≤5k / 规范按需 ≤10k，全程 ≤70-90k**——200k 窗口下留一半余量。执行规则：
+单页目标预算：**定位+init ≤5k / 写码 ~30k / 验证 ≤5k / 规范按需 ≤10k，全程 ≤70-90k**。执行规则：
 
-1. **禁读清单**（读了也不用于生成，纯浪费）：skill 目录外的任何仓库/项目文档；资产库的 `asset-manifest.json`（机器文件，见上）；设计系统.md 全文（token 值不进上下文）。
-2. **token 确认只走 preflight.mjs**（与 build 同源），禁止 grep `src/assets/tokens/` 现场查；token 语义疑问按「双索引读纪律」查对应文档的那一节。
-3. **验证只认脚本输出**：build/smoke 的 `RESULT` 行即终态；FAIL 按行修复重跑，禁止现场手写调试脚本/puppeteer 脚本展开分析——那是把验证变成新的上下文黑洞。
-4. **截图输入节制**：一次一张、必要时裁剪；追问/修改轮次不重发已分析过的图。
-5. **接近预算上限时**：先压缩会话上下文（安全点：init 完成开写之前），压缩后凭 SKILL.md + 工作区文件继续，无需重读资产库。
+1. **禁读清单**（读了也不用于生成，纯浪费）：skill 目录外的任何仓库/项目文档；`asset-manifest.json` 与 `tokens.json`（机器文件）；设计系统.md 全文（token 值不进上下文）。
+2. **验证只认脚本输出**：build/smoke 的 `RESULT` 行即终态；FAIL 按行修复重跑，禁止现场手写调试脚本/puppeteer 脚本展开分析。
+3. **截图输入节制**：一次一张、必要时裁剪；追问/修改轮次不重发已分析过的图。
+4. **接近预算上限时**：先压缩会话上下文（安全点：init 完成开写之前），压缩后凭 SKILL.md + 工作区文件继续，无需重读资产库。
 
 ## 环境纪律（node 归因 + 降级禁令）
 
 **交付契约不可降级：任何环境下都禁止「node 不可用所以改为纯 HTML/静态页」的替代交付**——那不是本 Skill 的产物，等于交付失败。环境故障时的唯一正确动作：按下面诊断 → 把结果原样报告用户 → 等待修复；不许自行更换交付形态、不许静默降级。
 
-**`RESULT: FAIL` = 脚本已正常运行后的业务校验失败，与 node 安装无关**（脚本能输出 FAIL 恰恰证明 node 可用）。高频原因与修复：
-
-| FAIL 信息 | 原因 | 修复 |
-|---|---|---|
-| `asset library not found` / `embedded asset library broken` | skill 内嵌 `library/` 目录缺失或损坏（拷贝安装不完整） | 重装 skill |
-| `Artifact folder does not exist` | 输出目录未建 | 先创建目录再跑 |
-| `target already exists` | 同名工作区已存在 | 走文末 Modification Workflow |
-| `puppeteer-core not found`（smoke） | 冒烟前置未装 | `npm i -g puppeteer-core` |
-
-连续 FAIL 3 次仍未修复 → 停下把输出原样报告用户，禁止换交付形态。
+**`RESULT: FAIL` = 脚本已正常运行后的业务校验失败，与 node 安装无关**（能输出 FAIL 恰恰证明 node 可用）。高频原因：`asset library not found`/`embedded asset library broken` = skill 拷贝安装不完整，重装；`Artifact folder does not exist` = 先建目录；`target already exists` = 走 Modification Workflow；`puppeteer-core not found` = `npm i -g puppeteer-core`。连续 FAIL 3 次仍未修复 → 停下把输出原样报告用户，禁止换交付形态。
 
 **skill 自带文件不是可修改对象**：禁止修改、调试、patch 本 skill 的 `scripts/` 与 `library/` 下任何文件——那是 skill 本体，不是本次任务的产物；疑似脚本缺陷时原样报告用户等待修复，不许就地改或绕过脚本自跑替代验证。
 
-**node 真缺失时的排查顺序**（仅当 `node --version` 报 command not found 才进入）：
-
-1. 用户确认已安装 → 最可能是 **agent 宿主进程 PATH 未刷新**（Windows 装完 node 后，已启动的 agent/终端拿不到新 PATH；用户自己开新终端 `node --version` 正常，两边都没错）→ 请用户**重启 agent/终端**再试；
-2. 询问安装方式：nvm/fnm 管理时需在当前 shell 先 `nvm use <version>`；
-3. 仍不行才建议安装：`winget install OpenJS.NodeJS.LTS`（要求 ≥18）。
+**node 真缺失时的排查顺序**（仅当 `node --version` 报 command not found 才进入）：①用户确认已装 → 多半是 agent 宿主进程 PATH 未刷新（Windows 装完 node 已启动的终端拿不到新 PATH），请用户重启 agent/终端；②nvm/fnm 管理需先 `nvm use <version>`；③仍不行建议 `winget install OpenJS.NodeJS.LTS`（≥18）。
 
 ## 生成流程（All Input Types）
-
-### Step 0 — 环境预检（一行命令）
-
-```sh
-node --version
-```
-
-- 输出 `v` 数字（≥18）→ node 可用；**此后本次会话内任何脚本 FAIL 都不得归因于 node 安装**，按「环境纪律」表内原因排查。
-- `command not found` / 报错 → 进入「环境纪律」的排查顺序，结果报告用户；**全程禁止降级为纯 HTML 交付**。
 
 ### Step 1 — 输入解析
 
 - **意图先行判定**：用户发设计稿/截图并要求「还原 / 重新生成」时，**直接全新生成**（派生新 slug 建新目录），不读取、不比对已生成的旧页面——只有用户明确说「修改 / 对齐已有页面」才走文末 Modification Workflow。误判成修改流程会浪费大量轮次通读旧代码且全部作废。
 - **Type 1 页面描述**：分析场景、目标用户、核心问题；扩展完备性（B 端控制台 = 顶栏 + 侧边导航 + 主内容区 + 状态反馈）。
 - **Type 2 模块描述**：单个 UI 块 → 作为独立组件生成 + 页面以展示形态包裹。
-- **Type 3 截图**：分析布局/组件/层级/视觉分区，映射到 Element Plus + 资产 token；**数据保真转录而非发明**——行数列数与图完全一致，逐格独立读取，严禁行间复制。
+- **Type 3 截图**：分析布局/组件/层级/视觉分区，映射到 Element Plus + 资产 token；**数据保真转录而非发明**——行列数与图完全一致（多一行少一行都算失真）、逐格独立读取、严禁行间复制/凑行、数字保持业务自洽（合计=分项和）；不确定的格子标注 TODO 而非编造。
 - **Type 4 Raw HTML**：解析 DOM/CSS → 原生控件映射 EP 组件，颜色映射最近似 token，重复内容提为数据。
 
-### Step 2 — Init Workspace（MANDATORY）
+### Step 2 — 预检 + Init Workspace（MANDATORY）
 
-1. **Confirm {artifact-folder}**：运行时上下文提供的绝对路径；缺失则回退当前工作目录。
-2. **Derive {slug}**：kebab-case ASCII，2–6 段语义英文（"设备管理" → `device-management`）。
-3. **Init**：
+1. **环境预检**：`node --version` 输出 `v` 数字（≥18）→ node 可用，此后本次会话任何脚本 FAIL 都不得归因 node 安装；`command not found` → 进入「环境纪律」排查，结果报告用户，全程禁止降级为纯 HTML 交付。
+2. **Confirm {artifact-folder}**：运行时上下文提供的绝对路径；缺失则回退当前工作目录。
+3. **Derive {slug}**：kebab-case ASCII，2–6 段语义英文（"设备管理" → `device-management`）。
+4. **Init**：
    ```sh
    node scripts/init.mjs "{artifact-folder}" "{slug}"
    ```
@@ -159,9 +132,9 @@ node --version
 - `views/{slug}/index.vue` 为页面主组件（替换 starter），以组合编排为主。
 - **无依赖的文件并行写**：constants.js、locales.js、mock 数据、互不依赖的子组件可在同一轮并行创建。
 - **写码前先规划后落笔（preflight 强制）**：
-  0. 扫 `library/patterns/patterns-index.md` 速查表：命中场景先读对应 pattern，再落笔。
+  0. 按上方「读纪律」表：页面场景命中 pattern / 方言文档的，先读再落笔。
   1. 先列出每个待写文件的 imports——**按目录显式算好相对路径前缀**（`views/{slug}/` 出发上两级 `../../`，`views/{slug}/components/` 出发上三级 `../../../`；components/ 下少写一级是历史最高频 build FAIL 项）。
-  2. 汇总本轮要用的全部 token 变量名、图标名、element-plus 导出名、词条 key，**一次提交 preflight 一条命令校验**（不通过按提示修正清单再跑；禁止写码中途反复 grep/node 查询）：
+  2. 汇总本轮要用的全部 token 变量名、图标名、element-plus 导出名、词条 key，**一次提交 preflight 一条命令校验**（不通过按提示修正清单再跑；禁止写码中途反复 grep/node 查询）。**旗标各管各的，不混装**：`--icons` 只填图标名；`--exports` 只填 element-plus 导出名（vue 的 ref/computed 等不进任何清单）；`--tokens` 每项带 `--` 前缀（`--color-brand` 而非 `color-brand`）；`--imports` 格式 `fromFile=rel1|rel2`：
      ```sh
      node scripts/preflight.mjs --dir "{artifact-folder}/{slug}" --icons "..." --tokens "..." --exports "..." --imports "views/{slug}/components/X.vue=../../../locales/pages/{slug}.js|../js/constants.js,..."
      ```
@@ -175,6 +148,7 @@ preflight + HARD RULES + 白名单已机械覆盖语法/命名/样式类错误�
 
 1. `el-select` 初始值在 options 内、`el-table` 的 `prop` 与数据 key 匹配
 2. template 引用的变量在 `<script setup>` 中已声明；`v-for` 有 `:key`
+3. 页面/组件 import 的 api 导出名与 `src/api/{slug}.js` 的 export 逐一对照——新增 mock 函数必须同步补进 api 适配层导出（三道门禁都抓不到导出名缺失，漏了就是运行时错误态）
 
 ### Step 5 — Build & Verify（MANDATORY，自动刷新预览）
 
@@ -185,16 +159,14 @@ node scripts/build.mjs --dir "{artifact-folder}/{slug}"
 - **Success:** `RESULT: OK` + `OK index.html verified (N pages, M components, K el-tag uses)`
 - **Failure:** `RESULT: FAIL | <文件>: <原因>` → 修复 → 重跑（最多 3 次）
 - **WARN:** hex 颜色、静态内联样式——非阻断，但应修正
-- 校验覆盖：@vue/compiler-sfc 真编译 + `el-*` 白名单(116) + 图标白名单(295) + 导出白名单(130) + 相对 import 解析 + 裸依赖白名单 + ESM 语法 + **token 存在性（从工作区 `src/assets/tokens/` 实时提取）** + 样式卫生 + mock 隔离 + scss 禁用 + **router 完整性（文件存在 + createRouter + history 必须 file:// 兼容 + export default）**。
-
-通过后跑无头冒烟收口：
+- 校验为全自动机器检查（SFC 真编译 + 三类白名单 + 相对 import 解析 + token 存在性 + mock 隔离 + router 完整性等），无需人工复核清单，FAIL 按行修。
 
 ```sh
 node scripts/smoke.mjs --dir "{artifact-folder}/{slug}"
 # RESULT: OK | render=1 token=#0067D1 themeSwitch=ok errors=0 missing404=0
 ```
 
-**build + smoke 一轮跑完 = 生成流程结束。** 不再起 serve / curl 探活 / 查杀进程 / 重复验证——smoke 自带渲染、token 品牌色、明暗切换、404 检查并自查进程清理；`serve.mjs` 只在用户明确要求本机预览地址时才启动。
+**build + smoke 一轮跑完 = 生成流程结束。** 最终收口一条命令串跑（修 FAIL 迭代期间只跑 build，smoke 留给收口）：`node scripts/build.mjs --dir "..." && node scripts/smoke.mjs --dir "..."`。不再起 serve / curl 探活 / 查杀进程 / 重复验证——smoke 自带渲染、token 品牌色、明暗切换、404 检查并自查进程清理。冒烟前置（每机器一次）：`npm i -g puppeteer-core`（自动探测系统 Chrome/Edge，不下载浏览器）。
 
 ### Step 6 — Output
 
@@ -202,17 +174,9 @@ node scripts/smoke.mjs --dir "{artifact-folder}/{slug}"
 <artifact type="text/link">{HTML_PATH value}</artifact>
 ```
 
-直接在浏览器打开 `index.html` 即可预览（file:// 可直接加载）；用户需要本机预览地址时才启动：
+浏览器直接打开 `index.html` 预览（file:// 可加载）；用户要本机预览地址时才 `node scripts/serve.mjs --dir "{artifact-folder}/{slug}" --port 8765`。交付说明注明演示假设与未验证项、二开入口（改 `src/api/{slug}.js` 对接真实接口，页面零改动）。
 
-```sh
-node scripts/serve.mjs --dir "{artifact-folder}/{slug}" --port 8765
-```
-
-冒烟前置（每机器一次）：`npm i -g puppeteer-core`；自动探测系统 Chrome/Edge，不下载浏览器。检查项：页面无报错渲染、`--el-color-primary` 解析为资产品牌色、`setTheme('dark')` 明暗切换生效、非 favicon 资源 404 为空。`--selector` 可指定页面特征选择器（默认 `.event-card, .page-root, main, #app .el-button`）。
-
-交付说明需注明：演示假设与未验证项、以及二次开发入口（改 `src/api/{slug}.js` 对接真实接口，页面零改动）。
-
-**沟通节奏**：写码/修 FAIL 过程不逐轮汇报，收口时一起说；脚本要装前置或耗时几分钟时先告知用户正在做什么。脚本报错分两类：环境类失败（装不上、node 缺失）原样转述给用户；自己代码的 FAIL 直接修复重跑，不用转述。
+**沟通节奏**：写码/修 FAIL 不逐轮汇报，收口时一起说；装前置或耗时几分钟先告知。脚本报错：环境类失败原样转述用户；自己代码的 FAIL 直接修复重跑不转述。
 
 ## Modification Workflow（修改已生成页面）
 
@@ -222,37 +186,26 @@ node scripts/serve.mjs --dir "{artifact-folder}/{slug}" --port 8765
 2. **Edit:** 只做请求的改动——未提及内容保持不变。
 3. **Re-verify:** 重跑 `build.mjs` → 输出同一 `<artifact>` link。
 
-## 换肤系统
+## 细则路由（一句话规则 + 去处，不在本文展开）
 
-明暗协议 `data-theme="light|dark"`（运行时 `document.documentElement.setAttribute`）；自定义皮肤 `theme-{name}.css` 放 `src/assets/themes/` 按该目录 README 注册。页面消费 token 全套，任何皮肤下自动跟随。
+| 话题 | 一句话规则 | 细则 |
+| --- | --- | --- |
+| 换肤/皮肤 | 协议 `data-theme="light|dark"`（运行时 `documentElement.setAttribute`）；自定义皮肤只放 `src/assets/themes/theme-{name}.css`，页面消费 token 全套自动跟随 | 工作区 `assets/themes/README.md` |
+| i18n | 每页一个 `src/locales/pages/{slug}.js`，zh+en 单文件双语言一次写完；`t` 是按 LANG 展平的字符串，模板直接 `{{ t.title }}` | code-conventions §7 |
+| Mock / API 适配层 | mock 按 REST 语义设计签名，二开只改 api 文件、页面零改动 | code-conventions §5/§6 |
+| UI Runtime 扩展点 | 接入其他 UI 库（如 SweetUI）= UMD 目录 + 白名单 + token 桥接 CSS 三件套，架构与生成流程不动 | 仓库 `docs/ui-runtime.md`（仓库外分发时不可用） |
 
-## 毛玻璃与视觉风格
+## Token / 图标查询
 
-毛玻璃就是 token + 规范：token 随 `src/assets/tokens/` 自动就位；需求涉及时**按需读**设计系统.md 的毛玻璃节（§7 档位/预算/装饰，仓库路径 `docs/design-language/样式Token/设计系统.md`），数值走 `query_tokens.mjs --search frost`。视觉判断：大面积品牌色重点卡片且边角留白时按 §7.6「色块装饰」选弱装饰；普通大卡片不因尺寸自动装饰，密集数据与告警色排除。用户参考图和风格优先；无明确需求时用企业实色主题。
+token 数值用 `query_tokens.mjs` 查询（按名/搜索/分组摘要，不整读 tokens.json）；图标名 / `el-*` 组件名写错时 preflight 会给相近项提示，按提示修正清单重跑即可。
 
-## UI Runtime 扩展点
-
-默认 runtime 为 **element-plus 2.13.5**。接入其他 UI 库（如 SweetUI）= 按「UMD 目录 / 白名单 / token 桥接 CSS」三件套接入，架构不动；接入说明与清单见 [references/ui-runtime.md](references/ui-runtime.md)。生成流程本身不因 runtime 改变。
-
-## i18n
-
-页面词条每页一个 `src/locales/pages/{slug}.js`（单文件双语言，zh+en 一次写完；写法见 code-conventions「i18n 模式」）；`lang/{zh-CN,en-US}/common.json` 仅存**跨页共享**词条。将来接 vue-i18n 把两个语言对象拆进 JSON，页面模板零改动。
-
-## Mock 与 API 适配层
-
-页面**只准** `import { fetchList } from '../../api/{slug}.js'`；**禁止 import `mock/modules`**（build 强制 FAIL）。mock 按 REST 语义设计签名、二开只改 api 文件——细则与二开写法见 code-conventions「API 适配层约定」。
-
-## Token 速查
-
-不内嵌速查表（避免随设计师更新腐烂）。**token 确认只走 preflight.mjs**（与 build 同源实时校验）；token 数值用 `query_tokens.mjs` 查询（按名/搜索，不整读 tokens.json）。图标名 / `el-*` 组件名写错时 preflight 会给相近项提示，按提示修正清单重跑即可。
-
-## 截图转码保真（Type 3 输入强化）
-
-fidelity overrides expansion——还原截图时：行列数与截图完全一致（多一行少一行都算失真）、严禁凑行/复制行、逐格独立读取数据、数字保持业务自洽（合计=分项和）；不确定的格子标注 TODO 而非编造。
+```sh
+node LIBRARY/scripts/query_tokens.mjs --name color-brand   # 查单个 token（含深色值）
+node LIBRARY/scripts/query_tokens.mjs --search frost       # 子串搜索（名+描述+值）
+node LIBRARY/scripts/query_tokens.mjs --list               # 分组摘要
+```
 
 ## References
 
 - **[references/code-conventions.md](references/code-conventions.md)** — 页面代码规范 / 自适应规范 / API 适配层 / i18n / 相对路径计算表 / 高频错误预防 / 二开依赖差异
-- **[references/ui-runtime.md](references/ui-runtime.md)** — UI Runtime 三件套接入说明（SweetUI 预留）
-- **[references/usage.md](references/usage.md)** — 调用示例（脚本 CLI 速览：query_tokens / init / preflight / build / serve / smoke）
 - **docs/design-language/00索引.md**（仓库内，仓库外分发时不可用）— 设计真值路由入口：组件规范 51 份 + 设计规范 7 份 + 设计系统.md
