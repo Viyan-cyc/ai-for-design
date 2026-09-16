@@ -1,6 +1,5 @@
-# 编译器依赖目录——vendored 运行时依赖已外置到用户机器共享池
-# skill 目录内只保留 package.json（声明真源）与 PLACEHOLDER.md（哨兵）
-# 依赖树由 scripts/setup-compiler.mjs 安装生成（fastui 式：npm install 现场生长）
-# ⚠️ 本目录禁止再手工塞入 node_modules——历史包袱 809 文件已清，勿回填
+# 编译器依赖目录——运行时依赖外置到用户机器共享池（fastui 式）
+# 本目录随 git 分发的是：package.json（依赖声明）+ package-lock.json（版本锁定真源）
+# 依赖树由 scripts/setup-compiler.mjs 安装生成（npm install 现场生长，各机器装同一棵树）
+# ⚠️ 禁止手工塞入 node_modules——历史包袱 809 文件已清，勿回填
 node_modules/
-package-lock.json

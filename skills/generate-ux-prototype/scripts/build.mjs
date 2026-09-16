@@ -35,7 +35,7 @@ import { spawnSync } from 'child_process';
 import { tmpdir } from 'os';
 import { createRequire } from 'module';
 import { refresh } from './build-data.mjs';
-import { resolveCompilerModules } from './compiler-paths.mjs';
+import { checkCompilerEnv, setupHint } from './compiler-paths.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -91,18 +91,16 @@ const ALLOWED_BARE = new Set([
 ]);
 
 // ---------- real compiler ----------
-// 依赖树住共享池（compiler-paths.mjs 解析：env → 共享池 → skill 内旧布局兜底）
+// 依赖树住共享池（checkCompilerEnv：包完整 → 依赖树在 → lockfile 漂移三段校验）
 let sfc;
 {
-  const found = resolveCompilerModules();
-  if (found.ok) {
-    const req = createRequire(join(found.dir, '@vue', 'compiler-sfc', 'package.json'));
+  const r = checkCompilerEnv();
+  if (r.ok) {
+    const req = createRequire(join(r.dir, '@vue', 'compiler-sfc', 'package.json'));
     sfc = req('@vue/compiler-sfc');
   } else {
-    console.log(`HINT: node "${join(__dirname, 'setup-compiler.mjs')}"   # 首装约 10-30s，装完重跑 build`);
-    fail(
-      `@vue/compiler-sfc 依赖树未安装（已找过: ${found.candidates.join(' , ')}）`,
-    );
+    console.log(`HINT: ${setupHint()}`);
+    fail(`${r.code} | ${r.message}`);
   }
 }
 
