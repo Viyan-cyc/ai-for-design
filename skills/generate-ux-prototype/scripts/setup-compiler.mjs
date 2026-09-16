@@ -67,8 +67,18 @@ if (args.from) {
         execFileSync('unzip', ['-o', from, '-d', target], { stdio: 'inherit' });
       }
     } else {
-      // 目录：整体复制
-      execFileSync(process.platform === 'win32' ? 'robocopy' : 'cp', process.platform === 'win32' ? [from, target, '/E', '/NFL', '/NDL', '/NJH', '/NJS'] : ['-r', `${from}/.`, target], { stdio: 'ignore' });
+      // 目录：整体复制。robocopy exit code 1 = 复制成功（≥8 才是错），
+      // execFileSync 对非零码一律 throw——故吞掉异常后按产物存在性判定成败
+      if (process.platform === 'win32') {
+        try {
+          execFileSync('robocopy', [from, target, '/E', '/NFL', '/NDL', '/NJH', '/NJS'], { stdio: 'ignore' });
+        } catch {}
+        if (!existsSync(join(target, '@vue', 'compiler-sfc', 'package.json'))) {
+          throw new Error('robocopy 完成但目标缺 @vue/compiler-sfc');
+        }
+      } else {
+        execFileSync('cp', ['-r', `${from}/.`, target], { stdio: 'ignore' });
+      }
     }
   } catch (e) {
     fail('FROM_EXTRACT_FAILED', `解包 ${from} 失败: ${e.message}`, '确认 zip/目录完整且可读');
@@ -131,8 +141,12 @@ function returnOk(source) {
   } catch (e) {
     fail('VERIFY_FAILED', `安装后仍加载不到 @vue/compiler-sfc: ${e.message}`, '把本输出原样反馈维护者');
   }
-  // 哨兵使命结束
-  try { rmSync(COMPILER_PLACEHOLDER, { force: true }); } catch {}
+  // 哨兵使命结束——仅当装进默认池（无 env-dir 覆盖）才删：哨兵表达的是
+  // 「默认池未安装」，装到自定义目录不改变这个事实（bug 教训：--env-dir 验证
+  // 时误删了 skill 目录哨兵，导致全新机器误判已装）
+  if (!args['env-dir'] && !process.env.OCTO_UX_ENV_DIR) {
+    try { rmSync(COMPILER_PLACEHOLDER, { force: true }); } catch {}
+  }
   // 环境锁（版本/来源/时间，供 ensure 与排障）
   let version = '';
   try { version = JSON.parse(readFileSync(join(COMPILER_PKG_JSON), 'utf8')).dependencies['@vue/compiler-sfc'] || ''; } catch {}
