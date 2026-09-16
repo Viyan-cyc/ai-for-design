@@ -4,7 +4,7 @@
 // 用途：生成页面时，AI 在落笔前列出「规划清单」（图标名 / token 变量 / element-plus 导出名 /
 //       拟写文件的相对 import 目标），本脚本一条命令全部校验。全部通过才开写；
 //       否则按输出修正清单，避免写完靠 build 返工（build 是编译级检查，本脚本是规划级检查）。
-//       IconPlus 图标（src/assets/icons/*.vue）不走 --icons，通过 --imports 相对路径解析自动校验。
+//       IconPlus 图标（src/assets/icons/*.svg）不走 --icons，通过 --imports 相对路径解析自动校验。
 //
 // 用法（--dir 为已 init 的工作区；其余参数可重复，值为逗号分隔清单）：
 //   node preflight.mjs --dir "{slug}" \

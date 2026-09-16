@@ -3,7 +3,7 @@
 // Fetches icons from IconPlus API and saves them as .svg files.
 // Falls back to bundled Lucide icons when the API is unreachable.
 //
-// API flow (per icon-plus.md):
+// API flow (per icon-api-new.md):
 //   0. Connectivity check  → if unreachable, switch to Lucide fallback
 //   1. getConfig    → validate size/style/color against config (warn only)
 //   2. getIconInfo  → search icons by keyword, collect URLs
@@ -19,7 +19,7 @@
 //     --keywords "下载,文件,搜索" \
 //     [--base-url "https://octo.hdesign.huawei.com"] \
 //     [--size 24] [--style "线性"] [--color "GTS_线性_Gray-10"] \
-//     [--topK 25] [--source-id 6] [--tags "基础图标"] [--file-type svg] [--force]
+//     [--topK 25] [--source-id 6] [--category "basic"] [--file-type svg] [--force]
 //
 // Output (agent-parseable):
 //   RESULT: OK + ICONS: download.svg,search.svg,...
@@ -55,7 +55,7 @@ const style = argValue('--style') || '线性';
 const color = argValue('--color') || 'GTS_线性_Gray-10';
 const topK = parseInt(argValue('--topK') || '25', 10);
 const sourceId = parseInt(argValue('--source-id') || '6', 10);
-const apiTags = argValue('--tags') || '基础图标';
+const category = argValue('--category');
 const fileType = argValue('--file-type') || 'svg';
 const force = argFlag('--force');
 
@@ -288,17 +288,16 @@ if (validColors.length && !validColors.includes(color)) {
 }
 
 // ---------- 2. getIconInfo ----------
-// API doc params: keyword(必填), topK(选填,默认5), source_id(必填),
-//                 group_id(选填), type(必填,固定icon), tags(必填)
+// API doc (icon-api-new.md) params: keyword(必填), topK(选填,默认5),
+//                                   category(选填), source_id(选填)
 let iconInfo;
 try {
   const params = new URLSearchParams({
     keyword: keywords,
     topK: String(topK),
     source_id: String(sourceId),
-    type: 'icon',
-    tags: apiTags,
   });
+  if (category) params.set('category', category);
   const infoUrl = `${API_BASE}/assetRepository/iconPlus/getIconInfo?${params}`;
   console.log(`GET ${infoUrl}`);
   iconInfo = await fetchJson(infoUrl);
