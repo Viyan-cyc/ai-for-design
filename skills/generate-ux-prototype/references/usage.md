@@ -24,7 +24,7 @@ node SKILL/scripts/fetch_icons.mjs --dir "{artifact-folder}/{slug}" \
   --keywords "下载,文件,搜索" \
   [--base-url "https://octo.hdesign.huawei.com"] \
   [--size 24] [--style "线性"] [--color "GTS_线性_Gray-10"] \
-  [--topK 25] [--source-id 6] [--category "basic"] [--file-type svg] [--force]
+  [--topK 25] [--source-id 6] [--category "basic"] [--group-id "132,333"] [--file-type svg] [--force]
 # RESULT: OK + ICONS: download.svg,file.svg,search.svg + DIR: .../src/assets/icons
 # RESULT: FALLBACK | IconPlus API unreachable, using Lucide icons + ICONS: ...
 # RESULT: FAIL | <reason>

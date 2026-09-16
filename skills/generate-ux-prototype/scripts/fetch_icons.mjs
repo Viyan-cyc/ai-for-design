@@ -3,11 +3,11 @@
 // Fetches icons from IconPlus API and saves them as .svg files.
 // Falls back to bundled Lucide icons when the API is unreachable.
 //
-// API flow (per icon-api-new.md):
+// API flow (per icon-api.md):
 //   0. Connectivity check  → if unreachable, switch to Lucide fallback
 //   1. getConfig    → validate size/style/color against config (warn only)
-//   2. getIconInfo  → search icons by keyword, collect URLs
-//   3. getIcon      → fetch SVG content by URL
+//   2. getIconInfo  → search icons by keyword, collect URLs + name + category
+//   3. getIcon      → fetch SVG content by URL (pass name/category from step 2)
 //   4. Save .svg    → raw SVG file into src/assets/icons/
 //
 // Lucide fallback:
@@ -19,7 +19,7 @@
 //     --keywords "下载,文件,搜索" \
 //     [--base-url "https://octo.hdesign.huawei.com"] \
 //     [--size 24] [--style "线性"] [--color "GTS_线性_Gray-10"] \
-//     [--topK 25] [--source-id 6] [--category "basic"] [--file-type svg] [--force]
+//     [--topK 25] [--source-id 6] [--category "basic"] [--group-id "132,333"] [--file-type svg] [--force]
 //
 // Output (agent-parseable):
 //   RESULT: OK + ICONS: download.svg,search.svg,...
@@ -56,6 +56,7 @@ const color = argValue('--color') || 'GTS_线性_Gray-10';
 const topK = parseInt(argValue('--topK') || '25', 10);
 const sourceId = parseInt(argValue('--source-id') || '6', 10);
 const category = argValue('--category');
+const groupId = argValue('--group-id');
 const fileType = argValue('--file-type') || 'svg';
 const force = argFlag('--force');
 
@@ -288,8 +289,8 @@ if (validColors.length && !validColors.includes(color)) {
 }
 
 // ---------- 2. getIconInfo ----------
-// API doc (icon-api-new.md) params: keyword(必填), topK(选填,默认5),
-//                                   category(选填), source_id(选填)
+// API doc (icon-api.md) params: keyword(必填), topK(选填,默认5),
+//   category(选填), source_id(选填), group_id(选填,逗号分隔), businessData(选填)
 let iconInfo;
 try {
   const params = new URLSearchParams({
@@ -298,6 +299,7 @@ try {
     source_id: String(sourceId),
   });
   if (category) params.set('category', category);
+  if (groupId) params.set('group_id', groupId);
   const infoUrl = `${API_BASE}/assetRepository/iconPlus/getIconInfo?${params}`;
   console.log(`GET ${infoUrl}`);
   iconInfo = await fetchJson(infoUrl);
@@ -311,7 +313,7 @@ for (const group of (Array.isArray(iconInfo) ? iconInfo : [])) {
   for (const icon of (group.icons || [])) {
     if (!icon.url || seen.has(icon.url)) continue;
     seen.add(icon.url);
-    uniqueIcons.push({ name: icon.name, url: icon.url });
+    uniqueIcons.push({ name: icon.name, url: icon.url, category: icon.category || '' });
   }
 }
 
@@ -325,7 +327,11 @@ if (uniqueIcons.length === 0) {
 console.log(`Found ${uniqueIcons.length} unique icon(s)`);
 
 // ---------- 3. getIcon (batch) ----------
+// API doc (icon-api.md) params: url(必填), size(必填), style(必填), color(必填),
+//   name(选填,从getIconInfo获取), category(选填,从getIconInfo获取), fileType(选填,默认svg)
 const urlsParam = uniqueIcons.map((i) => i.url).join(',');
+const namesParam = uniqueIcons.map((i) => i.name).filter(Boolean).join(',');
+const categoriesParam = [...new Set(uniqueIcons.map((i) => i.category).filter(Boolean))].join(',');
 let iconData;
 try {
   const params = new URLSearchParams({
@@ -335,6 +341,8 @@ try {
     color: color,
     fileType: fileType,
   });
+  if (namesParam) params.set('name', namesParam);
+  if (categoriesParam) params.set('category', categoriesParam);
   const iconUrl = `${API_BASE}/assetRepository/iconPlus/getIcon?${params}`;
   console.log(`GET ${iconUrl}`);
   iconData = await fetchJson(iconUrl);

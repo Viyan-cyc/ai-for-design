@@ -140,7 +140,7 @@ node --version
 node scripts/fetch_icons.mjs --dir "{artifact-folder}/{slug}" \
   --keywords "下载,文件,搜索" \
   [--base-url "<IconPlus API 地址>"] \
-  [--size 24] [--style "线性"] [--color "GTS_线性_Gray-10"] [--topK 25] [--source-id 6] [--category "basic"]
+  [--size 24] [--style "线性"] [--color "GTS_线性_Gray-10"] [--topK 25] [--source-id 6] [--category "basic"] [--group-id "132,333"]
 ```
 
 默认 base-url=`https://octo.hdesign.huawei.com`（无需传参）。图标存为 `src/assets/icons/*.svg`，导入 `import downloadIcon from '../../assets/icons/download.svg'`，用法 `<img :src="downloadIcon" :width="20" :height="20" />`。默认 size=24 / style=线性 / color=GTS_线性_Gray-10。获取后图标文件名写入 preflight `--imports` 校验路径存在性。API 文档详见 [references/icon-api.md](references/icon-api.md)。

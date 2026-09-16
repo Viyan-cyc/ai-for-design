@@ -47,6 +47,8 @@
 | topK | number | 否 | 每个关键词返回数量，默认5 |
 | category | string | 否 | 图标类别，与keyword拼接为‘category_keyword’搜索 |
 | source_id | number | 否 | 来源ID |
+| group_id | string | 否 | 分组ID，支持逗号分隔多个值，如`132,333`,从config的group中选取id（可选） |
+| businessData | string | 否 | 业务数据，JSON字符串格式，传递给向量搜索接口（可选） |
 ### 响应
 ```json
 [
@@ -55,9 +57,13 @@
     "icons": [
       "icon_id": "123",
       "name": "ic_public_download",
+      "ChineseName": "下载",
+      "englishName": "download",
+      "description"： "",
       "category": "基础图标",
       "group": "通用",
-      "url": "https://......svg"
+      "url": "https://..."
+      "score": 0.95
     ]
   }
 ]
@@ -66,9 +72,13 @@
 | 字段 | 说明 |
 | icon_id | 图标唯一标识，用于获取svg |
 | name | 图标名称 |
+| ChineseName | 中文名称 |
+| englishName | 英文名称 |
+| description | 图标描述关键词 |
 | category | 图标类别 |
 | group | 图标分组 |
 | url | 图标资源url，用于获取svg |
+| name | 匹配度（0-1，越高越匹配） |
 
 
 
@@ -82,6 +92,8 @@
 | size | string | 是 | 图标尺寸，从config.size的key中选取 |
 | style | string | 是 | 图标风格，从config.style的value中选取 |
 | color | string | 是 | 颜色ID，从config.colors中筛选后取id |
+| name | string | 否 | 图标名称，从getIconInfo返回结果中获取 |
+| category | string | 否 | 图标类别，从getIconInfo返回结果中获取 |
 | fileType | string | 否 | 文件类型，默认svg，可选png |
 ### 响应
 返回json对象，包含图标ID、名称和数据。
@@ -110,6 +122,6 @@
 ```
 ### 响应字段说明
 | 字段 | 说明 |
-| icon_id | 图标ID |
+| url | 图标url |
 | name | 图标名称 |
 | data | svg文本或png的base64编码字符串 |
