@@ -26,7 +26,7 @@
 //   RESULT: FALLBACK | IconPlus API unreachable, using Lucide icons + ICONS: ...
 //   RESULT: FAIL | <reason>
 
-import { existsSync, mkdirSync, writeFileSync, readFileSync } from 'fs';
+import { existsSync, mkdirSync, writeFileSync } from 'fs';
 import { join, resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
@@ -187,47 +187,37 @@ async function checkConnectivity() {
   }
 }
 
-// ---------- Lucide fallback ----------
-function lucideFallback(keywordList) {
-  const lucidePath = join(__dirname, 'verify', 'whitelists', 'lucide-icons.json');
-  if (!existsSync(lucidePath)) {
-    fail(`Lucide fallback data not found: ${lucidePath}`);
-  }
-  const lucideData = JSON.parse(readFileSync(lucidePath, 'utf8'));
-  const allNames = Object.keys(lucideData);
+// ---------- Lucide fallback (CDN on-demand, no local data) ----------
+const LUCIDE_CDN = 'https://unpkg.com/lucide-static@1.46.0/icons';
 
-  const matched = new Map();
-  for (const kw of keywordList) {
-    const enKw = translateKeyword(kw);
-    if (lucideData[enKw]) {
-      matched.set(enKw, true);
-      continue;
-    }
-    let nameHits = 0;
-    for (const name of allNames) {
-      if (name === enKw || name.startsWith(enKw + '-') || name.startsWith(enKw)) {
-        matched.set(name, true);
-        nameHits++;
-        if (nameHits >= topK) break;
-      }
-    }
-    if (nameHits > 0) continue;
-    let tagHits = 0;
-    for (const name of allNames) {
-      const tags = lucideData[name].tags || [];
-      if (tags.some((t) => t === enKw || t.includes(enKw) || enKw.includes(t))) {
-        matched.set(name, true);
-        tagHits++;
-        if (tagHits >= topK) break;
-      }
-    }
+async function fetchLucideSvg(name) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 5000);
+  try {
+    const res = await fetch(`${LUCIDE_CDN}/${name}.svg`, { signal: controller.signal });
+    if (!res.ok) return null;
+    return await res.text();
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
   }
+}
 
+async function lucideFallback(keywordList) {
   const savedIcons = [];
   const skipped = [];
 
-  for (const name of matched.keys()) {
-    const fileName = `${name}.svg`;
+  for (const kw of keywordList) {
+    const enKw = translateKeyword(kw);
+    // 直接从 CDN 获取对应名称的 SVG
+    const raw = await fetchLucideSvg(enKw);
+    if (!raw) {
+      console.warn(`WARN: Lucide icon not found for "${kw}" (${enKw})`);
+      continue;
+    }
+
+    const fileName = `${enKw}.svg`;
     const filePath = join(iconsDir, fileName);
 
     if (existsSync(filePath) && !force) {
@@ -235,9 +225,8 @@ function lucideFallback(keywordList) {
       continue;
     }
 
-    const innerSvg = lucideData[name].svg;
-    const fullSvg = `<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">${innerSvg}</svg>`;
-    writeFileSync(filePath, fullSvg, 'utf8');
+    const svgContent = processSvg(raw);
+    writeFileSync(filePath, svgContent, 'utf8');
     savedIcons.push(fileName);
   }
 
@@ -245,7 +234,7 @@ function lucideFallback(keywordList) {
     console.log(`SKIP: ${skipped.join(', ')} (already exist, use --force to overwrite)`);
   }
 
-  console.log('RESULT: FALLBACK | IconPlus API unreachable, using Lucide icons');
+  console.log('RESULT: FALLBACK | IconPlus API unreachable, using Lucide icons (CDN)');
   console.log(`ICONS: ${savedIcons.join(',')}`);
   console.log(`DIR: ${iconsDir}`);
   process.exit(0);
@@ -258,7 +247,7 @@ const conn = await checkConnectivity();
 
 if (!conn.ok) {
   console.log(`WARN: IconPlus API unreachable at ${API_BASE}, falling back to Lucide icons`);
-  lucideFallback(keywordList);
+  await lucideFallback(keywordList);
 }
 
 // ---------- API reachable: normal IconPlus flow ----------
