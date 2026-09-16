@@ -1,14 +1,16 @@
 
 基础URL：`https://octo.hdesign.huawei.com`（`fetch_icons.mjs` 默认值，可通过 `--base-url` 覆盖）
 
-### 接口顺序：1.getConfig → 2.tags → 3.groups → 4.getIconInfo(topK=25,source_id=6,type=icon) → 5.getIcon
+### 接口顺序：1.getConfig → 2.tags → 3.groups(可选) → 4.getIconInfo → 5.getIcon
+`fetch_icons.mjs` 自动执行 1→2→4→5（groups 仅用于分组过滤，不影响搜索完整性）。
 
 ## 1. 获取配置
 **GET** `/assetRepository/iconPlus/getConfig`
-返回尺寸/风格/颜色等配置。完整响应见 `references/icon-plus-getConfig.json`。
+返回尺寸/风格/颜色等配置。完整响应见 `references/icon-plus-getConfig.json`。`fetch_icons.mjs` 用于校验参数 + color/style 匹配（不匹配时自动修正）。
 
 ## 2. 获取标签列表
 **GET** `/lib-resource-service/api/resources/tags`
+`fetch_icons.mjs` 自动调用，获取全部标签拼接为 getIconInfo 的 tags 参数（覆盖所有分类）。
 | 参数 | 类型 | 必填 | 说明 |
 | source_id | string | 是 | 来源ID |
 | type | string | 是 | 固定值：icon |
