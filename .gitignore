@@ -17,3 +17,4 @@ skills/generate-ux-prototype/assets-path.json
 
 # Python 字节码缓存（防御）
 __pycache__/
+conn-cache.json

@@ -12,23 +12,23 @@
 //   4. Save .svg    → raw SVG file into src/assets/icons/
 //
 // Lucide fallback (extranet only — no local icon data shipped):
-//   Chinese keyword → english icon name via ZH_EN_MAP (kept here as program
-//   logic), then download the SVG straight from jsdelivr's lucide-static CDN.
-//   Names below are verified against lucide's current naming.
+//   Keywords are Lucide icon names directly (the calling LLM does any
+//   Chinese→English translation before invoking this script). The SVG is
+//   downloaded straight from jsdelivr's lucide-static CDN.
 //
 // Usage:
 //   node fetch_icons.mjs --dir "{artifact-folder}/{slug}" \
-//     --keywords "下载,文件,搜索" \
+//     --keywords "download,file,search" \
 //     [--base-url "https://octo.hdesign.huawei.com"] \
 //     [--size 24] [--style "线性"] [--color "GTS_线性_Gray-10"] \
-//     [--topK 1] [--source-id 6] [--category "basic"] [--group-id "132,333"] [--file-type svg] [--force]
+//     [--topK 1] [--source-id 6] [--category "basic"] [--group-id "132,333"] [--file-type svg] [--force] [--recheck]
 //
 // Output (agent-parseable):
 //   RESULT: OK + ICONS: download.svg,search.svg,...
 //   RESULT: FALLBACK | IconPlus API unreachable, used Lucide icons from network + ICONS: ...
 //   RESULT: FAIL | <reason>
 
-import { existsSync, mkdirSync, writeFileSync } from 'fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
 import { join, resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
@@ -63,7 +63,7 @@ const fileType = argValue('--file-type') || 'svg';
 const force = argFlag('--force');
 
 if (!dir) fail('Missing --dir <workspace>');
-if (!keywords) fail('Missing --keywords "下载,文件,..."');
+if (!keywords) fail('Missing --keywords "download,file,search"');
 
 const workDir = resolve(dir);
 const srcDir = join(workDir, 'src');
@@ -126,87 +126,52 @@ function processSvg(svgString) {
   return svg;
 }
 
-// ---------- Chinese → English keyword map for Lucide fallback ----------
-// 值是 Lucide 图标名（已对齐 lucide 现行命名，见 fallback 处的网络拉取）。
-const ZH_EN_MAP = {
-  '下载': 'download', '上传': 'upload', '搜索': 'search', '查找': 'search',
-  '新增': 'plus', '添加': 'plus', '创建': 'plus',
-  '编辑': 'pencil', '修改': 'pencil', '改': 'edit',
-  '删除': 'trash', '移除': 'trash', '清除': 'trash',
-  '刷新': 'refresh-cw', '重载': 'refresh-cw',
-  '保存': 'save', '复制': 'copy', '粘贴': 'clipboard',
-  '退出': 'log-out', '登录': 'log-in', '登出': 'log-out',
-  '用户': 'user', '人员': 'users', '账号': 'user',
-  '设置': 'settings', '配置': 'settings',
-  '文件': 'file', '文件夹': 'folder', '文档': 'file-text',
-  '首页': 'home', '主页': 'home',
-  '菜单': 'menu', '导航': 'navigation',
-  '关闭': 'x', '取消': 'x', '确认': 'check', '确定': 'check',
-  '警告': 'triangle-alert', '提醒': 'bell', '通知': 'bell', '消息': 'message-circle',
-  '邮件': 'mail', '电话': 'phone',
-  '日历': 'calendar', '时间': 'clock', '时钟': 'clock',
-  '锁定': 'lock', '解锁': 'unlock', '密码': 'key',
-  '图表': 'chart-bar', '统计': 'activity', '趋势': 'trending-up',
-  '数据库': 'database', '表格': 'table', '列表': 'list',
-  '筛选': 'filter', '排序': 'arrow-up-down', '分类': 'grid',
-  '眼睛': 'eye', '查看': 'eye', '可见': 'eye',
-  '不可见': 'eye-off', '隐藏': 'eye-off',
-  '链接': 'link', '外链': 'external-link',
-  '更多': 'more-horizontal', '展开': 'expand', '折叠': 'shrink',
-  '全屏': 'maximize', '最大化': 'maximize', '最小化': 'minimize',
-  '标签': 'tag', '书签': 'bookmark',
-  '星': 'star', '评分': 'star', '心': 'heart', '收藏': 'heart',
-  '定位': 'map-pin', '位置': 'map-pin', '地图': 'map',
-  '购物': 'shopping-cart', '支付': 'credit-card', '钱包': 'wallet',
-  '日': 'sun', '月': 'moon', '云': 'cloud', '风': 'wind',
-  '锁': 'lock', '钥匙': 'key', '盾': 'shield', '安全': 'shield-check',
-  '电源': 'power', '开关': 'toggle-right',
-  '加载': 'loader', '等待': 'loader',
-  '左右': 'chevrons-left', '上下': 'chevrons-up',
-  '左': 'chevron-left', '右': 'chevron-right', '上': 'chevron-up', '下': 'chevron-down',
-  '返回': 'arrow-left', '前进': 'arrow-right',
-  '打印': 'printer', '扫描': 'scan',
-  '相机': 'camera', '图片': 'image', '照片': 'image',
-  '视频': 'video', '音乐': 'music', '音量': 'volume-2',
-  '代码': 'code', '终端': 'terminal', '分支': 'git-branch',
-  '服务器': 'server', '硬盘': 'hard-drive', '网络': 'network',
-  'CPU': 'cpu', '内存': 'memory-stick', '显示器': 'monitor',
-  '手机': 'smartphone', '键盘': 'keyboard', '鼠标': 'mouse',
-  '建筑': 'building', '工厂': 'factory', '仓库': 'warehouse',
-  '卡车': 'truck', '汽车': 'car', '飞机': 'plane',
-  '日历选择': 'calendar-check',
-  '帮助': 'circle-help', '问题': 'circle-help', '信息': 'info',
-  '成功': 'circle-check', '失败': 'circle-x', '错误': 'circle-alert',
-  '播放': 'play', '暂停': 'pause', '停止': 'circle-stop',
-  '层级': 'layers', '组件': 'component', '拼图': 'puzzle',
-  '工作流': 'workflow', '站点': 'network',
-  '引号': 'quote', '哈希': 'hash', '百分号': 'percent',
-  '美元': 'dollar-sign', '收据': 'receipt', '礼物': 'gift',
-  '编辑器': 'pencil', '笔': 'pencil', '画笔': 'paintbrush',
-  '调色板': 'palette', '魔法': 'wand-sparkles', '火花': 'sparkles',
-};
+// ---------- Lucide fallback (network, no local icon data) ----------
+// 外网无法访问 IconPlus 时，从 Lucide 公开 CDN 在线拉取 SVG，本地不打包图标
+// 资源。关键词即 Lucide 图标名，按名直接下载。
+// ---------- 0. Connectivity check (cached, TTL 1h) ----------
+// 探测结果写到 skill 根 conn-cache.json，1 小时内复用，避免每次运行都空等
+// PING_TIMEOUT；传 --recheck 强制重新探测（内网↔外网切换后有用）。
+const CONN_CACHE_PATH = join(__dirname, '..', 'conn-cache.json');
+const CONN_CACHE_TTL = 60 * 60 * 1000;
 
-function translateKeyword(kw) {
-  const lower = kw.toLowerCase();
-  if (ZH_EN_MAP[kw]) return ZH_EN_MAP[kw];
-  if (ZH_EN_MAP[lower]) return ZH_EN_MAP[lower];
-  return lower;
+function readConnCache() {
+  try {
+    const data = JSON.parse(readFileSync(CONN_CACHE_PATH, 'utf8'));
+    if (typeof data.ok === 'boolean' && Date.now() - data.ts < CONN_CACHE_TTL) {
+      return data;
+    }
+  } catch {}
+  return null;
 }
 
-// ---------- 0. Connectivity check ----------
+function writeConnCache(ok) {
+  try {
+    writeFileSync(CONN_CACHE_PATH, JSON.stringify({ ok, ts: Date.now() }), 'utf8');
+  } catch {}
+}
+
 async function checkConnectivity() {
+  if (!argFlag('--recheck')) {
+    const cached = readConnCache();
+    if (cached) {
+      console.log(`Connectivity ${cached.ok ? 'reachable' : 'unreachable'} (cached — pass --recheck to re-probe)`);
+      return { ok: cached.ok };
+    }
+  }
+  console.log(`Checking connectivity to ${API_BASE}...`);
+  let ok = false;
   try {
     const configUrl = `${API_BASE}/assetRepository/iconPlus/getConfig`;
     await fetchJson(configUrl, PING_TIMEOUT);
-    return { ok: true };
+    ok = true;
   } catch {
-    return { ok: false };
+    ok = false;
   }
+  writeConnCache(ok);
+  return { ok };
 }
 
-// ---------- Lucide fallback (network, no local icon data) ----------
-// 外网无法访问 IconPlus 时，从 Lucide 公开 CDN 在线拉取 SVG，本地不打包图标
-// 资源。中文关键词 → 英文图标名（ZH_EN_MAP），按名直接下载。
 const LUCIDE_BASE = 'https://cdn.jsdelivr.net/npm/lucide-static@latest/icons';
 
 async function lucideFallback(keywordList) {
@@ -215,8 +180,7 @@ async function lucideFallback(keywordList) {
   const failed = [];
 
   for (const kw of keywordList) {
-    const enKw = translateKeyword(kw);
-    const fileName = `${enKw}.svg`;
+    const fileName = `${kw}.svg`;
     const filePath = join(iconsDir, fileName);
 
     if (existsSync(filePath) && !force) {
@@ -224,7 +188,7 @@ async function lucideFallback(keywordList) {
       continue;
     }
 
-    const svgRaw = await fetchText(`${LUCIDE_BASE}/${encodeURIComponent(enKw)}.svg`);
+    const svgRaw = await fetchText(`${LUCIDE_BASE}/${encodeURIComponent(kw)}.svg`);
     if (!svgRaw) {
       failed.push(fileName);
       continue;
@@ -249,7 +213,6 @@ async function lucideFallback(keywordList) {
 
 // ---------- Main: connectivity check ----------
 const keywordList = keywords.split(',').map((s) => s.trim()).filter(Boolean);
-console.log(`Checking connectivity to ${API_BASE}...`);
 const conn = await checkConnectivity();
 
 if (!conn.ok) {
