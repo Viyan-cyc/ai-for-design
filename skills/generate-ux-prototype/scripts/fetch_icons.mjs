@@ -28,7 +28,7 @@
 //   RESULT: FALLBACK | IconPlus API unreachable, used Lucide icons from network + ICONS: ...
 //   RESULT: FAIL | <reason>
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync, readdirSync as fsSyncReaddir } from 'fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync, readdirSync as fsSyncReaddir, unlinkSync } from 'fs';
 import { join, resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
@@ -129,6 +129,27 @@ const RESERVED_WORDS = new Set([
 
 function safeKey(camelKey) {
   return RESERVED_WORDS.has(camelKey) ? `${camelKey}Icon` : camelKey;
+}
+
+// 清理 init.mjs 落的占位 SVG（文件内容含 <!-- init-placeholder --> 标记）。
+// 在 writeIconsBarrel 之前执行，确保占位文件不进入 barrel、不残留到正式产物。
+function removePlaceholders() {
+  let files;
+  try {
+    files = fsSyncReaddir(iconsDir).filter((f) => f.endsWith('.svg'));
+  } catch {
+    return;
+  }
+  for (const file of files) {
+    const filePath = join(iconsDir, file);
+    try {
+      const content = readFileSync(filePath, 'utf8');
+      if (content.includes('<!-- init-placeholder -->')) {
+        unlinkSync(filePath);
+        console.log(`CLEANED: removed init placeholder ${file}`);
+      }
+    } catch {}
+  }
 }
 
 // 全量扫描 src/assets/icons/*.svg，整体重生成 barrel（多次运行保持完整与幂等）。
@@ -274,7 +295,9 @@ async function lucideFallback(keywordList) {
     console.log(`WARN: Lucide has no icon for: ${failed.join(', ')} — pick icon names from https://lucide.dev/icons and re-run`);
   }
 
-  writeIconsBarrel();
+  removePlaceholders();
+removePlaceholders();
+writeIconsBarrel();
   console.log('RESULT: FALLBACK | IconPlus API unreachable, used Lucide icons from network');
   console.log(`ICONS: ${savedIcons.join(',')}`);
   console.log(`DIR: ${iconsDir}`);

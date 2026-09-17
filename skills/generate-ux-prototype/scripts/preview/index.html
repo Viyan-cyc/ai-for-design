@@ -166,17 +166,9 @@
                     }
                     if (ASSET_EXT.indexOf(type) !== -1) {
                         // ESM 语义：default import 拿到 URL 字符串（与 Vite import 资源一致）
-                        // .svg 用 data URL（内容已在 SRC 中）；其他 asset 返回相对路径 URL
-                        var raw = getContentData();
-                        return Promise.resolve(raw).then(function (text) {
-                            var url;
-                            if (type === ".svg") {
-                                url = "data:image/svg+xml," + encodeURIComponent(String(text).replace(/^\uFEFF/, ""));
-                            } else {
-                                url = "." + String(path).split("?")[0];
-                            }
-                            return { default: url, __esModule: true };
-                        });
+                        // 返回相对预览根的 URL（file:// 下 <img> 可直接加载本地文件）
+                        var url = "." + String(path).split("?")[0];
+                        return Promise.resolve({ default: url, __esModule: true });
                     }
                     // 注意：必须返回 undefined（不是 null）才会走 loader 对 .vue/.js 的默认编译处理
                     return undefined;

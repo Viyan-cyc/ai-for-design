@@ -135,7 +135,7 @@ node scripts/fetch_icons.mjs --dir "{artifact-folder}/{slug}" --keywords "downlo
 - **内网**：走华为 IconPlus API（默认 `https://octo.hdesign.huawei.com`，无需传参），存为 `src/assets/icons/*.svg`（`ic_public_download` → `public-download.svg`，kebab-case 剥 `ic_` 前缀）。
 - **外网**：IconPlus 不可达（3s 超时）自动降级为 **Lucide**——从公开 CDN 在线拉取 SVG，**本地不打包图标资源**。关键词即 Lucide 图标名，不存在的名会 WARN 并列出，按提示改名重跑。输出 `RESULT: FALLBACK | ... used Lucide icons from network` + `ICONS: ...`。
 - **barrel 自动生成**：fetch_icons 每次运行后全量扫描 `src/assets/icons/*.svg` 重生成 `src/assets/icons/index.js`（`import xxx from './xxx.svg'` + `export const ICONS = { xxx }` 对象字面量；键名 kebab-case → camelCase，`public-download` → `publicDownload`；**JS 保留字追加 Icon 后缀，`package` → `packageIcon`**），并输出 `BARREL: ...` 行。**页面消费一律走 barrel**：`import { ICONS } from '../../assets/icons/index.js'` + `<img :src="ICONS.download" :width="20" :height="20" />`——组件不再手写逐个 .svg import（消灭图标路径层级错误），build 校验 `ICONS.key` 存在性（拼错 key 直接 FAIL）。API 文档见 [references/icon-api.md](references/icon-api.md)。
-- **starter 占位图标必须清除**：init 生成的 starter 页含占位 `refresh.svg` + `import refreshIcon from '../../assets/icons/refresh.svg'`（仅保证开箱可 build）。**生成正式页时，starter 的 refresh.svg import 和 `<img>` 用法一律删除**——用 fetch_icons.mjs 拉取的真实图标 + barrel 替换。starter 的 `refresh.svg` 文件本身在首次 fetch_icons 后由 barrel 覆盖或手动删除，不得残留。
+- **占位图标自动清理**：init 为保证 starter 开箱可 build，落了一个带 `<!-- init-placeholder -->` 标记的占位 `refresh.svg`（几何图形非真实图标），starter 页面 import 它演示 `<img>` 用法。**fetch_icons.mjs 每次运行时自动扫描并删除带标记的占位文件**（输出 `CLEANED:` 行），确保 barrel 只含真实业务图标、产物无残留。生成正式页时用 fetch_icons 拉取真实图标 + barrel 替换 starter 的占位 import 即可。
 
 ### Step 3 — 写码
 

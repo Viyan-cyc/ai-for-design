@@ -200,10 +200,11 @@ mkdirSync(join(srcDir, 'assets', 'icons'), { recursive: true });
 
 // ---------- 5a. starter icon placeholder ----------
 // starter 页 import 了 assets/icons/refresh.svg；init 不联网 fetch，落一个内联
-// 占位 SVG（几何图形，非真实图标）保证开箱可 build；正式图标由 fetch_icons.mjs 覆盖。
+// 占位 SVG（几何图形，非真实图标）保证开箱可 build。SVG 内嵌 <!-- init-placeholder -->
+// 标记，fetch_icons.mjs 运行时自动识别并删除占位文件，不残留到正式产物。
 writeFileSync(
   join(srcDir, 'assets', 'icons', 'refresh.svg'),
-  '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/></svg>',
+  '<!-- init-placeholder -->\n<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/></svg>',
   'utf8',
 );
 
