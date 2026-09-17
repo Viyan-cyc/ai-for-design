@@ -186,6 +186,16 @@
             });
             app.use(ElementPlus, { locale: ElementPlusLocaleZhCn });
 
+            // element-plus.full.min.js 全量注册了 @element-plus/icons-vue 全部图标
+            // 组件（Search/Plus/ArrowDown…），AI 不 import 也能在预览用 <Search/> ——
+            // 但真实 Vite 工程不装 icons-vue → 运行时报错。删除全局图标注册，使预览
+            // 与真实工程一致：图标只能走 fetch_icons.mjs 的 .svg + <img :src="...">
+            var _comps = app._context.components;
+            for (var _name in _comps) {
+                if (_name === 'PrototypeRoot') continue;
+                if (!/^El/.test(_name)) delete _comps[_name];
+            }
+
             // 加载路由模块并安装（App.vue 使用 <RouterView />，需 router 提供）
             // 注意：vue3-sfc-loader 0.9.5 的 `export {...} from` re-export 编译产物
             // 走 require() 且只查 moduleCache 不回落 getFile；src/api/{slug}.js 的
