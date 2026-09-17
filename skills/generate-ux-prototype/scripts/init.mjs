@@ -170,13 +170,6 @@ mkdirSync(dest, { recursive: true });
 const srcDir = join(dest, 'src');
 cpSync(scaffoldSrc, srcDir, { recursive: true });
 
-// ---------- 4pre. style language: less only ----------
-const mainJsPath = join(srcDir, 'main.js');
-writeFileSync(mainJsPath, readFileSync(mainJsPath, 'utf8').replace(
-  /import '\.\/assets\/style\/base\.(less|scss)'/,
-  `import './assets/style/base.less'`,
-), 'utf8');
-
 // ---------- 4a. copy asset-library token layer (live fetch, glob) ----------
 // the library token layer is pure CSS (entry index.css) — copy verbatim,
 // no scss pruning or flattening needed any more.
@@ -208,7 +201,6 @@ mkdirSync(join(srcDir, 'assets', 'icons'), { recursive: true });
 // ---------- 5a. starter icon placeholder ----------
 // starter 页 import 了 assets/icons/refresh.svg；init 不联网 fetch，落一个内联
 // 占位 SVG（几何图形，非真实图标）保证开箱可 build；正式图标由 fetch_icons.mjs 覆盖。
-mkdirSync(join(srcDir, 'assets', 'icons'), { recursive: true });
 writeFileSync(
   join(srcDir, 'assets', 'icons', 'refresh.svg'),
   '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/></svg>',

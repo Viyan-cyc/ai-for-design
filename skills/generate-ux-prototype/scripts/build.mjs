@@ -333,14 +333,11 @@ for (const file of vueFiles) {
     error(`${rel}: unknown component tag <${tag}> — no matching import found`);
   }
 
-  // inline style check: warn on style="..." (not :style="..." which is dynamic binding)
+  // inline style check: warn on style="..." (not :style="..." which is dynamic binding;
+  // \sstyle 的空格+冒号阻隔天然匹配不到 :style)
   const inlineStyles = (tplContent.match(/\sstyle\s*=\s*"/g) || []).length;
   if (inlineStyles) {
-    // Check if any are dynamic (:style) vs static (style="")
-    const staticStyles = (tplContent.match(/\sstyle\s*=\s*"/g) || []).length;
-    const dynamicStyles = (tplContent.match(/:\s*style\s*=\s*"/g) || []).length;
-    const pureStatic = staticStyles - dynamicStyles;
-    if (pureStatic > 0) warn(`${rel}: ${pureStatic} static inline style(s) — prefer <style> classes; only :style (dynamic binding) is allowed`);
+    warn(`${rel}: ${inlineStyles} static inline style(s) — prefer <style> classes; only :style (dynamic binding) is allowed`);
   }
 
   // style blocks

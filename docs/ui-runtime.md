@@ -9,7 +9,7 @@ UI 库在预览运行时与 build 校验中的全部痕迹收敛为三样东西�
 | # | 件 | 当前 element-plus 位置 | 内容 |
 |---|---|---|---|
 | 1 | **UMD 运行时目录** | `scripts/preview/public/library/element-plus/` | 浏览器端直接加载的全局构建产物，init 时整目录复制进工作区 `public/library/element-plus/` |
-| 2 | **校验白名单** | `scripts/verify/whitelists/element-plus/*.json` | 三份 JSON：`components.json`(116) / `exports.json`(130) / `icons.json`(295)，build.mjs 逐标签/导出/图标名核对 |
+| 2 | **校验白名单** | `scripts/verify/whitelists/element-plus/*.json` | 两份 JSON：`components.json`(116) / `exports.json`(130)，build.mjs 逐标签/导出名核对（图标走 fetch_icons .svg，无图标白名单） |
 | 3 | **token 桥接 CSS** | 资产库 `frontend/element-plus/tokens/element-plus.css` | 把资产库语义 token 映射到该 UI 库的 CSS 变量，随 token 全套进工作区 |
 
 ## 1. UMD 目录规范
@@ -22,13 +22,12 @@ UI 库在预览运行时与 build 校验中的全部痕迹收敛为三样东西�
 
 ## 2. 白名单格式
 
-`scripts/verify/whitelists/{runtime}/` 下三份 JSON，schema 直接参照现有 element-plus 文件（均为字符串数组）：
+`scripts/verify/whitelists/{runtime}/` 下两份 JSON，schema 直接参照现有 element-plus 文件（均为字符串数组）：
 
 - `components.json` — 模板中允许出现的 `<el-*>` 标签全集（116 个；来源 = 官方 dist 中有独立 theme-chalk css 的组件 + 5 个无独立 css 的组件）。
 - `exports.json` — 允许 `import { … } from '{ui-lib}'` 的导出名全集（130 个）。
-- `icons.json` — 图标包允许的导出名全集（295 个）。
 
-build.mjs 从 `--dir` 工作区反查 `scripts/verify/whitelists/` 下的当前 runtime 目录（当前写死 `element-plus`）。接入 SweetUI 时：新增 `whitelists/sweet-ui/{components,exports,icons}.json`，并把 build.mjs 的白名单目录与 preview 的 script 标签一并切换；生成流程与 SKILL.md 不变。
+build.mjs 从 `--dir` 工作区反查 `scripts/verify/whitelists/` 下的当前 runtime 目录（当前写死 `element-plus`）。接入 SweetUI 时：新增 `whitelists/sweet-ui/{components,exports}.json`，并把 build.mjs 的白名单目录与 preview 的 script 标签一并切换；生成流程与 SKILL.md 不变。
 
 ## 3. token 桥接 CSS 要求
 

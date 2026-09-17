@@ -28,6 +28,7 @@ import { spawn, spawnSync } from 'child_process';
 import { fileURLToPath } from 'url';
 import { createRequire } from 'module';
 import { createServer } from 'http';
+import net from 'net';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -124,7 +125,25 @@ const port = await freePort();
 const serverProc = spawn(process.execPath, [join(__dirname, 'serve.mjs'), '--dir', root, '--port', String(port)], {
   stdio: ['ignore', 'pipe', 'pipe'],
 });
-await new Promise((r) => setTimeout(r, 800));
+// TCP 就绪探测替代固定 sleep（fastui isServing 同款）：连上即走，慢机不再 flaky，快机省 800ms；
+// serve.mjs 是静态服务器，端口应答 = 就绪（HTTP 200 轮询是给「起了还在编译」的服务器用的，此处不需要）
+async function waitServing(p, timeoutMs = 10_000) {
+  const t0 = Date.now();
+  while (Date.now() - t0 < timeoutMs) {
+    if (await new Promise((res) => {
+      const sock = net.connect({ port: p, host: '127.0.0.1' });
+      const done = (v) => { sock.destroy(); res(v); };
+      sock.setTimeout(1500, () => done(false));
+      sock.once('connect', () => done(true));
+      sock.once('error', () => done(false));
+    })) return;
+    await new Promise((r) => setTimeout(r, 150));
+  }
+  console.log(`RESULT: FAIL | serve.mjs not listening on ${p} within ${timeoutMs}ms`);
+  serverProc.kill();
+  process.exit(1);
+}
+await waitServing(port);
 
 const url = `http://127.0.0.1:${port}/index.html`;
 

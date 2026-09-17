@@ -3,8 +3,7 @@
 //
 // 来源优先级：
 //   ① --from <zip|目录>        离线逃生口（npm 不可用的机器，人工带上 compiler-deps.zip）
-//   ② manifest 的 compilerDeps.bundle（内网托管 zip，未来启用）
-//   ③ npm install（主路径：内网镜像 → 公网 npmjs 自动回落，内网外网零配置）
+//   ② npm install（主路径：内网镜像 → 公网 npmjs 自动回落，内网外网零配置）
 //
 // 装完校验 @vue/compiler-sfc 可加载 + 写 env.lock.json（版本/来源/lockfileHash/平台/node 等诊断字段）。
 // 哨兵（PLACEHOLDER.md）是纯文档不删——它说明的是共享池机制本身，不是「这台机器装没装」；
@@ -17,13 +16,13 @@
 //   RESULT: FAIL | <CODE> ...（附 HINT）
 
 import { existsSync, mkdirSync, copyFileSync, writeFileSync, readFileSync, appendFileSync } from 'node:fs';
-import { join, dirname, resolve, basename } from 'node:path';
-import { spawn, spawnSync, execFileSync } from 'node:child_process';
+import { join, dirname, resolve } from 'node:path';
+import { spawn, execFileSync } from 'node:child_process';
 import http from 'node:http';
 import https from 'node:https';
 import { createRequire } from 'node:module';
 import {
-  COMPILER_PKG_DIR, COMPILER_PKG_JSON, COMPILER_PKG_LOCK, envDir, poolModulesDir, sha256File,
+  COMPILER_PKG_JSON, COMPILER_PKG_LOCK, envDir, poolModulesDir, sha256File,
 } from './compiler-paths.mjs';
 // 兼容 --key=value 与 --key value 两种写法（fastui parseArgs 同款语义）
 const args = {};
@@ -108,16 +107,21 @@ function resolveNpmJs() {
   return null;
 }
 
-// 边跑边吐（防宿主「长时间无输出判挂起」kill），stderr 落共享池日志 + 原文转发 stderr
+// 边跑边吐（防宿主「长时间无输出判挂起」kill），stderr 原文转发 + 全部落共享池日志
+// （FAIL 契约行指向 logFile，"详见"必须是真账本——真因 ECONNREFUSED 在这里）
 function runNpm(npmArgs, env, depsDir, logFile) {
   const npmJs = resolveNpmJs();
   const bin = npmJs ? process.execPath : 'npm';
   const argv = npmJs ? [npmJs, ...npmArgs] : npmArgs;
-  appendFileSync(logFile, `\n--- ${basename(logFile)} npm ${npmArgs.join(' ')} ---\n`);
+  appendFileSync(logFile, `\n--- npm ${npmArgs.join(' ')} ---\n`);
   return new Promise((done) => {
     const child = spawn(bin, argv, { cwd: depsDir, stdio: ['ignore', 'pipe', 'pipe'], env });
     const tails = { out: [], err: [] };
-    const push = (k) => (b) => { tails[k].push(b); process.stderr.write(b); };
+    const push = (k) => (b) => {
+      tails[k].push(b);
+      process.stderr.write(b);
+      appendFileSync(logFile, b);
+    };
     child.stdout.on('data', push('out'));
     child.stderr.on('data', push('err'));
     child.on('error', (e) => done({ status: null, error: e, text: String(e.message) }));
