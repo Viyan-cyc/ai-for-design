@@ -1,5 +1,6 @@
 {
   "dependencies": {
-    "@vue/compiler-sfc": "^3.5.25"
+    "@vue/compiler-sfc": "^3.5.25",
+    "puppeteer-core": "^24.22.3"
   }
 }

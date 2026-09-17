@@ -31,6 +31,9 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync, readdirSync as fsSyncReaddir, unlinkSync } from 'fs';
 import { join, resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import { installNodeSuspectGuard } from './compiler-paths.mjs';
+
+installNodeSuspectGuard();
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 

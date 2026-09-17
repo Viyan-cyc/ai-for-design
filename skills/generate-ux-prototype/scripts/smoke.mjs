@@ -18,8 +18,8 @@
 //   RESULT: OK | <checks summary>
 //   RESULT: FAIL | <first failure>
 //
-// Requires: puppeteer-core (npm i -g puppeteer-core, or npm i in the skill
-// scripts dir). A system Chrome/Edge must be installed.
+// Requires: puppeteer-core (auto-installed into the shared pool by
+// setup-compiler.mjs). A system Chrome/Edge must be installed.
 
 import { existsSync, mkdtempSync, rmSync } from 'fs';
 import { join, resolve, dirname } from 'path';
@@ -29,6 +29,9 @@ import { fileURLToPath } from 'url';
 import { createRequire } from 'module';
 import { createServer } from 'http';
 import net from 'net';
+import { installNodeSuspectGuard, envDir } from './compiler-paths.mjs';
+
+installNodeSuspectGuard();
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -59,8 +62,15 @@ if (!existsSync(join(root, 'index.html'))) {
 }
 
 // ---------- puppeteer-core resolution ----------
+// 依赖住共享池（setup-compiler 随 compiler 树一次装好），不再要求 npm i -g 手工前置。
 function resolvePuppeteer() {
-  // 1) global install (npm i -g puppeteer-core)
+  // 1) shared pool (installed by setup-compiler.mjs alongside the compiler tree)
+  try {
+    const poolReq = createRequire(join(envDir(), 'compiler-deps', 'node_modules', 'noop.js'));
+    poolReq.resolve('puppeteer-core');
+    return poolReq;
+  } catch { /* fall through */ }
+  // 2) global install (npm i -g puppeteer-core — legacy path, kept for old machines)
   try {
     const r = spawnSync('npm', ['root', '-g'], { encoding: 'utf8', shell: process.platform === 'win32' });
     if (r.status === 0) {
@@ -69,7 +79,7 @@ function resolvePuppeteer() {
       return req;
     }
   } catch { /* fall through */ }
-  // 2) resolvable from the skill scripts dir (npm i in scripts/)
+  // 3) resolvable from the skill scripts dir (npm i in scripts/)
   try {
     const req = createRequire(join(__dirname, 'noop.js'));
     req.resolve('puppeteer-core');
@@ -80,7 +90,7 @@ function resolvePuppeteer() {
 }
 const pptrRequire = resolvePuppeteer();
 if (!pptrRequire) {
-  console.log('RESULT: FAIL | puppeteer-core not found. Run: npm i -g puppeteer-core (once per machine)');
+  console.log(`RESULT: FAIL | puppeteer-core not found. Run: node "${join(__dirname, 'setup-compiler.mjs')}" (installs it into the shared pool)`);
   process.exit(1);
 }
 const { launch } = pptrRequire('puppeteer-core');
