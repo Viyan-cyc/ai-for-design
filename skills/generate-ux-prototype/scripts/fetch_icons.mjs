@@ -258,7 +258,7 @@ try {
     source_id: String(sourceId),
   });
   if (category) params.set('category', category);
-  params.set('group_id', '803,815');
+  params.set('group_id', '74,77,93');
   const infoUrl = `${API_BASE}/assetRepository/iconPlus/getIconInfo?${params}`;
   console.log(`GET ${infoUrl}`);
   iconInfo = await fetchJson(infoUrl);

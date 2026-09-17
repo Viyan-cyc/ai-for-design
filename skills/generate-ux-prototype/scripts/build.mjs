@@ -281,8 +281,8 @@ for (const file of vueFiles) {
           if (!EP_EXPORTS.has(n)) error(`${rel}: unknown Element Plus export "${n}" (imported from 'element-plus')`);
         }
       }
-      if (spec === '@element-plus/icons-vue') {
-        error(`${rel}: "@element-plus/icons-vue" is banned — icons come from IconPlus/Lucide via fetch_icons.mjs (use \`import icon from '../../assets/icons/xxx.svg'\` + <img :src="icon" />)`);
+      if (spec === '@element-plus/icons-vue' || spec === 'element-plus/icons-vue') {
+        error(`${rel}: "${spec}" is banned — icons come from IconPlus/Lucide via fetch_icons.mjs (use \`import icon from '../../assets/icons/xxx.svg'\` + <img :src="icon" />)`);
       }
     } else {
       // relative import resolution
