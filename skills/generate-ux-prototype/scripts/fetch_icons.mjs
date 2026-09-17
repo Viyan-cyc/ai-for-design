@@ -28,7 +28,7 @@
 //   RESULT: FALLBACK | IconPlus API unreachable, used Lucide icons from network + ICONS: ...
 //   RESULT: FAIL | <reason>
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync, readdirSync as fsSyncReaddir, unlinkSync } from 'fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync, readdirSync as fsSyncReaddir } from 'fs';
 import { join, resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { installNodeSuspectGuard } from './compiler-paths.mjs';
@@ -134,26 +134,8 @@ function safeKey(camelKey) {
   return RESERVED_WORDS.has(camelKey) ? `${camelKey}Icon` : camelKey;
 }
 
-// 清理 init.mjs 落的占位 SVG（文件内容含 <!-- init-placeholder --> 标记）。
-// 在 writeIconsBarrel 之前执行，确保占位文件不进入 barrel、不残留到正式产物。
-function removePlaceholders() {
-  let files;
-  try {
-    files = fsSyncReaddir(iconsDir).filter((f) => f.endsWith('.svg'));
-  } catch {
-    return;
-  }
-  for (const file of files) {
-    const filePath = join(iconsDir, file);
-    try {
-      const content = readFileSync(filePath, 'utf8');
-      if (content.includes('<!-- init-placeholder -->')) {
-        unlinkSync(filePath);
-        console.log(`CLEANED: removed init placeholder ${file}`);
-      }
-    } catch {}
-  }
-}
+// 占位图标清理已移至 build.mjs——build 解析实际 import 语句后精确判断占位文件
+// 是否仍被引用（不误匹配注释），且 build 总是最后一步运行，时序正确。
 
 // 全量扫描 src/assets/icons/*.svg，整体重生成 barrel（多次运行保持完整与幂等）。
 // 两段式 import + 对象字面量（sfc-loader 0.9.5 对 re-export 编译有缺陷，勿改 re-export）。
@@ -169,6 +151,12 @@ function writeIconsBarrel() {
   const imports = [];
   const keys = [];
   for (const file of svgFiles) {
+    // 跳过 init 占位文件（含 <!-- init-placeholder --> 标记）——不进 barrel，
+    // 由 build.mjs 在确认无引用后自动删除。
+    try {
+      const content = readFileSync(join(iconsDir, file), 'utf8');
+      if (content.includes('<!-- init-placeholder -->')) continue;
+    } catch {}
     const key = safeKey(toCamelKey(file.slice(0, -4)));
     if (!/^[a-z][a-zA-Z0-9]*$/.test(key)) {
       console.warn(`WARN: barrel skip ${file} — kebab name "${key}" not camelCase-safe`);
@@ -298,8 +286,6 @@ async function lucideFallback(keywordList) {
     console.log(`WARN: Lucide has no icon for: ${failed.join(', ')} — pick icon names from https://lucide.dev/icons and re-run`);
   }
 
-  removePlaceholders();
-removePlaceholders();
 writeIconsBarrel();
   console.log('RESULT: FALLBACK | IconPlus API unreachable, used Lucide icons from network');
   console.log(`ICONS: ${savedIcons.join(',')}`);

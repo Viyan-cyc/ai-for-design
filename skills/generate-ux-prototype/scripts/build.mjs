@@ -28,7 +28,7 @@
 //   RESULT: FAIL | <first error>     (+ WARN lines before it)
 //   RESULT: OK
 
-import { existsSync, readFileSync, readdirSync, writeFileSync, mkdtempSync, rmSync, statSync } from 'fs';
+import { existsSync, readFileSync, readdirSync, writeFileSync, mkdtempSync, rmSync, statSync, unlinkSync } from 'fs';
 import { join, dirname, resolve, extname } from 'path';
 import { fileURLToPath } from 'url';
 import { spawnSync } from 'child_process';
@@ -479,6 +479,26 @@ try {
   }
 } finally {
   rmSync(tmp, { recursive: true, force: true });
+}
+
+// ---------- 5b. cleanup orphaned init placeholder icons ----------
+// init.mjs 落的占位 SVG（含 <!-- init-placeholder --> 标记）在 starter 被替换后
+// 不再被任何 .vue/.js import 引用。build 在 import 扫描完成后精确检测并删除，
+// 确保最终产物无残留。starter 仍引用时保留（时序安全）。
+if (existsSync(iconsDirSrc)) {
+  // 收集所有 .vue/.js 源码文本，用于检测是否仍有 import 引用占位文件
+  const allSrcText = [...vueFiles, ...jsFiles].map((f) => readFileSync(f, 'utf8')).join('\n');
+  for (const svgFile of walkFiles(iconsDirSrc, ['.svg'])) {
+    try {
+      const content = readFileSync(svgFile, 'utf8');
+      if (!content.includes('<!-- init-placeholder -->')) continue;
+      const fileName = svgFile.split(/[\\/]/).pop();
+      // 精确匹配 import 语句中的文件名（不误匹配注释中的文字）
+      if (new RegExp(`import\\s+[^;]*?from\\s*['"][^'"]*${fileName}['"]`).test(allSrcText)) continue;
+      unlinkSync(svgFile);
+      console.log(`CLEANED: removed orphaned init placeholder ${fileName}`);
+    } catch {}
+  }
 }
 
 // ---------- 6. token usage across styles + templates ----------
