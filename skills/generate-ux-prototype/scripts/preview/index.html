@@ -95,7 +95,12 @@
                     var clean = String(path).split("?")[0].split("#")[0];
                     if (ASSET_EXT.some(function (ext) { return clean.endsWith(ext); })) {
                         var assetExt = clean.slice(clean.lastIndexOf("."));
-                        return Promise.resolve({ getContentData: function () { return ""; }, type: assetExt });
+                        // .svg 等 asset 文件已由 build-data.mjs 收集进 SRC；
+                        // 若 SRC 中找不到 → 文件不存在（AI 未跑 fetch_icons.mjs）
+                        if (SRC[clean] === undefined) {
+                            return Promise.reject(new Error("图标/素材文件不存在: " + clean + " — 请先运行 fetch_icons.mjs 下载图标"));
+                        }
+                        return Promise.resolve({ getContentData: function () { return SRC[clean]; }, type: assetExt });
                     }
                     var content = SRC[clean];
                     // 目录式 import 后备（复用 G 组件，零改写落位）：
@@ -160,7 +165,14 @@
                         });
                     }
                     if (ASSET_EXT.indexOf(type) !== -1) {
-                        // 返回相对预览根的 URL（真实工程中 import 资源同样得到 URL，语义一致）
+                        // 返回 data URL（真实工程中 import 资源得到 URL，预览用 data URL 保持一致语义）
+                        var raw = getContentData();
+                        if (type === ".svg") {
+                            return Promise.resolve(raw).then(function (text) {
+                                return "data:image/svg+xml," + encodeURIComponent(String(text).replace(/^\uFEFF/, ""));
+                            });
+                        }
+                        // 其他 asset（png/jpg…）返回相对预览根的 URL
                         return Promise.resolve("." + String(path).split("?")[0]);
                     }
                     // 注意：必须返回 undefined（不是 null）才会走 loader 对 .vue/.js 的默认编译处理

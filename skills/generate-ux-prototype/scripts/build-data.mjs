@@ -26,7 +26,7 @@ import { fileURLToPath } from 'url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-const TEXT_EXT = new Set(['.vue', '.js', '.mjs', '.css', '.less', '.json']);
+const TEXT_EXT = new Set(['.vue', '.js', '.mjs', '.css', '.less', '.json', '.svg']);
 
 export function collectSources(srcDir, mockDir) {
   const map = {};
