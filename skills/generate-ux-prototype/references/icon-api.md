@@ -6,9 +6,9 @@
 
 `fetch_icons.mjs` 第一步先探测 IconPlus 是否可达（3s 超时）。不可达（外网）时自动降级为 **Lucide**——从 Lucide 公开 CDN 在线拉取 SVG，**本地不打包任何图标资源**：
 
-- 中文关键词经脚本内置 `ZH_EN_MAP` 翻译成英文，即 Lucide 图标名（已对齐 lucide 现行命名）。
+- 关键词即 Lucide 图标名（中译英由调用方完成，脚本无内置字典），从 https://lucide.dev/icons 选名；不存在的名会 WARN 并列出，改名重跑即可。
 - 下载地址：`https://cdn.jsdelivr.net/npm/lucide-static@latest/icons/{name}.svg`。
-- 输出 `RESULT: FALLBACK | IconPlus API unreachable, used Lucide icons from network` + `ICONS: ...`，AI 按正常 ICONS 列表 import 即可，用法无差异。
+- 输出 `RESULT: FALLBACK | IconPlus API unreachable, used Lucide icons from network` + `ICONS: ...`。每次运行后自动重生成 barrel `src/assets/icons/index.js`（`export const ICONS` 键名 kebab-case → camelCase），页面消费一律 `import { ICONS } from '<rel>/assets/icons/index.js'` + `<img :src="ICONS.xxx" />`，用法与内网无差异。
 
 ## 接口使用顺序
 

@@ -18,7 +18,7 @@
 3. `index.vue` 做组合层：布局编排 + 子组件引用 + 事件协调；`<script setup>` 控制在 ~80 行内，业务逻辑、数据请求、复杂计算拆到子组件或 `views/{slug}/js/use-*.js`（composable）。
 4. **imports 顺序**: vue → vue-router → element-plus → dayjs → 相对子组件/素材/api/constants（含 .svg 图标导入）。
 5. 常量放 `views/{slug}/js/constants.js`，全大写+下划线命名（`ALARM_LEVEL`、`STATUS_MAP`）。
-6. 图标一律 IconPlus/Lucide（生成时 `fetch_icons.mjs` 获取，存 `src/assets/icons/*.svg`；内网走 IconPlus、外网自动降级 Lucide），**禁止 `@element-plus/icons-vue`**。导入 `import downloadIcon from '../../assets/icons/download.svg'`，用法 `<img :src="downloadIcon" :width="20" :height="20" />`。命名规则：`ic_public_download` → `public-download.svg`（kebab-case，`ic_` 前缀剥离）。
+6. 图标一律 IconPlus/Lucide（生成时 `fetch_icons.mjs` 获取，存 `src/assets/icons/*.svg` 并自动生成 barrel `index.js`；内网走 IconPlus、外网自动降级 Lucide），**禁止 `@element-plus/icons-vue`**。**消费只走 barrel**：`import { ICONS } from '../../assets/icons/index.js'`，用法 `<img :src="ICONS.download" :width="20" :height="20" />`；不要在组件里手写逐个 .svg import。键名规则：kebab-case 文件名 → camelCase（`public-download.svg` → `ICONS.publicDownload`）；build 校验 `ICONS.key` 存在性，拼错直接 FAIL。
 7. 反馈：轻提示 `ElMessage`；危险操作 `ElMessageBox.confirm(..., { type: 'warning' })`；表格 `v-loading`；空态 `el-empty`。
 8. 表格：`el-table` + `el-table-column`；自定义列 `<template #default="{ row }">`；操作列 `fixed="right"` ≤3 个按钮（多了收进 `el-dropdown`）；≥8 条数据配 `el-pagination`。
 9. 图片素材：`import logo from '../../assets/uploads/logo.png'` 或 `import icon from '../../assets/images/ran.svg'`（禁止裸路径 `src="/assets/..."`）。
@@ -125,22 +125,22 @@ export { fetchList, fetchDetail }
   常量:        import { STATUS_MAP } from './js/constants.js'
   页面词条:    import { t } from '../../locales/pages/{slug}.js'
   API 适配层:  import { fetchList } from '../../api/{slug}.js'
+  图标 barrel: import { ICONS } from '../../assets/icons/index.js'
   素材:        import logo from '../../assets/uploads/logo.png'
-  SVG 图标:    import ranIcon from '../../assets/images/ran.svg'
-  IconPlus 图标: import downloadIcon from '../../assets/icons/download.svg'
   手写跨页组件: import SharedCard from '../../components/SharedCard.vue'
 
 从 views/{slug}/components/StatusTag.vue 引用:
   API 适配层:  import { fetchList } from '../../../api/{slug}.js'
+  图标 barrel: import { ICONS } from '../../../assets/icons/index.js'
   素材:        import logo from '../../../assets/uploads/logo.png'
-  IconPlus 图标: import downloadIcon from '../../../assets/icons/download.svg'
 
 从 src/components/SharedCard.vue 引用:
   API 适配层:  import { fetchList } from '../api/{slug}.js'
+  图标 barrel: import { ICONS } from '../assets/icons/index.js'
   素材:        import logo from '../assets/uploads/logo.png'
 ```
 
-（starter `index.vue` 引用 api 层是 `../../api/{slug}.js`——从 `views/{slug}/` 出发上两级到 `src/`，再进 `api/`。）
+（starter `index.vue` 引用 api 层是 `../../api/{slug}.js`——从 `views/{slug}/` 出发上两级到 `src/`，再进 `api/`。init.mjs 成功输出的 `PATH_PREFIX` 块即本表按实际 slug 实例化后的可照抄版本，规划清单直接复制，不再自行推算。）
 
 ## 9. 运行时错误预防（build 不覆盖）
 
@@ -157,7 +157,7 @@ export { fetchList, fetchDetail }
 | # | 错误写法 | 正确写法 | 原因 |
 |---|---------|---------|------|
 | 1 | `import logo from '../assets/uploads/logo.png'`（从 views/{slug}/ 出发） | `'../../assets/uploads/logo.png'` | 路径少一级 |
-| 1b | IconPlus 图标 import 路径少一级 | `import downloadIcon from '../../assets/icons/download.svg'`（从 `views/{slug}/` 出发上两级） | fetch 后先 preflight 校验 |
+| 1b | ~~图标 import 路径少一级~~（barrel 用法下此错误类已消失——组件只 import `assets/icons/index.js` 一个固定路径） | `import { ICONS } from '../../assets/icons/index.js'`（从 `views/{slug}/` 出发上两级） | fetch_icons 自动生成 barrel；build 校验 ICONS.key 存在性 |
 | 1c | `import { Search } from '@element-plus/icons-vue'` | `fetch_icons.mjs` 拉图标 + `import icon from '../../assets/icons/xxx.svg'` | 图标来源钉死 IconPlus/Lucide，icons-vue 不在白名单（build FAIL） |
 | 2 | `import { fetchList } from '../../../mock/modules/{slug}.js'` | `from '../../api/{slug}.js'` | 页面禁 import mock（build FAIL） |
 | 3 | `<style lang="scss">` 或新增 .scss 文件 | `<style lang="less" scoped>` | 样式语言全链路钉死 less |
