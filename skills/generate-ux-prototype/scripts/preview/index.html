@@ -165,15 +165,18 @@
                         });
                     }
                     if (ASSET_EXT.indexOf(type) !== -1) {
-                        // 返回 data URL（真实工程中 import 资源得到 URL，预览用 data URL 保持一致语义）
+                        // ESM 语义：default import 拿到 URL 字符串（与 Vite import 资源一致）
+                        // .svg 用 data URL（内容已在 SRC 中）；其他 asset 返回相对路径 URL
                         var raw = getContentData();
-                        if (type === ".svg") {
-                            return Promise.resolve(raw).then(function (text) {
-                                return "data:image/svg+xml," + encodeURIComponent(String(text).replace(/^\uFEFF/, ""));
-                            });
-                        }
-                        // 其他 asset（png/jpg…）返回相对预览根的 URL
-                        return Promise.resolve("." + String(path).split("?")[0]);
+                        return Promise.resolve(raw).then(function (text) {
+                            var url;
+                            if (type === ".svg") {
+                                url = "data:image/svg+xml," + encodeURIComponent(String(text).replace(/^\uFEFF/, ""));
+                            } else {
+                                url = "." + String(path).split("?")[0];
+                            }
+                            return { default: url, __esModule: true };
+                        });
                     }
                     // 注意：必须返回 undefined（不是 null）才会走 loader 对 .vue/.js 的默认编译处理
                     return undefined;
