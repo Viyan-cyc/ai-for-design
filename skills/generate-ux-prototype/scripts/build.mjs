@@ -204,7 +204,7 @@ for (const f of cssFiles) {
 
 // file map for relative import resolution (posix keys from src root or mock root)
 const fileMap = new Set();
-for (const f of [...vueFiles, ...jsFiles, ...cssFiles, ...walkFiles(srcDir, ['.json'])]) {
+for (const f of [...vueFiles, ...jsFiles, ...cssFiles, ...walkFiles(srcDir, ['.json', '.svg', '.png', '.jpg', '.jpeg', '.gif', '.webp', '.ico', '.bmp'])]) {
   if (f.startsWith(srcDir)) {
     fileMap.add('/' + f.slice(srcDir.length).split('\\').join('/').replace(/^\/+/, ''));
   } else if (hasMock && f.startsWith(mockDir)) {
@@ -303,8 +303,8 @@ for (const file of vueFiles) {
           if (!EP_EXPORTS.has(n)) error(`${rel}: unknown Element Plus export "${n}" (imported from 'element-plus')`);
         }
       }
-      if (spec === '@element-plus/icons-vue') {
-        error(`${rel}: "@element-plus/icons-vue" is banned — icons come from IconPlus/Lucide via fetch_icons.mjs (use \`import icon from '../../assets/icons/xxx.svg'\` + <img :src="icon" />)`);
+      if (spec === '@element-plus/icons-vue' || spec === 'element-plus/icons-vue') {
+        error(`${rel}: "${spec}" is banned — icons come from IconPlus/Lucide via fetch_icons.mjs (use \`import icon from '../../assets/icons/xxx.svg'\` + <img :src="icon" />)`);
       }
     } else {
       // relative import resolution
@@ -325,7 +325,10 @@ for (const file of vueFiles) {
       // component-directory form: import '…/GStatusTag' → GStatusTag/GStatusTag.vue
       // (reused G components land as {components}/{level}/{GName}/{GName}.vue)
       if (fileMap.has(target + '/' + pascal(target.split('/').pop()) + '.vue')) continue;
-      if (ASSET_EXT.includes(extname(target))) continue; // assets resolve at runtime
+      if (ASSET_EXT.includes(extname(target))) {
+        if (!fileMap.has(target)) error(`${rel}: asset import "${spec}" — file not found at src${target} (run fetch_icons.mjs to download icons)`);
+        continue;
+      }
       error(`${rel}: relative import "${spec}" does not resolve (looked for ${target}[.vue|.js|/index.vue|/{Name}.vue])`);
     }
   }
@@ -459,7 +462,11 @@ try {
         }
         const target = '/' + stack.join('/');
         if (![target, target + '.js', target + '.css', target + '/index.js'].some((t) => fileMap.has(t))) {
-          if (!ASSET_EXT.includes(extname(target))) error(`${rel}: relative import "${spec}" does not resolve`);
+          if (ASSET_EXT.includes(extname(target))) {
+            if (!fileMap.has(target)) error(`${rel}: asset import "${spec}" — file not found at src${target} (run fetch_icons.mjs to download icons)`);
+          } else {
+            error(`${rel}: relative import "${spec}" does not resolve`);
+          }
         }
       } else {
         const base = spec.split('/')[0] === '@element-plus' ? spec.split('/').slice(0, 2).join('/') : spec.split('/')[0];
