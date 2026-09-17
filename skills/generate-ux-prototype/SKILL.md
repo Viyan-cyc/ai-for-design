@@ -93,15 +93,88 @@ version: 1.1.0
 
 ## 环境纪律（node 归因 + 降级禁令）
 
-**交付契约不可降级：任何环境下都禁止「node 不可用所以改为纯 HTML/静态页」的替代交付**——那不是本 Skill 的产物，等于交付失败。环境故障时的唯一正确动作：按下面诊断 → 把结果原样报告用户 → 等待修复；不许自行更换交付形态、不许静默降级。
+### ⓪ 确认 node —— 机器上没有 node 时,**装它是你的活,不是用户的**
 
-**`RESULT: FAIL` = 脚本已正常运行后的业务校验失败，与 node 安装无关**（能输出 FAIL 恰恰证明 node 可用）。高频原因：`asset library not found` = 逐级向上没找到资产包、也无有效 `assets-path.json`——向用户要 assets 完整路径后给 init 传 `--assets-root <dir>`（成功自动记住），或把 assets/ 放到 skill 上级任一层；`Artifact folder does not exist` = 先建目录；`target already exists` = 走 Modification Workflow；`puppeteer-core not found` = `npm i -g puppeteer-core`。连续 FAIL 3 次仍未修复 → 停下把输出原样报告用户，禁止换交付形态。
+先跑 `node --version`:
 
-**skill 自带文件不是可修改对象**：禁止修改、调试、patch 本 skill 的 `scripts/` 与资产包内任何文件——那是 skill 本体与设计侧资产，不是本次任务的产物（例外：skill 根的 `assets-path.json` 是 init 自动写入的路径记忆，非源码）；疑似脚本缺陷时原样报告用户等待修复，不许就地改或绕过脚本自跑替代验证。
+| 结果 | 怎么办 |
+|---|---|
+| 有 `v` 数字输出 | node 可用,进 Step 1。**不设版本门禁**——版本过老的兼容问题由脚本运行时的 `NODE_SUSPECT` 指纹认出并给出自动出口,不要事前猜版本号拦人 |
+| `command not found` / `不是内部或外部命令` | **机器上没有 node。这不是"环境缺失、如实告知"就完事的情况** —— 装环境本来就在本 skill 的职责范围里(设计师全程不该接触任何安装命令)。直接跑下面的安装脚本 |
 
-**node 真缺失时的排查顺序**（仅当 `node --version` 报 command not found 才进入）：①用户确认已装 → 多半是 agent 宿主进程 PATH 未刷新（Windows 装完 node 已启动的终端拿不到新 PATH），请用户重启 agent/终端；②nvm/fnm 管理需先 `nvm use <version>`；③仍不行建议 `winget install OpenJS.NodeJS.LTS`（≥18）。
+```bash
+# macOS
+bash "<skillDir>/scripts/install/install.sh"
+```
+```powershell
+# Windows
+powershell -ExecutionPolicy Bypass -File "<skillDir>\scripts\install\install.ps1"
+```
 
-**编译器依赖住共享池，不在 skill 包里**：`@vue/compiler-sfc` 依赖树（~19MB，纯 JS 无原生二进制，Windows/macOS(x64/arm64)/Linux 同一份）由 `scripts/setup-compiler.mjs` 安装到用户机器共享池（Windows `%LOCALAPPDATA%\OctoAgent\ux-prototype\`；macOS `~/Library/Application Support/OctoAgent/ux-prototype/`；Linux `$XDG_DATA_HOME`（默认 `~/.local/share`）`/OctoAgent/ux-prototype/`）。skill 包内只有 `verify/compiler/package.json` + `package-lock.json`（依赖声明与版本锁定真源，各机器装出同一棵树）。init/build 第 0 步经 `checkCompilerEnv()` 三段校验（1 秒）：包完整 → 依赖树在 → **lockfile 漂移**（skill 升级带来新 lockfile 时报 `COMPILER_ENV_OUTDATED`，按 HINT 重跑 setup 即升级）——**按 HINT 执行 setup 后重跑即可，禁止因依赖缺失/过期改用其他编译/交付方式**。registry 四档回落：`--registry` 参数 → `OCTO_NPM_REGISTRY` 环境变量 → 内网镜像 → 公网 npmjs（后两档自动逐个探测可达性，内网外网同一份 skill 零配置）；npm 完全不可用的机器用 `--from=<compiler-deps.zip>` 离线通道。排障时可单跑 `node scripts/ensure-compiler.mjs`（手动诊断工具：三段校验逐段报告，与 init/build 内联的是同一份逻辑）。
+`<skillDir>` 就是**本文件(SKILL.md)所在的目录**,照着拼绝对路径,不要去猜 `.octo/skills/` 之类的位置。
+
+**这两个脚本是 bash / PowerShell 原生的,不需要机器上先有 node** —— 没有 node 它们会自己下载
+portable node 到共享池;机器上已有能跑的 node 时直接复用(**任意大版本,不设门禁**),日志里
+`[node] 来源: system` 就是走了这条路,**不要因为"没看到下载"就以为它没装**。装完脚本会顺带
+执行 setup-compiler.mjs 装 compiler 依赖,然后按 `RESULT:` 行决定下一步(OK → 进 Step 1;
+FAIL → 按 HINT 处理,见 0.2)。
+
+装环境要几分钟,告诉用户正在装。
+
+**装过 node 的机器,后续所有 `node scripts/*.mjs` 一律用安装脚本输出的 NODE 绝对路径调用**
+(共享池 `%LOCALAPPDATA%\OctoAgent\ux-prototype\node\` 或 macOS 对应路径)——agent 宿主进程
+的 PATH 在安装后往往不刷新,相对调用会莫明失败,绝对路径是唯一稳的。
+
+### 硬约束 0 —— 绝不删除用户磁盘上的任何东西
+
+**禁止执行任何删除命令**:`Remove-Item` / `rm` / `rmdir` / `del` / `git clean`,不论加什么参数、
+不论那个目录看起来多像垃圾残留。清理由 skill 脚本在共享池和会话目录内自己做,那是脚本的职责,
+不是你的。
+
+fastui 在内网真实发生过:Windows 上中文路径被 PowerShell 显示成乱码,agent 把用户的正常目录
+当成"失败操作留下的残留",执行 `Remove-Item -Recurse -Force` 永久删除 —— 绕过回收站,不可恢复。
+
+**你在终端里看到的乱码目录名,极可能是完全正常的中文目录。** 编码显示问题从来不是删除的理由。
+建链接/复制失败、目录看起来是残留时:原样报告失败,把路径贴给用户,由人决定。
+
+### 硬约束 0.2 —— 「装环境」是你的活,「装不上」才是人的活
+
+| 情况 | 谁的活 |
+|---|---|
+| 机器上没有 node / node 过老(NODE_SUSPECT) / 依赖树缺失或过期 | **你的活。** 跑 ⓪ 的安装脚本或 `HINT:` 给的命令,自动装完继续 |
+| 装的过程中失败了(拉不到 manifest、包下不动、sha256 不符) | **人的活。** 跑安装脚本 `--check`(网络探测,不需要 node),把输出与 LOG 原样给用户 |
+
+装不上时先跑 `install.sh --check` / `install.ps1 -Check`(只探测不下载),把整段输出**原样**贴给用户并指出异常行(如 `ASSET_DARWIN_ARM64: GET=403`)。**诊断命令必须由你(agent)在自己的进程里跑,不能转述给人去终端执行**——代理这类问题只存在于 agent 宿主进程的环境里,fastui 内网实测:人在终端跑得到"一切正常",agent 同机同时报 504。诊断跑错环境,比不跑更糟。
+
+以下"兜底"一律禁止:
+
+| ❌ | 为什么 |
+|---|---|
+| 让用户自己去 nodejs.org 或任何外网站点下载 node | 内网机器上不去外网;下载 node 本来就是安装脚本的活 |
+| 改用纯 HTML / 静态图 / 手写 CSS,生成一个"看起来像"的预览 | 交付物是**真实 Vue 3 源码工作区**。给开发一个 HTML 文件等于没交付 |
+
+**说"装不上、卡在这一步"是诚实;换个东西糊弄过去是不诚实。** 前者用户能拿去找人解决,后者会让他以为事情做完了。
+
+### 脚本失败分类(node 归因 + NODE_SUSPECT 指纹)
+
+**`RESULT: FAIL` = 脚本已正常运行后的业务校验失败,与 node 安装无关**(能输出 FAIL 恰恰证明 node 可用)。高频原因见下表;连续 FAIL 3 次仍未修复 → 停下把输出原样报告用户,禁止换交付形态。
+
+| `RESULT: FAIL` 的 CODE | 怎么办 |
+|---|---|
+| `ENV_NODE_BROKEN` | 池内 node 文件损坏无法执行(解压不完整等)。跑 ⓪ 的安装脚本——它自会发现池内 node 跑不动并重下,装完重跑 |
+| `COMPILER_ENV_OUTDATED` / `COMPILER_DEPS_MISSING` / `COMPILER_ENV_MISSING` | 按 `HINT:` 执行 setup-compiler.mjs 后重跑,禁止因依赖缺失/过期改用其他编译/交付方式 |
+| `asset library not found` | 逐级向上没找到资产包、也无有效 `assets-path.json` —— 向用户要 assets 完整路径后给 init 传 `--assets-root <dir>`,或把 assets/ 放到 skill 上级任一层 |
+| `Artifact folder does not exist` | 先建目录 |
+| `target already exists` | 走 Modification Workflow |
+| `NODE_SUSPECT` | **node 过老导致,不是页面代码的问题——禁止改 .vue 重试**。按 `HINT:` 跑安装脚本(自动下载 portable node 替换)后重跑 |
+| `puppeteer-core not found` | 按 `HINT:` 跑 setup-compiler.mjs(装进共享池),不用 npm i -g |
+**NODE_SUSPECT 指纹**(脚本运行时自动判定):`fetch is not defined`、`cpSync is not a function`、`structuredClone is not defined`、现代语法 `SyntaxError`。**兜底判据:脚本裸崩、输出里没有任何 `RESULT:` 行**——那多半是 node 老到脚本自身语法都解析不了,视同 NODE_SUSPECT 处理(跑安装脚本),不要归因成代码 bug。
+
+**降级禁令**:任何环境下都禁止「node 不可用所以改为纯 HTML/静态页」的替代交付——那不是本 Skill 的产物,等于交付失败。环境故障时的唯一正确动作:按上面诊断 → 把结果原样报告用户 → 等待修复;不许自行更换交付形态、不许静默降级。
+
+**skill 自带文件不是可修改对象**:禁止修改、调试、patch 本 skill 的 `scripts/` 与资产包内任何文件——那是 skill 本体与设计侧资产,不是本次任务的产物(例外:skill 根的 `assets-path.json` 是 init 自动写入的路径记忆,非源码);疑似脚本缺陷时原样报告用户等待修复,不许就地改或绕过脚本自跑替代验证。
+
+**编译器依赖住共享池,不在 skill 包里**:`@vue/compiler-sfc` 依赖树(~19MB,puppeteer-core 随同安装,smoke 无需手工前置)由 `scripts/setup-compiler.mjs` 安装到用户机器共享池(Windows `%LOCALAPPDATA%\OctoAgent\ux-prototype\`;macOS `~/Library/Application Support/OctoAgent/ux-prototype/`;Linux `$XDG_DATA_HOME`(默认 `~/.local/share`)/OctoAgent/ux-prototype/)。skill 包内只有 `verify/compiler/package.json` + `package-lock.json`(依赖声明与版本锁定真源,各机器装出同一棵树)。init/build 第 0 步经 `checkCompilerEnv()` 三段校验(1 秒):包完整 → 依赖树在 → **lockfile 漂移**(skill 升级带来新 lockfile 时报 `COMPILER_ENV_OUTDATED`,按 HINT 重跑 setup 即升级)。registry 四档回落:`--registry` 参数 → `OCTO_NPM_REGISTRY` 环境变量 → 内网镜像 → 公网 npmjs(后两档自动逐个探测可达性,内网外网同一份 skill 零配置);npm 完全不可用的机器用 `--from=<compiler-deps.zip>` 离线通道。排障时可单跑 `node scripts/ensure-compiler.mjs`(手动诊断工具:node 段 + 三段校验 + keyPackages 抽查,输出多行契约 `NODE_BIN:`/`NODE_SOURCE:`,与 init/build 共用同一份 `checkCompilerEnv()` 实现;失败信息同时落共享池 `octo-ux-prototype.log`——与 install / setup-compiler 写同一个文件,排障只发这一份)。
 
 ## 生成流程（All Input Types）
 
@@ -115,7 +188,7 @@ version: 1.1.0
 
 ### Step 2 — 预检 + Init Workspace（MANDATORY）
 
-1. **环境预检**：`node --version` 输出 `v` 数字（≥18）→ node 可用，此后本次会话任何脚本 FAIL 都不得归因 node 安装；`command not found` → 进入「环境纪律」排查，结果报告用户，全程禁止降级为纯 HTML 交付。
+1. **环境预检**：按「环境纪律 ⓪」确认 node——`node --version` 有 `v` 数字输出（**任意版本，不设门禁**）→ node 可用，此后本次会话任何脚本 FAIL 都不得归因 node 安装；`command not found` → 跑安装脚本自动装（你的活），全程禁止降级为纯 HTML 交付。
 2. **Confirm {artifact-folder}**：运行时上下文提供的绝对路径；缺失则回退当前工作目录。
 3. **Derive {slug}**：kebab-case ASCII，1–6 段语义英文（"设备管理" → `device-management`；单段如 `login`、`test8` 也合法）。
 4. **Init**：
@@ -180,7 +253,7 @@ node scripts/smoke.mjs --dir "{artifact-folder}/{slug}"
 # RESULT: OK | render=1 token=#0067D1 themeSwitch=ok errors=0 missing404=0
 ```
 
-**build + smoke 一轮跑完 = 生成流程结束。** 最终收口一条命令串跑（修 FAIL 迭代期间只跑 build，smoke 留给收口）：`node scripts/build.mjs --dir "..." && node scripts/smoke.mjs --dir "..."`。不再起 serve / curl 探活 / 查杀进程 / 重复验证——smoke 自带渲染、token 品牌色、明暗切换、404 检查并自查进程清理。冒烟前置（每机器一次）：`npm i -g puppeteer-core`（自动探测系统 Chrome/Edge，不下载浏览器）。
+**build + smoke 一轮跑完 = 生成流程结束。** 最终收口一条命令串跑（修 FAIL 迭代期间只跑 build，smoke 留给收口）：`node scripts/build.mjs --dir "..." && node scripts/smoke.mjs --dir "..."`。不再起 serve / curl 探活 / 查杀进程 / 重复验证——smoke 自带渲染、token 品牌色、明暗切换、404 检查并自查进程清理。puppeteer-core 已随共享池由 setup-compiler.mjs 装好（自动探测系统 Chrome/Edge，不下载浏览器），无手工前置。
 
 ### Step 6 — Output
 

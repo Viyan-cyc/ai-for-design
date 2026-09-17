@@ -58,7 +58,9 @@ import {
 import { join, resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { refresh } from './build-data.mjs';
-import { checkCompilerEnv, setupHint } from './compiler-paths.mjs';
+import { checkCompilerEnv, setupHint, installNodeSuspectGuard } from './compiler-paths.mjs';
+
+installNodeSuspectGuard();
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 

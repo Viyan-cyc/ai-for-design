@@ -35,7 +35,9 @@ import { spawnSync } from 'child_process';
 import { tmpdir } from 'os';
 import { createRequire } from 'module';
 import { refresh } from './build-data.mjs';
-import { checkCompilerEnv, setupHint } from './compiler-paths.mjs';
+import { checkCompilerEnv, setupHint, installNodeSuspectGuard } from './compiler-paths.mjs';
+
+installNodeSuspectGuard();
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 

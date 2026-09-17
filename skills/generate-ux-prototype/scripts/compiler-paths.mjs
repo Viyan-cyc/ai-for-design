@@ -84,6 +84,91 @@ export function sha256File(p) {
   return createHash('sha256').update(readFileSync(p)).digest('hex');
 }
 
+// ---------- node 解析（fastui resolveRuntime 同款：共享池 → 当前进程，不做版本门禁） ----------
+// 返回绝对路径，agent 拿它调用后续脚本——装完 node 后 agent 宿主进程的 PATH
+// 往往不刷新，相对调用会莫明失败，绝对路径是唯一稳的。
+//
+// fastui 语义:**.mjs 能运行就证明 node 存在**,process.execPath 恒可用 ——
+// 永无"找不到 node"的状态(NODE_MISSING 是守一个不可能态的死分支)。
+// 池子优先而不是系统优先:池子里那个是安装时定版的,env.lock.json 记的就是它;
+// 系统 node 可能被人随手升级,让它盖过池子会让同一台机器上前后两次跑在不同运行时上。
+// existsSync 只判"文件在",解压损坏的 node 由 ensure 的 `node -v`(ENV_NODE_BROKEN)接住。
+const poolNodeBin = (override) =>
+  process.platform === 'win32'
+    ? join(envDir(override), 'node', 'node.exe')
+    : join(envDir(override), 'node', 'bin', 'node');
+
+/**
+ * 定位可用的 node（fastui resolveRuntime 同款：**不做版本门禁**——版本过老的兼容问题
+ * 由运行时 NODE_SUSPECT 指纹兜，不能因为环境卡别人）。
+ * @returns {{ node: string, source: 'pool' | 'system' }}
+ */
+export function resolveRuntime(override) {
+  const pooled = poolNodeBin(override);
+  const ok = existsSync(pooled);
+  return {
+    node: ok ? pooled : process.execPath,
+    source: ok ? 'pool' : 'system',
+  };
+}
+
+export function nodeInstallHint({ force = false } = {}) {
+  const install = process.platform === 'win32'
+    ? `powershell -ExecutionPolicy Bypass -File "${join(SKILL_SCRIPTS_DIR, 'install', 'install.ps1')}"${force ? ' -ForcePortableNode' : ''}`
+    : `bash "${join(SKILL_SCRIPTS_DIR, 'install', 'install.sh')}"${force ? ' --force-portable-node' : ''}`;
+  return `${install}   # 装环境是 agent 的活——安装脚本自会复用池内/系统 node 或下载 portable node,装完重跑即可`;
+}
+
+// ---------- NODE_SUSPECT 指纹（fastui verify 同款机制） ----------
+// 老 node 跑不动脚本的已知形态。命中时失败**不是页面代码的问题**——禁止改 .vue 重试,
+// 按 HINT 装 portable node 后重跑。无门禁后这是"node 过老"的唯一确定判定。
+const NODE_SUSPECT_PATTERNS = [
+  /fetch is not defined/,            // node < 18（fetch_icons 网络层）
+  /cpSync is not a function/,        // node < 16.7（init 复制 tokens/library）
+  /structuredClone is not defined/,  // node < 17
+  /Unexpected token '?[?#]'?/,       // ??= / ?. / # 私有字段等现代语法被老解析器拒（引号/裸两种形态）
+  /Unexpected identifier/,           // 老解析器拒新语法的另一形态
+  /Invalid or unexpected token/,     // 非法字符类
+  /Big integer literals?/,           // 123n 字面量
+  // 注：JSON.parse 的 'Unexpected token <' / 'Unexpected end of JSON input' 是数据问题,
+  // 不在指纹内——别把工作区文件问题误归因成 node 过老。
+];
+
+export function matchNodeSuspect(text) {
+  const s = String(text ?? '');
+  return NODE_SUSPECT_PATTERNS.some((re) => re.test(s));
+}
+
+export function nodeSuspectLine(detail = '') {
+  return `RESULT: FAIL | NODE_SUSPECT: 当前 node 过老,无法运行本脚本${detail ? `（${detail}）` : ''},不是页面代码的问题`;
+}
+
+/**
+ * 进程级 NODE_SUSPECT 兜底（fastui verify 同款机制的运行时面）。
+ *
+ * 只能接住**运行时**指纹（fetch/cpSync/structuredClone 缺失等）——脚本自身语法
+ * 解析就过不了的 node（<14 时代）进程根本跑不到这里,那类裸 SyntaxError 由
+ * SKILL.md 的指令兜底（无 RESULT 行的原生报错视同 node 过老）。
+ *
+ * 必须在脚本最顶部调用（import 之后第一行）,后续任何未捕获异常才有兜底;
+ * 未命中指纹时按 SCRIPT_CRASH 输出契约行 + 原始堆栈,保持「任何失败都有 RESULT 行」。
+ */
+export function installNodeSuspectGuard() {
+  const bail = (err) => {
+    const msg = String(err?.message || err);
+    if (matchNodeSuspect(msg)) {
+      console.log(nodeSuspectLine());
+      console.log(`HINT: ${nodeInstallHint({ force: true })}`);
+      process.exit(1);
+    }
+    console.log(`RESULT: FAIL | SCRIPT_CRASH | ${msg.slice(0, 300)}`);
+    console.error(err?.stack || String(err));
+    process.exit(1);
+  };
+  process.on('uncaughtException', bail);
+  process.on('unhandledRejection', bail);
+}
+
 export function setupHint(extra = '') {
   return `node "${join(SKILL_SCRIPTS_DIR, 'setup-compiler.mjs')}"${extra}   # 首装/升级约 10-30s，装完重跑即可`;
 }
@@ -95,20 +180,21 @@ export function setupHint(extra = '') {
  * 漂移判据（fastui §5.2.1 同款——比的是「skill 现在要求的树」vs「装的时候那棵」，
  * 两端跨过 skill 与共享池边界，skill 升级才能被感知）：
  * skill 的 package-lock.json 哈希 vs 共享池 env.lock.json 里记录的 lockfileHash。
+ * @param {string} [override] — 等价 OCTO_UX_ENV_DIR（ensure-compiler 的 --env-dir 透传）
  * @returns {{ ok: true, source: string, dir: string }
  *   | { ok: false, code: string, message: string }}
  */
-export function checkCompilerEnv() {
+export function checkCompilerEnv(override) {
   if (!existsSync(COMPILER_PKG_JSON)) {
     return { ok: false, code: 'SKILL_PKG_BROKEN', message: `缺少 ${COMPILER_PKG_JSON}（skill 组装不完整，向维护者反馈）` };
   }
-  const found = resolveCompilerModules();
+  const found = resolveCompilerModules(override);
   if (!found.ok) {
     return { ok: false, code: 'COMPILER_DEPS_MISSING', message: `@vue/compiler-sfc 依赖树未安装（已找过: ${found.candidates.join(' , ')}）` };
   }
   // 漂移检测只对共享池安装生效（legacy 目录与 env 显式路径不受 skill 版本约束）
   if (found.source === 'pool') {
-    const lockPath = join(envDir(), 'env.lock.json');
+    const lockPath = join(envDir(override), 'env.lock.json');
     if (!existsSync(COMPILER_PKG_LOCK)) {
       // skill 包没有 lockfile（异常状态）——不拦，但不假装校验过
       return { ok: true, source: found.source, dir: found.dir, note: 'SKILL_NO_LOCKFILE' };
