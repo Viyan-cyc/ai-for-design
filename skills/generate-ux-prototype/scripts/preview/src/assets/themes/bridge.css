@@ -1,0 +1,138 @@
+/* ============================================================
+   bridge.css — 桥接层（FIXED，与具体皮肤无关）
+   ============================================================
+   把皮肤定义的语义 token（--color-* / --text / --fill 等，
+   命名即 design-language 样式Token 的规范名）映射到 Element
+   Plus 的 --el-* 体系。任何皮肤只要按协议提供同名 token，
+   Element Plus 组件即自动跟随换肤；light-N 色阶由 color-mix
+   对 --ux-mix-base 派生（深色皮肤须覆盖 --ux-mix-base 为深色
+   表面色，见 themes/README.md）。
+
+   token 真值源：design-language/样式Token/设计系统.md。
+   皮肤未定义的引用不会静默回落到库默认色（除注释标明的兜底）。
+   ============================================================ */
+
+:root {
+  /* ---- 高亮色 → primary（EP light-N：70/50/30/20/10% 混白派生） ---- */
+  --el-color-primary: var(--color-brand);
+  --el-color-primary-light-3: var(--color-brand-hover, color-mix(in srgb, var(--color-brand) 70%, var(--ux-mix-base)));
+  --el-color-primary-light-5: color-mix(in srgb, var(--color-brand) 50%, var(--ux-mix-base));
+  --el-color-primary-light-7: color-mix(in srgb, var(--color-brand) 30%, var(--ux-mix-base));
+  --el-color-primary-light-8: color-mix(in srgb, var(--color-brand) 20%, var(--ux-mix-base));
+  --el-color-primary-light-9: var(--color-select, color-mix(in srgb, var(--color-brand) 10%, var(--ux-mix-base)));
+  --el-color-primary-dark-2: var(--color-brand-active, color-mix(in srgb, var(--color-brand) 80%, #000000));
+
+  /* ---- 功能色（success / warning / danger / error / info）----
+     EP 的 warning/danger 浅色阶由 color-mix 派生；
+     信息强调色用 --color-info（blue-50），与 --color-brand 无关。 */
+  --el-color-success: var(--color-success);
+  --el-color-success-light-3: color-mix(in srgb, var(--color-success) 70%, var(--ux-mix-base));
+  --el-color-success-light-5: color-mix(in srgb, var(--color-success) 50%, var(--ux-mix-base));
+  --el-color-success-light-7: color-mix(in srgb, var(--color-success) 30%, var(--ux-mix-base));
+  --el-color-success-light-8: color-mix(in srgb, var(--color-success) 20%, var(--ux-mix-base));
+  --el-color-success-light-9: var(--color-success-subtle, color-mix(in srgb, var(--color-success) 10%, var(--ux-mix-base)));
+  --el-color-success-dark-2: color-mix(in srgb, var(--color-success) 80%, #000000);
+
+  --el-color-warning: var(--color-warning);
+  --el-color-warning-light-3: color-mix(in srgb, var(--color-warning) 70%, var(--ux-mix-base));
+  --el-color-warning-light-5: color-mix(in srgb, var(--color-warning) 50%, var(--ux-mix-base));
+  --el-color-warning-light-7: color-mix(in srgb, var(--color-warning) 30%, var(--ux-mix-base));
+  --el-color-warning-light-8: color-mix(in srgb, var(--color-warning) 20%, var(--ux-mix-base));
+  --el-color-warning-light-9: var(--color-warning-subtle, color-mix(in srgb, var(--color-warning) 10%, var(--ux-mix-base)));
+  --el-color-warning-dark-2: color-mix(in srgb, var(--color-warning) 80%, #000000);
+
+  /* EP danger ← color-error（red-50）；alert/orange 用于告警语义，不进 EP 主链路 */
+  --el-color-danger: var(--color-error);
+  --el-color-danger-light-3: var(--color-error-subtle, color-mix(in srgb, var(--color-error) 70%, var(--ux-mix-base)));
+  --el-color-danger-light-5: color-mix(in srgb, var(--color-error) 50%, var(--ux-mix-base));
+  --el-color-danger-light-7: color-mix(in srgb, var(--color-error) 30%, var(--ux-mix-base));
+  --el-color-danger-light-8: color-mix(in srgb, var(--color-error) 20%, var(--ux-mix-base));
+  --el-color-danger-light-9: var(--color-error-subtle, color-mix(in srgb, var(--color-error) 10%, var(--ux-mix-base)));
+  --el-color-danger-dark-2: color-mix(in srgb, var(--color-error) 80%, #000000);
+
+  --el-color-error: var(--color-error);
+  --el-color-error-light-3: var(--color-error-subtle, color-mix(in srgb, var(--color-error) 70%, var(--ux-mix-base)));
+  --el-color-error-light-5: color-mix(in srgb, var(--color-error) 50%, var(--ux-mix-base));
+  --el-color-error-light-7: color-mix(in srgb, var(--color-error) 30%, var(--ux-mix-base));
+  --el-color-error-light-8: color-mix(in srgb, var(--color-error) 20%, var(--ux-mix-base));
+  --el-color-error-light-9: var(--color-error-subtle, color-mix(in srgb, var(--color-error) 10%, var(--ux-mix-base)));
+  --el-color-error-dark-2: color-mix(in srgb, var(--color-error) 80%, #000000);
+
+  --el-color-info: var(--color-info);
+  --el-color-info-light-3: color-mix(in srgb, var(--color-info) 70%, var(--ux-mix-base));
+  --el-color-info-light-5: color-mix(in srgb, var(--color-info) 50%, var(--ux-mix-base));
+  --el-color-info-light-7: color-mix(in srgb, var(--color-info) 30%, var(--ux-mix-base));
+  --el-color-info-light-8: color-mix(in srgb, var(--color-info) 20%, var(--ux-mix-base));
+  --el-color-info-light-9: var(--color-info-subtle, color-mix(in srgb, var(--color-info) 10%, var(--ux-mix-base)));
+  --el-color-info-dark-2: color-mix(in srgb, var(--color-info) 80%, #000000);
+
+  /* ---- 文本色（design-language 文本色五级直接对位） ---- */
+  --el-text-color-primary: var(--color-text-primary);
+  --el-text-color-regular: var(--color-text-primary);
+  --el-text-color-secondary: var(--color-text-secondary);
+  --el-text-color-placeholder: var(--color-text-placeholder);
+  --el-text-color-disabled: var(--color-text-disabled);
+  --el-text-color-inverse: var(--color-text-inverse);
+
+  /* ---- 背景色 ---- */
+  --el-bg-color: var(--color-bg-4);
+  --el-bg-color-page: var(--color-bg-1);
+  --el-bg-color-overlay: var(--color-bg-4);
+
+  /* ---- 边框色（默认 gray-20；悬停 gray-90；分割线按强弱两档） ---- */
+  --el-border-color: var(--color-border);
+  --el-border-color-light: var(--color-border);
+  --el-border-color-lighter: var(--color-border-separator);
+  --el-border-color-extra-light: var(--color-border-separator-subtle);
+  --el-border-color-dark: var(--color-border-hover);
+  --el-border-color-darker: var(--color-border-hover);
+  --el-border-color-hover: var(--color-border-hover);
+  --el-border-color-focus: var(--color-border-focus);
+
+  /* ---- 填充色（悬停/选中/禁用填充一一对应） ---- */
+  --el-fill-color: var(--color-fill);
+  --el-fill-color-light: var(--color-hover);
+  --el-fill-color-lighter: var(--color-hover);
+  --el-fill-color-extra-light: var(--color-hover);
+  --el-fill-color-dark: var(--color-fill-disabled);
+  --el-fill-color-darker: var(--color-fill-disabled);
+  --el-fill-color-blank: var(--color-fill-subtle);
+
+  /* ---- 遮罩 / 阴影（Level 对照：浮层 shadow-3、抽屉 shadow-4-*、
+        对话框 shadow-6、卡片悬浮 shadow-5） ---- */
+  --el-mask-color: var(--color-bg-mask);
+  --el-box-shadow: var(--shadow-6);
+  --el-box-shadow-light: var(--shadow-3);
+  --el-box-shadow-lighter: var(--shadow-1);
+  --el-box-shadow-dark: var(--shadow-6);
+
+  /* ---- 圆角 / 字体 / 边框宽 ---- */
+  --el-border-radius-base: var(--radius-size-normal);
+  --el-border-radius-small: var(--radius-size-small);
+  --el-border-radius-round: var(--radius-size-full);
+  --el-border-radius-circle: 100%;
+  --el-font-family: var(--font-family);
+  --el-border-width: var(--border-width-normal);
+  --el-component-size: 32px;
+}
+
+/* ---- 状态对位修正（design-language 组件状态 → EP 类名钩子） ---- */
+
+/* 输入件悬停边框：gray-90；获焦边框：brand-50 + 2px 获焦宽 */
+.el-input__wrapper:hover,
+.el-select__wrapper:hover,
+.el-textarea__inner:hover {
+  box-shadow: 0 0 0 1px var(--color-border-hover) inset;
+}
+.el-input__wrapper.is-focus,
+.el-select__wrapper.is-focused,
+.el-textarea__inner:focus {
+  box-shadow: 0 0 0 var(--border-width-medium) var(--color-border-focus) inset;
+}
+
+/* 禁用统一走文本/边框/填充禁用 token，不做整体透明化 */
+.el-button.is-disabled,
+.el-input.is-disabled .el-input__inner,
+.el-textarea.is-disabled .el-textarea__inner {
+  color: var(--color-text-disabled);
+}
