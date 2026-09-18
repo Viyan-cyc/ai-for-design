@@ -329,8 +329,7 @@ try {
 // page-local custom props. Every var(--x) reference without a fallback must
 // resolve to a definition; --el-* is exempt (provided by Element Plus at runtime).
 const definedTokens = new Set();
-const cssHaystacks = [];
-for (const f of cssFiles) {
+const cssHaystacks = [];for (const f of cssFiles) {
   const text = readFileSync(f, 'utf8');
   cssHaystacks.push(text);
   for (const m of text.matchAll(/--[a-z][a-z0-9-]*\s*:/g)) definedTokens.add(m[0].replace(/\s*:/, ''));
@@ -347,18 +346,40 @@ for (const file of vueFiles) {
   }
   if (descriptor.template) cssHaystacks.push(descriptor.template.content);
 }
+// token suggestions: candidates sharing a prefix chunk or differing only in
+// one segment (typo-tolerant, same spirit as the icon/tag did-you-mean hints)
+function tokenHints(tok, pool) {
+  const stem = tok.replace(/^--/, '');
+  const parts = stem.split('-');
+  const scored = [];
+  for (const t of pool) {
+    const name = t.replace(/^--/, '');
+    if (name === stem) continue;
+    let score = 0;
+    const tp = name.split('-');
+    const shared = tp.filter((p) => parts.includes(p)).length;
+    if (shared) score += shared * 2;
+    if (name.startsWith(stem.slice(0, 6))) score += 2;
+    if (tp.length === parts.length) score += 1;
+    if (score) scored.push([score, t]);
+  }
+  return scored.sort((a, b) => b[0] - a[0]).slice(0, 4).map(([, t]) => t);
+}
 for (const text of cssHaystacks) {
   for (const m of text.matchAll(/var\(\s*(--[a-z][a-z0-9-]*)\s*\)/g)) {
     const tok = m[1];
     if (tok.startsWith('--el-')) continue;         // Element Plus runtime vars
-    if (!definedTokens.has(tok)) fail(`unknown token var(${tok}) : tokens are defined in src/assets/themes/*.css`);
+    if (!definedTokens.has(tok)) {
+      const hints = tokenHints(tok, definedTokens);
+      fail(`unknown token var(${tok}) : tokens are defined in src/assets/themes/*.css${hints.length ? ` : did you mean ${hints.join(', ')}?` : ''}`);
+    }
   }
   // var(--x, fallback) — token should still exist unless it's --el-* / --ux-mix-base bridge plumbing
   for (const m of text.matchAll(/var\(\s*(--[a-z][a-z0-9-]*)\s*,/g)) {
     const tok = m[1];
     if (tok.startsWith('--el-')) continue;
     if (tok === '--ux-mix-base') continue;         // bridge plumbing, defined in base.css
-    if (!definedTokens.has(tok)) warn(`token var(${tok}) used with fallback but never defined : check spelling against references/design-language.md`);
+    if (!definedTokens.has(tok)) warn(`token var(${tok}) used with fallback but never defined${tokenHints(tok, definedTokens).map((h) => ` : did you mean ${h}?`).join('')} : check spelling against references/design-language.md`);
   }
 }
 
