@@ -1,5 +1,5 @@
 // ============================================================
-// 真实工程接入入口（预览不执行此文件；预览由 index.html 加载）
+// 真实工程接入入口（预览不执行此文件；预览由 index.gts.html 加载）
 // 依赖：vue@^3.4、vue-router@^4.4、element-plus@2.13.5、
 //       dayjs@^1.11、less@^4.2
 // 图标：不走 npm 包（@element-plus/icons-vue 已禁用）——IconPlus/Lucide 的

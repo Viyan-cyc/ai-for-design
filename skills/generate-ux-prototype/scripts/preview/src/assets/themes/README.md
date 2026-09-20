@@ -13,7 +13,7 @@
      /* 全部 token 清单见 src/assets/tokens/semantic.css（token 本体）与 primitive.css（字面值） */
    }
    ```
-3. **注册**：在 `index.html` 的「自定义皮肤插槽」注释处追加一行：
+3. **注册**：在 `index.gts.html` 的「自定义皮肤插槽」注释处追加一行：
    ```html
    <link rel="stylesheet" href="./src/assets/themes/theme-deep-blue.css">
    ```

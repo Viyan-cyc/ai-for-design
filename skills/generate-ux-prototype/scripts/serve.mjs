@@ -10,7 +10,7 @@
 //
 // Output (agent-parseable):
 //   RESULT: OK
-//   URL: http://localhost:PORT/index.html
+//   URL: http://localhost:PORT/index.gts.html
 //   Press Ctrl+C to stop
 
 import { existsSync, statSync, readFileSync } from 'fs';
@@ -60,7 +60,7 @@ const MIME = {
 
 const server = createServer((req, res) => {
   let urlPath = decodeURIComponent(req.url.split('?')[0].split('#')[0]);
-  if (urlPath === '/') urlPath = '/index.html';
+  if (urlPath === '/') urlPath = '/index.gts.html';
 
   // Prevent path traversal
   const filePath = join(root, urlPath);
@@ -94,7 +94,7 @@ const server = createServer((req, res) => {
 });
 
 server.listen(port, '127.0.0.1', () => {
-  const url = `http://127.0.0.1:${port}/index.html`;
+  const url = `http://127.0.0.1:${port}/index.gts.html`;
   console.log('RESULT: OK');
   console.log(`URL: ${url}`);
 });

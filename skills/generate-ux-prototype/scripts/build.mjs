@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // build.mjs
-// Build & verify a prototype page workspace ({slug}/ with src/ + index.html).
+// Build & verify a prototype page workspace ({slug}/ with src/ + index.gts.html).
 // AUTO-REFRESHES preview-data.js first (embedding src/ sources for the offline
 // preview), then machine-checks everything:
 //
@@ -24,11 +24,11 @@
 //   node build.mjs --dir "{artifact-folder}/{slug}"
 //
 // Output (agent-parseable):
-//   OK index.html verified (N pages, M components)
+//   OK index.gts.html verified (N pages, M components)
 //   RESULT: FAIL | <first error>     (+ WARN lines before it)
 //   RESULT: OK
 
-import { existsSync, readFileSync, readdirSync, writeFileSync, mkdtempSync, rmSync, statSync, unlinkSync } from 'fs';
+import { existsSync, readFileSync, readdirSync, writeFileSync, mkdtempSync, rmSync, statSync } from 'fs';
 import { join, dirname, resolve, extname } from 'path';
 import { fileURLToPath } from 'url';
 import { spawnSync } from 'child_process';
@@ -55,7 +55,7 @@ function getOpt(long, short) {
 
 const dir = getOpt('--dir', '-d');
 if (!dir) {
-  console.log('RESULT: FAIL | Usage: node build.mjs --dir "<folder with src/ and index.html>"');
+  console.log('RESULT: FAIL | Usage: node build.mjs --dir "<folder with src/ and index.gts.html>"');
   process.exit(1);
 }
 const root = resolve(dir);
@@ -133,10 +133,10 @@ function parseMessagesKeys(text) {
 }
 
 // ---------- 1. structure ----------
-const htmlPath = join(root, 'index.html');
+const htmlPath = join(root, 'index.gts.html');
 const srcDir = join(root, 'src');
 const mockDir = join(root, 'mock');
-if (!existsSync(htmlPath)) fail(`index.html not found: ${htmlPath}`);
+if (!existsSync(htmlPath)) fail(`index.gts.html not found: ${htmlPath}`);
 if (!existsSync(srcDir)) fail(`src folder not found: ${srcDir}`);
 const hasMock = existsSync(mockDir) && statSync(mockDir).isDirectory();
 
@@ -158,7 +158,7 @@ for (const p of ['App.vue', 'main.js', join('assets', 'themes', 'base.css'), joi
   if (!existsSync(join(srcDir, p))) error(`deliverable incomplete, missing: src/${p}`);
 }
 
-// ---------- 1a. router integrity (index.html hardcodes /src/router/index.js) ----------
+// ---------- 1a. router integrity (index.gts.html hardcodes /src/router/index.js) ----------
 // 预览加载器在 getFile 里按固定路径请求 /src/router/index.js——文件缺失或改名会
 // 直接白页（报 "源码映射中找不到 /src/router/index.js"）。AI 二开时不得挪动该
 // 文件、不得改 history 模式（file:// 下 createWebHistory 路由匹配失败同样白页）。
@@ -172,7 +172,7 @@ if (existsSync(routerPath)) {
     error('src/router/index.js: createWebHistory breaks under file:// — use createWebHashHistory (or createMemoryHistory) so the preview opens directly from disk');
   }
   if (!/export\s+default/.test(routerSrc)) {
-    error('src/router/index.js: must `export default` the router instance — index.html reads routerMod.default');
+    error('src/router/index.js: must `export default` the router instance — index.gts.html reads routerMod.default');
   }
 }
 
@@ -481,26 +481,6 @@ try {
   rmSync(tmp, { recursive: true, force: true });
 }
 
-// ---------- 5b. cleanup orphaned init placeholder icons ----------
-// init.mjs 落的占位 SVG（含 <!-- init-placeholder --> 标记）在 starter 被替换后
-// 不再被任何 .vue/.js import 引用。build 在 import 扫描完成后精确检测并删除，
-// 确保最终产物无残留。starter 仍引用时保留（时序安全）。
-if (existsSync(iconsDirSrc)) {
-  // 收集所有 .vue/.js 源码文本，用于检测是否仍有 import 引用占位文件
-  const allSrcText = [...vueFiles, ...jsFiles].map((f) => readFileSync(f, 'utf8')).join('\n');
-  for (const svgFile of walkFiles(iconsDirSrc, ['.svg'])) {
-    try {
-      const content = readFileSync(svgFile, 'utf8');
-      if (!content.includes('<!-- init-placeholder -->')) continue;
-      const fileName = svgFile.split(/[\\/]/).pop();
-      // 精确匹配 import 语句中的文件名（不误匹配注释中的文字）
-      if (new RegExp(`import\\s+[^;]*?from\\s*['"][^'"]*${fileName}['"]`).test(allSrcText)) continue;
-      unlinkSync(svgFile);
-      console.log(`CLEANED: removed orphaned init placeholder ${fileName}`);
-    } catch {}
-  }
-}
-
 // ---------- 6. token usage across styles + templates ----------
 // Defined tokens are extracted at runtime from the workspace's own copied
 // token CSS (src/assets/tokens/**) — the skill ships no token cheat sheet,
@@ -550,5 +530,5 @@ if (errors.length) {
 }
 const pageCount = pageIndexes.length;
 console.log('RESULT: OK');
-console.log(`OK index.html verified (${pageCount} page${pageCount > 1 ? 's' : ''}, ${vueFiles.length - pageCount} components, ${elTagTotal} el-tag uses)`);
+console.log(`OK index.gts.html verified (${pageCount} page${pageCount > 1 ? 's' : ''}, ${vueFiles.length - pageCount} components, ${elTagTotal} el-tag uses)`);
 process.exit(0);

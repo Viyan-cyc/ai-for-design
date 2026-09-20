@@ -52,12 +52,12 @@ const settle = parseInt(getOpt('--settle') || '1200', 10);
 const keepServer = hasFlag('--keep-server');
 
 if (!dir) {
-  console.log('RESULT: FAIL | Usage: node smoke.mjs --dir "<folder with index.html>" [--selector "..."] [--settle N]');
+  console.log('RESULT: FAIL | Usage: node smoke.mjs --dir "<folder with index.gts.html>" [--selector "..."] [--settle N]');
   process.exit(1);
 }
 const root = resolve(dir);
-if (!existsSync(join(root, 'index.html'))) {
-  console.log(`RESULT: FAIL | index.html not found in: ${root}`);
+if (!existsSync(join(root, 'index.gts.html'))) {
+  console.log(`RESULT: FAIL | index.gts.html not found in: ${root}`);
   process.exit(1);
 }
 
@@ -155,7 +155,7 @@ async function waitServing(p, timeoutMs = 10_000) {
 }
 await waitServing(port);
 
-const url = `http://127.0.0.1:${port}/index.html`;
+const url = `http://127.0.0.1:${port}/index.gts.html`;
 
 try {
   const browser = await launch({

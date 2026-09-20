@@ -134,9 +134,6 @@ function safeKey(camelKey) {
   return RESERVED_WORDS.has(camelKey) ? `${camelKey}Icon` : camelKey;
 }
 
-// 占位图标清理已移至 build.mjs——build 解析实际 import 语句后精确判断占位文件
-// 是否仍被引用（不误匹配注释），且 build 总是最后一步运行，时序正确。
-
 // 全量扫描 src/assets/icons/*.svg，整体重生成 barrel（多次运行保持完整与幂等）。
 // 两段式 import + 对象字面量（sfc-loader 0.9.5 对 re-export 编译有缺陷，勿改 re-export）。
 function writeIconsBarrel() {
@@ -151,12 +148,6 @@ function writeIconsBarrel() {
   const imports = [];
   const keys = [];
   for (const file of svgFiles) {
-    // 跳过 init 占位文件（含 <!-- init-placeholder --> 标记）——不进 barrel，
-    // 由 build.mjs 在确认无引用后自动删除。
-    try {
-      const content = readFileSync(join(iconsDir, file), 'utf8');
-      if (content.includes('<!-- init-placeholder -->')) continue;
-    } catch {}
     const key = safeKey(toCamelKey(file.slice(0, -4)));
     if (!/^[a-z][a-zA-Z0-9]*$/.test(key)) {
       console.warn(`WARN: barrel skip ${file} — kebab name "${key}" not camelCase-safe`);

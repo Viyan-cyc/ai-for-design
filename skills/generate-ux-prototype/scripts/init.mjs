@@ -30,15 +30,15 @@
 //   │   └── views/{slug}/               # ★ 页面主目录
 //   │       ├── index.vue                # 页面主组件
 //   │       └── js/constants.js          # 页面常量
-//   ├── index.html                       # 离线预览加载器（FIXED）
+//   ├── index.gts.html                       # 离线预览加载器（FIXED）
 //   └── preview-data.js                  # 源码映射（build 自动生成）
 //
 // Usage:
-//   node init.mjs "<artifact-folder>" "<slug>" [--assets-root <dir>]
+//   node init.mjs "<artifact-folder>" "<slug>"
 //
 // Output (agent-parseable):
 //   RESULT: OK
-//   HTML_PATH: <absolute path to {slug}/index.html>
+//   HTML_PATH: <absolute path to {slug}/index.gts.html>
 //   SRC_DIR: <absolute path to {slug}/src>
 //   PAGE: <PascalCase page name>
 //   ASSETS_VERSION: <asset library version>
@@ -80,12 +80,7 @@ function fail(reason) {
 
 // --- args ---
 const rawArgs = process.argv.slice(2);
-let assetsRootArg = null;
-const args = [];
-for (let i = 0; i < rawArgs.length; i++) {
-  if (rawArgs[i] === '--assets-root') { assetsRootArg = rawArgs[++i]; }
-  else if (!rawArgs[i].startsWith('-')) args.push(rawArgs[i]);
-}
+const args = rawArgs.filter((a) => !a.startsWith('-'));
 let artifactFolder, slug;
 if (args.length === 2) {
   [artifactFolder, slug] = args;
@@ -93,7 +88,7 @@ if (args.length === 2) {
   artifactFolder = process.cwd();
   [slug] = args;
 } else {
-  fail('Usage: node init.mjs "<artifact-folder>" "<slug>" [--assets-root <dir>]');
+  fail('Usage: node init.mjs "<artifact-folder>" "<slug>"');
 }
 
 if (!existsSync(artifactFolder) || !statSync(artifactFolder).isDirectory()) {
@@ -104,40 +99,16 @@ if (!/^[a-z0-9]+(-[a-z0-9]+){0,5}$/.test(slug)) {
 }
 
 // ---------- 0. locate asset library ----------
-// 解析顺序：① --assets-root <dir>；② skill 根 assets-path.json（首次用 ① 成功后自动写入，
-// 跨盘/异地放置只需告诉一次）；③ 从脚本位置逐级向上探测 assets/（标记防误命中同名目录）。
-const CONFIG_PATH = join(__dirname, '..', 'assets-path.json');
+// assets/ 已内置在 skill 包内（skills/generate-ux-prototype/assets/），直接定位。
+const SKILL_ROOT = dirname(__dirname);
+const assetLibRoot = join(SKILL_ROOT, 'assets');
 function isAssetsDir(dir) {
   return !!dir && existsSync(join(dir, 'asset-manifest.json')) && existsSync(join(dir, 'frontend', 'element-plus', 'tokens'));
 }
-function readConfigRoot() {
-  try {
-    const v = JSON.parse(readFileSync(CONFIG_PATH, 'utf8')).assetsRoot;
-    return typeof v === 'string' && isAssetsDir(v) ? v : null;
-  } catch { return null; }
-}
-function locateAssets() {
-  let dir = __dirname;
-  for (;;) {
-    if (isAssetsDir(join(dir, 'assets'))) return join(dir, 'assets');
-    const parent = dirname(dir);
-    if (parent === dir) return null;
-    dir = parent;
-  }
-}
-const configRoot = readConfigRoot();
-const assetLibRoot = assetsRootArg ? resolve(assetsRootArg) : (configRoot || locateAssets());
 if (!isAssetsDir(assetLibRoot)) {
-  if (assetsRootArg) fail(`asset library not found at --assets-root: ${assetLibRoot}`);
-  fail('asset library not found: 逐级向上未找到 assets/，也没读到有效的 assets-path.json。把 assets/ 放到 skill 上级任一层，或传 --assets-root <dir>（成功后自动记住，下次免传）');
+  fail(`asset library not found at ${assetLibRoot} — skill 包内 assets/ 目录缺失或损坏`);
 }
 const manifestPath = join(assetLibRoot, 'asset-manifest.json');
-// 显式指定且与记忆不同 → 回写配置（会话间持久；walk-up 命中不写，保持自愈）
-if (assetsRootArg && resolve(assetLibRoot) !== (configRoot ? resolve(configRoot) : null)) {
-  try {
-    writeFileSync(CONFIG_PATH, JSON.stringify({ assetsRoot: resolve(assetLibRoot) }, null, 2) + '\n', 'utf8');
-  } catch { /* 配置写失败不阻断生成 */ }
-}
 const assetLib = { root: assetLibRoot, entry: assetLibRoot };
 const tokensSrc = join(assetLib.root, 'frontend', 'element-plus', 'tokens');
 if (!existsSync(tokensSrc)) fail(`asset library token layer not found: ${tokensSrc}`);
@@ -150,7 +121,7 @@ try {
 const preview = resolve(__dirname, 'preview');
 const scaffoldSrc = join(preview, 'src');
 const libSrc = join(preview, 'public', 'library');
-const htmlSrc = join(preview, 'index.html');
+const htmlSrc = join(preview, 'index.gts.html');
 for (const p of [scaffoldSrc, libSrc, htmlSrc]) {
   if (!existsSync(p)) fail(`template incomplete, missing: ${p}`);
 }
@@ -199,16 +170,6 @@ mkdirSync(join(srcDir, 'router'), { recursive: true });
 // 工作区是交付件不是 git 仓库，不写 .gitkeep 以免混进交付件。
 mkdirSync(join(srcDir, 'components'), { recursive: true });
 mkdirSync(join(srcDir, 'assets', 'icons'), { recursive: true });
-
-// ---------- 5a. starter icon placeholder ----------
-// starter 页 import 了 assets/icons/refresh.svg；init 不联网 fetch，落一个内联
-// 占位 SVG（几何图形，非真实图标）保证开箱可 build。SVG 内嵌 <!-- init-placeholder -->
-// 标记，fetch_icons.mjs 运行时自动识别并删除占位文件，不残留到正式产物。
-writeFileSync(
-  join(srcDir, 'assets', 'icons', 'refresh.svg'),
-  '<!-- init-placeholder -->\n<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/></svg>',
-  'utf8',
-);
 
 // ---------- 6. write starter files ----------
 
@@ -347,12 +308,14 @@ writeFileSync(
   join(srcDir, 'views', slug, 'index.vue'),
   `<script setup>
 // ${pageName} — 页面主组件（交付入口；真实工程中由路由挂载）
-// starter 用 refresh.svg 占位演示图标用法；正式图标用 fetch_icons.mjs 拉取后替换
+// starter 用内联 SVG 演示图标用法（无需 .svg 文件）；正式图标用 fetch_icons.mjs 拉取后替换
 import { ref, onMounted } from 'vue'
 import { fetchList } from '../../api/${slug}.js'
 import { t } from '../../locales/pages/${slug}.js'
 import { STATUS_MAP } from './js/constants.js'
-import refreshIcon from '../../assets/icons/refresh.svg'
+
+// 图标用法演示：正式页改为 fetch_icons.mjs 拉取 + barrel 引入（见 SKILL.md Step 2.5）
+const refreshIcon = 'data:image/svg+xml,' + encodeURIComponent('<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/></svg>')
 
 const loading = ref(false)
 const dataList = ref([])
@@ -486,7 +449,7 @@ import { RouterView } from 'vue-router'
 
 // ---------- 7. copy preview runtime + loader ----------
 cpSync(libSrc, join(dest, 'public', 'library'), { recursive: true });
-cpSync(htmlSrc, join(dest, 'index.html'));
+cpSync(htmlSrc, join(dest, 'index.gts.html'));
 
 // ---------- 8. generate preview-data.js ----------
 const result = refresh(dest);
@@ -514,12 +477,12 @@ removeEmptyDirs(dest);
 
 // ---------- 9. done ----------
 console.log('RESULT: OK');
-console.log(`HTML_PATH: ${resolve(join(dest, 'index.html'))}`);
+console.log(`HTML_PATH: ${resolve(join(dest, 'index.gts.html'))}`);
 console.log(`SRC_DIR: ${resolve(srcDir)}`);
 console.log(`PAGE: ${pageName}`);
 console.log(`ASSETS_VERSION: ${assetVersion}`);
 console.log(`ASSETS_ROOT: ${resolve(assetLibRoot)}`);
-console.log(`FILES: index.html, preview-data.js, public/library/**, mock/modules/${slug}.js, src/{main.js,App.vue,api/${slug}.js,router/index.js,locales/**,views/${slug}/{index.vue,js/constants.js},assets/{tokens/**,style/base.less,themes/**}}`);
+console.log(`FILES: index.gts.html, preview-data.js, public/library/**, mock/modules/${slug}.js, src/{main.js,App.vue,api/${slug}.js,router/index.js,locales/**,views/${slug}/{index.vue,js/constants.js},assets/{tokens/**,style/base.less,themes/**}}`);
 console.log(`NOTE: src/views/${slug}/index.vue 是 starter（替换它）；src/api/${slug}.js 是二开唯一必改文件`);
 console.log('PATH_PREFIX (copy as-is into the import plan; do not re-derive):');
 console.log(`  from views/${slug}/**.vue:        ../../api/${slug}.js | ../../locales/pages/${slug}.js | ../../assets/icons/index.js | ../../assets/uploads/`);
