@@ -58,8 +58,12 @@ if (args.length === 2) {
   fail('Usage: node init.mjs "<artifact-folder>" "<slug>"');
 }
 
-if (!existsSync(artifactFolder) || !statSync(artifactFolder).isDirectory()) {
-  fail(`Artifact folder does not exist or is not a directory: ${artifactFolder}`);
+if (existsSync(artifactFolder)) {
+  if (!statSync(artifactFolder).isDirectory()) {
+    fail(`Artifact folder exists but is not a directory: ${artifactFolder}`);
+  }
+} else {
+  mkdirSync(artifactFolder, { recursive: true });
 }
 if (!/^[a-z0-9]+(-[a-z0-9]+){1,5}$/.test(slug)) {
   fail(`Slug must be kebab-case ascii, 2-6 hyphen-separated segments: '${slug}'`);

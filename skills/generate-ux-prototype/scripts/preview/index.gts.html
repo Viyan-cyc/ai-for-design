@@ -11,8 +11,12 @@
     <script src="./public/library/element-plus.full.min.js"></script>
     <script src="./public/library/element-plus-icons-vue.iife.min.js"></script>
     <script src="./public/library/element-plus-locale-zh-cn.min.js"></script>
+    <script src="./public/library/echarts.min.js"></script>
+    <script src="./public/library/vue-echarts.iife.min.js"></script>
+    <script src="./public/library/less.min.js"></script>
     <script src="./public/library/vue3-sfc-loader.js"></script>
     <link rel="stylesheet" href="./public/library/element-plus.index.css">
+    <link rel="stylesheet" href="./public/library/vue-echarts.style.css">
 
     <!-- ═══ 2. 主题（样式文件即交付件，位于 src/assets/themes/）═══ -->
     <link rel="stylesheet" href="./src/assets/themes/base.css">
@@ -84,6 +88,9 @@
                     "element-plus": ElementPlus,
                     "@element-plus/icons-vue": ElementPlusIconsVue,
                     dayjs: dayjs,
+                    echarts: echarts,
+                    "vue-echarts": VueECharts,
+                    less: less,
                 }),
                 getFile: function (path) {
                     var clean = String(path).split("?")[0].split("#")[0];

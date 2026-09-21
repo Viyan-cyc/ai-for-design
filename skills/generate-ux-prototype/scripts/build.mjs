@@ -91,7 +91,10 @@ const ALLOWED_BARE = new Set([
   'element-plus',
   '@element-plus/icons-vue',
   'dayjs',
+  'echarts',
+  'vue-echarts',
 ]);
+const CHART_TAGS = new Set(['v-chart']);
 
 // ---------- real compiler (installed at <envDir>/compiler by setup-env.mjs;
 // node_modules never lives inside the skill) ----------
@@ -133,7 +136,11 @@ const html = readFileSync(htmlPath, 'utf8');
 const REQUIRED_HTML = [
   '<script src="./public/library/vue.global.prod.js"></script>',
   '<script src="./public/library/element-plus.full.min.js"></script>',
+  '<script src="./public/library/echarts.min.js"></script>',
+  '<script src="./public/library/vue-echarts.iife.min.js"></script>',
+  '<script src="./public/library/less.min.js"></script>',
   '<script src="./public/library/vue3-sfc-loader.js"></script>',
+  '<link rel="stylesheet" href="./public/library/vue-echarts.style.css">',
   '<link rel="stylesheet" href="./src/assets/themes/base.css">',
   '<link rel="stylesheet" href="./src/assets/themes/bridge.css">',
   '<script src="./preview-data.js"></script>',
@@ -271,6 +278,7 @@ for (const file of vueFiles) {
   for (const m of tplContent.matchAll(/<((?!el-)[a-z][a-z0-9]*-[a-z0-9-]*)[\s/>]/g)) {
     const tag = m[1];
     if (importedNames.has(pascal(tag))) continue;
+    if (CHART_TAGS.has(tag)) continue;
     fail(`${rel}: unknown component tag <${tag}> — no matching import found`);
   }
 

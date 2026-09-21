@@ -98,7 +98,15 @@ main.js、主题三件套、starter 页面）。
 `App.vue` 只改挂载点。主题 css（`src/assets/themes/`）与 `index.html` 是交付件骨架，
 不改不删；换肤按 `src/assets/themes/README.md` 协议追加。
 
-页面样式规则、token 用法、组件引入约定见「硬约束」§3 与 `references/design-language.md`。
+动手前**先查 `vendor/`**（入口 `vendor/README.md`，两条直线按需取用）：
+
+1. 需求是典型页面（表格+搜索+详情、图表看板等）→ 从 `vendor/code-example/references/` 选最接近的
+   整页示例作起点，改造成本远低于从零写；
+2. 具体组件用法拿不准 → 查 `vendor/vue-skill/components/` 对应示例；页面样式规则、文件组织、
+   通信约定在 `vendor/vue-skill/references/`（code-rules.md 是总纲）。
+
+生成后按 `vendor/vue-skill/references/error-checklist.md` 过一遍再交 build。不要往 vendor 写任何
+东西；vendor 覆盖不了的非常规需求再扩展查 token 词汇（`references/design-language.md`）。
 
 ### ④ `build.mjs` —— 编译门禁（真实编译，不是 lint）
 
@@ -195,17 +203,32 @@ build 的编译/token 错误是你自己的代码问题，修完重跑，不转�
   组件、`ElMessage` 等命令式 API、vue 的 API（`ref`/`reactive`/…）**每个文件各自 import**——
   漏 import 编译能过但运行时白屏。编译宏（`defineProps` 等）不用 import。
 - 图标从 `@element-plus/icons-vue` 导入（如 `import { Search } from '@element-plus/icons-vue'`）。
+  EP 图标是**无宽高的裸 svg**，直接放模板里 font-size 控不住尺寸（会撑到 200px+）：
+  - 裸 svg 图标必须包进 `<ElIcon :size="N">` 或显式写 `width`/`height`；
+  - 组件自带包装（如 ElButton 的 `:icon` prop、ElMessage 的 icon 选项）不必再包；
+  - 引用 svg 文件用 `<ElIcon><img …/></ElIcon>` 模式。
 - 间距/圆角/字号/投影等同样用 token：`var(--space-size-16)`、`var(--radius-size-normal)`、
   `var(--shadow-1)`。
 - 组件状态（悬停/聚焦/禁用/加载）由 Element Plus + 桥接层自动获得，页面不重绘状态色。
 - token 速查与协议见 `references/design-language.md`；组件/导出/图标白名单见
   `scripts/verify/whitelists/*.json`（EP 2.13.5：118 组件 / 534 导出 / 293 图标）。
 
-### 4. vendor/ —— 参考资产（内容后续补充）
+#### UMD 运行时已知坑（预览跑 UMD、真实工程跑构建工具，行为有差异——按下面写法写两边都稳）
 
-`vendor/` 下将放置：`component-examples/`（组件示例）、`code-examples/`（代码示例）、
-`design-specs/`（设计规范）。当前为占位；补充完成后，生成特定组件/复杂布局时**先查 vendor
-示例再动手**。不要往 vendor 写任何东西。
+1. **跨组件命令式调用不用 `defineExpose` 方法**：模板 ref + `defineExpose` 暴露的方法在预览
+   运行时下会报 "is not a function"。改用 **prop 信号 + 子组件 watch**：父组件递增一个计数
+   prop，子组件 `watch` 它执行动作。
+2. **ElPagination 分页状态用 ref 绑定**：静态 `:current-page="1"` 在运行时下组件可能静默
+   不渲染。写法：`v-model:current-page`（或 `:current-page` 绑 ref）+ `@current-change`。
+3. **中文 jumper 自组**：EP jumper 在运行时下显示英文 "Go to"。需要中文"前往 X 页"时不用
+   jumper，自组 ElInput + 按钮，配合规则 2 的 `@current-change`。
+
+### 4. vendor/ —— 参考资产（只读）
+
+`vendor/` 已就位：`vue-skill/`（组件示例、code-rules、error-checklist、页面模板）、
+`code-example/`（整页示例）、顶层 `README.md`（两块职责与直线路径）。生成页面前先查 vendor
+（见工作流 ③）。**不要往 vendor 写任何东西**；vendor 是参考资产，不参与编译与 build 门禁，
+示例中引用的 token 名拷入页面后由 build 检查。
 
 ---
 

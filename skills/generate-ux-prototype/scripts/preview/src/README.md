@@ -22,7 +22,9 @@ src/
 
 ## 接入步骤
 
-1. 安装依赖（若工程尚未安装）：`npm i vue element-plus@2.13.5 @element-plus/icons-vue dayjs`
+1. 安装依赖（若工程尚未安装）：`npm i vue element-plus@2.13.5 @element-plus/icons-vue dayjs`。
+   页面样式为 `<style lang="less">`，工程需自备 less 编译：`npm i -D less`。
+   页面含图表（`vue-echarts`）时另装：`npm i echarts vue-echarts`。
 2. 拷贝 `src/` 对应目录进工程（或只取所需页面文件夹 + `assets/themes/` + 用到的 `assets/`）。
 3. 在工程路由中注册页面，例如：
    ```js
