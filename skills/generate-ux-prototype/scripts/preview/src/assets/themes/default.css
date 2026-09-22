@@ -4,7 +4,7 @@
    本文件由 scripts/gen-tokens.mjs 从 design-language（样式Token/设计系统.md）
    生成；frost-* 与字体栈为脚本内嵌模板片段。手工修改会被下次生成覆盖——
    改值请改设计文档后重跑生成器，或改生成器内的模板片段。
-   - 未定义/待确认的值（如 color-bg-6）不在此定义，引用即构建失败。
+   - 浅色真值：§1.2 统一表 Light 列。
    - 换肤协议见同目录 README.md：作用域 html[data-theme="<皮肤名>"]，
      运行时切换 document.documentElement.setAttribute("data-theme", ...)。
    ============================================================ */
@@ -12,70 +12,115 @@
 html[data-theme="default"] {
 
   /* ======== 1.2 高亮色（品牌色） ======== */
-  --color-brand: #0067d1;           /* 默认 brand-50 */
-  --color-brand-hover: #2e86de;     /* 悬停 brand-40 */
-  --color-brand-focus: #0067d1;     /* 选中／高亮状态，按组件映射 brand-50 */
-  --color-brand-active: #004ea8;    /* 按下 brand-60 */
-  --color-brand-disabled: #8abef3;  /* 禁用，使用该不透明色值 brand-20 */
+  --color-brand: #0067d1;           /* 高亮色 */
+  --color-brand-hover: #2e86de;     /* 悬停态主题色/高亮色 */
+  --color-brand-focus: #0067d1;     /* 选中态主题色/高亮色 */
+  --color-brand-active: #004ea8;    /* 按下态主题色/高亮色 */
+  --color-brand-disabled: #8abef3;  /* 禁用态主题色/高亮色 */
 
-  /* ======== 1.2 文本色 ======== */
-  --color-text-primary: #191919;      /* 主要文本 gray-90 */
-  --color-text-secondary: #777777;    /* 次要文本 gray-50 */
-  --color-text-placeholder: #aeaeae;  /* 占位文本 gray-30 */
-  --color-text-disabled: #c9c9c9;     /* 禁用文本 gray-20 */
-  --color-text-inverse: #ffffff;      /* 反色文本 gray-0 */
+  /* ======== 1.2 文本与链接 ======== */
+  --color-text-primary: #191919;           /* 主要文本颜色 */
+  --color-text-secondary: #777777;         /* 次要文本颜色 */
+  --color-text-placeholder: #aeaeae;       /* 占位符文本颜色 */
+  --color-text-disabled: #c9c9c9;          /* 禁用文本颜色 */
+  --color-text-inverse: #ffffff;           /* 文本反色 */
+  --color-text-inverse-disabled: #ffffff;  /* 文本反色禁用 */
+  --color-text-on: #0067d1;                /* 用于选中态文本颜色 */
 
   /* ======== 1.2 图标色 ======== */
-  --color-icon-primary: #191919;      /* 主要图标 gray-90 */
-  --color-icon-secondary: #777777;    /* 次要图标 gray-50 */
-  --color-icon-tertiary: #939393;     /* 三级图标 gray-40 */
-  --color-icon-placeholder: #aeaeae;  /* 占位图标 gray-30 */
-  --color-icon-disabled: #c9c9c9;     /* 禁用图标 gray-20 */
-  --color-icon-inverse: #ffffff;      /* 反色图标 gray-0 */
-  --color-icon-hover: #2e86de;        /* 悬停 brand-40 */
-  --color-icon-focus: #0067d1;        /* 选中／高亮 brand-50 */
-  --color-icon-active: #004ea8;       /* 按下 brand-60 */
+  --color-icon-primary: #191919;      /* 主要图标颜色 */
+  --color-icon-secondary: #777777;    /* 次要图标颜色 */
+  --color-icon-tertiary: #939393;     /* 第三层级图标颜色 */
+  --color-icon-placeholder: #aeaeae;  /* 占位符图标颜色 */
+  --color-icon-disabled: #c9c9c9;     /* 禁用态图标颜色 */
+  --color-icon-inverse: #ffffff;      /* 图标反色 */
+  --color-icon-hover: #2e86de;        /* 悬停态图标颜色 */
+  --color-icon-focus: #0067d1;        /* 选中态图标颜色 */
+  --color-icon-active: #004ea8;       /* 按下态图标颜色 */
 
   /* ======== 1.2 边框色 ======== */
-  --color-border: #c9c9c9;                   /* 默认边框 gray-20 */
-  --color-border-hover: #191919;             /* 悬停边框 gray-90 */
-  --color-border-focus: #0067d1;             /* 选中／获焦边框 brand-50 */
-  --color-border-disabled: #c9c9c9;          /* 禁用边框 gray-20 */
-  --color-border-separator: #dfdfdf;         /* 分割线 gray-10 */
-  --color-border-separator-subtle: #f3f3f3;  /* 浅版分割线 gray-05 */
+  --color-border: #c9c9c9;                   /* 边框颜色 */
+  --color-border-hover: #191919;             /* 悬停态边框颜色 */
+  --color-border-focus: #0067d1;             /* 选中态边框颜色 */
+  --color-border-active: #b8d9f9;            /* 边框颜色（输入框） */
+  --color-border-disabled: #c9c9c9;          /* 禁用态边框颜色 */
+  --color-border-separator: #dfdfdf;         /* 内容分隔线，用于内容之间的分隔 */
+  --color-border-separator-subtle: #f3f3f3;  /* 用于表格/折叠面板分割线 */
 
   /* ======== 1.2 背景色 ======== */
-  /* color-bg-6（带背景色卡片）规范中待确认，未定义前不得用于页面 */
-  --color-bg-1: #f3f3f3;                   /* 页面背景 gray-05 */
-  --color-bg-2: #ffffff;                   /* 侧边导航／侧滑面板 gray-0 */
-  --color-bg-3: #ffffff;                   /* 侧滑面板 gray-0 */
-  --color-bg-4: #ffffff;                   /* 下拉面板／弹窗 gray-0 */
-  --color-bg-5: #ffffff;                   /* 白色卡片 gray-0 */
-  --color-bg-mask: rgba(25, 25, 25, 0.3);  /* 遮罩 gray-90 / 30% */
+  --color-bg-1: #f3f3f3;                   /* 页面背景色 */
+  --color-bg-2: #ffffff;                   /* 用于容器/卡片/侧边导航/侧滑面板（无覆盖）背景色 */
+  --color-bg-3: #ffffff;                   /* 用于侧滑面板（覆盖）背景色 */
+  --color-bg-4: #ffffff;                   /* 用于弹窗/下拉面板背景色 */
+  --color-bg-5: #ffffff;                   /* 用于白色卡片 */
+  --color-bg-6: rgba(201, 201, 201, 0.2);  /* 用于带背景色的卡片 */
+  --color-bg-mask: rgba(25, 25, 25, 0.3);  /* 弹出模态对话框时的背景遮罩色 */
 
-  /* ======== 1.2 填充色 ======== */
-  --color-hover: rgba(25, 25, 25, 0.05);                 /* 通用悬停填充 gray-90 / 5% */
-  --color-select: #e6f2fd;                               /* 通用选中填充 brand-05 */
-  --color-table-header: rgba(25, 25, 25, 0.05);          /* 表头背景 gray-90 / 5% */
-  --color-table-zebra: rgba(147, 147, 147, 0.05);        /* 表格斑马纹 gray-40 / 5% */
-  --color-fill: rgba(25, 25, 25, 0.05);                  /* 步骤未开始、单选块未选、图片／文件上传默认填充 gray-90 / 5% */
-  --color-fill-subtle: #ffffff;                          /* 输入框等浅色模式下的底色 gray-0 */
-  --color-fill-disabled: #dfdfdf;                        /* 不含描边的禁用填充：单选块、页签、滚动条；默认标签填充 gray-10 */
-  --color-fill-disabled-subtle: rgba(25, 25, 25, 0.05);  /* 含描边的禁用填充：标准按钮、输入框、搜索框、选择器 gray-90 / 5% */
+  /* ======== 1.2 填充与表格 ======== */
+  --color-hover: rgba(25, 25, 25, 0.05);                 /* 通用悬停填充 */
+  --color-select: #e6f2fd;                               /* 通用选中填充 */
+  --color-table-header: rgba(25, 25, 25, 0.05);          /* 表头背景 */
+  --color-table-zebra: rgba(147, 147, 147, 0.05);        /* 表格交替行底纹 */
+  --color-fill: rgba(25, 25, 25, 0.05);                  /* 未开始步骤、未选单选块、上传默认填充 */
+  --color-fill-subtle: #ffffff;                          /* 输入框等控件表面 */
+  --color-fill-disabled: #dfdfdf;                        /* 无描边禁用控件及中性标签填充 */
+  --color-fill-disabled-subtle: rgba(25, 25, 25, 0.05);  /* 有描边按钮、输入框、搜索框、选择器禁用填充 */
 
   /* ======== 1.2 功能色 ======== */
-  --color-error: #e02128;           /* 高／错误 red-50 */
-  --color-alert: #f4840c;           /* 高／告警，搭配文字 orange-50 */
-  --color-warning: #fcc800;         /* 高／提醒，搭配文字 yellow-50 */
-  --color-success: #09aa71;         /* 中／成功 mint-50 */
-  --color-info: #2070f3;            /* 中／信息 blue-50 */
-  --color-none: #aeaeae;            /* 中／失效 gray-30 */
-  --color-error-subtle: #fee7e8;    /* 低／错误弱背景 red-05 */
-  --color-alert-subtle: #fef5e8;    /* 低／告警弱背景 orange-05 */
-  --color-warning-subtle: #fefce0;  /* 低／提醒弱背景 yellow-05 */
-  --color-success-subtle: #e7fbf2;  /* 低／成功弱背景 mint-05 */
-  --color-info-subtle: #e6f2fd;     /* 低／信息弱背景 brand-05 */
-  --color-none-subtle: #f3f3f3;     /* 低／失效弱背景 gray-05 */
+  --color-link: #0067d1;                     /* 超链接文本颜色 */
+  --color-link-hover: #2e86de;               /* 悬停态超链接文本颜色 */
+  --color-link-active: #004ea8;              /* 按下态超链接颜色 */
+  --color-link-visited: #715afb;             /* 已访问超链接颜色 */
+  --color-link-disabled: #8abef3;            /* 禁用态文字链接颜色 */
+  --color-error: #e02128;                    /* 错误色 */
+  --color-error-hover: #e7434a;              /* 悬停态错误色 */
+  --color-error-active: #c7000b;             /* 按下态错误色 */
+  --color-error-disabled: #fabdc1;           /* 禁用态错误色 */
+  --color-error-subtle: #f59297;             /* 浅版错误色 */
+  --color-error-subtler: #fee7e8;            /* 更浅版错误色 */
+  --color-alert: #f4840c;                    /* 告警色 */
+  --color-alert-hover: #f69e39;              /* 悬停态告警色 */
+  --color-alert-active: #c76207;             /* 按下态告警色 */
+  --color-alert-disabled: #fde2bd;           /* 禁用态告警色 */
+  --color-alert-subtle: #fcce92;             /* 浅版告警色 */
+  --color-alert-subtler: #fef5e8;            /* 更浅版告警色 */
+  --color-warning: #fcc800;                  /* 提醒色 */
+  --color-warning-hover: #fcd72e;            /* 悬停态提醒色 */
+  --color-warning-active: #d19f00;           /* 按下态提醒色 */
+  --color-warning-disabled: #fef8b8;         /* 禁用态提醒色 */
+  --color-warning-subtle: #fef08a;           /* 浅版提醒色 */
+  --color-warning-subtler: #fefce0;          /* 更浅版提醒色 */
+  --color-warning-strong: #d19f00;           /* 重版提醒色；强调色面，不表示禁用 */
+  --color-success: #09aa71;                  /* 成功色 */
+  --color-success-hover: #36c18d;            /* 悬停态成功色 */
+  --color-success-active: #058358;           /* 按下态成功色 */
+  --color-success-disabled: #bcf2db;         /* 禁用态成功色 */
+  --color-success-subtle: #8fe5c2;           /* 浅版成功色 */
+  --color-success-subtler: #e7fbf2;          /* 更浅版成功色 */
+  --color-info-primary: #2070f3;             /* 首要信息色 */
+  --color-info-primary-hover: #668cf7;       /* 首要信息色悬停态 */
+  --color-info-primary-active: #1f55b5;      /* 首要信息色按下态 */
+  --color-info-primary-disabled: #d0d8fd;    /* 首要信息色禁用态 */
+  --color-info-primary-subtle: #8ca3fa;      /* 浅版首要信息色 */
+  --color-info-primary-subtler: #eef3fe;     /* 更浅版首要信息色 */
+  --color-info-secondary: #8ca3fa;           /* 次要信息色 */
+  --color-info-secondary-hover: #b0bffd;     /* 悬停态次要信息色 */
+  --color-info-secondary-active: #668cf7;    /* 按下态次要信息色 */
+  --color-info-secondary-disabled: #d0d8fd;  /* 禁用态次要信息色 */
+  --color-info-secondary-subtle: #eef3fe;    /* 浅版次要信息色 */
+  --color-info: #2070f3;                     /* 信息基础色 */
+  --color-info-subtle: #8ca3fa;              /* 信息浅版色面 */
+  --color-none: #aeaeae;                     /* 失效色 */
+  --color-none-hover: #c9c9c9;               /* 悬停态失效色 */
+  --color-none-active: #939393;              /* 按下态失效色 */
+  --color-none-disabled: #dfdfdf;            /* 禁用态失效色 */
+  --color-none-subtle: #f3f3f3;              /* 浅版失效色 */
+  --color-alert-urgent: #f43146;             /* 紧急告警色 */
+  --color-alert-primary: #ec6f1a;            /* 重要告警色 */
+  --color-alert-secondary: #eeba18;          /* 次要告警色 */
+  --color-alert-success: #2da769;            /* 成功/安全 */
+  --color-alert-running: #5990fd;            /* 提示/运行中 */
+  --color-alert-none: #939393;               /* 未启动 */
 
   /* ======== 1.3 基础色板（rose/red/orange/yellow/green/mint/cyan/blue/indigo/purple/pink/brand × 05–90 + gray） ======== */
   --rose-05: #fee5f2; --rose-10: #fcc3e0; --rose-20: #f99ac7; --rose-30: #f470ab; --rose-40: #ed448a;
@@ -113,28 +158,33 @@ html[data-theme="default"] {
   --company-cyan: #54bcce; --company-pink: #d41dbc; --company-purple: #b62bf7;
   --company-indigo: #5531eb; --company-blue: #2070f3; --company-mint: #00a874;
 
-  /* ======== 1.5 图表配色（默认基础方案 + 无障碍方案） ======== */
-  --color-chart-1: #2070f3;  /* blue-50 */
-  --color-chart-2: #62b42e;  /* green-50 */
-  --color-chart-3: #715afb;  /* indigo-50 */
-  --color-chart-4: #2cb8c9;  /* cyan-50 */
-  --color-chart-5: #f69e39;  /* orange-40 */
-  --color-chart-6: #5ca2e9;  /* brand-30 */
-  --color-chart-1-accessible: #1f55b5;  /* blue-60 */
-  --color-chart-2-accessible: #488e20;  /* green-60 */
-  --color-chart-3-accessible: #5531eb;  /* indigo-60 */
-  --color-chart-4-accessible: #1c94a4;  /* cyan-60 */
-  --color-chart-5-accessible: #c76207;  /* orange-60 */
-  --color-chart-6-accessible: #2e86de;  /* brand-40 */
+  /* ======== 1.5 图表配色（default 11 色序列 + accessible 6 色序列） ======== */
+  --color-chart-1: #2070f3;   /* 第 1 类系列 */
+  --color-chart-2: #87c859;   /* 第 2 类系列 */
+  --color-chart-3: #715afb;   /* 第 3 类系列 */
+  --color-chart-4: #f69e39;   /* 第 4 类系列 */
+  --color-chart-5: #2cb8c9;   /* 第 5 类系列 */
+  --color-chart-6: #e049ce;   /* 第 6 类系列 */
+  --color-chart-7: #09aa71;   /* 第 7 类系列 */
+  --color-chart-8: #fcd72e;   /* 第 8 类系列 */
+  --color-chart-9: #b62bf7;   /* 第 9 类系列 */
+  --color-chart-10: #ed448a;  /* 第 10 类系列 */
+  --color-chart-11: #0067d1;  /* 第 11 类系列 */
+  --color-chart-1-accessible: #1f55b5;  /* 第 1 类系列 */
+  --color-chart-2-accessible: #488e20;  /* 第 2 类系列 */
+  --color-chart-3-accessible: #5531eb;  /* 第 3 类系列 */
+  --color-chart-4-accessible: #c76207;  /* 第 4 类系列 */
+  --color-chart-5-accessible: #1c94a4;  /* 第 5 类系列 */
+  --color-chart-6-accessible: #9f1c8d;  /* 第 6 类系列 */
 
   /* ======== 1.6 代码配色（浅色值为主，深色代码区变体单列） ======== */
-  --code-background: #fafafa; --code-foreground: #393939; --code-comment: #939393;
-  --code-link: #2e86de; --code-keyword: #c98208; --code-meta: #c76207;
-  --code-type: #5531eb; --code-title: #058358; --code-call: #0067d1;
-  --code-built-in: #127180; --code-value: #d41dbc; --code-error: #e02128;
-  --code-background-dark: #131416; --code-foreground-dark: #dfdfdf; --code-comment-dark: #777777;
-  --code-link-dark: #2e86de; --code-keyword-dark: #f8cd75; --code-meta-dark: #c76207;
-  --code-type-dark: #a89ff9; --code-title-dark: #36c18d; --code-call-dark: #5ca2e9;
+  --code-background: #f3f3f3; --code-foreground: #393939; --code-comment: #595959;
+  --code-link: #0067d1; --code-keyword: #954304; --code-meta: #954304;
+  --code-type: #5531eb; --code-title: #036142; --code-call: #0067d1;
+  --code-built-in: #127180; --code-value: #9f1c8d; --code-error: #c7000b;
+  --code-background-dark: #191919; --code-foreground-dark: #dfdfdf; --code-comment-dark: #939393;
+  --code-link-dark: #5ca2e9; --code-keyword-dark: #fde55c; --code-meta-dark: #f69e39;
+  --code-type-dark: #a89ff9; --code-title-dark: #63d5a8; --code-call-dark: #5ca2e9;
   --code-built-in-dark: #55ccd9; --code-value-dark: #eb74df; --code-error-dark: #ee696f;
 
   /* ======== 2.2 间距（常规档；紧凑档见文件末尾 [data-density="compact"] 覆盖块） ======== */
@@ -198,30 +248,30 @@ html[data-theme="default"] {
   --shadow-5: 0 6px 20px 0 rgba(0, 0, 0, 0.1);          /* Level 3 */
   --shadow-6: 0 20px 32px 0 rgba(0, 0, 0, 0.1);         /* Level 3 */
 
-  /* ======== 7.2 毛玻璃材质（过渡基线，仅材质扩展场景成套取用） ======== */
+  /* ======== 7.2 毛玻璃材质（正式参数，仅材质扩展场景成套取用） ======== */
   --frost-blur-control: 12px;
   --frost-blur-card: 20px;
   --frost-blur-overlay: 28px;
   --frost-saturate-neutral: 100%;
   --frost-saturate-muted: 95%;
-  --frost-surface-control: rgba(255, 255, 255, 0.68); /* light；dark α=.64 */
-  --frost-surface-card: rgba(255, 255, 255, 0.76);    /* light；dark α=.72 */
-  --frost-surface-overlay: rgba(255, 255, 255, 0.84); /* light；dark α=.80 */
-  --frost-surface-solid: #f7f9fc;                     /* 回退不透明表面（dark #202631） */
+  --frost-surface-control: rgba(255, 255, 255, 0.68);
+  --frost-surface-card: rgba(255, 255, 255, 0.76);
+  --frost-surface-overlay: rgba(255, 255, 255, 0.84);
+  --frost-surface-solid: #ffffff;
   --frost-hover-add: 0.04;   /* hover 填充增量 */
   --frost-active-add: 0.08;  /* active 填充增量 */
   --frost-transition: 120ms ease-out;
-  --frost-border-color: rgba(88, 108, 138, 0.14);
-  --frost-shadow-control: 0 2px 6px rgba(35, 48, 72, 0.04);
-  --frost-shadow-card: 0 6px 18px rgba(35, 48, 72, 0.06);
-  --frost-shadow-overlay: 0 10px 28px rgba(35, 48, 72, 0.10);
-  --frost-backdrop-base: #f4f6fa;
-  --frost-backdrop-blue: rgba(152, 177, 211, 0.28);
-  --frost-backdrop-lavender: rgba(177, 167, 206, 0.18);
-  --frost-backdrop-teal: rgba(155, 189, 185, 0.10);
-  --frost-tint-blue: rgba(111, 142, 184, 0.08);
-  --frost-tint-lavender: rgba(147, 134, 175, 0.06);
-  --frost-tint-teal: rgba(111, 153, 145, 0.05);
+  --frost-border-color: rgba(89, 89, 89, 0.14);
+  --frost-shadow-control: 0 2px 6px rgba(0, 0, 0, 0.04);
+  --frost-shadow-card: 0 6px 18px rgba(0, 0, 0, 0.06);
+  --frost-shadow-overlay: 0 10px 28px rgba(0, 0, 0, 0.10);
+  --frost-backdrop-base: #f3f3f3;
+  --frost-backdrop-blue: rgba(138, 190, 243, 0.28);
+  --frost-backdrop-lavender: rgba(191, 185, 250, 0.18);
+  --frost-backdrop-teal: rgba(143, 229, 194, 0.10);
+  --frost-tint-blue: rgba(92, 162, 233, 0.08);
+  --frost-tint-lavender: rgba(168, 159, 249, 0.06);
+  --frost-tint-teal: rgba(99, 213, 168, 0.05);
 }
 
 /* ======== 2.2 间距紧凑档（同一 Token 统一控制，按映射表取值，不按比例缩放） ======== */

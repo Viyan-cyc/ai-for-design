@@ -1,119 +1,138 @@
 /* ============================================================
    皮肤：dark（深色皮肤）
    ============================================================
-   本文件由 scripts/gen-tokens.mjs 从 design-language（样式Token/设计系统.md §1.2D）
+   本文件由 scripts/gen-tokens.mjs 从 design-language（样式Token/设计系统.md）
    生成；手工修改会被下次生成覆盖——改值请改设计文档后重跑生成器。
-   - 颜色真值：§1.2D Dark 列。
-   - 以下键为工程回填（§1.2D 未覆盖，设计师补齐后从生成器 DARK_BACKFILL 删除）：
-     color-info, color-info-subtle, color-hover, color-select, color-table-header, color-table-zebra, color-fill, color-fill-subtle, color-fill-disabled, color-fill-disabled-subtle
-   - 深色阴影 / frost 材质参数 / 深色 accessible 图表序列：设计师尚未提供，
-     沿用浅色值过渡（见 dark-theme-intake.md 缺口清单），非深色最终值。
+   - 颜色真值：§1.2 统一表 Dark 列（与 Light 列同表成对维护）。
+   - 深色阴影取 §6.2 Dark alpha；frost 材质为 §7 深色正式参数。
    ============================================================ */
 
 html[data-theme="dark"] {
 
-  /* ======== 1.2D 深色语义色（§1.2D Dark 列，按文档分组；图表序列见下） ======== */
-  --color-brand: #0067d1;                                      /* 高亮色 · 高亮色 */
-  --color-brand-hover: #2e86de;                                /* 悬浮态主题色/高亮色 · 高亮色 */
-  --color-brand-focus: #0067d1;                                /* 选中态主题色/高亮色 · 高亮色 */
-  --color-brand-active: #004ea8;                               /* 按下态主题色/高亮色 · 高亮色 */
-  --color-brand-disabled: #003d83;                             /* 禁用态主题色/高亮色 · 高亮色 */
-  --color-text-primary: #ffffff;                               /* 主要文本颜色 · 文本与链接 */
-  --color-text-secondary: #c9c9c9;                             /* 次要文本颜色 · 文本与链接 */
-  --color-text-placeholder: #939393;                           /* 占位符文本颜色 · 文本与链接 */
-  --color-text-disabled: #939393;                              /* 禁用文本颜色 · 文本与链接 */
-  --color-text-inverse: #ffffff;                               /* 文本反色 · 文本与链接 */
-  --color-text-inverse-disabled: rgba(243, 243, 243, 0.3);     /* 文本反色禁用 · 文本与链接 */
-  --color-text-on: #ffffff;                                    /* 用于选中态文本颜色 · 文本与链接 */
-  --color-link: #5ca2e9;                                       /* 超链接文本颜色 · 文本与链接 */
-  --color-link-hover: #8abef3;                                 /* 悬浮态超链接文本颜色 · 文本与链接 */
-  --color-link-active: #2e86de;                                /* 按下态超链接颜色 · 文本与链接 */
-  --color-link-visited: #715afb;                               /* 已访问超链接颜色 · 文本与链接 */
-  --color-link-disabled: #004ea8;                              /* 禁用态文字链接颜色 · 文本与链接 */
-  --color-icon-primary: #dfdfdf;                               /* 主要图标颜色 · 图标色 */
-  --color-icon-secondary: #aeaeae;                             /* 次要图标颜色 · 图标色 */
-  --color-icon-tertiary: #777777;                              /* 第三层级图标颜色 · 图标色 */
-  --color-icon-placeholder: #939393;                           /* 占位符图标颜色 · 图标色 */
-  --color-icon-disabled: #939393;                              /* 禁用态图标颜色 · 图标色 */
-  --color-icon-inverse: #ffffff;                               /* 图标反色 · 图标色 */
-  --color-icon-hover: #8abef3;                                 /* 悬浮态图标颜色 · 图标色 */
-  --color-icon-focus: #5ca2e9;                                 /* 选中态图标颜色 · 图标色 */
-  --color-icon-active: #2e86de;                                /* 按下态图标颜色 · 图标色 */
-  --color-border: #777777;                                     /* 边框颜色 · 边框色 */
-  --color-border-hover: #f3f3f3;                               /* 悬浮态边框颜色 · 边框色 */
-  --color-border-focus: #2e86de;                               /* 选中态边框颜色 · 边框色 */
-  --color-border-active: #002e6a;                              /* 边框颜色（输入框） · 边框色 */
-  --color-border-disabled: #595959;                            /* 禁用态边框颜色 · 边框色 */
-  --color-border-separator: rgba(243, 243, 243, 0.15);         /* 内容分隔线，用于内容之间的分隔 · 边框色 */
-  --color-border-separator-subtle: rgba(243, 243, 243, 0.15);  /* 用于表格/折叠面板分割线 · 边框色 */
-  --color-bg-1: #000000;                                       /* 页面背景色 · 背景色 */
-  --color-bg-2: #191919;                                       /* 用于容器/卡片/侧边导航/侧滑面板（无覆盖）背景色 · 背景色 */
-  --color-bg-3: #2a2a2a;                                       /* 用于侧滑面板（覆盖）背景色 · 背景色 */
-  --color-bg-4: #393939;                                       /* 用于弹窗/下拉面板背景色 · 背景色 */
-  --color-bg-5: rgba(243, 243, 243, 0.1);                      /* 用于白色卡片 · 背景色 */
-  --color-bg-6: rgba(243, 243, 243, 0.1);                      /* 用于带背景色的卡片 · 背景色 */
-  --color-bg-mask: rgba(0, 0, 0, 0.7);                         /* 弹出模态对话框时的背景遮罩色 · 背景色 */
-  --color-error: #e7434a;                                      /* 错误色 · 错误色 */
-  --color-error-hover: #ee696f;                                /* 悬浮态错误色 · 错误色 */
-  --color-error-active: #e02128;                               /* 按下态错误色 · 错误色 */
-  --color-error-disabled: #59080a;                             /* 禁用态错误色 · 错误色 */
-  --color-error-subtle: #c7000b;                               /* 浅版错误色 · 错误色 */
-  --color-error-subtler: #59080a;                              /* 更浅版错误色 · 错误色 */
-  --color-alert: #f4840c;                                      /* 告警色 · 告警色 */
-  --color-alert-hover: #f69e39;                                /* 悬浮态告警色 · 告警色 */
-  --color-alert-active: #c76207;                               /* 按下态告警色 · 告警色 */
-  --color-alert-disabled: #642802;                             /* 禁用态告警色 · 告警色 */
-  --color-alert-subtle: #c76207;                               /* 浅版告警色 · 告警色 */
-  --color-alert-subtler: #642802;                              /* 更浅版告警色 · 告警色 */
-  --color-warning: #fcd72e;                                    /* 提醒色 · 提醒色 */
-  --color-warning-hover: #fde55c;                              /* 悬浮态提醒色 · 提醒色 */
-  --color-warning-active: #fcc800;                             /* 按下态提醒色 · 提醒色 */
-  --color-warning-disabled: #614500;                           /* 禁用态提醒色 · 提醒色 */
-  --color-warning-subtle: #d19f00;                             /* 浅版提醒色 · 提醒色 */
-  --color-warning-subtler: #614500;                            /* 更浅版提醒色 · 提醒色 */
-  --color-success: #058358;                                    /* 成功色 · 成功色 */
-  --color-success-hover: #09aa71;                              /* 悬浮态成功色 · 成功色 */
-  --color-success-active: #058358;                             /* 按下态成功色 · 成功色 */
-  --color-success-disabled: #02422e;                           /* 禁用态成功色 · 成功色 */
-  --color-success-subtle: #058358;                             /* 浅版成功色 · 成功色 */
-  --color-success-subtler: #02422e;                            /* 更浅版成功色 · 成功色 */
-  --color-info-primary: #2070f3;                               /* 首要信息色 · 信息色 */
-  --color-info-primary-subtle: #1f55b5;                        /* 浅版首要信息色 · 信息色 */
-  --color-info-primary-subtler: #112857;                       /* 更浅版首要信息色 · 信息色 */
-  --color-info-seconday: #1f55b5;                              /* 次要信息色 · 信息色 */
-  --color-info-seconday-hover: #668cf7;                        /* 悬浮态次要信息色 · 信息色 */
-  --color-info-seconday-active: #1f55b5;                       /* 按下态次要信息色 · 信息色 */
-  --color-info-seconday-disabled: #112857;                     /* 禁用态次要信息色 · 信息色 */
-  --color-info-seconday-subtle: #112857;                       /* 浅版次要信息色 · 信息色 */
-  --color-none: #595959;                                       /* 失效色 · 失效色 */
-  --color-none-hover: rgba(243, 243, 243, 0.2);                /* 悬浮态失效色 · 失效色 */
-  --color-none-active: #777777;                                /* 按下态失效色 · 失效色 */
-  --color-none-disabled: #191919;                              /* 禁用态失效色 · 失效色 */
-  --color-none-subtle: #191919;                                /* 浅版失效色 · 失效色 */
-  --color-alert-urgent: #f43146;                               /* 紧急告警色 · 业务告警状态色 */
-  --color-alert-primary: #ec6f1a;                              /* 重要告警色 · 业务告警状态色 */
-  --color-alert-secondary: #eeba18;                            /* 次要告警色 · 业务告警状态色 */
-  --color-alert-success: #0d9458;                              /* 成功/安全 · 业务告警状态色 */
-  --color-alert-running: #5990fd;                              /* 提示/运行中 · 业务告警状态色 */
-  --color-alert-none: #818181;                                 /* 未启动 · 业务告警状态色 */
+  /* ======== 1.2 深色语义色（统一表 Dark 列，按文档分组） ======== */
+  /* ======== 1.2 高亮色（品牌色） ======== */
+  --color-brand: #0067d1;           /* 高亮色 */
+  --color-brand-hover: #2e86de;     /* 悬停态主题色/高亮色 */
+  --color-brand-focus: #0067d1;     /* 选中态主题色/高亮色 */
+  --color-brand-active: #004ea8;    /* 按下态主题色/高亮色 */
+  --color-brand-disabled: #003d83;  /* 禁用态主题色/高亮色 */
+  /* ======== 1.2 文本与链接 ======== */
+  --color-text-primary: #ffffff;                            /* 主要文本颜色 */
+  --color-text-secondary: #c9c9c9;                          /* 次要文本颜色 */
+  --color-text-placeholder: #939393;                        /* 占位符文本颜色 */
+  --color-text-disabled: #939393;                           /* 禁用文本颜色 */
+  --color-text-inverse: #ffffff;                            /* 文本反色 */
+  --color-text-inverse-disabled: rgba(243, 243, 243, 0.3);  /* 文本反色禁用 */
+  --color-text-on: #ffffff;                                 /* 用于选中态文本颜色 */
+  /* ======== 1.2 图标色 ======== */
+  --color-icon-primary: #dfdfdf;      /* 主要图标颜色 */
+  --color-icon-secondary: #aeaeae;    /* 次要图标颜色 */
+  --color-icon-tertiary: #777777;     /* 第三层级图标颜色 */
+  --color-icon-placeholder: #939393;  /* 占位符图标颜色 */
+  --color-icon-disabled: #939393;     /* 禁用态图标颜色 */
+  --color-icon-inverse: #ffffff;      /* 图标反色 */
+  --color-icon-hover: #8abef3;        /* 悬停态图标颜色 */
+  --color-icon-focus: #5ca2e9;        /* 选中态图标颜色 */
+  --color-icon-active: #2e86de;       /* 按下态图标颜色 */
+  /* ======== 1.2 边框色 ======== */
+  --color-border: #777777;                                     /* 边框颜色 */
+  --color-border-hover: #f3f3f3;                               /* 悬停态边框颜色 */
+  --color-border-focus: #2e86de;                               /* 选中态边框颜色 */
+  --color-border-active: #002e6a;                              /* 边框颜色（输入框） */
+  --color-border-disabled: #595959;                            /* 禁用态边框颜色 */
+  --color-border-separator: rgba(243, 243, 243, 0.15);         /* 内容分隔线，用于内容之间的分隔 */
+  --color-border-separator-subtle: rgba(243, 243, 243, 0.15);  /* 用于表格/折叠面板分割线 */
+  /* ======== 1.2 背景色 ======== */
+  --color-bg-1: #000000;                   /* 页面背景色 */
+  --color-bg-2: #191919;                   /* 用于容器/卡片/侧边导航/侧滑面板（无覆盖）背景色 */
+  --color-bg-3: #2a2a2a;                   /* 用于侧滑面板（覆盖）背景色 */
+  --color-bg-4: #393939;                   /* 用于弹窗/下拉面板背景色 */
+  --color-bg-5: rgba(243, 243, 243, 0.1);  /* 用于白色卡片 */
+  --color-bg-6: rgba(243, 243, 243, 0.1);  /* 用于带背景色的卡片 */
+  --color-bg-mask: rgba(0, 0, 0, 0.7);     /* 弹出模态对话框时的背景遮罩色 */
+  /* ======== 1.2 填充与表格 ======== */
+  --color-hover: rgba(255, 255, 255, 0.06);                 /* 通用悬停填充 */
+  --color-select: rgba(46, 134, 222, 0.2);                  /* 通用选中填充 */
+  --color-table-header: rgba(255, 255, 255, 0.06);          /* 表头背景 */
+  --color-table-zebra: rgba(255, 255, 255, 0.03);           /* 表格交替行底纹 */
+  --color-fill: rgba(255, 255, 255, 0.06);                  /* 未开始步骤、未选单选块、上传默认填充 */
+  --color-fill-subtle: #2a2a2a;                             /* 输入框等控件表面 */
+  --color-fill-disabled: #393939;                           /* 无描边禁用控件及中性标签填充 */
+  --color-fill-disabled-subtle: rgba(255, 255, 255, 0.06);  /* 有描边按钮、输入框、搜索框、选择器禁用填充 */
+  /* ======== 1.2 功能色 ======== */
+  --color-link: #5ca2e9;                         /* 超链接文本颜色 */
+  --color-link-hover: #8abef3;                   /* 悬停态超链接文本颜色 */
+  --color-link-active: #2e86de;                  /* 按下态超链接颜色 */
+  --color-link-visited: #715afb;                 /* 已访问超链接颜色 */
+  --color-link-disabled: #004ea8;                /* 禁用态文字链接颜色 */
+  --color-error: #e7434a;                        /* 错误色 */
+  --color-error-hover: #ee696f;                  /* 悬停态错误色 */
+  --color-error-active: #e02128;                 /* 按下态错误色 */
+  --color-error-disabled: #59080a;               /* 禁用态错误色 */
+  --color-error-subtle: #c7000b;                 /* 浅版错误色 */
+  --color-error-subtler: #59080a;                /* 更浅版错误色 */
+  --color-alert: #f4840c;                        /* 告警色 */
+  --color-alert-hover: #f69e39;                  /* 悬停态告警色 */
+  --color-alert-active: #c76207;                 /* 按下态告警色 */
+  --color-alert-disabled: #642802;               /* 禁用态告警色 */
+  --color-alert-subtle: #c76207;                 /* 浅版告警色 */
+  --color-alert-subtler: #642802;                /* 更浅版告警色 */
+  --color-warning: #fcd72e;                      /* 提醒色 */
+  --color-warning-hover: #fde55c;                /* 悬停态提醒色 */
+  --color-warning-active: #fcc800;               /* 按下态提醒色 */
+  --color-warning-disabled: #614500;             /* 禁用态提醒色 */
+  --color-warning-subtle: #d19f00;               /* 浅版提醒色 */
+  --color-warning-subtler: #614500;              /* 更浅版提醒色 */
+  --color-warning-strong: #d19f00;               /* 重版提醒色；强调色面，不表示禁用 */
+  --color-success: #058358;                      /* 成功色 */
+  --color-success-hover: #09aa71;                /* 悬停态成功色 */
+  --color-success-active: #058358;               /* 按下态成功色 */
+  --color-success-disabled: #02422e;             /* 禁用态成功色 */
+  --color-success-subtle: #058358;               /* 浅版成功色 */
+  --color-success-subtler: #02422e;              /* 更浅版成功色 */
+  --color-info-primary: #2070f3;                 /* 首要信息色 */
+  --color-info-primary-hover: #668cf7;           /* 首要信息色悬停态 */
+  --color-info-primary-active: #1f55b5;          /* 首要信息色按下态 */
+  --color-info-primary-disabled: #112857;        /* 首要信息色禁用态 */
+  --color-info-primary-subtle: #1f55b5;          /* 浅版首要信息色 */
+  --color-info-primary-subtler: #112857;         /* 更浅版首要信息色 */
+  --color-info-secondary: #1f55b5;               /* 次要信息色 */
+  --color-info-secondary-hover: #668cf7;         /* 悬停态次要信息色 */
+  --color-info-secondary-active: #1f55b5;        /* 按下态次要信息色 */
+  --color-info-secondary-disabled: #112857;      /* 禁用态次要信息色 */
+  --color-info-secondary-subtle: #112857;        /* 浅版次要信息色 */
+  --color-info: #2070f3;                         /* 信息基础色 */
+  --color-info-subtle: #1f55b5;                  /* 信息浅版色面 */
+  --color-none: #595959;                         /* 失效色 */
+  --color-none-hover: rgba(243, 243, 243, 0.2);  /* 悬停态失效色 */
+  --color-none-active: #777777;                  /* 按下态失效色 */
+  --color-none-disabled: #191919;                /* 禁用态失效色 */
+  --color-none-subtle: #191919;                  /* 浅版失效色 */
+  --color-alert-urgent: #f43146;                 /* 紧急告警色 */
+  --color-alert-primary: #ec6f1a;                /* 重要告警色 */
+  --color-alert-secondary: #eeba18;              /* 次要告警色 */
+  --color-alert-success: #0d9458;                /* 成功/安全 */
+  --color-alert-running: #5990fd;                /* 提示/运行中 */
+  --color-alert-none: #818181;                   /* 未启动 */
 
-  /* ======== 工程回填（§1.2D 未覆盖，桥接层无兜底消费） ======== */
-  --color-info: #2070f3;                                    /* §1.2D 信息色组改用 color-info-primary 命名；浅色既有键 color-info 无同名 Dark 行，按浅色 blue-50 保持（信息强调色双主题同值） */
-  --color-info-subtle: #1f55b5;                             /* 浅色既有键无同名 Dark 行；取 §1.2D color-info-primary-subtle Dark（blue-60）为深色弱背景 */
-  --color-hover: rgba(255, 255, 255, 0.06);                 /* 浅色 gray-90/5% 的深色镜像（白 6%） */
-  --color-select: rgba(46, 134, 222, 0.20);                 /* 选中填充；取 brand-hover(#2E86DE) 20% 透明叠加 */
-  --color-table-header: rgba(255, 255, 255, 0.06);          /* 表头背景，与 color-hover 同基 */
-  --color-table-zebra: rgba(255, 255, 255, 0.03);           /* 斑马纹，浅色 gray-40/5% 的深色镜像 */
-  --color-fill: rgba(255, 255, 255, 0.06);                  /* 默认填充，与 color-hover 同基 */
-  --color-fill-subtle: #2a2a2a;                             /* 输入框底色；取 bg-3 dark（#2A2A2A） */
-  --color-fill-disabled: #393939;                           /* 禁用填充；取 bg-4 dark（#393939） */
-  --color-fill-disabled-subtle: rgba(255, 255, 255, 0.06);  /* 含描边禁用填充，与 color-hover 同基 */
-
-  /* ======== 1.2D 深色图表序列（11 色；浅色 accessible 不跨主题） ======== */
-  --color-chart-1: #2070f3; --color-chart-2: #62b42e; --color-chart-3: #715afb; --color-chart-4: #f4840c; --color-chart-5: #2cb8c9; --color-chart-6: #d41dbc; --color-chart-7: #09aa71; --color-chart-8: #fcc800; --color-chart-9: #b62bf7; --color-chart-10: #e61866; --color-chart-11: #0067d1;
-
-  /* ======== 图表 accessible 序列（深色未提供，沿用浅色值过渡） ======== */
-  --color-chart-1-accessible: #1f55b5; --color-chart-2-accessible: #488e20; --color-chart-3-accessible: #5531eb; --color-chart-4-accessible: #1c94a4; --color-chart-5-accessible: #c76207; --color-chart-6-accessible: #2e86de;
+  /* ======== 1.5 深色图表序列（default 11 色 + accessible 6 色，统一表 Dark 列） ======== */
+  --color-chart-1: #2070f3;   /* 第 1 类系列 */
+  --color-chart-2: #62b42e;   /* 第 2 类系列 */
+  --color-chart-3: #715afb;   /* 第 3 类系列 */
+  --color-chart-4: #f4840c;   /* 第 4 类系列 */
+  --color-chart-5: #2cb8c9;   /* 第 5 类系列 */
+  --color-chart-6: #d41dbc;   /* 第 6 类系列 */
+  --color-chart-7: #09aa71;   /* 第 7 类系列 */
+  --color-chart-8: #fcc800;   /* 第 8 类系列 */
+  --color-chart-9: #b62bf7;   /* 第 9 类系列 */
+  --color-chart-10: #e61866;  /* 第 10 类系列 */
+  --color-chart-11: #0067d1;  /* 第 11 类系列 */
+  --color-chart-1-accessible: #668cf7;  /* 第 1 类系列 */
+  --color-chart-2-accessible: #87c859;  /* 第 2 类系列 */
+  --color-chart-3-accessible: #8e81f4;  /* 第 3 类系列 */
+  --color-chart-4-accessible: #f69e39;  /* 第 4 类系列 */
+  --color-chart-5-accessible: #55ccd9;  /* 第 5 类系列 */
+  --color-chart-6-accessible: #eb74df;  /* 第 6 类系列 */
 
   /* ======== 1.3 基础色板 / 1.4 公司辅助色（主题无关，同 default） ======== */
   --rose-05: #fee5f2; --rose-10: #fcc3e0; --rose-20: #f99ac7; --rose-30: #f470ab; --rose-40: #ed448a;
@@ -150,13 +169,13 @@ html[data-theme="dark"] {
   --company-indigo: #5531eb; --company-blue: #2070f3; --company-mint: #00a874;
 
   /* ======== 1.6 代码配色（浅色为主 + 深色代码区变体，同 default） ======== */
-  --code-background: #fafafa; --code-foreground: #393939; --code-comment: #939393;
-  --code-link: #2e86de; --code-keyword: #c98208; --code-meta: #c76207;
-  --code-type: #5531eb; --code-title: #058358; --code-call: #0067d1;
-  --code-built-in: #127180; --code-value: #d41dbc; --code-error: #e02128;
-  --code-background-dark: #131416; --code-foreground-dark: #dfdfdf; --code-comment-dark: #777777;
-  --code-link-dark: #2e86de; --code-keyword-dark: #f8cd75; --code-meta-dark: #c76207;
-  --code-type-dark: #a89ff9; --code-title-dark: #36c18d; --code-call-dark: #5ca2e9;
+  --code-background: #f3f3f3; --code-foreground: #393939; --code-comment: #595959;
+  --code-link: #0067d1; --code-keyword: #954304; --code-meta: #954304;
+  --code-type: #5531eb; --code-title: #036142; --code-call: #0067d1;
+  --code-built-in: #127180; --code-value: #9f1c8d; --code-error: #c7000b;
+  --code-background-dark: #191919; --code-foreground-dark: #dfdfdf; --code-comment-dark: #939393;
+  --code-link-dark: #5ca2e9; --code-keyword-dark: #fde55c; --code-meta-dark: #f69e39;
+  --code-type-dark: #a89ff9; --code-title-dark: #63d5a8; --code-call-dark: #5ca2e9;
   --code-built-in-dark: #55ccd9; --code-value-dark: #eb74df; --code-error-dark: #ee696f;
 
   /* ======== 2.2 间距（常规档；紧凑档见文件末尾覆盖块，同 default） ======== */
@@ -206,44 +225,44 @@ html[data-theme="dark"] {
   --font-weight-normal: 400;  /* 正文、辅助文字 */
   --font-weight-bold: 600;    /* 标题、展示文字 */
 
-  /* ======== 6.2 阴影（深色未提供，沿用浅色值过渡） ======== */
-  --shadow-1: 0 1px 3px 0 rgba(0, 0, 0, 0.1);           /* Level 1 */
-  --shadow-2-left: 1px 0 6px 0 rgba(0, 0, 0, 0.1);      /* Level 1 */
-  --shadow-2-right: -1px 0 6px 0 rgba(0, 0, 0, 0.1);    /* Level 1 */
-  --shadow-3: 0 4px 8px 0 rgba(0, 0, 0, 0.2);           /* Level 2 */
-  --shadow-4-top: 0 4px 12px 0 rgba(0, 0, 0, 0.1);      /* Level 3 */
-  --shadow-4-bottom: 0 -4px 12px 0 rgba(0, 0, 0, 0.1);  /* Level 3 */
-  --shadow-4-left: 6px 0 18px 0 rgba(0, 0, 0, 0.1);     /* Level 3 */
-  --shadow-4-right: -6px 0 18px 0 rgba(0, 0, 0, 0.1);   /* Level 3 */
-  --shadow-5: 0 6px 20px 0 rgba(0, 0, 0, 0.1);          /* Level 3 */
-  --shadow-6: 0 20px 32px 0 rgba(0, 0, 0, 0.1);         /* Level 3 */
+  /* ======== 6.2 阴影（同几何，Dark alpha） ======== */
+  --shadow-1: 0 1px 3px 0 rgba(0, 0, 0, 0.24);          /* Level 1 */
+  --shadow-2-left: 1px 0 6px 0 rgba(0, 0, 0, 0.24);     /* Level 1 */
+  --shadow-2-right: -1px 0 6px 0 rgba(0, 0, 0, 0.24);   /* Level 1 */
+  --shadow-3: 0 4px 8px 0 rgba(0, 0, 0, 0.32);          /* Level 2 */
+  --shadow-4-top: 0 4px 12px 0 rgba(0, 0, 0, 0.4);      /* Level 3 */
+  --shadow-4-bottom: 0 -4px 12px 0 rgba(0, 0, 0, 0.4);  /* Level 3 */
+  --shadow-4-left: 6px 0 18px 0 rgba(0, 0, 0, 0.4);     /* Level 3 */
+  --shadow-4-right: -6px 0 18px 0 rgba(0, 0, 0, 0.4);   /* Level 3 */
+  --shadow-5: 0 6px 20px 0 rgba(0, 0, 0, 0.4);          /* Level 3 */
+  --shadow-6: 0 20px 32px 0 rgba(0, 0, 0, 0.48);        /* Level 3 */
 
-  /* ======== 7.2 毛玻璃材质（深色材质未提供，沿用浅色基线过渡） ======== */
+  /* ======== 7.2 毛玻璃材质（深色正式参数） ======== */
   --frost-blur-control: 12px;
   --frost-blur-card: 20px;
   --frost-blur-overlay: 28px;
   --frost-saturate-neutral: 100%;
   --frost-saturate-muted: 95%;
-  --frost-surface-control: rgba(255, 255, 255, 0.68); /* light；dark α=.64 */
-  --frost-surface-card: rgba(255, 255, 255, 0.76);    /* light；dark α=.72 */
-  --frost-surface-overlay: rgba(255, 255, 255, 0.84); /* light；dark α=.80 */
-  --frost-surface-solid: #f7f9fc;                     /* 回退不透明表面（dark #202631） */
+  --frost-surface-control: rgba(25, 25, 25, 0.64);
+  --frost-surface-card: rgba(25, 25, 25, 0.72);
+  --frost-surface-overlay: rgba(25, 25, 25, 0.80);
+  --frost-surface-solid: #2a2a2a;
   --frost-hover-add: 0.04;   /* hover 填充增量 */
   --frost-active-add: 0.08;  /* active 填充增量 */
   --frost-transition: 120ms ease-out;
-  --frost-border-color: rgba(88, 108, 138, 0.14);
-  --frost-shadow-control: 0 2px 6px rgba(35, 48, 72, 0.04);
-  --frost-shadow-card: 0 6px 18px rgba(35, 48, 72, 0.06);
-  --frost-shadow-overlay: 0 10px 28px rgba(35, 48, 72, 0.10);
-  --frost-backdrop-base: #f4f6fa;
-  --frost-backdrop-blue: rgba(152, 177, 211, 0.28);
-  --frost-backdrop-lavender: rgba(177, 167, 206, 0.18);
-  --frost-backdrop-teal: rgba(155, 189, 185, 0.10);
-  --frost-tint-blue: rgba(111, 142, 184, 0.08);
-  --frost-tint-lavender: rgba(147, 134, 175, 0.06);
-  --frost-tint-teal: rgba(111, 153, 145, 0.05);
+  --frost-border-color: rgba(255, 255, 255, 0.14);
+  --frost-shadow-control: 0 2px 6px rgba(0, 0, 0, 0.12);
+  --frost-shadow-card: 0 6px 18px rgba(0, 0, 0, 0.18);
+  --frost-shadow-overlay: 0 10px 28px rgba(0, 0, 0, 0.24);
+  --frost-backdrop-base: #191919;
+  --frost-backdrop-blue: rgba(138, 190, 243, 0.16);
+  --frost-backdrop-lavender: rgba(191, 185, 250, 0.10);
+  --frost-backdrop-teal: rgba(143, 229, 194, 0.06);
+  --frost-tint-blue: rgba(92, 162, 233, 0.10);
+  --frost-tint-lavender: rgba(168, 159, 249, 0.08);
+  --frost-tint-teal: rgba(99, 213, 168, 0.07);
 
-  /* ======== 深色混色基底（桥接层 light-N 色阶 color-mix 派生底色；取 §1.2D bg-2 dark 容器表面色） ======== */
+  /* ======== 深色混色基底（桥接层 light-N 色阶 color-mix 派生底色；统一表 bg-2 Dark 容器表面色） ======== */
   --ux-mix-base: #191919;
 }
 

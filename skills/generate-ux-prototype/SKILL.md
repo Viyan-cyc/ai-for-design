@@ -136,8 +136,7 @@ main.js、api 服务层示例、主题三件套、starter 页面）。
   bridge.css 自动跟随、新增皮肤插槽）——这部分不删不用重做，页面颜色全程走 token。
 - **切换 UI 默认不在**。用户要求深浅切换 → 接入 UI，**形态按用户描述决定**（图标 toggle/
   下拉/菜单项均可），参考实现见 `references/on-demand-toggle.md`。
-- **内置 default + dark 两套皮肤**。dark 由 gen-tokens 从 design-language §1.2D 深色表生成，
-  未覆盖项为工程回填（清单见 references/dark-theme-intake.md §B）。
+- **内置 default + dark 两套皮肤**。两套皮肤均由 gen-tokens 从 design-language 统一双主题表（§1.2 `Token｜用途｜Light｜Dark`）生成，无工程回填项。
 
 #### 页面自适应（桌面区间弹性）
 
@@ -284,5 +283,5 @@ build 的编译/token 错误是你自己的代码问题，修完重跑，不转�
 
 - 预览 HTML 依赖本地 UMD 运行时（`public/library/`），**改 `src/` 后必须重跑 build** 刷新源码映射
 - `dayjs` 已被 Element Plus UMD 内置，页面代码仍可 `import dayjs from 'dayjs'`（映射已接好）
-- 深色主题：dark 皮肤已内置；剩余缺口（填充色/表格色/阴影深色/frost 材质/深色 accessible）
-  见 references/dark-theme-intake.md §B，补齐前不自行推导深色 token
+- 深色主题：dark 皮肤已全量正式化（由 design-language 统一表 Dark 列生成，覆盖全部 token，
+  无缺口）；浅色／深色成对维护，改 token 先改 design-language 再重跑 gen-tokens，不手写深色值

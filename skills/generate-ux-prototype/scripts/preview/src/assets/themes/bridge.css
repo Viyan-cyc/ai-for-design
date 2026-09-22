@@ -23,14 +23,15 @@
   --el-color-primary-dark-2: var(--color-brand-active, color-mix(in srgb, var(--color-brand) 80%, #000000));
 
   /* ---- 功能色（success / warning / danger / error / info）----
-     EP 的 warning/danger 浅色阶由 color-mix 派生；
+     EP 的 light-N 色阶槽位一律 color-mix 派生，不接 --color-*-subtle
+     （subtle 是中等色面，与组件前景同亮度，接入后字底融合）。
      信息强调色用 --color-info（blue-50），与 --color-brand 无关。 */
   --el-color-success: var(--color-success);
   --el-color-success-light-3: color-mix(in srgb, var(--color-success) 70%, var(--ux-mix-base));
   --el-color-success-light-5: color-mix(in srgb, var(--color-success) 50%, var(--ux-mix-base));
   --el-color-success-light-7: color-mix(in srgb, var(--color-success) 30%, var(--ux-mix-base));
   --el-color-success-light-8: color-mix(in srgb, var(--color-success) 20%, var(--ux-mix-base));
-  --el-color-success-light-9: var(--color-success-subtle, color-mix(in srgb, var(--color-success) 10%, var(--ux-mix-base)));
+  --el-color-success-light-9: color-mix(in srgb, var(--color-success) 10%, var(--ux-mix-base));
   --el-color-success-dark-2: color-mix(in srgb, var(--color-success) 80%, #000000);
 
   --el-color-warning: var(--color-warning);
@@ -38,24 +39,24 @@
   --el-color-warning-light-5: color-mix(in srgb, var(--color-warning) 50%, var(--ux-mix-base));
   --el-color-warning-light-7: color-mix(in srgb, var(--color-warning) 30%, var(--ux-mix-base));
   --el-color-warning-light-8: color-mix(in srgb, var(--color-warning) 20%, var(--ux-mix-base));
-  --el-color-warning-light-9: var(--color-warning-subtle, color-mix(in srgb, var(--color-warning) 10%, var(--ux-mix-base)));
+  --el-color-warning-light-9: color-mix(in srgb, var(--color-warning) 10%, var(--ux-mix-base));
   --el-color-warning-dark-2: color-mix(in srgb, var(--color-warning) 80%, #000000);
 
   /* EP danger ← color-error（red-50）；alert/orange 用于告警语义，不进 EP 主链路 */
   --el-color-danger: var(--color-error);
-  --el-color-danger-light-3: var(--color-error-subtle, color-mix(in srgb, var(--color-error) 70%, var(--ux-mix-base)));
+  --el-color-danger-light-3: color-mix(in srgb, var(--color-error) 70%, var(--ux-mix-base));
   --el-color-danger-light-5: color-mix(in srgb, var(--color-error) 50%, var(--ux-mix-base));
   --el-color-danger-light-7: color-mix(in srgb, var(--color-error) 30%, var(--ux-mix-base));
   --el-color-danger-light-8: color-mix(in srgb, var(--color-error) 20%, var(--ux-mix-base));
-  --el-color-danger-light-9: var(--color-error-subtle, color-mix(in srgb, var(--color-error) 10%, var(--ux-mix-base)));
+  --el-color-danger-light-9: color-mix(in srgb, var(--color-error) 10%, var(--ux-mix-base));
   --el-color-danger-dark-2: color-mix(in srgb, var(--color-error) 80%, #000000);
 
   --el-color-error: var(--color-error);
-  --el-color-error-light-3: var(--color-error-subtle, color-mix(in srgb, var(--color-error) 70%, var(--ux-mix-base)));
+  --el-color-error-light-3: color-mix(in srgb, var(--color-error) 70%, var(--ux-mix-base));
   --el-color-error-light-5: color-mix(in srgb, var(--color-error) 50%, var(--ux-mix-base));
   --el-color-error-light-7: color-mix(in srgb, var(--color-error) 30%, var(--ux-mix-base));
   --el-color-error-light-8: color-mix(in srgb, var(--color-error) 20%, var(--ux-mix-base));
-  --el-color-error-light-9: var(--color-error-subtle, color-mix(in srgb, var(--color-error) 10%, var(--ux-mix-base)));
+  --el-color-error-light-9: color-mix(in srgb, var(--color-error) 10%, var(--ux-mix-base));
   --el-color-error-dark-2: color-mix(in srgb, var(--color-error) 80%, #000000);
 
   --el-color-info: var(--color-info);
@@ -63,7 +64,7 @@
   --el-color-info-light-5: color-mix(in srgb, var(--color-info) 50%, var(--ux-mix-base));
   --el-color-info-light-7: color-mix(in srgb, var(--color-info) 30%, var(--ux-mix-base));
   --el-color-info-light-8: color-mix(in srgb, var(--color-info) 20%, var(--ux-mix-base));
-  --el-color-info-light-9: var(--color-info-subtle, color-mix(in srgb, var(--color-info) 10%, var(--ux-mix-base)));
+  --el-color-info-light-9: color-mix(in srgb, var(--color-info) 10%, var(--ux-mix-base));
   --el-color-info-dark-2: color-mix(in srgb, var(--color-info) 80%, #000000);
 
   /* ---- 文本色（design-language 文本色五级直接对位） ---- */

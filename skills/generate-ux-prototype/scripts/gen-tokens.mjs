@@ -95,7 +95,7 @@ function colorValue(raw, where, name) {
   return v.toLowerCase();
 }
 
-// ---------- 1.2 UI 语义色（一节多张子表，按 token 前缀分桶） ----------
+// ---------- 1.2 UI 语义色（统一双主题表：Token｜用途｜Light｜Dark，一节多张子表，按 token 前缀分桶） ----------
 const buckets = { brand: [], text: [], icon: [], border: [], bg: [], fill: [], functional: [] };
 {
   const lines = doc.split('\n');
@@ -107,14 +107,11 @@ const buckets = { brand: [], text: [], icon: [], border: [], bg: [], fill: [], f
     const sec = lines.slice(secStart, secEnd > 0 ? secEnd : lines.length);
     for (const line of sec) {
       if (!isRow(line)) continue;
-      const [name, use, base, value] = cells(line);
-      // 待确认行（如 color-bg-6）先摘出，不进颜色校验
-      if (/待确认/.test(base) || /待确认/.test(value)) {
-        buckets.bg.push({ name, use: clean(use), base: clean(base), value: 'PENDING' });
-        continue;
-      }
-      const v = colorValue(value, '1.2', name);
-      if (v === null) continue;
+      const [name, use, lightRaw, darkRaw] = cells(line);
+      const light = colorValue(lightRaw, '1.2', name);
+      if (light === null) continue;
+      const dark = colorValue(darkRaw, '1.2', name);
+      if (dark === null) continue;
       let b = 'functional';
       if (name.startsWith('color-brand')) b = 'brand';
       else if (name.startsWith('color-text')) b = 'text';
@@ -122,18 +119,11 @@ const buckets = { brand: [], text: [], icon: [], border: [], bg: [], fill: [], f
       else if (name.startsWith('color-border')) b = 'border';
       else if (name.startsWith('color-bg')) b = 'bg';
       else if (/^(color-hover|color-select|color-table|color-fill)/.test(name)) b = 'fill';
-      buckets[b].push({ name, use: clean(use), base: clean(base), value: v });
+      buckets[b].push({ name, use: clean(use), light, dark });
     }
   }
 }
-// color-bg-6 文档标注待确认 —— 不产出（引用即构建失败），有注释说明
-const pending = [...buckets.bg].filter((t) => /待确认/.test(t.value) || /待确认/.test(t.base));
-if (pending.length) {
-  console.log(`NOTE: skipped pending tokens (doc says 待确认, correct to omit): ${pending.map((t) => t.name).join(', ')}`);
-}
-for (const b of Object.keys(buckets)) {
-  buckets[b] = buckets[b].filter((t) => !/待确认/.test(t.value) && !/待确认/.test(t.base));
-}
+const semanticAll = Object.values(buckets).flat();
 
 // ---------- 1.3 基础色板（| 基础 Token | 色值 |） ----------
 const palette = tableAfter('### 1.3', ['基础 Token', '色值']).map((r) => {
@@ -149,13 +139,35 @@ const company = tableAfter('### 1.4', ['检索 Token', '色值']).map((r) => {
   return { name, value: clean(value).toLowerCase() };
 });
 
-// ---------- 1.5 图表配色（| Token | 默认基础色 | 默认值 | 无障碍基础色 | 无障碍值 |） ----------
-const chart = tableAfter('### 1.5', ['Token', '默认值', '无障碍值']).map((r) => {
-  const [name, b1, v1, b2, v2] = r;
-  if (!HEX.test(clean(v1))) parseError('1.5 chart', `row ${name}: bad default value "${v1}"`);
-  if (!HEX.test(clean(v2))) parseError('1.5 chart', `row ${name}: bad accessible value "${v2}"`);
-  return { name, base1: clean(b1), v1: clean(v1).toLowerCase(), base2: clean(b2), v2: clean(v2).toLowerCase() };
-});
+// ---------- 1.5 图表配色（统一双主题：default 11 色 + accessible 6 色，各表 Token｜用途｜Light｜Dark） ----------
+// 两张表行首键均为 color-chart-*；以出现顺序区分 default / accessible。
+const chartTables = (() => {
+  const lines = doc.split('\n');
+  const secStart = lines.findIndex((l) => l.startsWith('### 1.5'));
+  if (secStart === -1) {
+    parseError('### 1.5', 'section header not found');
+    return [];
+  }
+  const secEnd = lines.findIndex((l, i) => i > secStart && /^### /.test(l));
+  const sec = lines.slice(secStart, secEnd > 0 ? secEnd : lines.length);
+  const tables = [];
+  for (const line of sec) {
+    if (!isRow(line)) continue;
+    const [name, use, lightRaw, darkRaw] = cells(line);
+    if (!/^color-chart-\d+$/.test(name)) continue; // 延展/同色相等散文段落无行首 token 行
+    const light = colorValue(lightRaw, '1.5', name);
+    if (light === null) continue;
+    const dark = colorValue(darkRaw, '1.5', name);
+    if (dark === null) continue;
+    tables.push({ name, use: clean(use), light, dark });
+  }
+  if (tables.length !== 17) {
+    parseError('1.5 chart', `expected 11 default + 6 accessible rows, got ${tables.length}`);
+  }
+  return tables;
+})();
+const chartDefault = chartTables.slice(0, 11);
+const chartAccessible = chartTables.slice(11);
 
 // ---------- 1.6 代码配色（| 检索 Token | 语义 | 浅色代码区 | 深色代码区 |） ----------
 const code = tableAfter('### 1.6', ['检索 Token', '浅色代码区', '深色代码区']).map((r) => {
@@ -213,85 +225,25 @@ const fontWeight = tableAfter('### 5.3', ['Token', '字重']).map((r) => {
   return { name, weight: clean(weight), use: clean(use) };
 });
 
-// ---------- 6.2 阴影（| Token | 层级 | X | Y | 模糊 | 扩展 | 默认不透明度 |） ----------
-// 0 → "0"（CSS 合法长度），其余 → "Npx"；与旧手写版格式一致，diff 为零
+// ---------- 6.2 阴影（| Token | 层级 | X | Y | 模糊 | 扩展 | Light alpha | Dark alpha |） ----------
+// 0 → "0"（CSS 合法长度），其余 → "Npx"；几何两主题相同，仅 alpha 不同
 const pxLen = (v) => (clean(v) === '0' ? '0' : `${clean(v)}px`);
-const shadows = tableAfter('### 6.2', ['Token', 'X', 'Y', '模糊', '扩展', '默认不透明度']).map((r) => {
-  const [name, level, x, y, blur, spread, alpha] = r;
+const shadows = tableAfter('### 6.2', ['Token', 'X', 'Y', '模糊', '扩展', 'Light alpha', 'Dark alpha']).map((r) => {
+  const [name, level, x, y, blur, spread, lightA, darkA] = r;
   for (const [k, v] of Object.entries({ X: x, Y: y, blur, spread })) {
     if (!/^-?\d+$/.test(clean(v))) parseError('6.2 shadow', `row ${name}: bad ${k} "${v}"`);
   }
-  if (!/^\d+%$/.test(clean(alpha))) parseError('6.2 shadow', `row ${name}: bad alpha "${alpha}"`);
-  const a = String(parseInt(clean(alpha), 10) / 100);
-  return { name, level: clean(level), val: `${pxLen(x)} ${pxLen(y)} ${pxLen(blur)} ${pxLen(spread)} rgba(0, 0, 0, ${a})` };
+  if (!/^\d+%$/.test(clean(lightA))) parseError('6.2 shadow', `row ${name}: bad light alpha "${lightA}"`);
+  if (!/^\d+%$/.test(clean(darkA))) parseError('6.2 shadow', `row ${name}: bad dark alpha "${darkA}"`);
+  const la = String(parseInt(clean(lightA), 10) / 100);
+  const da = String(parseInt(clean(darkA), 10) / 100);
+  return {
+    name,
+    level: clean(level),
+    val: `${pxLen(x)} ${pxLen(y)} ${pxLen(blur)} ${pxLen(spread)} rgba(0, 0, 0, ${la})`,
+    darkVal: `${pxLen(x)} ${pxLen(y)} ${pxLen(blur)} ${pxLen(spread)} rgba(0, 0, 0, ${da})`,
+  };
 });
-
-// ---------- 1.2D 深色参数（五列表：设计参数 | 描述 | Light现行 | Light参考 | Dark现行） ----------
-// 只取 Dark 列；Light 两列仅供对照，不替换浅色真值（§1.2）。Dark 缺值的行跳过并记录。
-const DARK_SECTION_ANCHOR = '<a id="dark-colors"></a>';
-function parseDarkSection() {
-  const lines = doc.split('\n');
-  const anchor = lines.findIndex((l) => l.includes(DARK_SECTION_ANCHOR));
-  if (anchor === -1) {
-    parseError('1.2D dark', 'section anchor not found');
-    return [];
-  }
-  // 节起点 = 紧随锚点的 "### 1.2D" 标题；节结束 = 其后的下一个 "### "（§1.3）
-  let start = -1;
-  for (let i = anchor; i < lines.length; i++) {
-    if (/^### /.test(lines[i])) { start = i; break; }
-  }
-  if (start === -1) {
-    parseError('1.2D dark', 'section heading not found after anchor');
-    return [];
-  }
-  let secEnd = lines.length;
-  for (let i = start + 1; i < lines.length; i++) {
-    if (/^### /.test(lines[i])) { secEnd = i; break; }
-  }
-  const rows = [];
-  let skipped = [];
-  let currentGroup = '';
-  for (let i = start; i < secEnd; i++) {
-    const line = lines[i];
-    if (/^#### /.test(line)) currentGroup = line.replace(/^#### /, '').trim();
-    if (!isRow(line)) continue;
-    const c = cells(line);
-    if (c.length < 5) continue; // 字段定义表等非数据表
-    const [name, use, , , darkRaw] = c;
-    if (!name.startsWith('color-')) continue;
-    if (currentGroup.includes('原图命名异常')) continue; // 异常记录行不生成正式 token
-    // Dark 列形态：`#HEX`（`色阶标注`）或 `#HEX / N%`（…）。文档规定以 HEX+alpha 为准，
-    // 色阶标注仅作来源记录 —— 提取行首 HEX/alpha，忽略标注；无 HEX 即缺值行，跳过。
-    const m = darkRaw.match(/^(#[0-9A-Fa-f]{6}(?:\s*\/\s*\d+%)?)/);
-    if (!m) {
-      skipped.push(`${name} (${currentGroup}): "${darkRaw}"`);
-      continue;
-    }
-    const v = colorValue(m[1], '1.2D', name);
-    if (v === null) continue;
-    rows.push({ name: name.trim(), use: clean(use), group: currentGroup, value: v });
-  }
-  return rows.map((r) => ({ ...r, skipped }));
-}
-const darkRows = parseDarkSection();
-const darkSkippedList = [...new Set(darkRows.flatMap((r) => r.skipped))];
-const darkSkippedCount = darkSkippedList.length;
-
-// 深色下 §1.2D 未覆盖、但桥接层/页面无兜底消费的键 —— 工程回填（出处注释标明取值理由；
-// 设计师在真值源正式补齐后从本表删除）。色板与 §1.2D 已给键不得出现在这里。
-const DARK_BACKFILL = [
-  { name: 'color-info', value: '#2070f3', why: '§1.2D 信息色组改用 color-info-primary 命名；浅色既有键 color-info 无同名 Dark 行，按浅色 blue-50 保持（信息强调色双主题同值）' },
-  { name: 'color-info-subtle', value: '#1f55b5', why: '浅色既有键无同名 Dark 行；取 §1.2D color-info-primary-subtle Dark（blue-60）为深色弱背景' },
-  { name: 'color-hover', value: 'rgba(255, 255, 255, 0.06)', why: '浅色 gray-90/5% 的深色镜像（白 6%）' },
-  { name: 'color-select', value: 'rgba(46, 134, 222, 0.20)', why: '选中填充；取 brand-hover(#2E86DE) 20% 透明叠加' },
-  { name: 'color-table-header', value: 'rgba(255, 255, 255, 0.06)', why: '表头背景，与 color-hover 同基' },
-  { name: 'color-table-zebra', value: 'rgba(255, 255, 255, 0.03)', why: '斑马纹，浅色 gray-40/5% 的深色镜像' },
-  { name: 'color-fill', value: 'rgba(255, 255, 255, 0.06)', why: '默认填充，与 color-hover 同基' },
-  { name: 'color-fill-subtle', value: '#2a2a2a', why: '输入框底色；取 bg-3 dark（#2A2A2A）' },
-  { name: 'color-fill-disabled', value: '#393939', why: '禁用填充；取 bg-4 dark（#393939）' },
-  { name: 'color-fill-disabled-subtle', value: 'rgba(255, 255, 255, 0.06)', why: '含描边禁用填充，与 color-hover 同基' },
-];
 
 // ---------- 解析问题即停（不产出静默结果） ----------
 if (problems.length) {
@@ -309,30 +261,56 @@ const FONT_STACKS = [
   "  --font-family: Arial, 'Microsoft YaHei', 'PingFang SC', 'HarmonyOS Sans', sans-serif;",
 ].join('\n');
 
-const FROST = [
+// 毛玻璃材质（§7 正式参数；中性色=gray-90 通道，染色/氛围/边界取公司色板端点）
+const FROST_LIGHT = [
   '  --frost-blur-control: 12px;',
   '  --frost-blur-card: 20px;',
   '  --frost-blur-overlay: 28px;',
   '  --frost-saturate-neutral: 100%;',
   '  --frost-saturate-muted: 95%;',
-  '  --frost-surface-control: rgba(255, 255, 255, 0.68); /* light；dark α=.64 */',
-  '  --frost-surface-card: rgba(255, 255, 255, 0.76);    /* light；dark α=.72 */',
-  '  --frost-surface-overlay: rgba(255, 255, 255, 0.84); /* light；dark α=.80 */',
-  '  --frost-surface-solid: #f7f9fc;                     /* 回退不透明表面（dark #202631） */',
+  '  --frost-surface-control: rgba(255, 255, 255, 0.68);',
+  '  --frost-surface-card: rgba(255, 255, 255, 0.76);',
+  '  --frost-surface-overlay: rgba(255, 255, 255, 0.84);',
+  '  --frost-surface-solid: #ffffff;',
   '  --frost-hover-add: 0.04;   /* hover 填充增量 */',
   '  --frost-active-add: 0.08;  /* active 填充增量 */',
   '  --frost-transition: 120ms ease-out;',
-  '  --frost-border-color: rgba(88, 108, 138, 0.14);',
-  '  --frost-shadow-control: 0 2px 6px rgba(35, 48, 72, 0.04);',
-  '  --frost-shadow-card: 0 6px 18px rgba(35, 48, 72, 0.06);',
-  '  --frost-shadow-overlay: 0 10px 28px rgba(35, 48, 72, 0.10);',
-  '  --frost-backdrop-base: #f4f6fa;',
-  '  --frost-backdrop-blue: rgba(152, 177, 211, 0.28);',
-  '  --frost-backdrop-lavender: rgba(177, 167, 206, 0.18);',
-  '  --frost-backdrop-teal: rgba(155, 189, 185, 0.10);',
-  '  --frost-tint-blue: rgba(111, 142, 184, 0.08);',
-  '  --frost-tint-lavender: rgba(147, 134, 175, 0.06);',
-  '  --frost-tint-teal: rgba(111, 153, 145, 0.05);',
+  '  --frost-border-color: rgba(89, 89, 89, 0.14);',
+  '  --frost-shadow-control: 0 2px 6px rgba(0, 0, 0, 0.04);',
+  '  --frost-shadow-card: 0 6px 18px rgba(0, 0, 0, 0.06);',
+  '  --frost-shadow-overlay: 0 10px 28px rgba(0, 0, 0, 0.10);',
+  '  --frost-backdrop-base: #f3f3f3;',
+  '  --frost-backdrop-blue: rgba(138, 190, 243, 0.28);',
+  '  --frost-backdrop-lavender: rgba(191, 185, 250, 0.18);',
+  '  --frost-backdrop-teal: rgba(143, 229, 194, 0.10);',
+  '  --frost-tint-blue: rgba(92, 162, 233, 0.08);',
+  '  --frost-tint-lavender: rgba(168, 159, 249, 0.06);',
+  '  --frost-tint-teal: rgba(99, 213, 168, 0.05);',
+].join('\n');
+const FROST_DARK = [
+  '  --frost-blur-control: 12px;',
+  '  --frost-blur-card: 20px;',
+  '  --frost-blur-overlay: 28px;',
+  '  --frost-saturate-neutral: 100%;',
+  '  --frost-saturate-muted: 95%;',
+  '  --frost-surface-control: rgba(25, 25, 25, 0.64);',
+  '  --frost-surface-card: rgba(25, 25, 25, 0.72);',
+  '  --frost-surface-overlay: rgba(25, 25, 25, 0.80);',
+  '  --frost-surface-solid: #2a2a2a;',
+  '  --frost-hover-add: 0.04;   /* hover 填充增量 */',
+  '  --frost-active-add: 0.08;  /* active 填充增量 */',
+  '  --frost-transition: 120ms ease-out;',
+  '  --frost-border-color: rgba(255, 255, 255, 0.14);',
+  '  --frost-shadow-control: 0 2px 6px rgba(0, 0, 0, 0.12);',
+  '  --frost-shadow-card: 0 6px 18px rgba(0, 0, 0, 0.18);',
+  '  --frost-shadow-overlay: 0 10px 28px rgba(0, 0, 0, 0.24);',
+  '  --frost-backdrop-base: #191919;',
+  '  --frost-backdrop-blue: rgba(138, 190, 243, 0.16);',
+  '  --frost-backdrop-lavender: rgba(191, 185, 250, 0.10);',
+  '  --frost-backdrop-teal: rgba(143, 229, 194, 0.06);',
+  '  --frost-tint-blue: rgba(92, 162, 233, 0.10);',
+  '  --frost-tint-lavender: rgba(168, 159, 249, 0.08);',
+  '  --frost-tint-teal: rgba(99, 213, 168, 0.07);',
 ].join('\n');
 
 // ---------- 对齐辅助：声明列对齐，注释跟进 ----------
@@ -349,31 +327,30 @@ out.push(`/* ============================================================
    本文件由 scripts/gen-tokens.mjs 从 design-language（样式Token/设计系统.md）
    生成；frost-* 与字体栈为脚本内嵌模板片段。手工修改会被下次生成覆盖——
    改值请改设计文档后重跑生成器，或改生成器内的模板片段。
-   - 未定义/待确认的值（如 color-bg-6）不在此定义，引用即构建失败。
+   - 浅色真值：§1.2 统一表 Light 列。
    - 换肤协议见同目录 README.md：作用域 html[data-theme="<皮肤名>"]，
      运行时切换 document.documentElement.setAttribute("data-theme", ...)。
    ============================================================ */
 `);
 out.push('html[data-theme="default"] {');
 
-// 语义色（文档顺序分桶）
+// 语义色（文档顺序分桶，Light 列）
 const semComment = {
   brand: '1.2 高亮色（品牌色）',
-  text: '1.2 文本色',
+  text: '1.2 文本与链接',
   icon: '1.2 图标色',
   border: '1.2 边框色',
   bg: '1.2 背景色',
-  fill: '1.2 填充色',
+  fill: '1.2 填充与表格',
   functional: '1.2 功能色',
 };
 for (const b of ['brand', 'text', 'icon', 'border', 'bg', 'fill', 'functional']) {
   if (!buckets[b].length) continue;
   out.push('');
   out.push(`  /* ======== ${semComment[b]} ======== */`);
-  if (b === 'bg') out.push('  /* color-bg-6（带背景色卡片）规范中待确认，未定义前不得用于页面 */');
   out.push(...emitEntries(buckets[b].map((t) => ({
-    decl: `  --${t.name}: ${t.value};`,
-    comment: [t.use, t.base].filter(Boolean).join(' '),
+    decl: `  --${t.name}: ${t.light};`,
+    comment: t.use,
   }))));
 }
 
@@ -391,16 +368,16 @@ for (let i = 0; i < company.length; i += 3) {
   out.push('  ' + company.slice(i, i + 3).map((t) => `--${t.name}: ${t.value};`).join(' '));
 }
 
-// 图表色：默认 + 无障碍
+// 图表色：default 11 色 + accessible 6 色（Light 列）
 out.push('');
-out.push('  /* ======== 1.5 图表配色（默认基础方案 + 无障碍方案） ======== */');
-out.push(...emitEntries(chart.map((t) => ({
-  decl: `  --${t.name}: ${t.v1};`,
-  comment: t.base1,
+out.push('  /* ======== 1.5 图表配色（default 11 色序列 + accessible 6 色序列） ======== */');
+out.push(...emitEntries(chartDefault.map((t) => ({
+  decl: `  --${t.name}: ${t.light};`,
+  comment: t.use,
 }))));
-out.push(...emitEntries(chart.map((t) => ({
-  decl: `  --${t.name}-accessible: ${t.v2};`,
-  comment: t.base2,
+out.push(...emitEntries(chartAccessible.map((t) => ({
+  decl: `  --${t.name}-accessible: ${t.light};`,
+  comment: t.use,
 }))));
 
 // 代码配色：浅色 + 深色变体，每行 3 个
@@ -456,8 +433,8 @@ out.push(...emitEntries(shadows.map((t) => ({ decl: `  --${t.name}: ${t.val};`, 
 
 // 毛玻璃（模板片段）
 out.push('');
-out.push('  /* ======== 7.2 毛玻璃材质（过渡基线，仅材质扩展场景成套取用） ======== */');
-out.push(FROST);
+out.push('  /* ======== 7.2 毛玻璃材质（正式参数，仅材质扩展场景成套取用） ======== */');
+out.push(FROST_LIGHT);
 
 out.push('}');
 out.push('');
@@ -471,11 +448,14 @@ out.push('');
 const cssOut = out.join('\n');
 
 // ---------- token 计数（按产出统计，报告用） ----------
+const frostCount = (FROST_LIGHT.match(/--[\w-]+\s*:/g) || []).length;
 const counts = {
-  semantic: Object.values(buckets).flat().length,
+  semanticLight: semanticAll.length,
+  semanticDark: semanticAll.length,
   palette: palette.length,
   company: company.length,
-  chart: chart.length * 2,
+  chartLight: chartDefault.length + chartAccessible.length,
+  chartDark: chartDefault.length + chartAccessible.length,
   code: code.length * 2,
   spacing: spacing.length * 2,
   radius: radius.length + radiusExtra.length,
@@ -483,16 +463,20 @@ const counts = {
   fontStacks: (FONT_STACKS.match(/--[\w-]+\s*:/g) || []).length,
   fontSize: fontSizes.length * 2,
   fontWeight: fontWeight.length,
-  shadow: shadows.length,
-  frost: (FROST.match(/--[\w-]+\s*:/g) || []).length,
+  shadowLight: shadows.length,
+  shadowDark: shadows.length,
+  frostLight: frostCount,
+  frostDark: frostCount,
 };
-const totalTokens = Object.values(counts).reduce((a, b) => a + b, 0);
+const totalTokens = counts.semanticLight + counts.palette + counts.company + counts.chartLight
+  + counts.code + counts.spacing + counts.radius + counts.border + counts.fontStacks
+  + counts.fontSize + counts.fontWeight + counts.shadowLight + counts.frostLight;
 
 // ---------- design-language.md §1 速查表（GEN 标记之间整体重写） ----------
 const GEN_START = '<!-- GEN:TOKEN-TABLE START (由 scripts/gen-tokens.mjs 生成，勿手改) -->';
 const GEN_END = '<!-- GEN:TOKEN-TABLE END -->';
 const pick = (arr, name, key = 'name') => arr.find((t) => t[key] === name);
-// 324 = 337 声明 − 13 个紧凑档覆盖（同名 token 二次赋值）；与旧手写版口径一致
+// 324 口径随统一表演进：default.css 声明数 − 紧凑档覆盖（同名 token 二次赋值）
 const uniqueTokens = totalTokens - spacing.length;
 const genTable = [
   GEN_START,
@@ -501,15 +485,15 @@ const genTable = [
   '',
   '| 类别 | token 形态 | 示例 |',
   '| --- | --- | --- |',
-  `| 品牌色 | \`--color-brand(-hover/-active/...)\` | \`--color-brand: ${pick(buckets.brand, 'color-brand')?.value}\` |`,
-  `| 文本色 | \`--color-text-*\` | \`--color-text-primary: ${pick(buckets.text, 'color-text-primary')?.value}\` |`,
+  `| 品牌色 | \`--color-brand(-hover/-active/...)\` | \`--color-brand: ${pick(buckets.brand, 'color-brand')?.light}\` |`,
+  `| 文本色 | \`--color-text-*\`、\`--color-link-*\` | \`--color-text-primary: ${pick(buckets.text, 'color-text-primary')?.light}\` |`,
   '| 图标色 | `--color-icon-*` | `--color-icon-secondary: #777777` |',
   '| 边框色 | `--color-border(-hover/-focus/...)` | `--color-border: #c9c9c9`（gray-20） |',
-  '| 背景色 | `--color-bg-1..5`、`--color-bg-mask` | `--color-bg-1: #f3f3f3`（页面背景） |',
+  '| 背景色 | `--color-bg-1..6`、`--color-bg-mask` | `--color-bg-1: #f3f3f3`（页面背景） |',
   '| 填充色 | `--color-hover/-select/-fill*` | `--color-select: #e6f2fd`（brand-05） |',
-  '| 功能色 | `--color-error/-alert/-warning/-success/-info/-none(+*-subtle)` | `--color-success: #09aa71` |',
+  '| 功能色 | `--color-error/-alert/-warning/-success/-info*/-none(+*-subtle/-subtler)` | `--color-success: #09aa71` |',
   '| 基础色板 | `--{rose|red|orange|yellow|green|mint|cyan|blue|indigo|purple|pink|brand|gray}-{05..90}` | `--brand-50` |',
-  '| 图表色 | `--color-chart-1..6(+accessible)` | `--color-chart-1: #2070f3` |',
+  '| 图表色 | `--color-chart-1..11(+accessible)` | `--color-chart-1: #2070f3` |',
   `| 间距 | \`--space-size-4..80\`（紧凑档 \`data-density="compact"\` 覆盖） | \`--space-size-16: ${pick(spacing, 'space-size-16')?.reg}px\` |`,
   '| 圆角 | `--radius-size-{small|normal|medium|big|big1|big2|full}` | `--radius-size-normal: 4px` |',
   '| 边框宽/线型 | `--border-width-{none|normal|medium|independent}`、`--border-style-*` | `--border-width-medium: 2px` |',
@@ -524,52 +508,40 @@ const genTable = [
 
 // ---------- 组装 dark.css ----------
 // 全量皮肤：data-theme="dark" 时 default.css 全部定义失效，深色皮肤必须提供
-// default.css 的全部 token。非颜色组（间距/圆角/边框/字体/字号/字重/frost）与
-// default 同值原样复制；颜色组取 §1.2D Dark 列 + 工程回填。
-// 图表色：深色 11 色序列（§1.2D 图表序列组；浅色 accessible 不跨主题套用）。
-const darkBackfillNames = new Set(DARK_BACKFILL.map((t) => t.name));
-const darkDuplicate = darkRows.filter((r) => darkBackfillNames.has(r.name));
-if (darkDuplicate.length) {
-  problems.push(`[dark] backfill conflicts with §1.2D values: ${darkDuplicate.map((r) => r.name).join(', ')}`);
-}
+// default.css 的全部 token。非颜色组（间距/圆角/边框/字体/字号/字重）与 default
+// 同值原样复制；颜色真值全部来自 §1.2 统一表 Dark 列（浅色变更与深色正式值同表维护）。
+// 图表色：default 11 色 + accessible 6 色均取 Dark 列；阴影取 Dark alpha；frost 为深色材质。
 const darkCss = [];
 darkCss.push(`/* ============================================================
    皮肤：dark（深色皮肤）
    ============================================================
-   本文件由 scripts/gen-tokens.mjs 从 design-language（样式Token/设计系统.md §1.2D）
+   本文件由 scripts/gen-tokens.mjs 从 design-language（样式Token/设计系统.md）
    生成；手工修改会被下次生成覆盖——改值请改设计文档后重跑生成器。
-   - 颜色真值：§1.2D Dark 列。
-   - 以下键为工程回填（§1.2D 未覆盖，设计师补齐后从生成器 DARK_BACKFILL 删除）：
-     ${DARK_BACKFILL.map((t) => t.name).join(', ')}
-   - 深色阴影 / frost 材质参数 / 深色 accessible 图表序列：设计师尚未提供，
-     沿用浅色值过渡（见 dark-theme-intake.md 缺口清单），非深色最终值。
+   - 颜色真值：§1.2 统一表 Dark 列（与 Light 列同表成对维护）。
+   - 深色阴影取 §6.2 Dark alpha；frost 材质为 §7 深色正式参数。
    ============================================================ */
 `);
 darkCss.push('html[data-theme="dark"] {');
 darkCss.push('');
-darkCss.push('  /* ======== 1.2D 深色语义色（§1.2D Dark 列，按文档分组；图表序列见下） ======== */');
-darkCss.push(...emitEntries(darkRows
-  .filter((t) => !/^color-chart-\d+$/.test(t.name))
-  .map((t) => ({
-    decl: `  --${t.name}: ${t.value};`,
-    comment: [t.use, t.group].filter(Boolean).join(' · '),
+darkCss.push('  /* ======== 1.2 深色语义色（统一表 Dark 列，按文档分组） ======== */');
+for (const b of ['brand', 'text', 'icon', 'border', 'bg', 'fill', 'functional']) {
+  if (!buckets[b].length) continue;
+  darkCss.push(`  /* ======== ${semComment[b]} ======== */`);
+  darkCss.push(...emitEntries(buckets[b].map((t) => ({
+    decl: `  --${t.name}: ${t.dark};`,
+    comment: t.use,
   }))));
+}
 darkCss.push('');
-darkCss.push('  /* ======== 工程回填（§1.2D 未覆盖，桥接层无兜底消费） ======== */');
-darkCss.push(...emitEntries(DARK_BACKFILL.map((t) => ({
-  decl: `  --${t.name}: ${t.value};`,
-  comment: t.why,
+darkCss.push('  /* ======== 1.5 深色图表序列（default 11 色 + accessible 6 色，统一表 Dark 列） ======== */');
+darkCss.push(...emitEntries(chartDefault.map((t) => ({
+  decl: `  --${t.name}: ${t.dark};`,
+  comment: t.use,
 }))));
-darkCss.push('');
-darkCss.push('  /* ======== 1.2D 深色图表序列（11 色；浅色 accessible 不跨主题） ======== */');
-const darkChart = darkRows.filter((t) => /^color-chart-\d+$/.test(t.name));
-darkCss.push('  ' + darkChart.map((t) => `--${t.name}: ${t.value};`).join(' '));
-
-// 深色图表 accessible 变体未提供（§1.2D 明确声明），沿用浅色值过渡并标注；
-// 浅色值从本脚本已解析的 chart 集合取（v2 = accessible 值）。
-darkCss.push('');
-darkCss.push('  /* ======== 图表 accessible 序列（深色未提供，沿用浅色值过渡） ======== */');
-darkCss.push('  ' + chart.map((t) => `--${t.name}-accessible: ${t.v2};`).join(' '));
+darkCss.push(...emitEntries(chartAccessible.map((t) => ({
+  decl: `  --${t.name}-accessible: ${t.dark};`,
+  comment: t.use,
+}))));
 
 // 非颜色组与 default 完全同值（data-theme 切换后 default.css 失效，深色皮肤必须全量提供；
 // 深色阴影/frost 材质设计师未给，沿用浅色值并已在文件头声明）。
@@ -612,13 +584,13 @@ darkCss.push('');
 darkCss.push('  /* ======== 5.3 字重（同 default） ======== */');
 darkCss.push(...emitEntries(fontWeight.map((t) => ({ decl: `  --${t.name}: ${t.weight};`, comment: t.use }))));
 darkCss.push('');
-darkCss.push('  /* ======== 6.2 阴影（深色未提供，沿用浅色值过渡） ======== */');
-darkCss.push(...emitEntries(shadows.map((t) => ({ decl: `  --${t.name}: ${t.val};`, comment: t.level }))));
+darkCss.push('  /* ======== 6.2 阴影（同几何，Dark alpha） ======== */');
+darkCss.push(...emitEntries(shadows.map((t) => ({ decl: `  --${t.name}: ${t.darkVal};`, comment: t.level }))));
 darkCss.push('');
-darkCss.push('  /* ======== 7.2 毛玻璃材质（深色材质未提供，沿用浅色基线过渡） ======== */');
-darkCss.push(FROST);
+darkCss.push('  /* ======== 7.2 毛玻璃材质（深色正式参数） ======== */');
+darkCss.push(FROST_DARK);
 darkCss.push('');
-darkCss.push('  /* ======== 深色混色基底（桥接层 light-N 色阶 color-mix 派生底色；取 §1.2D bg-2 dark 容器表面色） ======== */');
+darkCss.push('  /* ======== 深色混色基底（桥接层 light-N 色阶 color-mix 派生底色；统一表 bg-2 Dark 容器表面色） ======== */');
 darkCss.push('  --ux-mix-base: #191919;');
 darkCss.push('}');
 darkCss.push('');
@@ -631,14 +603,16 @@ darkCss.push('}');
 darkCss.push('');
 const darkCssOut = darkCss.join('\n');
 
-// 深色皮肤完整性：bridge/base 消费的关键键必须存在（缺即生成失败，fail-fast）
-const darkDefined = new Set([...darkRows.map((r) => `--${r.name}`), ...DARK_BACKFILL.map((t) => `--${t.name}`)]);
+// 深色皮肤完整性：bridge/base 消费的关键键必须存在（缺即生成失败，fail-fast）；
+// 统一表 Dark 列与 Light 列同集合来源（同一批行解析出 light/dark 两值），全量性天然成立
+const darkDefined = new Set(semanticAll.map((r) => `--${r.name}`));
 const DARK_REQUIRED = [
   '--color-brand', '--color-text-primary', '--color-bg-1', '--color-bg-4', '--color-bg-mask',
   '--color-border', '--color-border-hover', '--color-border-focus', '--color-border-separator',
   '--color-error', '--color-error-subtle', '--color-warning', '--color-warning-subtle',
   '--color-success', '--color-success-subtle', '--color-info', '--color-info-subtle',
-  ...DARK_BACKFILL.map((t) => `--${t.name}`),
+  '--color-hover', '--color-select', '--color-table-header', '--color-table-zebra',
+  '--color-fill', '--color-fill-subtle', '--color-fill-disabled', '--color-fill-disabled-subtle',
 ];
 const darkMissing = DARK_REQUIRED.filter((k) => !darkDefined.has(k));
 if (darkMissing.length) {
@@ -695,9 +669,7 @@ if (refNext === null) {
 writeFileSync(refPath, refNext, 'utf8');
 
 console.log('RESULT: OK');
-console.log(`TOKENS: ${totalTokens}`);
-console.log(`DARK_TOKENS: ${darkRows.length + DARK_BACKFILL.length} (1.2D dark values: ${darkRows.length}, backfill: ${DARK_BACKFILL.length}, skipped: ${darkSkippedCount})`);
-if (darkSkippedCount) console.log(`DARK_SKIPPED: ${darkSkippedList.join(' | ')}`);
+console.log(`TOKENS: ${totalTokens} (semantic: ${semanticAll.length}, palette: ${palette.length}, company: ${company.length}, chart: ${chartDefault.length + chartAccessible.length}×2, code: ${code.length * 2}, shadow: ${shadows.length}×2, frost: ${frostCount}×2)`);
 for (const [k, v] of Object.entries(counts)) console.log(`  ${k}: ${v}`);
 console.log(`OUT_CSS: ${cssPath}`);
 console.log(`OUT_DARK: ${darkPath}`);

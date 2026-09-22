@@ -1,5 +1,6 @@
 # 深色主题补齐指南（给设计师）
 
+> **本文档任务已全部完成，转为存档**：设计师 2026-09-22 交付统一双主题规范（`Token｜用途｜Light｜Dark` 统一表），真值源已完成集成——浅色／深色在 `design-language/样式Token/设计系统.md` §1.2 成对维护，工程 dark 皮肤全部由统一表生成，**无工程回填项**。下文 §B 清单与回填表仅作历史记录。
 > 受众：design-language 设计侧。目标：在 design-language（真值源 `design-language/样式Token/设计系统.md`）基础上补齐深色 UI 色表，使工程侧能生成完整深色皮肤。
 > 工程侧对接人拿到本文档后可自行判断补齐进度；**设计师不碰代码**。
 
@@ -66,46 +67,48 @@
 
 ## B. 缺什么（逐组清单）
 
-> **状态更新（2026-09-21）**：设计师已交付深色参数正式表（经 `design-language-new` 审阅后集成进真值源 §1.2D）。下表 1–5、7 组 + 深色图表 11 色序列 + 业务告警状态色 **已补齐并生成 dark.css**（94 个 §1.2D 真值 + 10 个工程回填，gen-tokens 一键再生）。**仍缺**的项见下表剩余行 + 表后"工程回填待设计师正式化"清单。
+> **状态更新（2026-09-22，终态）**：设计师交付统一双主题规范并已集成——全部 12 组 + 图表 default 11 色 / accessible 6 色双主题 + 业务告警状态色**两主题齐值**（97 语义键，§1.2 统一表）。**全部缺口清零，工程回填 10 项退役**（设计师正式值与回填值级一致）。
 
 | # | Token 组 | 需补项 | 状态 |
 |---|---|---|---|
-| 1 | 品牌色 | brand 5 态 | ✅ §1.2D 已补（disabled 深色取 brand-70，与浅色不同——派生态显式给值的范例） |
-| 2 | 文本色 | 5 级 + link 6 项 + on/inverse-disabled | ✅ §1.2D 已补 |
-| 3 | 图标色 | 9 项 | ✅ §1.2D 已补 |
-| 4 | 边框色 | 6 项 + separator ×2 | ✅ §1.2D 已补（separator 带 alpha） |
-| 5 | 背景色 | bg-1..5 + mask + bg-6 dark | ✅ §1.2D 已补（bg-6 浅色仍待确认，Dark 已明确） |
-| 6 | 填充色 | 8 项 | ❌ 未提供——工程回填过渡（见下） |
-| 7 | 功能色 | 5 组 ×2 全交互态 | ✅ §1.2D 已补（含 subtle/subtler 分级） |
-| 8 | 表格色 | header / zebra / 边框 3 项 | ❌ 未提供——工程回填过渡（见下） |
-| 9 | 投影 | shadow-1..6 深色值 | ❌ 未提供——dark.css 暂沿用浅色值（文件头已标注） |
-| 10 | 基础色板 | 深色变体裁决 | ⏸ 待设计师裁决（dark.css 暂用浅色板，主题无关组） |
-| 11 | 混色基底 | `--ux-mix-base` 深色值 | ✅ 已按 §1.2D bg-2 dark（#191919）接入（设计师如另给值可替换） |
-| 12 | frost 深色材质 | 深色材质参数组 | ❌ 未提供——dark.css 暂沿用浅色基线（文件头已标注） |
-| 附 | 图表深色序列 | — | ✅ §1.2D 已补 11 色；深色 accessible 未提供，暂沿用浅色 accessible |
-| 附 | 业务告警状态色 | urgent/primary/secondary/success/running/none | ✅ §1.2D 已补 6 项 |
+| 1 | 品牌色 | brand 5 态 | ✅ 统一表齐值（disabled 深色取 brand-70） |
+| 2 | 文本色 | 5 级 + link 6 项 + on/inverse-disabled | ✅ 统一表齐值（link 族浅色同步正式启用） |
+| 3 | 图标色 | 9 项 | ✅ 统一表齐值 |
+| 4 | 边框色 | 7 项含 border-active | ✅ 统一表齐值（separator 带 alpha） |
+| 5 | 背景色 | bg-1..6 + mask | ✅ 统一表齐值（bg-6 浅色同步正式化） |
+| 6 | 填充色 | 8 项 | ✅ 统一表齐值（回填退役） |
+| 7 | 功能色 | 全交互态 + subtle/subtler | ✅ 统一表齐值（info 双轨体系 + warning-strong 转正） |
+| 8 | 表格色 | header / zebra | ✅ 统一表齐值（回填退役） |
+| 9 | 投影 | shadow-1..6 深色值 | ✅ §6.2 Dark alpha 列（几何同浅色） |
+| 10 | 基础色板 | 深色变体裁决 | ✅ 设计师裁决：主题无关，两主题同值（统一规范 §9） |
+| 11 | 混色基底 | `--ux-mix-base` 深色值 | ✅ 统一规范 §1.4（Light #FFFFFF / Dark #191919） |
+| 12 | frost 深色材质 | 深色材质参数组 | ✅ §7 正式化（中性深灰 surface + Dark alpha 阴影 + 色板端点染色） |
+| 附 | 图表深色序列 | — | ✅ default 11 色 + accessible 6 色双主题齐值 |
+| 附 | 业务告警状态色 | urgent/primary/secondary/success/running/none | ✅ 统一表齐值 6 项 |
 
-### 工程回填待设计师正式化（补齐后从生成器 DARK_BACKFILL 删除）
+### 工程回填（已全部退役，仅存档）
 
-| Token | 现回填值 | 取值理由 |
+设计师正式值与回填值级一致，10 项已从生成器 DARK_BACKFILL 删除：
+
+| Token | 回填值（已退役） | 设计师正式值（统一表 Dark 列） |
 |---|---|---|
-| `color-hover` | rgba(255,255,255,0.06) | 浅色 gray-90/5% 的深色镜像 |
-| `color-select` | rgba(46,134,222,0.20) | brand-hover 20% 透明叠加 |
-| `color-table-header` | rgba(255,255,255,0.06) | 与 color-hover 同基 |
-| `color-table-zebra` | rgba(255,255,255,0.03) | 浅色 gray-40/5% 深色镜像 |
-| `color-fill` | rgba(255,255,255,0.06) | 与 color-hover 同基 |
-| `color-fill-subtle` | #2a2a2a | 取 bg-3 dark |
-| `color-fill-disabled` | #393939 | 取 bg-4 dark |
-| `color-fill-disabled-subtle` | rgba(255,255,255,0.06) | 与 color-hover 同基 |
-| `color-info` | #2070f3 | §1.2D 改用 color-info-primary 命名；旧键双主题同值 |
-| `color-info-subtle` | #1f55b5 | 取 §1.2D color-info-primary-subtle Dark（blue-60） |
+| `color-hover` | rgba(255,255,255,0.06) | 同值 |
+| `color-select` | rgba(46,134,222,0.20) | 同值 |
+| `color-table-header` | rgba(255,255,255,0.06) | 同值 |
+| `color-table-zebra` | rgba(255,255,255,0.03) | 同值 |
+| `color-fill` | rgba(255,255,255,0.06) | 同值 |
+| `color-fill-subtle` | #2a2a2a | 同值 |
+| `color-fill-disabled` | #393939 | 同值 |
+| `color-fill-disabled-subtle` | rgba(255,255,255,0.06) | 同值 |
+| `color-info` | #2070f3 | 同值（统一表显式收录 color-info 键） |
+| `color-info-subtle` | #1f55b5 | 同值 |
 
-### 新版规范（design-language-new）审阅结论——以下改动未采纳
+### 新版规范（design-language-new）审阅结论——后续状态
 
-集成时只收 §1.2D 深色表，新版其余改动**不采纳**，理由供设计师参考：
+> 上轮"不采纳"的 5 组命名倒退、frost 清空、typo 问题，设计师在 2026-09-22 统一双主题规范中已全部修正：命名零倒退（shadow1/radius-size-infinite/gray-0White/font-family-other 均 0 处）、frost 正式化、`color-info-seconday`→`secondary` 已统一迁移、无 typo。该节历史理由仅存档。
 
 1. **token 命名倒退 5 组**（`shadow1`/`shadow2-l`/`radius-size-infinite`/`gray-0White`/`font-family-other`）：工程侧 2026-09-16 已按 W3C DTCG 规范对齐为 kebab-case（`shadow-1`/`shadow-2-left`/`radius-size-full`/`gray-0`/`font-family-numeric`），全套工程资产（桥接层、组件文档、生成器）已消费该命名，倒退成本高且违反命名契约（见 00索引 头部"新增 token 命名遵循 W3C DTCG 惯例"）。
-2. **§7 frost 数值清空**（"待补齐"）：G 1.5.1 已验证基线是 2026-09-16 设计师答复确认的回填值，清空丢失已验证数据。
+2. **§7 frost 数值清空**（"待补齐"）：G 1.5.1 已验证基线是 2026-09-16 设计师答复确认的回填值，清空丢失已验证数据。（现已正式化，见 §B 组 12）
 3. **拼写**：§1.2 浅色表 `color-erroe-subtle` 为 typo（§1.2D 用的是正确的 `color-error-subtle`），建议修正；`color-info-seconday`（secondary）为原图拼写，建议设计师统一迁移为 `secondary`（§1.2D 自身也如此建议）。
 4. `AI生成规则.md`/`兼容与迁移.md` 引用的原 Skill 资产（检查脚本、i18n 示例链）不在摘录包内，且 radius 命名与第 1 条冲突，未集成。
 
@@ -118,6 +121,7 @@
 3. 预览 `document.documentElement.setAttribute('data-theme', 'dark')` 后，控制台无未定义 token 引用报错（build 门禁 fail-fast 通过）；
 4. 浏览器冒烟：页面背景/文本/按钮/表格/弹层深色正确，无"白底黑字残留"或对比度异常区域。
 
-> **2026-09-21 验收记录**：§C-1 部分达成（1–5、7 组齐备；6/8/9/12 组以工程回填或沿用浅色过渡）；§C-2/3/4 **已通过**（gen-tokens 生成 dark.css 104 token 无报错；pilot-dark 试点 build OK + CDP 冒烟 20/20 PASS，含 EP 组件跟随与白底残留断言）。剩余待办：§B 回填表 10 项 + 阴影/frost/色板深色正式化。
+> **2026-09-21 验收记录**：§C-1 部分达成（1–5、7 组齐备；6/8/9/12 组以工程回填或沿用浅色过渡）；§C-2/3/4 **已通过**（gen-tokens 生成 dark.css 104 token 无报错；pilot-dark 试点 build OK + CDP 冒烟 20/20 PASS，含 EP 组件跟随与白底残留断言）。
+> **2026-09-22 验收记录（终态，全部达成）**：§C-1 ✅（统一双主题规范集成，12 组全齐值，无缺组）；§C-2 ✅（gen-tokens 从统一表生成，TOKENS 388，无缺项报错，DARK_BACKFILL 全退役）；§C-3 ✅（build 门禁 fail-fast 通过）；§C-4 ✅（pilot-dual 试点 build OK + CDP 冒烟 52/52 PASS：浅色 subtle 5 键新值 / chart 浅色新序列 / frost 校准生效，dark bg-1=#000000、EP 组件跟随、无白底残留、往返干净、frost 深色材质与阴影 Dark alpha 断言通过）。**深色主题补齐任务闭环。**
 
 > 设计师自验捷径：LLM 产出值表后，先自查 §C-1（逐组对照 §B 无缺组），再交给工程侧跑 §C-2~4——门禁与冒烟在你这边没有运行环境，设计环节做到 §C-1 即闭环。

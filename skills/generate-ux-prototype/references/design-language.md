@@ -7,19 +7,19 @@
 
 <!-- GEN:TOKEN-TABLE START (由 scripts/gen-tokens.mjs 生成，勿手改) -->
 
-token 全量定义在皮肤文件 `src/assets/themes/default.css`（324 个自定义属性，由 `scripts/gen-tokens.mjs` 从设计文档生成），命名即 design-language 规范名，无前缀：
+token 全量定义在皮肤文件 `src/assets/themes/default.css`（375 个自定义属性，由 `scripts/gen-tokens.mjs` 从设计文档生成），命名即 design-language 规范名，无前缀：
 
 | 类别 | token 形态 | 示例 |
 | --- | --- | --- |
 | 品牌色 | `--color-brand(-hover/-active/...)` | `--color-brand: #0067d1` |
-| 文本色 | `--color-text-*` | `--color-text-primary: #191919` |
+| 文本色 | `--color-text-*`、`--color-link-*` | `--color-text-primary: #191919` |
 | 图标色 | `--color-icon-*` | `--color-icon-secondary: #777777` |
 | 边框色 | `--color-border(-hover/-focus/...)` | `--color-border: #c9c9c9`（gray-20） |
-| 背景色 | `--color-bg-1..5`、`--color-bg-mask` | `--color-bg-1: #f3f3f3`（页面背景） |
+| 背景色 | `--color-bg-1..6`、`--color-bg-mask` | `--color-bg-1: #f3f3f3`（页面背景） |
 | 填充色 | `--color-hover/-select/-fill*` | `--color-select: #e6f2fd`（brand-05） |
-| 功能色 | `--color-error/-alert/-warning/-success/-info/-none(+*-subtle)` | `--color-success: #09aa71` |
+| 功能色 | `--color-error/-alert/-warning/-success/-info*/-none(+*-subtle/-subtler)` | `--color-success: #09aa71` |
 | 基础色板 | `--{rose|red|orange|yellow|green|mint|cyan|blue|indigo|purple|pink|brand|gray}-{05..90}` | `--brand-50` |
-| 图表色 | `--color-chart-1..6(+accessible)` | `--color-chart-1: #2070f3` |
+| 图表色 | `--color-chart-1..11(+accessible)` | `--color-chart-1: #2070f3` |
 | 间距 | `--space-size-4..80`（紧凑档 `data-density="compact"` 覆盖） | `--space-size-16: 16px` |
 | 圆角 | `--radius-size-{small|normal|medium|big|big1|big2|full}` | `--radius-size-normal: 4px` |
 | 边框宽/线型 | `--border-width-{none|normal|medium|independent}`、`--border-style-*` | `--border-width-medium: 2px` |
