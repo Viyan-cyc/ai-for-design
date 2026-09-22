@@ -20,9 +20,9 @@ version: 0.1.0
 ## 工作流
 
 ```
-⓪ 确认 node  →  ① ensure-env  →  ② init 建工程  →  ③ 写 .vue 页面  →  ④ build 门禁  →  ⑤ 交付
-  (没有就装)                                        ↑             │
-                                                    └── 验证未过 ──┘  循环至通过
+⓪ 确认 node  →  ① ensure-env  →  ② init 建工程  →  ③ 写 .vue 页面  →  ③.5 fetch-icons  →  ④ build 门禁  →  ⑤ 交付
+  (没有就装)                                             ↑                        │
+                                                        └── 验证未过 ────────────┘  循环至通过
 ```
 
 脚本都在本 skill 的 `scripts/` 下，**除 ⓪ 的安装脚本外都要 node 才能跑**。
@@ -145,6 +145,25 @@ main.js、api 服务层示例、主题三件套、starter 页面）。
   响应式栅格、宽度纪律、@media 口径、表格自适应）；断点与窗口适配口径见
   `references/design-language.md` §3.3。
 - 交付前自查：1280 与 1024 视口下无横向溢出、无内容裁切（预览窗口缩到该宽度看一眼）。
+
+### ③.5 `fetch-icons.mjs` —— 图标检索替换（内网环境，build 前执行）
+
+```bash
+node scripts/fetch-icons.mjs --dir "<工程目录>" [--base-url <url>] [--timeout <ms>]
+```
+
+扫描 `src/` 下所有 `.vue`/`.js` 中 `@element-plus/icons-vue` 的实际 import，去重后批量请求
+IconPlus 三步 API（`getConfig → getIconInfo → getIcon×2`），命中的图标生成深浅两套 SVG 组件
+文件 + barrel `src/assets/icons/index.js`。预览 moduleCache 自动合并 barrel 与 EP 图标：
+**命中 → 公司 SVG（data-theme 纯 CSS 切换深浅），未命中 → EP 原样**。
+
+- **执行时机**：写完页面代码后、build 前执行。页面照常写 `import { Search } from '@element-plus/icons-vue'`，
+  fetch-icons 负责把命中的图标替换为公司图标，源码零改动。
+- **默认 base-url**：`https://octo.hdesign.huawei.com`（可通过 `--base-url` 覆盖）
+- **默认超时**：10s（单轮批量，超时整体 FAIL 不重试，已落盘的命中文件保留，重跑幂等）
+- `RESULT: OK` + `RESOLVED: <n>, MISSED: <m>` → 继续走 ④ build
+- `RESULT: FAIL |` → 网络问题，报给用户（内网环境/服务不可达）；已落盘的命中文件仍有效
+- **miss 是正常的**：不是所有 EP 图标名都能在公司库命中，未命中的保持 EP 原样，页面天然完整
 
 ### ④ `build.mjs` —— 编译门禁（真实编译，不是 lint）
 
