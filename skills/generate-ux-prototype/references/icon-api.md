@@ -116,10 +116,11 @@
 | url | string | 是 | 图标 url，从 getIconInfo 返回结果中获取，支持逗号分隔批量获取 |
 | size | string | 是 | 图标尺寸，从 config.size 的 key 中选取 |
 | style | string | 是 | 图标风格，从 config.style 的 value 中选取 |
-| color | string | 是 | 颜色 ID，从 config.colors 中筛选后取 id |
+| color | string | 是 | 颜色 ID，从 config.colors 中筛选后取 id, 若需要深色模式的颜色则从config.dark_colors中筛选后取id |
 | name | string | 否 | 图标名称，从 getIconInfo 返回结果中获取 |
 | category | string | 否 | 图标类别，从 getIconInfo 返回结果中获取 |
 | fileType | string | 否 | 文件类型，默认 svg，可选 png |
+| theme | string | 否 | 图标的深浅模式，默认light，可选 dark |
 
 ### 响应
 
