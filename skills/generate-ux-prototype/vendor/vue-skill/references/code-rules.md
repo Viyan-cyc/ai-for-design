@@ -41,7 +41,7 @@ import { ElButton, ElTable, ElForm, ElFormItem } from 'element-plus'
 
 ### 规则 2.2：不在业务页面覆盖 EP 组件样式
 
-组件主题已由项目主题层（`src/assets/themes/bridge.css`）集中映射到 GTS Token——
+组件主题已由项目主题层（`src/assets/themes/bridge.less`）集中映射到 GTS Token——
 `--el-color-primary ← --color-brand` 等全部对位已完成。**页面禁止再做任何 `--el-*`
 覆盖或 `:deep` 主题改写**；组件状态（悬停/按下/禁用/加载）由桥接层自动获得，页面不重绘状态色。
 

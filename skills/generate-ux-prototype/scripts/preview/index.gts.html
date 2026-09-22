@@ -20,13 +20,11 @@
     <link rel="stylesheet" href="./public/library/element-plus.index.css">
     <link rel="stylesheet" href="./public/library/vue-echarts.style.css">
 
-    <!-- ═══ 2. 主题（样式文件即交付件，位于 src/assets/themes/）═══ -->
-    <link rel="stylesheet" href="./src/assets/themes/base.css">
-    <link rel="stylesheet" href="./src/assets/themes/bridge.css">
-    <link rel="stylesheet" href="./src/assets/themes/default.css">
-    <!-- ▼▼ 换肤插槽：新皮肤 css 放入 src/assets/themes/ 后在此追加 link ▼▼ -->
-    <link rel="stylesheet" href="./src/assets/themes/dark.css">
-    <!-- ▲▲ 换肤插槽结束 ▲▲ -->
+    <!-- ═══ 2. 主题（样式文件即交付件，位于 src/assets/themes/*.less）═══
+         主题不走 <link>：file:// 下浏览器拦截 less 的 XHR 取源，改由下方 boot
+         阶段用已入场的 less.min.js 对 preview-data.js 里的源文本 less.render
+         编译后注入（与 SFC <style lang="less"> 同一编译器）。themes/ 下所有
+         .less 自动发现加载，新皮肤放入即生效，无需注册。 -->
 
     <!-- ═══ 3. 页面骨架样式（FIXED）═══ -->
     <style>
@@ -121,6 +119,13 @@
                     if (type === ".css") {
                         return Promise.resolve(getContentData()).then(addStyle).then(function () { return {}; });
                     }
+                    if (type === ".less") {
+                        // 组件显式 import 的 .less；主题 themes/*.less 走上方 boot 注入通道，不经此处
+                        return Promise.resolve(getContentData())
+                            .then(function (text) { return less.render(String(text)); })
+                            .then(function (out) { addStyle(out.css); })
+                            .then(function () { return {}; });
+                    }
                     if (type === ".json") {
                         // ESM 语义：default import 拿到解析后的对象（剥 BOM —— Windows 编辑器常带）
                         return Promise.resolve(getContentData()).then(function (text) {
@@ -145,16 +150,30 @@
                 },
             };
 
-            var app = Vue.createApp({
-                components: {
-                    UxRoot: Vue.defineAsyncComponent(function () {
-                        return window["vue3-sfc-loader"].loadModule("/src/App.vue", options);
-                    }),
-                },
-                template: "<UxRoot />",
+            // 主题先行：themes/ 下全部 .less 在挂载前经 less.render 编译注入（与 SFC
+            // <style lang="less"> 同一编译器），避免无主题闪屏。file:// 下 less 无法
+            // 自行 XHR 取源，故从 preview-data.js 的源码映射取文本。base/bridge 先于
+            // 皮肤由字母序天然满足，皮肤间按 data-theme 分域互不依赖。
+            var THEME_DIR = "/src/assets/themes/";
+            var themePaths = Object.keys(SRC)
+                .filter(function (p) { return p.indexOf(THEME_DIR) === 0 && p.slice(-5) === ".less"; })
+                .sort();
+            Promise.all(themePaths.map(function (p) {
+                return less.render(SRC[p]).then(function (out) { addStyle(out.css); });
+            })).then(function () {
+                var app = Vue.createApp({
+                    components: {
+                        UxRoot: Vue.defineAsyncComponent(function () {
+                            return window["vue3-sfc-loader"].loadModule("/src/App.vue", options);
+                        }),
+                    },
+                    template: "<UxRoot />",
+                });
+                app.use(ElementPlus, { locale: ElementPlusLocaleZhCn });
+                app.mount("#app");
+            }).catch(function (e) {
+                showBootError("主题编译失败：" + ((e && e.message) || e));
             });
-            app.use(ElementPlus, { locale: ElementPlusLocaleZhCn });
-            app.mount("#app");
         })();
     </script>
 </body>

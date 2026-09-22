@@ -25,7 +25,7 @@
 
 - 所有颜色/间距/圆角/字号/投影一律走 Token：`var(--color-brand)`、`var(--space-size-16)`。
 - token 词汇速查在 `../references/design-language.md`（生成表，勿改）；数值真值在设计源文档。
-- 组件主题已由桥接层映射（bridge.css），页面不写 `--el-*`、不写 `:root`、不深度覆盖 EP 样式。
+- 组件主题已由桥接层映射（bridge.less），页面不写 `--el-*`、不写 `:root`、不深度覆盖 EP 样式。
 
 ## 升级路径
 

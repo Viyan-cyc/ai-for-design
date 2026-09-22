@@ -18,7 +18,7 @@
 //                   custom props must be prefixed --page-* (design tokens live in
 //                   src/assets/themes/); var(--color-*)-style token uses must be
 //                   defined; hardcoded hex -> WARN
-//   7. Theme check — bridge.css + themes/default.css present
+//   7. Theme check — bridge.less + themes/default.less present
 //
 // Usage:
 //   node build.mjs --dir "{artifact-folder}/{slug}"
@@ -142,8 +142,6 @@ const REQUIRED_HTML = [
   '<script src="./public/library/less.min.js"></script>',
   '<script src="./public/library/vue3-sfc-loader.js"></script>',
   '<link rel="stylesheet" href="./public/library/vue-echarts.style.css">',
-  '<link rel="stylesheet" href="./src/assets/themes/base.css">',
-  '<link rel="stylesheet" href="./src/assets/themes/bridge.css">',
   '<script src="./preview-data.js"></script>',
 ];
 for (const line of REQUIRED_HTML) {
@@ -151,13 +149,13 @@ for (const line of REQUIRED_HTML) {
 }
 if (!/<html[^>]*data-theme=/.test(html)) fail('preview loader broken: <html> has no data-theme attribute');
 
-for (const p of ['App.vue', 'main.js', join('assets', 'themes', 'base.css'), join('assets', 'themes', 'bridge.css'), join('assets', 'themes', 'default.css')]) {
+for (const p of ['App.vue', 'main.js', join('assets', 'themes', 'base.less'), join('assets', 'themes', 'bridge.less'), join('assets', 'themes', 'default.less')]) {
   if (!existsSync(join(srcDir, p))) fatal(`deliverable incomplete, missing: src/${p}`);
 }
 
 const vueFiles = walkFiles(srcDir, ['.vue']);
 const jsFiles = walkFiles(srcDir, ['.js', '.mjs']).filter((f) => !f.endsWith('.mjs'));
-const cssFiles = walkFiles(srcDir, ['.css']);
+const cssFiles = walkFiles(srcDir, ['.css', '.less']);
 if (vueFiles.length === 0) fatal('no .vue files under src/');
 const pageIndexes = vueFiles.filter((f) => /[\\/]pages[\\/][^\\/]+[\\/]index\.vue$/.test(f));
 if (pageIndexes.length === 0) fatal('no page entry found (expected src/pages/{Name}/index.vue)');
@@ -249,6 +247,8 @@ for (const file of vueFiles) {
       if (fileMap.has(target)) continue;
       if (fileMap.has(target + '.vue')) continue;
       if (fileMap.has(target + '.js')) continue;
+      if (fileMap.has(target + '.css')) continue;
+      if (fileMap.has(target + '.less')) continue;
       if (fileMap.has(target + '/index.vue')) continue;
       if (fileMap.has(target + '/index.js')) continue;
       if (ASSET_EXT.includes(extname(target))) continue; // assets resolve at runtime
@@ -317,7 +317,7 @@ try {
           else stack.push(p);
         }
         const target = '/' + stack.join('/');
-        if (![target, target + '.js', target + '.css', target + '/index.js'].some((t) => fileMap.has(t))) {
+        if (![target, target + '.js', target + '.css', target + '.less', target + '/index.js'].some((t) => fileMap.has(t))) {
           if (!ASSET_EXT.includes(extname(target))) fail(`${rel}: relative import "${spec}" does not resolve`);
         }
       } else {
@@ -334,7 +334,7 @@ try {
 // ---------- 6-7. token usage across styles + templates ----------
 // Design tokens follow the design-language naming (color-brand, space-size-16,
 // font-size-normal, shadow-1, ...). All token definitions must live in
-// src/assets/themes/*.css (skin scope) — SFC styles may only define --page-*
+// src/assets/themes/*.less (skin scope) — SFC styles may only define --page-*
 // page-local custom props. Every var(--x) reference without a fallback must
 // resolve to a definition; --el-* is exempt (provided by Element Plus at runtime).
 const definedTokens = new Set();
@@ -382,14 +382,14 @@ for (const text of cssHaystacks) {
     if (tok.startsWith('--el-')) continue;         // Element Plus runtime vars
     if (!definedTokens.has(tok)) {
       const hints = tokenHints(tok, definedTokens);
-      fail(`unknown token var(${tok}) : tokens are defined in src/assets/themes/*.css${hints.length ? ` : did you mean ${hints.join(', ')}?` : ''}`);
+      fail(`unknown token var(${tok}) : tokens are defined in src/assets/themes/*.less${hints.length ? ` : did you mean ${hints.join(', ')}?` : ''}`);
     }
   }
   // var(--x, fallback) — token should still exist unless it's --el-* / --ux-mix-base bridge plumbing
   for (const m of text.matchAll(/var\(\s*(--[a-z][a-z0-9-]*)\s*,/g)) {
     const tok = m[1];
     if (tok.startsWith('--el-')) continue;
-    if (tok === '--ux-mix-base') continue;         // bridge plumbing, defined in base.css
+    if (tok === '--ux-mix-base') continue;         // bridge plumbing, defined in base.less
     if (!definedTokens.has(tok)) warn(`token var(${tok}) used with fallback but never defined${tokenHints(tok, definedTokens).map((h) => ` : did you mean ${h}?`).join('')} : check spelling against references/design-language.md`);
   }
 }
