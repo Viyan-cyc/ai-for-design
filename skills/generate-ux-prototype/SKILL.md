@@ -90,7 +90,8 @@ node scripts/init.mjs "<artifact-folder 绝对路径>" "<slug>"
 - 返回值记住三个：`HTML_PATH`（预览入口）、`SRC_DIR`（你写代码的地方）、`PAGE`（主组件名）。
 
 init 会生成完整骨架：`index.gts.html` + `public/library/`（UMD 运行时）+ `src/`（App.vue、
-main.js、主题三件套、starter 页面）。
+main.js、api 服务层示例、主题三件套、starter 页面）。
+**默认不含任何切换 UI**（国际化 / 主题切换均为按需能力，见下方判据）。
 
 ### ③ 写代码 —— 主战场
 
@@ -107,6 +108,36 @@ main.js、主题三件套、starter 页面）。
 
 生成后按 `vendor/vue-skill/references/error-checklist.md` 过一遍再交 build。不要往 vendor 写任何
 东西；vendor 覆盖不了的非常规需求再扩展查 token 词汇（`references/design-language.md`）。
+
+#### 数据走服务层（src/api/）
+
+- 页面数据一律经 `src/api/{模块}.js` 的语义化函数（返回 Promise）获取，**页面不直接 import
+  mock 数据文件**（它们放 `src/api/mock/`，只被 api 层消费）。starter 的 `api/demo.js` 是样例。
+- 对接真实后端 = 改 `api/` 实现（换 fetch/axios），页面零改动——这是服务层存在的意义。
+- 新增接口按同样式扩展：每个业务模块一个 `api/{模块}.js`，mock 数据沉到 `api/mock/`。
+
+#### 国际化：按需启用（默认不含任何 i18n 代码）
+
+- **用户没提国际化 → 页面直接写中文**（starter 页默认直接中文，改动为零）。
+- **用户要求国际化（或明确多语言）→ 该工程启用**，最小集：
+  1. 装配：从 `scripts/preview/i18n-scaffold/` 拷贝 `i18n/` 到工程 `src/`（含 createI18n、
+     locales、EP_LOCALES 映射；**逐字拷贝，不要重写**——预览 moduleCache 与 build 白名单按此接线）；
+  2. 文案 key 化：页面用 `const { t } = useI18n()` + key（key 命名 `msg.{页面}.{分类}.{语义}`，
+     至少 3 个点，见 code-rules 规则 10.2）；
+  3. 词典进 `src/i18n/locales/{zh-cn,en}.js`（**两份 key 集合必须一致**，en 缺失会回落中文）；
+  4. App.vue 接线 + 切换 UI：**UI 形态按用户描述决定**（图标/下拉/菜单项均可），参考实现见
+     `references/on-demand-toggle.md`（含预览必需：幂等补装须先于 `useI18n`，EP 文案经
+     `ElConfigProvider` 跟随）。真实工程入口需 `app.use(i18n)`。
+- 启用 i18n 的工程，`ElMessage` 等命令式提示文案同样走 `t()`。
+
+#### 主题切换：机制常驻，UI 按需
+
+- 换肤**机制**随工程交付（`src/assets/themes/` 协议：一皮肤一文件、`html[data-theme="{name}"]`、
+  bridge.css 自动跟随、新增皮肤插槽）——这部分不删不用重做，页面颜色全程走 token。
+- **切换 UI 默认不在**。用户要求深浅切换 → 接入 UI，**形态按用户描述决定**（图标 toggle/
+  下拉/菜单项均可），参考实现见 `references/on-demand-toggle.md`。
+- **内置 default + dark 两套皮肤**。dark 由 gen-tokens 从 design-language §1.2D 深色表生成，
+  未覆盖项为工程回填（清单见 references/dark-theme-intake.md §B）。
 
 #### 页面自适应（桌面区间弹性）
 
@@ -253,4 +284,5 @@ build 的编译/token 错误是你自己的代码问题，修完重跑，不转�
 
 - 预览 HTML 依赖本地 UMD 运行时（`public/library/`），**改 `src/` 后必须重跑 build** 刷新源码映射
 - `dayjs` 已被 Element Plus UMD 内置，页面代码仍可 `import dayjs from 'dayjs'`（映射已接好）
-- 本 skill 无深色皮肤（design-language 无完整深色 UI 表）；深色需求先补 token 定义，不自行推导
+- 深色主题：dark 皮肤已内置；剩余缺口（填充色/表格色/阴影深色/frost 材质/深色 accessible）
+  见 references/dark-theme-intake.md §B，补齐前不自行推导深色 token

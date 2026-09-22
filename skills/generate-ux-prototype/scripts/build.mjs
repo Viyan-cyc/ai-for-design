@@ -88,6 +88,7 @@ const EP_ICONS = new Set(
 );
 const ALLOWED_BARE = new Set([
   'vue',
+  'vue-i18n',
   'element-plus',
   '@element-plus/icons-vue',
   'dayjs',

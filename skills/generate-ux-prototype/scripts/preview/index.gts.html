@@ -11,6 +11,8 @@
     <script src="./public/library/element-plus.full.min.js"></script>
     <script src="./public/library/element-plus-icons-vue.iife.min.js"></script>
     <script src="./public/library/element-plus-locale-zh-cn.min.js"></script>
+    <script src="./public/library/element-plus-locale-en.min.js"></script>
+    <script src="./public/library/vue-i18n.global.prod.js"></script>
     <script src="./public/library/echarts.min.js"></script>
     <script src="./public/library/vue-echarts.iife.min.js"></script>
     <script src="./public/library/less.min.js"></script>
@@ -23,6 +25,7 @@
     <link rel="stylesheet" href="./src/assets/themes/bridge.css">
     <link rel="stylesheet" href="./src/assets/themes/default.css">
     <!-- ▼▼ 换肤插槽：新皮肤 css 放入 src/assets/themes/ 后在此追加 link ▼▼ -->
+    <link rel="stylesheet" href="./src/assets/themes/dark.css">
     <!-- ▲▲ 换肤插槽结束 ▲▲ -->
 
     <!-- ═══ 3. 页面骨架样式（FIXED）═══ -->
@@ -85,7 +88,10 @@
             var options = {
                 moduleCache: Object.assign(Object.create(null), {
                     vue: Vue,
+                    "vue-i18n": VueI18n,
                     "element-plus": ElementPlus,
+                    "element-plus/es/locale/lang/zh-cn": ElementPlusLocaleZhCn,
+                    "element-plus/es/locale/lang/en": ElementPlusLocaleEn,
                     "@element-plus/icons-vue": ElementPlusIconsVue,
                     dayjs: dayjs,
                     echarts: echarts,

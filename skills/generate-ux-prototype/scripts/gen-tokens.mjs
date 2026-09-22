@@ -226,6 +226,73 @@ const shadows = tableAfter('### 6.2', ['Token', 'X', 'Y', '模糊', '扩展', '�
   return { name, level: clean(level), val: `${pxLen(x)} ${pxLen(y)} ${pxLen(blur)} ${pxLen(spread)} rgba(0, 0, 0, ${a})` };
 });
 
+// ---------- 1.2D 深色参数（五列表：设计参数 | 描述 | Light现行 | Light参考 | Dark现行） ----------
+// 只取 Dark 列；Light 两列仅供对照，不替换浅色真值（§1.2）。Dark 缺值的行跳过并记录。
+const DARK_SECTION_ANCHOR = '<a id="dark-colors"></a>';
+function parseDarkSection() {
+  const lines = doc.split('\n');
+  const anchor = lines.findIndex((l) => l.includes(DARK_SECTION_ANCHOR));
+  if (anchor === -1) {
+    parseError('1.2D dark', 'section anchor not found');
+    return [];
+  }
+  // 节起点 = 紧随锚点的 "### 1.2D" 标题；节结束 = 其后的下一个 "### "（§1.3）
+  let start = -1;
+  for (let i = anchor; i < lines.length; i++) {
+    if (/^### /.test(lines[i])) { start = i; break; }
+  }
+  if (start === -1) {
+    parseError('1.2D dark', 'section heading not found after anchor');
+    return [];
+  }
+  let secEnd = lines.length;
+  for (let i = start + 1; i < lines.length; i++) {
+    if (/^### /.test(lines[i])) { secEnd = i; break; }
+  }
+  const rows = [];
+  let skipped = [];
+  let currentGroup = '';
+  for (let i = start; i < secEnd; i++) {
+    const line = lines[i];
+    if (/^#### /.test(line)) currentGroup = line.replace(/^#### /, '').trim();
+    if (!isRow(line)) continue;
+    const c = cells(line);
+    if (c.length < 5) continue; // 字段定义表等非数据表
+    const [name, use, , , darkRaw] = c;
+    if (!name.startsWith('color-')) continue;
+    if (currentGroup.includes('原图命名异常')) continue; // 异常记录行不生成正式 token
+    // Dark 列形态：`#HEX`（`色阶标注`）或 `#HEX / N%`（…）。文档规定以 HEX+alpha 为准，
+    // 色阶标注仅作来源记录 —— 提取行首 HEX/alpha，忽略标注；无 HEX 即缺值行，跳过。
+    const m = darkRaw.match(/^(#[0-9A-Fa-f]{6}(?:\s*\/\s*\d+%)?)/);
+    if (!m) {
+      skipped.push(`${name} (${currentGroup}): "${darkRaw}"`);
+      continue;
+    }
+    const v = colorValue(m[1], '1.2D', name);
+    if (v === null) continue;
+    rows.push({ name: name.trim(), use: clean(use), group: currentGroup, value: v });
+  }
+  return rows.map((r) => ({ ...r, skipped }));
+}
+const darkRows = parseDarkSection();
+const darkSkippedList = [...new Set(darkRows.flatMap((r) => r.skipped))];
+const darkSkippedCount = darkSkippedList.length;
+
+// 深色下 §1.2D 未覆盖、但桥接层/页面无兜底消费的键 —— 工程回填（出处注释标明取值理由；
+// 设计师在真值源正式补齐后从本表删除）。色板与 §1.2D 已给键不得出现在这里。
+const DARK_BACKFILL = [
+  { name: 'color-info', value: '#2070f3', why: '§1.2D 信息色组改用 color-info-primary 命名；浅色既有键 color-info 无同名 Dark 行，按浅色 blue-50 保持（信息强调色双主题同值）' },
+  { name: 'color-info-subtle', value: '#1f55b5', why: '浅色既有键无同名 Dark 行；取 §1.2D color-info-primary-subtle Dark（blue-60）为深色弱背景' },
+  { name: 'color-hover', value: 'rgba(255, 255, 255, 0.06)', why: '浅色 gray-90/5% 的深色镜像（白 6%）' },
+  { name: 'color-select', value: 'rgba(46, 134, 222, 0.20)', why: '选中填充；取 brand-hover(#2E86DE) 20% 透明叠加' },
+  { name: 'color-table-header', value: 'rgba(255, 255, 255, 0.06)', why: '表头背景，与 color-hover 同基' },
+  { name: 'color-table-zebra', value: 'rgba(255, 255, 255, 0.03)', why: '斑马纹，浅色 gray-40/5% 的深色镜像' },
+  { name: 'color-fill', value: 'rgba(255, 255, 255, 0.06)', why: '默认填充，与 color-hover 同基' },
+  { name: 'color-fill-subtle', value: '#2a2a2a', why: '输入框底色；取 bg-3 dark（#2A2A2A）' },
+  { name: 'color-fill-disabled', value: '#393939', why: '禁用填充；取 bg-4 dark（#393939）' },
+  { name: 'color-fill-disabled-subtle', value: 'rgba(255, 255, 255, 0.06)', why: '含描边禁用填充，与 color-hover 同基' },
+];
+
 // ---------- 解析问题即停（不产出静默结果） ----------
 if (problems.length) {
   console.log(`RESULT: FAIL | ${problems.length} parse problem(s) — doc structure drifted?`);
@@ -455,8 +522,133 @@ const genTable = [
   GEN_END,
 ].join('\n');
 
+// ---------- 组装 dark.css ----------
+// 全量皮肤：data-theme="dark" 时 default.css 全部定义失效，深色皮肤必须提供
+// default.css 的全部 token。非颜色组（间距/圆角/边框/字体/字号/字重/frost）与
+// default 同值原样复制；颜色组取 §1.2D Dark 列 + 工程回填。
+// 图表色：深色 11 色序列（§1.2D 图表序列组；浅色 accessible 不跨主题套用）。
+const darkBackfillNames = new Set(DARK_BACKFILL.map((t) => t.name));
+const darkDuplicate = darkRows.filter((r) => darkBackfillNames.has(r.name));
+if (darkDuplicate.length) {
+  problems.push(`[dark] backfill conflicts with §1.2D values: ${darkDuplicate.map((r) => r.name).join(', ')}`);
+}
+const darkCss = [];
+darkCss.push(`/* ============================================================
+   皮肤：dark（深色皮肤）
+   ============================================================
+   本文件由 scripts/gen-tokens.mjs 从 design-language（样式Token/设计系统.md §1.2D）
+   生成；手工修改会被下次生成覆盖——改值请改设计文档后重跑生成器。
+   - 颜色真值：§1.2D Dark 列。
+   - 以下键为工程回填（§1.2D 未覆盖，设计师补齐后从生成器 DARK_BACKFILL 删除）：
+     ${DARK_BACKFILL.map((t) => t.name).join(', ')}
+   - 深色阴影 / frost 材质参数 / 深色 accessible 图表序列：设计师尚未提供，
+     沿用浅色值过渡（见 dark-theme-intake.md 缺口清单），非深色最终值。
+   ============================================================ */
+`);
+darkCss.push('html[data-theme="dark"] {');
+darkCss.push('');
+darkCss.push('  /* ======== 1.2D 深色语义色（§1.2D Dark 列，按文档分组；图表序列见下） ======== */');
+darkCss.push(...emitEntries(darkRows
+  .filter((t) => !/^color-chart-\d+$/.test(t.name))
+  .map((t) => ({
+    decl: `  --${t.name}: ${t.value};`,
+    comment: [t.use, t.group].filter(Boolean).join(' · '),
+  }))));
+darkCss.push('');
+darkCss.push('  /* ======== 工程回填（§1.2D 未覆盖，桥接层无兜底消费） ======== */');
+darkCss.push(...emitEntries(DARK_BACKFILL.map((t) => ({
+  decl: `  --${t.name}: ${t.value};`,
+  comment: t.why,
+}))));
+darkCss.push('');
+darkCss.push('  /* ======== 1.2D 深色图表序列（11 色；浅色 accessible 不跨主题） ======== */');
+const darkChart = darkRows.filter((t) => /^color-chart-\d+$/.test(t.name));
+darkCss.push('  ' + darkChart.map((t) => `--${t.name}: ${t.value};`).join(' '));
+
+// 深色图表 accessible 变体未提供（§1.2D 明确声明），沿用浅色值过渡并标注；
+// 浅色值从本脚本已解析的 chart 集合取（v2 = accessible 值）。
+darkCss.push('');
+darkCss.push('  /* ======== 图表 accessible 序列（深色未提供，沿用浅色值过渡） ======== */');
+darkCss.push('  ' + chart.map((t) => `--${t.name}-accessible: ${t.v2};`).join(' '));
+
+// 非颜色组与 default 完全同值（data-theme 切换后 default.css 失效，深色皮肤必须全量提供；
+// 深色阴影/frost 材质设计师未给，沿用浅色值并已在文件头声明）。
+darkCss.push('');
+darkCss.push('  /* ======== 1.3 基础色板 / 1.4 公司辅助色（主题无关，同 default） ======== */');
+for (let i = 0; i < palette.length; i += 5) {
+  darkCss.push('  ' + palette.slice(i, i + 5).map((t) => `--${t.name}: ${t.value};`).join(' '));
+}
+for (let i = 0; i < company.length; i += 3) {
+  darkCss.push('  ' + company.slice(i, i + 3).map((t) => `--${t.name}: ${t.value};`).join(' '));
+}
+darkCss.push('');
+darkCss.push('  /* ======== 1.6 代码配色（浅色为主 + 深色代码区变体，同 default） ======== */');
+for (const arr of [code.map((t) => `--${t.name}: ${t.light};`), code.map((t) => `--${t.name}-dark: ${t.dark};`)]) {
+  for (let i = 0; i < arr.length; i += 3) darkCss.push('  ' + arr.slice(i, i + 3).join(' '));
+}
+darkCss.push('');
+darkCss.push('  /* ======== 2.2 间距（常规档；紧凑档见文件末尾覆盖块，同 default） ======== */');
+for (let i = 0; i < spacing.length; i += 4) {
+  darkCss.push('  ' + spacing.slice(i, i + 4).map((t) => `--${t.name}: ${t.reg}px;`).join(' '));
+}
+darkCss.push('');
+darkCss.push('  /* ======== 3.1 圆角 / 4. 边框（同 default） ======== */');
+darkCss.push(...emitEntries([...radius, ...radiusExtra].map((t) => ({
+  decl: `  --${t.name}: ${t.val};`,
+  comment: t.scene,
+}))));
+darkCss.push(...emitEntries(borderWidth.map((t) => ({ decl: `  --${t.name}: ${t.val};`, comment: t.use }))));
+for (const t of borderStyle) darkCss.push(`  --${t.name}: ${t.val};`);
+darkCss.push('');
+darkCss.push('  /* ======== 5. 字体（同 default） ======== */');
+darkCss.push(FONT_STACKS);
+darkCss.push('');
+darkCss.push('  /* ======== 5.2 字号与行高（同 default） ======== */');
+darkCss.push(...emitEntries(fontSizes.map((t) => ({
+  decl: `  --${t.fs}: ${t.size};  --${t.lh}: ${t.height};`,
+  comment: t.role,
+}))));
+darkCss.push('');
+darkCss.push('  /* ======== 5.3 字重（同 default） ======== */');
+darkCss.push(...emitEntries(fontWeight.map((t) => ({ decl: `  --${t.name}: ${t.weight};`, comment: t.use }))));
+darkCss.push('');
+darkCss.push('  /* ======== 6.2 阴影（深色未提供，沿用浅色值过渡） ======== */');
+darkCss.push(...emitEntries(shadows.map((t) => ({ decl: `  --${t.name}: ${t.val};`, comment: t.level }))));
+darkCss.push('');
+darkCss.push('  /* ======== 7.2 毛玻璃材质（深色材质未提供，沿用浅色基线过渡） ======== */');
+darkCss.push(FROST);
+darkCss.push('');
+darkCss.push('  /* ======== 深色混色基底（桥接层 light-N 色阶 color-mix 派生底色；取 §1.2D bg-2 dark 容器表面色） ======== */');
+darkCss.push('  --ux-mix-base: #191919;');
+darkCss.push('}');
+darkCss.push('');
+darkCss.push('/* ======== 2.2 间距紧凑档（同 default） ======== */');
+darkCss.push('html[data-theme="dark"][data-density="compact"] {');
+for (let i = 0; i < spacing.length; i += 4) {
+  darkCss.push('  ' + spacing.slice(i, i + 4).map((t) => `--${t.name}: ${t.compact}px;`).join(' '));
+}
+darkCss.push('}');
+darkCss.push('');
+const darkCssOut = darkCss.join('\n');
+
+// 深色皮肤完整性：bridge/base 消费的关键键必须存在（缺即生成失败，fail-fast）
+const darkDefined = new Set([...darkRows.map((r) => `--${r.name}`), ...DARK_BACKFILL.map((t) => `--${t.name}`)]);
+const DARK_REQUIRED = [
+  '--color-brand', '--color-text-primary', '--color-bg-1', '--color-bg-4', '--color-bg-mask',
+  '--color-border', '--color-border-hover', '--color-border-focus', '--color-border-separator',
+  '--color-error', '--color-error-subtle', '--color-warning', '--color-warning-subtle',
+  '--color-success', '--color-success-subtle', '--color-info', '--color-info-subtle',
+  ...DARK_BACKFILL.map((t) => `--${t.name}`),
+];
+const darkMissing = DARK_REQUIRED.filter((k) => !darkDefined.has(k));
+if (darkMissing.length) {
+  console.log(`RESULT: FAIL | dark.css incomplete, missing required tokens: ${darkMissing.join(', ')}`);
+  process.exit(1);
+}
+
 // ---------- 写盘 / 校验 ----------
 const cssPath = join(SKILL_DIR, 'scripts', 'preview', 'src', 'assets', 'themes', 'default.css');
+const darkPath = join(SKILL_DIR, 'scripts', 'preview', 'src', 'assets', 'themes', 'dark.css');
 const refPath = join(SKILL_DIR, 'references', 'design-language.md');
 
 function applyToRef(refCur) {
@@ -474,9 +666,11 @@ if (checkMode) {
     console.log('RESULT: FAIL | design-language.md missing GEN:TOKEN-TABLE markers');
     process.exit(1);
   }
+  const darkCur = readFileSync(darkPath, 'utf8');
   const cssOk = cssCur === cssOut;
   const refOk = refCur === refNext;
-  if (cssOk && refOk) {
+  const darkOk = darkCur === darkCssOut;
+  if (cssOk && refOk && darkOk) {
     console.log('RESULT: OK | --check: generated output matches on-disk files');
     console.log(`TOKENS: ${totalTokens}`);
     process.exit(0);
@@ -484,11 +678,13 @@ if (checkMode) {
   console.log('RESULT: FAIL | --check drift detected:');
   if (!cssOk) console.log('  default.css differs from generated output');
   if (!refOk) console.log('  design-language.md §1 differs from generated output');
+  if (!darkOk) console.log('  dark.css differs from generated output');
   console.log('HINT: 去掉 --check 重跑生成器，再审查 diff');
   process.exit(1);
 }
 
 writeFileSync(cssPath, cssOut, 'utf8');
+writeFileSync(darkPath, darkCssOut, 'utf8');
 const refCur = readFileSync(refPath, 'utf8');
 const refNext = applyToRef(refCur);
 if (refNext === null) {
@@ -500,6 +696,9 @@ writeFileSync(refPath, refNext, 'utf8');
 
 console.log('RESULT: OK');
 console.log(`TOKENS: ${totalTokens}`);
+console.log(`DARK_TOKENS: ${darkRows.length + DARK_BACKFILL.length} (1.2D dark values: ${darkRows.length}, backfill: ${DARK_BACKFILL.length}, skipped: ${darkSkippedCount})`);
+if (darkSkippedCount) console.log(`DARK_SKIPPED: ${darkSkippedList.join(' | ')}`);
 for (const [k, v] of Object.entries(counts)) console.log(`  ${k}: ${v}`);
 console.log(`OUT_CSS: ${cssPath}`);
+console.log(`OUT_DARK: ${darkPath}`);
 console.log(`OUT_REF: ${refPath}`);

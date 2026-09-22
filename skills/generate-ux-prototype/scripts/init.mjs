@@ -103,26 +103,114 @@ writeFileSync(
   join(srcDir, 'pages', pageName, 'index.vue'),
   `<script setup>
 // ${pageName} — 页面主组件（交付入口；真实工程中由路由挂载）
-import { ref } from 'vue'
-import { ElMessage } from 'element-plus'
-import { Monitor } from '@element-plus/icons-vue'
+// 文案默认直接写中文。用户要求国际化时才 key 化（按需能力，参考实现由生成方提供）。
+import { ref, onMounted } from 'vue'
+import { ElButton, ElInput, ElPagination, ElTable, ElTableColumn, ElTag } from 'element-plus'
+import { Search } from '@element-plus/icons-vue'
+import { getDeviceList } from '../../api/demo.js'
 
-// TODO: mock 数据（语义化 key，状态配映射表）
-const hello = () => ElMessage.success('页面已就绪')
+const keyword = ref('')
+const list = ref([])
+const total = ref(0)
+const page = ref(1)
+const pageSize = ref(10)
+const loading = ref(false)
+
+// 数据一律经服务层（src/api/）获取，页面不直接接触 mock 数据文件
+const fetchList = async () => {
+  loading.value = true
+  try {
+    const res = await getDeviceList({ keyword: keyword.value, page: page.value, pageSize: pageSize.value })
+    list.value = res.list
+    total.value = res.total
+  } finally {
+    loading.value = false
+  }
+}
+
+const onSearch = () => {
+  page.value = 1
+  fetchList()
+}
+
+const statusText = (status) => (status === 'enabled' ? '已启用' : '已停用')
+
+onMounted(fetchList)
 </script>
 
 <template>
   <div class="page-root">
-    <el-empty description="页面待生成">
-      <el-button type="primary" :icon="Monitor" @click="hello">开始</el-button>
-    </el-empty>
+    <div class="page-header">
+      <span class="page-title">演示工作台</span>
+    </div>
+
+    <div class="search-bar">
+      <ElInput
+        v-model="keyword"
+        placeholder="输入名称搜索"
+        class="search-input"
+        clearable
+        @keyup.enter="onSearch"
+      />
+      <ElButton type="primary" :icon="Search" @click="onSearch">查询</ElButton>
+    </div>
+
+    <ElTable v-loading="loading" :data="list" class="table">
+      <ElTableColumn prop="name" label="名称" min-width="180" />
+      <ElTableColumn prop="status" label="状态" width="120">
+        <template #default="{ row }">
+          <ElTag :type="row.status === 'enabled' ? 'success' : 'info'">{{ statusText(row.status) }}</ElTag>
+        </template>
+      </ElTableColumn>
+      <ElTableColumn prop="updatedAt" label="更新时间" width="180" />
+    </ElTable>
+
+    <ElPagination
+      v-model:current-page="page"
+      v-model:page-size="pageSize"
+      :total="total"
+      layout="total, prev, pager, next"
+      class="pagination"
+      @current-change="fetchList"
+    />
   </div>
 </template>
 
-<style scoped>
+<style scoped lang="less">
 .page-root {
   min-height: 100%;
-  padding: 24px;
+  padding: var(--space-size-24);
+}
+
+.page-header {
+  margin-bottom: var(--space-size-16);
+
+  .page-title {
+    font-size: var(--font-size-normal1);
+    font-weight: var(--font-weight-bold);
+    color: var(--color-text-primary);
+  }
+}
+
+.search-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-size-12);
+  margin-bottom: var(--space-size-16);
+
+  .search-input {
+    width: 240px;
+    max-width: 100%;
+  }
+}
+
+.table {
+  width: 100%;
+}
+
+.pagination {
+  margin-top: var(--space-size-16);
+  justify-content: flex-end;
 }
 </style>
 `,
@@ -132,7 +220,9 @@ const hello = () => ElMessage.success('页面已就绪')
 writeFileSync(
   join(srcDir, 'App.vue'),
   `<script setup>
-// 应用壳：挂载目标页面组件（预览与真实工程共用）
+// 应用壳：只挂载目标页面（交付入口；真实工程中由路由/布局替换）
+// 无内置切换 UI —— 国际化 / 主题切换均为按需能力，用户要求时在此接入，
+// 装配与参考实现由生成方提供，UI 形态按用户描述决定。
 import Page from './pages/${pageName}/index.vue'
 </script>
 

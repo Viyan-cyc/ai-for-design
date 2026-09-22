@@ -36,7 +36,7 @@ token 全量定义在皮肤文件 `src/assets/themes/default.css`（324 个自�
 1. 先确定部位、用途与状态，再取 token；填充/文字/图标/边框分别选色，不近似互换。
 2. 未定义或待确认的值**不可使用**（如 `color-bg-6` 未定义，引用即构建失败）。
 3. 状态不可推导：不自行推算缺失的交互态色值。
-4. 默认浅色界面；无完整深色 UI 表，不做整页深色。
+4. 默认浅色界面；深色经 dark 皮肤提供（见 themes/dark.css）。
 
 ## 2. Element Plus 桥接（bridge.css，FIXED 不改）
 
