@@ -11,6 +11,7 @@
 | 001 | table-search-drawer | 搜索表单+数据表格+详情抽屉组合页面 | ElForm, ElInput, ElSelect, ElDatePicker, ElTable, ElTableColumn, ElPagination, ElDrawer, ElTag, ElButton | `references/table-search-drawer/` |
 | 002 | mixed-chart | 折线+柱状混合图表页，图表色走 Token | VChart (vue-echarts), ElCard | `references/mixed-chart/` |
 | 003 | glow-cards | 卡片氛围光两种形态（角部高光/中心辐射），色相跟语义走 | radial-gradient, color-mix (CSS) | `references/glow-cards/` |
+| 004 | frost-decor-card | 品牌色块磨砂装饰（§7.6）：品牌蓝渐变底+边角磨砂圆形/圆角块，card/panel 双档 | pseudo-element, backdrop-filter (CSS) | `references/frost-decor-card/` |
 
 ---
 
@@ -75,6 +76,27 @@ references/glow-cards/
 
 **适用场景**：监控/运维/告警类页面卡片、需要还原设计稿氛围光的所有页面。
 
+### 004 - frost-decor-card（品牌色块磨砂装饰）
+
+**用途**：品牌重点卡（总览/主指标/品牌展示）的边角磨砂装饰，设计稿品牌蓝大卡带"圆形/圆角磨砂图形"时以此为准抄写法。对应设计系统 §7.6。
+
+**两种档位**（同一页对照）：
+- **card**（装饰几何 1:1）：圆形 d146px（top -88px/right 2px）+ 圆角块 86px（top 42px/right -52px，旋转 -24°）。
+- **panel**（缩放 1.35）：仅宽幅概览卡使用，几何整体放大。
+
+**通用规则**（示例注释同步）：
+- 层次固定：同色相弱渐变底（`linear-gradient(115deg, brand-50 60%, brand-40)`）→ 边角磨砂图形（伪元素：白 gray-0 填充 10%→2.5%、描边白 13%、blur 取 `--frost-blur-control`）→ 清晰内容（z-index:1，白字 `--color-text-inverse`）。
+- 额度：同组 1 张主卡，同屏 1 处、最多 2 处；普通卡片/导航/按钮/表格/表单/图表绘图区不用。
+- 装饰不拦截点击、不进键盘焦点、无动画；不与整块毛玻璃（data-material）同用。
+
+**文件结构**：
+```
+references/frost-decor-card/
+└── index.vue
+```
+
+**适用场景**：仪表盘总览主卡、品牌展示卡、设计稿带磨砂圆形装饰的色底大卡。
+
 ---
 
 ## 示例分类索引
@@ -86,6 +108,7 @@ references/glow-cards/
 | 表格+表单 | 001 | table-search-drawer |
 | 图表 | 002 | mixed-chart |
 | 卡片氛围光 | 003 | glow-cards |
+| 品牌卡磨砂装饰 | 004 | frost-decor-card |
 
 ### 按使用的核心组件
 
