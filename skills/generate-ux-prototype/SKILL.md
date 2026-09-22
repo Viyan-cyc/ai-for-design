@@ -108,6 +108,14 @@ main.js、主题三件套、starter 页面）。
 生成后按 `vendor/vue-skill/references/error-checklist.md` 过一遍再交 build。不要往 vendor 写任何
 东西；vendor 覆盖不了的非常规需求再扩展查 token 词汇（`references/design-language.md`）。
 
+#### 页面自适应（桌面区间弹性）
+
+- 所有页面按桌面区间弹性交付（约 1024–1920+）：布局折叠式（内容重排），不做等比缩放。
+- 编码规则见 `vendor/vue-skill/references/code-rules.md` 第十二节（容器流式、ElRow/ElCol
+  响应式栅格、宽度纪律、@media 口径、表格自适应）；断点与窗口适配口径见
+  `references/design-language.md` §3.3。
+- 交付前自查：1280 与 1024 视口下无横向溢出、无内容裁切（预览窗口缩到该宽度看一眼）。
+
 ### ④ `build.mjs` —— 编译门禁（真实编译，不是 lint）
 
 ```bash
@@ -210,6 +218,9 @@ build 的编译/token 错误是你自己的代码问题，修完重跑，不转�
 - 间距/圆角/字号/投影等同样用 token：`var(--space-size-16)`、`var(--radius-size-normal)`、
   `var(--shadow-1)`。
 - 组件状态（悬停/聚焦/禁用/加载）由 Element Plus + 桥接层自动获得，页面不重绘状态色。
+- **自适应纪律**：布局容器禁写死总宽（内容流式，控件固有定宽配 `max-width: 100%` 兜底）；
+  字体禁用 vw/vh 视口缩放；多卡片用响应式栅格（细则见 code-rules 第十二节）。
+  build 会对 `zoom` 与 font-size vw/vh 出 WARN。
 - token 速查与协议见 `references/design-language.md`；组件/导出/图标白名单见
   `scripts/verify/whitelists/*.json`（EP 2.13.5：118 组件 / 534 导出 / 293 图标）。
 

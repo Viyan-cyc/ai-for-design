@@ -396,3 +396,145 @@ const chartColors = ['--color-chart-1', '--color-chart-2', '--color-chart-3',
   '--color-chart-4', '--color-chart-5', '--color-chart-6'].map(readToken).filter(Boolean)
 // option.color = chartColors
 ```
+
+---
+
+## 十二、响应式布局规范
+
+> 页面按桌面区间弹性交付（约 1024–1920+），策略是布局折叠（内容重排），不是等比缩放。
+> 断点两套数值的分工：EP 组件断点（xs<768 / sm≥768 / md≥992 / lg≥1200 / xl≥1920）
+> 用于 `ElRow`/`ElCol` 响应式 props 与 `@media` 折叠；1024/1280/1680/1920 是设计验收的
+> 人工检查值，页面代码只用 EP 断点。密度不随视口切换；禁止用视口单位缩放字体。
+
+### 规则 12.1：页面容器流式，不写死总宽
+
+`.page-root` 与布局容器宽度跟随可用空间；Portal 类内容用 `max-width` 上限 + 居中，
+不得给整页或布局容器设固定宽度。
+
+```less
+// ✅ 正确：容器流式
+.page-root {
+  width: 100%;
+  padding: var(--space-size-24);
+}
+
+// Portal 类：上限 + 居中
+.portal-content {
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+// ❌ 错误：布局容器写死总宽
+.page-root {
+  width: 1440px;
+}
+```
+
+### 规则 12.2：多卡片区域用响应式栅格，不用固定宽度行
+
+卡片/统计块优先 `ElRow` + `ElCol` 响应式 props 折叠列数；等宽卡片流可用 CSS grid
+`auto-fit` 流式排布。栅格间距用 `space-size-16`。
+
+```vue
+<!-- ✅ 正确：ElCol 响应式 props（宽屏 6 列，窄屏自动减列） -->
+<ElRow :gutter="16">
+  <ElCol :xs="24" :sm="12" :md="8" :lg="6" v-for="item in stats" :key="item.id">
+    <StatCard :data="item" />
+  </ElCol>
+</ElRow>
+```
+
+```less
+// ✅ 正确：等宽卡片流 auto-fit（每卡最小可读宽 320px，放不下自动换行）
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: var(--space-size-16);
+}
+
+// ❌ 错误：固定列数，窄屏溢出
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+}
+```
+
+### 规则 12.3：内容宽度流式；写死 px 仅限控件固有尺寸并配兜底
+
+内容区域用 `width: 100%` / `flex: 1` + `min-width: 0`；固定 px 只允许给控件固有尺寸
+（输入框、下拉、日期选择器等），且必须配 `max-width: 100%` 防窄屏溢出。
+
+```less
+// ✅ 正确：控件定宽 + 兜底
+.search-input {
+  width: 240px;
+  max-width: 100%;
+}
+
+// ✅ 正确：主内容流式并允许收缩
+.page-main {
+  flex: 1;
+  min-width: 0;
+}
+
+// ❌ 错误：内容区写死宽且无兜底
+.chart-panel {
+  width: 960px;
+}
+```
+
+### 规则 12.4：@media 只做页面局部折叠
+
+`<style scoped>` 内使用；断点用 EP 口径（768/992/1200/1920）；只切换显示与布局，
+不改字号、不改密度。
+
+```less
+// ✅ 正确：窄屏收起次要面板
+.filter-panel {
+  display: block;
+}
+
+@media (max-width: 1200px) {
+  .filter-panel {
+    display: none;
+  }
+}
+
+// ❌ 错误：media 里缩字号（等于视口缩放字体）
+@media (max-width: 1200px) {
+  .page-title {
+    font-size: 12px;
+  }
+}
+```
+
+### 规则 12.5：表格保关键列，横向滚动只用表格自带能力
+
+关键列给 `min-width` 保证可读；次要列在窄屏可隐藏或收进详情。表格横向滚动由
+ElTable 自身处理（内容超宽时表体出横向滚动条），页面外层不得再包横向滚动容器，
+禁止整页横向滚动。
+
+```vue
+<!-- ✅ 正确：关键列 min-width，次要列收窄 -->
+<ElTable :data="list">
+  <ElTableColumn prop="name" label="名称" min-width="180" />
+  <ElTableColumn prop="status" label="状态" width="120" />
+  <ElTableColumn prop="updatedAt" label="更新时间" min-width="160" />
+</ElTable>
+```
+
+### 规则 12.6：不用 JS 分支重建布局
+
+响应式优先 CSS（栅格 / media）。确需 JS 的场景（如图表随容器 resize 重绘）用组件
+自身能力或 `ResizeObserver`，不用 `window.innerWidth` 判断后重建布局。
+
+```js
+// ✅ 正确：图表跟随容器尺寸（原生 ResizeObserver）
+const ro = new ResizeObserver(() => chart.resize())
+ro.observe(chartEl)
+
+// ❌ 错误：按视口宽度重建布局
+if (window.innerWidth < 1200) {
+  renderMobileLayout()
+}
+```

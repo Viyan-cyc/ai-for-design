@@ -81,13 +81,16 @@ const handleReset = () => {
 
 .input-keyword {
   width: 200px;
+  max-width: 100%;
 }
 
 .input-type {
   width: 160px;
+  max-width: 100%;
 }
 
 .input-date {
   width: 260px;
+  max-width: 100%;
 }
 </style>

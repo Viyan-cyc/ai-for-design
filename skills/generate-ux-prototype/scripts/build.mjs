@@ -351,6 +351,8 @@ for (const file of vueFiles) {
     cssHaystacks.push(block.content);
     const hexes = (block.content.match(/#[0-9a-fA-F]{3,8}\b/g) || []).length;
     if (hexes) warn(`${rel}: ${hexes} hardcoded hex color(s) in <style> : prefer design tokens (var(--color-*), var(--space-size-*), ...)`);
+    if (/\bzoom\s*:/.test(block.content)) warn(`${rel}: zoom layout detected in <style> : use flex/grid reflow instead of scaling`);
+    if (/font-size\s*:[^;}]*\d(vw|vh)\b/.test(block.content)) warn(`${rel}: font-size with vw/vh in <style> : do not scale fonts by viewport (design-language red line)`);
   }
   if (descriptor.template) cssHaystacks.push(descriptor.template.content);
 }

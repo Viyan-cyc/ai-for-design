@@ -65,7 +65,7 @@ const metrics = [
 
 .demo-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
   gap: var(--space-size-24);
   width: 100%;
   align-items: start;

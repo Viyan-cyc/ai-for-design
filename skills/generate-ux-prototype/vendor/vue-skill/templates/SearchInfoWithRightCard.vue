@@ -116,6 +116,7 @@ const handleReset = () => {}
 
 .left-side {
   width: 300px;
+  max-width: 40%;
   flex-shrink: 0;
   border-radius: var(--radius-size-medium);
   border: 1px solid var(--color-border-separator);

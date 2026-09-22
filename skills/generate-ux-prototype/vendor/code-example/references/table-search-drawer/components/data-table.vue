@@ -52,7 +52,7 @@ const getStatusConfig = (status) => {
     >
       <ElTableColumn prop="id" label="ID" width="80" />
       <ElTableColumn prop="name" label="名称" min-width="160" show-overflow-tooltip />
-      <ElTableColumn prop="type" label="类型" width="120" />
+      <ElTableColumn prop="type" label="类型" min-width="100" />
       <ElTableColumn prop="status" label="状态" width="100">
         <template #default="{ row }">
           <ElTag :type="getStatusConfig(row.status).type" size="small">
@@ -60,7 +60,7 @@ const getStatusConfig = (status) => {
           </ElTag>
         </template>
       </ElTableColumn>
-      <ElTableColumn prop="date" label="日期" width="140" />
+      <ElTableColumn prop="date" label="日期" min-width="120" />
       <ElTableColumn prop="value" label="数值" width="120" align="right" />
     </ElTable>
 
