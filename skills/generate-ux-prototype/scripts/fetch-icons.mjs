@@ -211,11 +211,27 @@ try {
   }
 
   // ============================================================
-  // 4. Generate component files + barrel
+  // 4. Generate .svg files + barrel
   // ============================================================
 
   const iconsDir = join(srcDir, 'assets', 'icons');
   mkdirSync(iconsDir, { recursive: true });
+
+  function processSvg(svgString) {
+    let svg = String(svgString).replace(/^\uFEFF/, '').trim();
+    const tagMatch = svg.match(/<svg\b[^>]*>/i);
+    if (tagMatch) {
+      const originalTag = tagMatch[0];
+      const cleanedTag = originalTag
+        .replace(/\s+width\s*=\s*["'][^"']*["']/gi, '')
+        .replace(/\s+height\s*=\s*["'][^"']*["']/gi, '')
+        .replace(/<svg\b/i, '<svg width="1em" height="1em"');
+      svg = svg.replace(originalTag, cleanedTag);
+    } else {
+      svg = `<svg width="1em" height="1em" xmlns="http://www.w3.org/2000/svg">${svg}</svg>`;
+    }
+    return svg;
+  }
 
   const resolvedNames = [];
   const barrelImports = [];
@@ -230,24 +246,18 @@ try {
 
     resolvedNames.push(epName);
 
-    // Write .light.js
-    writeFileSync(
-      join(iconsDir, `${epName}.light.js`),
-      `import { h } from 'vue'\n\nconst svg = ${JSON.stringify(lightSvg)}\n\nexport default {\n  name: ${JSON.stringify(epName + 'Light')},\n  render() {\n    return h('span', { class: 'ux-icon-light', innerHTML: svg })\n  }\n}\n`,
-      'utf8',
-    );
+    // Write .light.svg
+    writeFileSync(join(iconsDir, `${epName}.light.svg`), processSvg(lightSvg), 'utf8');
 
-    // Write .dark.js
-    writeFileSync(
-      join(iconsDir, `${epName}.dark.js`),
-      `import { h } from 'vue'\n\nconst svg = ${JSON.stringify(darkSvg)}\n\nexport default {\n  name: ${JSON.stringify(epName + 'Dark')},\n  render() {\n    return h('span', { class: 'ux-icon-dark', innerHTML: svg })\n  }\n}\n`,
-      'utf8',
-    );
+    // Write .dark.svg
+    writeFileSync(join(iconsDir, `${epName}.dark.svg`), processSvg(darkSvg), 'utf8');
 
-    barrelImports.push(`import ${epName}Light from './${epName}.light.js'`);
-    barrelImports.push(`import ${epName}Dark from './${epName}.dark.js'`);
+    // CamelCase safe key for import binding
+    const importKey = epName.replace(/(^|-)(\w)/g, (_, __, c) => c.toUpperCase());
+    barrelImports.push(`import ${importKey}Light from './${epName}.light.svg'`);
+    barrelImports.push(`import ${importKey}Dark from './${epName}.dark.svg'`);
     barrelExports.push(
-      `export const ${epName} = {\n  name: ${JSON.stringify(epName)},\n  render() {\n    return h('span', { class: 'ux-icon-pair' }, [h(${epName}Light), h(${epName}Dark)])\n  }\n}`,
+      `export const ${epName} = {\n  name: ${JSON.stringify(epName)},\n  render() {\n    return h('span', { class: 'ux-icon-pair' }, [\n      h('img', { class: 'ux-icon-light', src: ${importKey}Light, style: 'width:1em;height:1em' }),\n      h('img', { class: 'ux-icon-dark', src: ${importKey}Dark, style: 'width:1em;height:1em' })\n    ])\n  }\n}`,
     );
   }
 
