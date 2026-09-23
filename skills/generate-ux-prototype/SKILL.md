@@ -192,13 +192,14 @@ build 用真实 `@vue/compiler-sfc`（parse + compileScript + compileTemplate）
 
 ### ⑤ 交付 —— 不能省
 
-build 返回 `RESULT: OK` 之后，必须向用户交付：
+build 返回 `RESULT: OK` 之后，必须向用户交付预览页面的可点击链接：
 
 ```
 预览：<HTML_PATH 的绝对路径>（双击用浏览器打开）
 ```
 
-源码在 `<SRC_DIR>` 下（接入真实工程见其中 README.md），无需作为链接输出。
+**预览路径必须输出为 artifact 链接**（不是纯文本），让用户可直接点击打开。源码在 `<SRC_DIR>` 下，
+无需作为链接输出。
 
 **这一步没做，整件事就不算完成**，和 build 不通过是同等级别的未完成。
 
