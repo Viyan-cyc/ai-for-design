@@ -131,9 +131,11 @@ async function apiGetIcon(urls, theme, color, size, style, names, categories, fi
 function selectConfigDefaults(config) {
   const size = config.size?.find((s) => s.key === '24')?.key || config.size?.[0]?.key || '24';
   const styleValue = config.style?.find((s) => s.key === 'border')?.value || config.style?.[0]?.value || '线性';
-  const color =
+  const lightColor =
     config.colors?.find((c) => c.style === styleValue)?.id || config.colors?.[0]?.id || '';
-  return { size, style: styleValue, color };
+  const darkColor =
+    config.dark_colors?.find((c) => c.style === styleValue)?.id || config.dark_colors?.[0]?.id || lightColor;
+  return { size, style: styleValue, lightColor, darkColor };
 }
 
 // ============================================================
@@ -143,7 +145,7 @@ function selectConfigDefaults(config) {
 try {
   // Step 1: getConfig
   const config = await apiGetConfig();
-  const { size, style, color } = selectConfigDefaults(config);
+  const { size, style, lightColor, darkColor } = selectConfigDefaults(config);
 
   // Step 2: getIconInfo (batch search all icon names)
   const searchResults = await apiGetIconInfo(iconList.join(','), 5);
@@ -189,7 +191,7 @@ try {
   const urlToDarkSvg = new Map();
 
   try {
-    const lightRes = await apiGetIcon(allUrls, 'light', color, size, style, allNames, allCategories);
+    const lightRes = await apiGetIcon(allUrls, 'light', lightColor, size, style, allNames, allCategories);
     const lightArr = Array.isArray(lightRes) ? lightRes : [lightRes];
     for (const item of lightArr) {
       if (item.url && item.data) urlToLightSvg.set(item.url, item.data);
@@ -199,7 +201,7 @@ try {
   }
 
   try {
-    const darkRes = await apiGetIcon(allUrls, 'dark', color, size, style, allNames, allCategories);
+    const darkRes = await apiGetIcon(allUrls, 'dark', darkColor, size, style, allNames, allCategories);
     const darkArr = Array.isArray(darkRes) ? darkRes : [darkRes];
     for (const item of darkArr) {
       if (item.url && item.data) urlToDarkSvg.set(item.url, item.data);
