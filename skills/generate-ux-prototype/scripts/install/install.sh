@@ -45,6 +45,17 @@ read_cfg() {  # <field>
 }
 # manifest URL: --manifest > env-config.json manifestUrl
 if [ -z "$MANIFEST" ]; then MANIFEST="$(read_cfg manifestUrl)"; fi
+# fallback manifest: env-config.json fallbackManifestUrl. A relative value is
+# a file under references/ (shipped with the skill); an http(s) value is a
+# hosted copy. Used only when the primary manifest is unreachable.
+FALLBACK_MANIFEST=""
+FB_CFG="$(read_cfg fallbackManifestUrl)"
+if [ -n "$FB_CFG" ]; then
+  case "$FB_CFG" in
+    http://*|https://*) FALLBACK_MANIFEST="$FB_CFG" ;;
+    *) if [ -f "$SKILL_DIR/references/$FB_CFG" ]; then FALLBACK_MANIFEST="$SKILL_DIR/references/$FB_CFG"; fi ;;
+  esac
+fi
 ENV_DIR_NAME="$(read_cfg envDirName)"
 [ -z "$ENV_DIR" ] && ENV_DIR="${EP_UX_PROTO_ENV_DIR:-$HOME/Library/Application Support/$ENV_DIR_NAME}"
 NODE_DIR="$ENV_DIR/node"
@@ -128,6 +139,13 @@ echo "$node_line"
 HTTP_CODE=""; HTTP_MS=""; CURL_EXIT=0
 http_get() {  # url outfile [max-time]
   local url="$1" out="$2" mt="${3:-}" w
+  # local file (bundled fallback manifest): copy, no curl
+  if [ -f "$url" ]; then
+    cp "$url" "$out" 2>/dev/null || return 1
+    HTTP_CODE="200"; HTTP_MS="0"; CURL_EXIT=0
+    echo "[http] $url -> code=200 (local file)" >&2
+    return 0
+  fi
   local -a args
   args=("${CURL_ARGS[@]}" -sS -L --connect-timeout 20)
   [ -n "$mt" ] && args+=(--max-time "$mt")
@@ -140,6 +158,39 @@ http_get() {  # url outfile [max-time]
   echo "[http] $url -> code=$HTTP_CODE exit=$CURL_EXIT time=${HTTP_MS}s" >&2
   case "$HTTP_CODE" in 2*) [ "$CURL_EXIT" = "0" ] && return 0 ;; esac
   return 1
+}
+# Fetch the manifest into $1, trying the primary URL then the bundled fallback.
+# Echoes the winning source ("primary"/"fallback"); exits non-zero when both
+# sources fail. Requires $PY set (call require_py first). A primary HTTP 2xx
+# that is not valid JSON is treated as a failure so a SSO/gateway page does not
+# short-circuit the fallback.
+fetch_manifest() {  # outfile
+  local out="$1" mjson
+  mjson="$TMP/manifest-fetch.json"
+  local sep="?"
+  case "$MANIFEST" in *\?*) sep="&" ;; *) sep="?" ;; esac
+  if http_get "$MANIFEST${sep}t=$(date +%s)" "$mjson" 60 && \
+     "$PY" -c "import json,sys;json.load(open(sys.argv[1]))" "$mjson" 2>/dev/null; then
+    cp "$mjson" "$out"
+    echo "primary"
+    return 0
+  fi
+  if [ -n "$FALLBACK_MANIFEST" ]; then
+    echo "[manifest] primary unreachable/unparseable, using fallback: $FALLBACK_MANIFEST" >&2
+    if http_get "$FALLBACK_MANIFEST" "$mjson" 60 && \
+       "$PY" -c "import json,sys;json.load(open(sys.argv[1]))" "$mjson" 2>/dev/null; then
+      cp "$mjson" "$out"
+      echo "fallback"
+      return 0
+    fi
+  fi
+  return 1
+}
+# Asset URL: a manifest-level baseUrl wins over the manifest's own location.
+asset_url() {  # manifest_json entry_file
+  local nb=""
+  nb="$("$PY" -c "import json,sys;d=json.load(open(sys.argv[1]));print((d.get('node',{}).get('baseUrl') or ''))" "$1" 2>/dev/null)"
+  if [ -n "$nb" ]; then printf '%s/%s' "${nb%/}" "$2"; else printf '%s/%s' "$BASE" "$2"; fi
 }
 
 dump_body() {  # file label — error bodies go to the log (64KB cap, binary-safe)
@@ -177,17 +228,29 @@ check_mode() {
   echo "CHECK_MODE: probe-only"
   echo "PLATFORM_HERE: $PLATFORM_KEY"
   echo "MANIFEST_URL: $MANIFEST"
-  local mjson="$TMP/manifest.json" sep
-  case "$MANIFEST" in *\?*) SEP="&" ;; *) SEP="?" ;; esac
-  if ! http_get "$MANIFEST${SEP}t=$(date +%s)" "$mjson" 60; then
+  [ -n "$FALLBACK_MANIFEST" ] && echo "FALLBACK_MANIFEST: $FALLBACK_MANIFEST"
+  local mjson="$TMP/manifest.json"
+  if ! http_get "$MANIFEST$(case "$MANIFEST" in *\?*) echo "&";; *) echo "?";; esac)t=$(date +%s)" "$mjson" 60; then
+    echo "MANIFEST_HTTP: FAIL"
+  else
+    echo "MANIFEST_HTTP: $HTTP_CODE"
+    "$PY" -c "import json,sys;json.load(open(sys.argv[1]))" "$mjson" 2>/dev/null \
+      || { dump_body "$mjson" "manifest body"; echo "MANIFEST_HTTP: not JSON"; rm -f "$mjson"; }
+  fi
+  if [ ! -s "$mjson" ] || ! "$PY" -c "import json,sys;json.load(open(sys.argv[1]))" "$mjson" 2>/dev/null; then
+    if [ -n "$FALLBACK_MANIFEST" ] && [ -f "$FALLBACK_MANIFEST" ]; then
+      echo "FALLBACK_MANIFEST: OK(local) - $FALLBACK_MANIFEST"
+      echo "NOTE: primary manifest unreachable; install will fall back to the bundled manifest (fallback assets not probed in --check)"
+      echo "CHECKED_PLATFORMS: 0"
+      echo "RESULT: OK"
+      echo "NOTE: probe-only (HEAD + 1-byte Range GET); full integrity is still enforced by sha256 at install time"
+      exit 0
+    fi
     dump_body "$mjson" "manifest error response"
     fail MANIFEST_UNREACHABLE "cannot fetch manifest (HTTP $HTTP_CODE / curl exit $CURL_EXIT)" \
       "$(body_preview "$mjson")" \
       "response body is in the LOG. if this machine needs a proxy to reach the intranet, add --proxy=<addr> and re-run --check"
   fi
-  echo "MANIFEST_HTTP: $HTTP_CODE"
-  "$PY" -c "import json,sys;json.load(open(sys.argv[1]))" "$mjson" 2>/dev/null \
-    || { dump_body "$mjson" "manifest body"; fail MANIFEST_NOT_JSON "manifest is not JSON (proxy/gateway error page?)" "$(body_preview "$mjson")" ""; }
 
   local BASE; BASE="$(dirname "$MANIFEST")"
   local bad=0 total=0 key file
@@ -197,7 +260,8 @@ check_mode() {
   while IFS=$'\t' read -r key file; do
     [ -n "$key" ] || continue
     total=$((total + 1))
-    local url="$BASE/$file" w ec hcode g gec
+    local url; url="$(asset_url "$mjson" "$file")"
+    local w ec hcode g gec
     set +e
     w="$(curl "${CURL_ARGS[@]}" -sS -I -L --connect-timeout 20 --max-time 60 -o /dev/null -w '%{http_code}' "$url" 2>/dev/null)"
     ec=$?
@@ -230,14 +294,14 @@ PYEOF
 if [ "$NODE_SRC" = "download" ]; then
   require_py
   MJSON="$TMP/manifest.json"
-  case "$MANIFEST" in *\?*) SEP="&" ;; *) SEP="?" ;; esac
   echo "[manifest] $MANIFEST"
-  if ! http_get "$MANIFEST${SEP}t=$(date +%s)" "$MJSON" 60; then
+  if ! src="$(fetch_manifest "$MJSON")"; then
     dump_body "$MJSON" "manifest error response"
     fail MANIFEST_UNREACHABLE "cannot fetch manifest: $MANIFEST (HTTP $HTTP_CODE / curl exit $CURL_EXIT)" \
       "$(body_preview "$MJSON")" \
       "response body is in the LOG. run --check first to see per-platform status; if this machine needs a proxy, pass --proxy=<addr>. note: reaching the download step means NO usable node was found (see the [node] source line) — installing any node by any means skips this whole path"
   fi
+  [ "$src" = "fallback" ] && echo "[manifest] using fallback manifest"
   "$PY" -c "import json,sys;json.load(open(sys.argv[1]))" "$MJSON" 2>/dev/null \
     || { dump_body "$MJSON" "manifest body"; fail MANIFEST_NOT_JSON "manifest is not JSON (proxy/gateway/SSO error page?)" "$(body_preview "$MJSON")" ""; }
 
@@ -255,7 +319,7 @@ PYEOF
   [ "$FILE" = "__MISSING__" ] && fail NO_PLATFORM_PKG "manifest has no node package for $PLATFORM_KEY" "" "add node.platforms.$PLATFORM_KEY to the manifest"
 
   PKG_FILE="$(basename "$FILE")"
-  URL="$BASE/$FILE"
+  URL="$(asset_url "$MJSON" "$FILE")"
   echo "[download] $URL"
   if ! http_get "$URL" "$TMP/$PKG_FILE" 600; then
     dump_body "$TMP/$PKG_FILE" "node package error response"

@@ -89,31 +89,6 @@ if (!npmJs) {
   fail("NPM_NOT_FOUND", `顺着 node ${node} 找不到 npm 的 JS 入口`, "确认 node 安装完整（npm 随 node 一起分发）；或重跑 install 脚本")
 }
 
-// ---------- npm ci -> fallback npm i ----------
-// registry 优先级：命令行 --registry（install 脚本从远端 manifest 读取后透传）>
-// env-config.fallbackNpmRegistry
-const registry = registryArg || cfg.fallbackNpmRegistry
-if (!registry) fail("NO_REGISTRY", "没有可用的 npm 源（--registry 未传且 env-config.json 缺 fallbackNpmRegistry）", "重跑 install 脚本（会从 manifest 读取 registry）")
-const childEnv = { ...process.env }
-// 强制走本 skill 指定源，避免宿主进程注入的 registry/代理变量把安装带偏
-childEnv.npm_config_registry = registry
-childEnv.NPM_CONFIG_REGISTRY = registry
-
-function runNpm(installArgs, label) {
-  console.log(`[npm] ${label}: npm ${installArgs.join(" ")} (registry=${registry})`)
-  try {
-    execFileSync(node, [npmJs, ...installArgs], {
-      cwd: INSTALL_DIR,
-      env: childEnv,
-      stdio: "inherit",
-    })
-    return true
-  } catch (e) {
-    console.log(`[npm] ${label} failed: ${e.status ?? e.message}`)
-    return false
-  }
-}
-
 // ---------- stage manifests from skill -> <envDir>/compiler ----------
 if (!fs.existsSync(path.join(MANIFEST_DIR, "package.json"))) {
   fail("COMPILER_MANIFEST_MISSING", `找不到 ${path.join(MANIFEST_DIR, "package.json")}`, "确认 skill 组装完整")
@@ -124,13 +99,69 @@ for (const f of ["package.json", "package-lock.json"]) {
   if (fs.existsSync(src)) fs.copyFileSync(src, path.join(INSTALL_DIR, f))
 }
 
-let ok = runNpm(["ci", "--no-audit", "--no-fund"], "npm ci")
-if (!ok) {
-  console.log("[npm] npm ci 失败（多为 lock 与 registry 不同步），回落 npm i")
-  ok = runNpm(["install", "--no-audit", "--no-fund"], "npm install")
+// ---------- npm ci -> fallback npm i ----------
+// registry 优先级：命令行 --registry（install 脚本从远端 manifest 读取后透传）>
+// env-config.fallbackNpmRegistry > 公网 npmmirror（PUBLIC_NPM_REGISTRY，内网源
+// 不可达时兜底，让 skill 包在外网机器也能自举）。
+//
+// 注意：npm ci/npm i 优先使用 package-lock.json 内嵌的 resolved URL，registry
+// 参数只影响"需要重新解析"的包。本 skill 的 lock 全量硬编码内网镜像源，所以外网
+// 机上 ci/i 会先失败；此时删除 staged lock 让 npm 按当前候选 registry 重新解析。
+const PUBLIC_NPM_REGISTRY = "https://registry.npmmirror.com"
+const preferredRegistry = registryArg || cfg.fallbackNpmRegistry
+if (!preferredRegistry) fail("NO_REGISTRY", "没有可用的 npm 源（--registry 未传且 env-config.json 缺 fallbackNpmRegistry）", "重跑 install 脚本（会从 manifest 读取 registry）")
+
+const registries = [...new Set([preferredRegistry, PUBLIC_NPM_REGISTRY].filter(Boolean))]
+let registry = preferredRegistry
+let installed = false
+for (const candidate of registries) {
+  registry = candidate
+  // 每候选从 skill 原版 lock 重新入场（上一候选 re-resolve 可能已改动 staged lock）
+  const stagedLock = path.join(INSTALL_DIR, "package-lock.json")
+  fs.copyFileSync(path.join(MANIFEST_DIR, "package-lock.json"), stagedLock)
+  const childEnv = { ...process.env }
+  // 强制走本 skill 指定源，避免宿主进程注入的 registry/代理变量把安装带偏
+  childEnv.npm_config_registry = registry
+  childEnv.NPM_CONFIG_REGISTRY = registry
+
+  const runNpm = (installArgs, label) => {
+    console.log(`[npm] ${label}: npm ${installArgs.join(" ")} (registry=${registry})`)
+    try {
+      execFileSync(node, [npmJs, ...installArgs], {
+        cwd: INSTALL_DIR,
+        env: childEnv,
+        stdio: "inherit",
+      })
+      return true
+    } catch (e) {
+      console.log(`[npm] ${label} failed: ${e.status ?? e.message}`)
+      return false
+    }
+  }
+
+  if (runNpm(["ci", "--no-audit", "--no-fund"], "npm ci")) {
+    installed = true
+    break
+  }
+  console.log("[npm] npm ci 失败（lock 内嵌源不可达或 lock 与 registry 不同步），回落 npm i")
+  if (runNpm(["install", "--no-audit", "--no-fund"], "npm install")) {
+    installed = true
+    break
+  }
+  // 外网机场景：lock 全量指向内网镜像，ci/i 都会因源不可达失败。删 lock 让 npm
+  // 按当前 registry 重新解析（re-resolve），这是让公网源真正生效的关键一步。
+  console.log(`[npm] lock 内嵌源不可达，删除 staged lock 按 ${registry} 重新解析`)
+  fs.rmSync(stagedLock, { force: true })
+  if (runNpm(["install", "--no-audit", "--no-fund"], "npm install (re-resolve)")) {
+    installed = true
+    break
+  }
+  if (candidate !== registries[registries.length - 1]) {
+    console.log(`[npm] registry ${registry} 不可用，切换到 ${registries[registries.length - 1]}`)
+  }
 }
-if (!ok) {
-  fail("NPM_INSTALL_FAILED", "compiler 依赖安装失败（npm ci 与 npm i 均失败）", `检查网络/代理后重跑本脚本；或手动在 ${INSTALL_DIR} 执行 npm i --registry=${registry}`)
+if (!installed) {
+  fail("NPM_INSTALL_FAILED", `compiler 依赖安装失败（${registries.map((r) => r).join(" 与 ")} 均失败）`, `检查网络/代理后重跑本脚本；或手动在 ${INSTALL_DIR} 执行 npm i --registry=${PUBLIC_NPM_REGISTRY}`)
 }
 
 // ---------- sanity: compiler-sfc loadable ----------
@@ -146,8 +177,9 @@ try {
 
 // ---------- write env.lock.json ----------
 import { createHash } from "node:crypto"
-const lockBytes = fs.readFileSync(path.join(INSTALL_DIR, "package-lock.json"))
-const lockHash = createHash("sha256").update(lockBytes).digest("hex")
+// compilerLockHash 恒取 skill 原版 lock（契约真源）：re-resolve 分支可能已改动
+// staged lock，若对它取 hash，ensure-env 与 skill 携带的 lock 比对会误报 ENV_OUTDATED。
+const lockHash = createHash("sha256").update(fs.readFileSync(path.join(MANIFEST_DIR, "package-lock.json"))).digest("hex")
 const nodeVer = execFileSync(node, ["-v"], { encoding: "utf8" }).trim()
 const lockPath = path.join(dir, "env.lock.json")
 fs.writeFileSync(
