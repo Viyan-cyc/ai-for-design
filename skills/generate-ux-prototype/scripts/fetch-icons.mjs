@@ -92,7 +92,7 @@ if (iconList.length === 0) {
 }
 
 // ============================================================
-// 2. Three-step API
+// 2. Connectivity check + API
 // ============================================================
 
 async function fetchWithTimeout(url, ms) {
@@ -104,6 +104,16 @@ async function fetchWithTimeout(url, ms) {
     return await res.json();
   } finally {
     clearTimeout(timer);
+  }
+}
+
+// --- connectivity probe (3s) ---
+async function checkConnectivity() {
+  try {
+    await fetchWithTimeout(`${baseUrl}/assetRepository/iconPlus/getConfig`, 3000);
+    return true;
+  } catch {
+    return false;
   }
 }
 
@@ -142,6 +152,17 @@ function selectConfigDefaults(config) {
 // 3. Main flow
 // ============================================================
 
+// --- 3a. Connectivity check: IconPlus unreachable → all miss, use EP icons ---
+const reachable = await checkConnectivity();
+if (!reachable) {
+  console.log('RESULT: OK');
+  console.log(`RESOLVED: 0, MISSED: ${iconList.length}`);
+  console.log(`MISSED_LIST: ${iconList.join(', ')}`);
+  console.log(`ICONS_DIR: ${resolve(join(srcDir, 'assets', 'icons'))}`);
+  process.exit(0);
+}
+
+// --- 3b. Intranet: IconPlus three-step API ---
 try {
   // Step 1: getConfig
   const config = await apiGetConfig();

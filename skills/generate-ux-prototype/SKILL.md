@@ -146,24 +146,29 @@ main.js、api 服务层示例、主题三件套、starter 页面）。
   `references/design-language.md` §3.3。
 - 交付前自查：1280 与 1024 视口下无横向溢出、无内容裁切（预览窗口缩到该宽度看一眼）。
 
-### ③.5 `fetch-icons.mjs` —— 图标检索替换（内网环境，build 前执行）
+### ③.5 `fetch-icons.mjs` —— 图标检索替换（③ 之后、④ 之前必跑）
 
 ```bash
 node scripts/fetch-icons.mjs --dir "<工程目录>" [--base-url <url>] [--timeout <ms>]
 ```
 
+**这一步是必跑的，不是可选的。** 写完页面代码后必须执行，不能跳过。
+
 扫描 `src/` 下所有 `.vue`/`.js` 中 `@element-plus/icons-vue` 的实际 import，去重后批量请求
-IconPlus 三步 API（`getConfig → getIconInfo → getIcon×2`），命中的图标生成深浅两套 SVG 组件
-文件 + barrel `src/assets/icons/index.js`。预览 moduleCache 自动合并 barrel 与 EP 图标：
+IconPlus 三步 API（`getConfig → getIconInfo → getIcon×2`），命中的图标生成深浅两套 SVG 文件
++ barrel `src/assets/icons/index.js`。预览 moduleCache 自动合并 barrel 与 EP 图标：
 **命中 → 公司 SVG（data-theme 纯 CSS 切换深浅），未命中 → EP 原样**。
 
-- **执行时机**：写完页面代码后、build 前执行。页面照常写 `import { Search } from '@element-plus/icons-vue'`，
-  fetch-icons 负责把命中的图标替换为公司图标，源码零改动。
+- **执行时机**：③ 写完页面代码后、④ build 前必须执行，**不可跳过**
+- 页面照常写 `import { Search } from '@element-plus/icons-vue'`，
+  fetch-icons 负责把命中的图标替换为公司图标，源码零改动
 - **默认 base-url**：`https://octo.hdesign.huawei.com`（可通过 `--base-url` 覆盖）
 - **默认超时**：10s（单轮批量，超时整体 FAIL 不重试，已落盘的命中文件保留，重跑幂等）
 - `RESULT: OK` + `RESOLVED: <n>, MISSED: <m>` → 继续走 ④ build
-- `RESULT: FAIL |` → 网络问题，报给用户（内网环境/服务不可达）；已落盘的命中文件仍有效
+- `RESULT: FAIL |` → **重跑一次**；仍失败才报给用户。已落盘的命中文件仍有效，不影响 build
+- **IconPlus 不可达时**：脚本输出 `RESOLVED: 0, MISSED: <n>` 正常退出（全部用 EP 原样），不是 FAIL
 - **miss 是正常的**：不是所有 EP 图标名都能在公司库命中，未命中的保持 EP 原样，页面天然完整
+- **即使页面没有用 EP 图标也要跑**（脚本会输出 `RESOLVED: 0, MISSED: 0` 正常退出）
 
 ### ④ `build.mjs` —— 编译门禁（真实编译，不是 lint）
 
