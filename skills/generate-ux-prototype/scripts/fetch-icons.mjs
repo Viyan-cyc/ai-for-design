@@ -111,23 +111,29 @@ async function apiGetConfig() {
   return fetchWithTimeout(`${baseUrl}/assetRepository/iconPlus/getConfig`, timeoutMs);
 }
 
-async function apiGetIconInfo(keywords, topK = 5) {
-  const url = `${baseUrl}/assetRepository/iconPlus/getIconInfo?keyword=${encodeURIComponent(keywords)}&topK=${topK}`;
-  return fetchWithTimeout(url, timeoutMs);
+async function apiGetIconInfo(keywords, topK = 5, sourceId = 6, groupId = '74,77,93') {
+  const params = new URLSearchParams({
+    keyword: keywords,
+    topK: String(topK),
+    source_id: String(sourceId),
+    group_id: groupId,
+  });
+  return fetchWithTimeout(`${baseUrl}/assetRepository/iconPlus/getIconInfo?${params}`, timeoutMs);
 }
 
-async function apiGetIcon(urls, theme, color, size, style) {
-  const params = new URLSearchParams({ url: urls, theme, color, size, style });
+async function apiGetIcon(urls, theme, color, size, style, names, categories, fileType = 'svg') {
+  const params = new URLSearchParams({ url: urls, theme, color, size, style, fileType });
+  if (names) params.set('name', names);
+  if (categories) params.set('category', categories);
   return fetchWithTimeout(`${baseUrl}/assetRepository/iconPlus/getIcon?${params}`, timeoutMs);
 }
 
 function selectConfigDefaults(config) {
   const size = config.size?.find((s) => s.key === '24')?.key || config.size?.[0]?.key || '24';
-  const styleKey = config.style?.find((s) => s.key === 'border')?.key || config.style?.[0]?.key || 'border';
-  const styleValue = config.style?.find((s) => s.key === styleKey)?.value;
+  const styleValue = config.style?.find((s) => s.key === 'border')?.value || config.style?.[0]?.value || '线性';
   const color =
     config.colors?.find((c) => c.style === styleValue)?.id || config.colors?.[0]?.id || '';
-  return { size, style: styleKey, color };
+  return { size, style: styleValue, color };
 }
 
 // ============================================================
@@ -144,7 +150,7 @@ try {
 
   // Match by englishName (case-insensitive), fall back to highest score
   const nameToUrl = new Map(); // EP icon name → company icon url
-  const urlToNames = new Map(); // company icon url → [EP names]
+  const urlToMeta = new Map(); // company icon url → { name, category }
 
   const resultsArray = Array.isArray(searchResults) ? searchResults : [searchResults];
   for (const group of resultsArray) {
@@ -158,8 +164,9 @@ try {
       exact || [...candidates].sort((a, b) => (b.score || 0) - (a.score || 0))[0];
     if (best && best.url) {
       nameToUrl.set(keyword, best.url);
-      if (!urlToNames.has(best.url)) urlToNames.set(best.url, []);
-      urlToNames.get(best.url).push(keyword);
+      if (!urlToMeta.has(best.url)) {
+        urlToMeta.set(best.url, { name: best.name || '', category: best.category || '' });
+      }
     }
   }
 
@@ -175,12 +182,14 @@ try {
   }
 
   // Step 3: getIcon × 2 (light + dark)
-  const allUrls = [...urlToNames.keys()].join(',');
+  const allUrls = [...urlToMeta.keys()].join(',');
+  const allNames = [...urlToMeta.values()].map((m) => m.name).filter(Boolean).join(',');
+  const allCategories = [...new Set([...urlToMeta.values()].map((m) => m.category).filter(Boolean))].join(',');
   const urlToLightSvg = new Map();
   const urlToDarkSvg = new Map();
 
   try {
-    const lightRes = await apiGetIcon(allUrls, 'light', color, size, style);
+    const lightRes = await apiGetIcon(allUrls, 'light', color, size, style, allNames, allCategories);
     const lightArr = Array.isArray(lightRes) ? lightRes : [lightRes];
     for (const item of lightArr) {
       if (item.url && item.data) urlToLightSvg.set(item.url, item.data);
@@ -190,7 +199,7 @@ try {
   }
 
   try {
-    const darkRes = await apiGetIcon(allUrls, 'dark', color, size, style);
+    const darkRes = await apiGetIcon(allUrls, 'dark', color, size, style, allNames, allCategories);
     const darkArr = Array.isArray(darkRes) ? darkRes : [darkRes];
     for (const item of darkArr) {
       if (item.url && item.data) urlToDarkSvg.set(item.url, item.data);
