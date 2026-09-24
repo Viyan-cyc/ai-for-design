@@ -51,6 +51,8 @@ src/
   t('msg.demo.search.placeholder')
   ```
 - key 命名 `msg.{页面}.{分类}.{语义}`（至少 3 个点）；**两个词典文件 key 集合保持一致**，en 缺失自动回落中文。
+- 词典只收界面文案与枚举显示名（封闭集合 code→label）；标题/描述/名称/人名等记录内容
+  不进词典、组件不 `t()` 包装——对接后端后被真实数据取代，翻译即浪费且破坏页面零改动。
 - 切换语言：
   ```js
   import { setLocale } from '@/i18n'   // 路径别名按工程调整
@@ -87,3 +89,5 @@ src/
   }
   ```
 - mock 函数保留了 `await`/延迟语义，迁移后调用侧（含 loading 态）无需调整。
+- 交付卫生：真实模块的 `api/{模块}.js` 落地后，删除 starter 样例 `api/demo.js` 与
+  `api/mock/demo-data.js`，本节迁移示例改指真实模块。

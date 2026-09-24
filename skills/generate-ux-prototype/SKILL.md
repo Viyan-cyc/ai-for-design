@@ -125,6 +125,8 @@ main.js、api 服务层示例、主题三件套、starter 页面）。
   mock 数据文件**（它们放 `src/api/mock/`，只被 api 层消费）。starter 的 `api/demo.js` 是样例。
 - 对接真实后端 = 改 `api/` 实现（换 fetch/axios），页面零改动——这是服务层存在的意义。
 - 新增接口按同样式扩展：每个业务模块一个 `api/{模块}.js`，mock 数据沉到 `api/mock/`。
+- 交付卫生：真实页面落地后，删除 starter 预置的 `api/demo.js` + `api/mock/demo-data.js`
+  （或改造为真实模块），`src/README.md` 的迁移示例同步改指真实模块——不给交付物留死代码。
 
 #### 国际化：按需启用（默认不含任何 i18n 代码）
 
@@ -135,6 +137,13 @@ main.js、api 服务层示例、主题三件套、starter 页面）。
   2. 文案 key 化：页面用 `const { t } = useI18n()` + key（key 命名 `msg.{页面}.{分类}.{语义}`，
      至少 3 个点，见 code-rules 规则 10.2）；
   3. 词典进 `src/i18n/locales/{zh-cn,en}.js`（**两份 key 集合必须一致**，en 缺失会回落中文）；
+     - 词典边界（只收两类，判定法：对接真实后端后词条还用得上吗）：
+       ① 界面文案（标签/按钮/占位符/提示/空态）；
+       ② 枚举显示名——封闭集合的 code→label（如 level/status/业务域），存于数据的只有 code，
+          显示文案由 `t()` 解析；对接后端后词典保留，仅把 code 集合对齐后端枚举表。
+       记录内容**不进词典**：标题/描述/设备或资源名称/人名/时长等开放文本，存于 mock、
+       对接后被真实数据取代，组件不得对数据值做 `t()` 包装（否则真实数据会显示 key 路径，
+       破坏「页面零改动」契约）。拿不准封闭/开放时，按记录内容处理。
   4. App.vue 接线 + 切换 UI：**UI 形态按用户描述决定**（图标/下拉/菜单项均可），参考实现见
      `references/on-demand-toggle.md`（含预览必需：幂等补装须先于 `useI18n`，EP 文案经
      `ElConfigProvider` 跟随）。真实工程入口需 `app.use(i18n)`。
