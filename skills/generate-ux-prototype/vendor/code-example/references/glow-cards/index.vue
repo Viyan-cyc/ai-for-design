@@ -2,7 +2,7 @@
 // glow-cards — 卡片氛围光两种形态示例（角部高光 / 中心辐射）
 // 色相跟语义走：本例角部高光用品牌蓝（信息卡）、中心辐射用告警红（异常场景卡）。
 // 换语义换色系即可：告警橙 --orange-10/--orange-05、成功绿用功能色对应 subtle 与浅档，
-// 峰值恒取该色系最浅档，其余规则见页面底部注释与各形态写法。
+// 峰值恒取该色系最浅档，各形态写法与通用规则见下方样式注释块。
 import { ElIcon, ElTag } from 'element-plus'
 import { Odometer, Warning } from '@element-plus/icons-vue'
 
