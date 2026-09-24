@@ -161,6 +161,30 @@
             Promise.all(themePaths.map(function (p) {
                 return less.render(SRC[p]).then(function (out) { addStyle(out.css); });
             })).then(function () {
+                // Icon barrel: if /src/assets/icons/index.js exists, pre-load it
+                // and create a Proxy that merges barrel exports with EP icons.
+                // Hit → company SVG (dual-theme CSS switch); miss → EP original.
+                var barrelSrc = SRC["/src/assets/icons/index.js"];
+                var initPromise;
+                if (barrelSrc) {
+                    initPromise = window["vue3-sfc-loader"].loadModule("/src/assets/icons/index.js", options)
+                        .then(function (barrel) {
+                            options.moduleCache["@element-plus/icons-vue"] = new Proxy(ElementPlusIconsVue, {
+                                get: function (target, prop) {
+                                    if (prop in barrel) return barrel[prop];
+                                    return target[prop];
+                                }
+                            });
+                        })
+                        .catch(function (e) {
+                            console.warn("[ux-proto] icon barrel failed, using EP icons:", e);
+                        });
+                } else {
+                    initPromise = Promise.resolve();
+                }
+
+                return initPromise;
+            }).then(function () {
                 var app = Vue.createApp({
                     components: {
                         UxRoot: Vue.defineAsyncComponent(function () {

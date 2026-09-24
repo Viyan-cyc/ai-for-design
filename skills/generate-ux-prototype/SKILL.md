@@ -20,10 +20,12 @@ version: 0.1.0
 ## 工作流
 
 ```
-⓪ 确认 node  →  ① ensure-env  →  ② init 建工程  →  ③ 写 .vue 页面  →  ④ build 门禁  →  ⑤ 交付
-  (没有就装)                                        ↑             │
-                                                    └── 验证未过 ──┘  循环至通过
+⓪ 确认 node  →  ① ensure-env  →  ② init 建工程  →  ③ 写 .vue 页面  →  ③.5 fetch-icons  →  ④ build 门禁  →  ⑤ 交付
+  (没有就装)                                    ↑                 │
+                                                └── build 验证未过 ─┘  循环至通过
 ```
+
+> fetch-icons 只跑一次，不参与循环；build 失败回到 ③ 改代码，重跑 ④。
 
 脚本都在本 skill 的 `scripts/` 下，**除 ⓪ 的安装脚本外都要 node 才能跑**。
 所有脚本的输出都是固定格式，**先读 `RESULT:` 那一行再决定下一步**：
@@ -154,6 +156,30 @@ main.js、api 服务层示例、主题三件套、starter 页面）。
   `references/design-language.md` §3.3。
 - 交付前自查：1280 与 1024 视口下无横向溢出、无内容裁切（预览窗口缩到该宽度看一眼）。
 
+### ③.5 `fetch-icons.mjs` —— 图标检索替换（③ 之后、④ 之前必跑）
+
+```bash
+node scripts/fetch-icons.mjs --dir "<工程目录>" [--base-url <url>] [--timeout <ms>]
+```
+
+**这一步是必跑的，不是可选的。** 写完页面代码后必须执行，不能跳过。
+
+扫描 `src/` 下所有 `.vue`/`.js` 中 `@element-plus/icons-vue` 的实际 import，去重后批量请求
+IconPlus 三步 API（`getConfig → getIconInfo → getIcon×2`），命中的图标生成深浅两套 SVG 文件
++ barrel `src/assets/icons/index.js`。预览 moduleCache 自动合并 barrel 与 EP 图标：
+**命中 → 公司 SVG（data-theme 纯 CSS 切换深浅），未命中 → EP 原样**。
+
+- **执行时机**：③ 写完页面代码后、④ build 前必须执行，**不可跳过**
+- 页面照常写 `import { Search } from '@element-plus/icons-vue'`，
+  fetch-icons 负责把命中的图标替换为公司图标，源码零改动
+- **默认 base-url**：`https://octo.hdesign.huawei.com`（可通过 `--base-url` 覆盖）
+- **默认超时**：10s（单轮批量，超时整体 FAIL 不重试，已落盘的命中文件保留）
+- `RESULT: OK` + `RESOLVED: <n>, MISSED: <m>` → 继续走 ④ build
+- `RESULT: FAIL |` → 报给用户（服务异常）。已落盘的命中文件仍有效，不影响 build
+- **IconPlus 不可达时**：脚本输出 `RESOLVED: 0, MISSED: <n>` 正常退出（全部用 EP 原样），不是 FAIL
+- **miss 是正常的**：不是所有 EP 图标名都能在公司库命中，未命中的保持 EP 原样，页面天然完整
+- **即使页面没有用 EP 图标也要跑**（脚本会输出 `RESOLVED: 0, MISSED: 0` 正常退出）
+
 ### ④ `build.mjs` —— 编译门禁（真实编译，不是 lint）
 
 ```bash
@@ -176,12 +202,14 @@ build 用真实 `@vue/compiler-sfc`（parse + compileScript + compileTemplate）
 
 ### ⑤ 交付 —— 不能省
 
-build 返回 `RESULT: OK` 之后，必须向用户交付：
+build 返回 `RESULT: OK` 之后，必须向用户交付预览页面的可点击链接：
 
 ```
 预览：<HTML_PATH 的绝对路径>（双击用浏览器打开）
-源码：<SRC_DIR 的绝对路径>（接入真实工程见其中 README.md）
 ```
+
+**预览路径必须输出为 artifact 链接**（不是纯文本），让用户可直接点击打开。源码在 `<SRC_DIR>` 下，
+无需作为链接输出。
 
 **这一步没做，整件事就不算完成**，和 build 不通过是同等级别的未完成。
 
@@ -285,7 +313,7 @@ build 的编译/token 错误是你自己的代码问题，修完重跑，不转�
 
 - 装环境时：说在准备环境、需要几分钟，不要贴命令和路径
 - 编译失败自己修时：不要每轮都汇报，修好了一起说
-- 做完时：给出预览 HTML 路径 + src/ 路径，说明预览双击即开、源码接入方法在 README
+- 做完时：给出预览 HTML 路径（双击即开），源码路径无需作为链接输出
 
 ## 已知边界
 
