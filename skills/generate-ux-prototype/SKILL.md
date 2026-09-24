@@ -21,9 +21,11 @@ version: 0.1.0
 
 ```
 ⓪ 确认 node  →  ① ensure-env  →  ② init 建工程  →  ③ 写 .vue 页面  →  ③.5 fetch-icons  →  ④ build 门禁  →  ⑤ 交付
-  (没有就装)                                             ↑                        │
-                                                        └── 验证未过 ────────────┘  循环至通过
+  (没有就装)                                    ↑                 │
+                                                └── build 验证未过 ─┘  循环至通过
 ```
+
+> fetch-icons 只跑一次，不参与循环；build 失败回到 ③ 改代码，重跑 ④。
 
 脚本都在本 skill 的 `scripts/` 下，**除 ⓪ 的安装脚本外都要 node 才能跑**。
 所有脚本的输出都是固定格式，**先读 `RESULT:` 那一行再决定下一步**：
@@ -171,9 +173,9 @@ IconPlus 三步 API（`getConfig → getIconInfo → getIcon×2`），命中的�
 - 页面照常写 `import { Search } from '@element-plus/icons-vue'`，
   fetch-icons 负责把命中的图标替换为公司图标，源码零改动
 - **默认 base-url**：`https://octo.hdesign.huawei.com`（可通过 `--base-url` 覆盖）
-- **默认超时**：10s（单轮批量，超时整体 FAIL 不重试，已落盘的命中文件保留，重跑幂等）
+- **默认超时**：10s（单轮批量，超时整体 FAIL 不重试，已落盘的命中文件保留）
 - `RESULT: OK` + `RESOLVED: <n>, MISSED: <m>` → 继续走 ④ build
-- `RESULT: FAIL |` → **重跑一次**；仍失败才报给用户。已落盘的命中文件仍有效，不影响 build
+- `RESULT: FAIL |` → 报给用户（服务异常）。已落盘的命中文件仍有效，不影响 build
 - **IconPlus 不可达时**：脚本输出 `RESOLVED: 0, MISSED: <n>` 正常退出（全部用 EP 原样），不是 FAIL
 - **miss 是正常的**：不是所有 EP 图标名都能在公司库命中，未命中的保持 EP 原样，页面天然完整
 - **即使页面没有用 EP 图标也要跑**（脚本会输出 `RESOLVED: 0, MISSED: 0` 正常退出）
