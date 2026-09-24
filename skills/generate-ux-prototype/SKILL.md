@@ -55,11 +55,19 @@ powershell -ExecutionPolicy Bypass -File "<skillDir>\scripts\install\install.ps1
 ```
 
 `<skillDir>` 就是**本文件（SKILL.md）所在目录**，照着拼绝对路径。这两个脚本是 bash / PowerShell
-原生的，不需要机器先有 node；没有时它们会从 npmmirror 下载 portable node（带 sha256 校验），
-然后自动接续 `setup-env.mjs` 装 compiler 依赖（**npm-only，本 skill 不用 yarn**）。
+原生的，不需要机器先有 node；没有时它们会先从内网 manifest 下载 portable node（带 sha256 校验），
+**内网不通时自动回落到 skill 内置的 fallback manifest（npmmirror 包源，node v24.16.0，同样带
+sha256 校验）**，然后自动接续 `setup-env.mjs` 装 compiler 依赖（**npm-only，本 skill 不用 yarn**；
+npm 源也带两级回落：内网源 → 公网 npmmirror）。
 
 机器上已有能跑的 node 时它们会直接复用（任意大版本，无版本门禁），日志里 `[node] source: system`
-就是走了这条路——**不要因为"没看到下载"就以为它没装**。
+就是走了这条路——**不要因为"没看到下载"就以为它没装**。内网 manifest 拉取失败且走了回落时，
+日志会出现 `[manifest] primary unreachable, using fallback` / `using fallback manifest` 这类行，
+属预期行为；实在装不上（两源都失败）会报 `MANIFEST_UNREACHABLE` / `NPM_INSTALL_FAILED` 并给
+`HINT:`。
+
+升级 node 版本时：内网 manifest 与 `references/fallback-node-manifest.json`（file/sha256/baseUrl）
+需要同步更新，保持两个来源版本一致。
 
 装环境要几分钟，告诉用户正在装。装完回到 ①。
 
@@ -132,8 +140,8 @@ main.js、api 服务层示例、主题三件套、starter 页面）。
 
 #### 主题切换：机制常驻，UI 按需
 
-- 换肤**机制**随工程交付（`src/assets/themes/` 协议：一皮肤一文件、`html[data-theme="{name}"]`、
-  bridge.css 自动跟随、新增皮肤插槽）——这部分不删不用重做，页面颜色全程走 token。
+- 换肤**机制**随工程交付（`src/assets/themes/` 协议：一皮肤一文件（.less）、`html[data-theme="{name}"]`、
+  bridge.less 自动跟随、新增皮肤插槽）——这部分不删不用重做，页面颜色全程走 token。
 - **切换 UI 默认不在**。用户要求深浅切换 → 接入 UI，**形态按用户描述决定**（图标 toggle/
   下拉/菜单项均可），参考实现见 `references/on-demand-toggle.md`。
 - **内置 default + dark 两套皮肤**。两套皮肤均由 gen-tokens 从 design-language 统一双主题表（§1.2 `Token｜用途｜Light｜Dark`）生成，无工程回填项。
@@ -254,7 +262,7 @@ build 的编译/token 错误是你自己的代码问题，修完重跑，不转�
 |---|---|
 | ✅ 新建/修改 | `src/pages/{Page}/` 下的任何文件 |
 | ✅ 修改 | `src/App.vue`（挂载页面组件） |
-| ❌ 不动 | `index.gts.html`、`public/library/`、`src/main.js`、`src/assets/themes/*.css`（交付骨架，改了换肤/预览体系就散了） |
+| ❌ 不动 | `index.gts.html`、`public/library/`、`src/main.js`、`src/assets/themes/*.less`（交付骨架，改了换肤/预览体系就散了） |
 
 换肤需求走 `src/assets/themes/README.md` 协议**追加**皮肤文件，不动既有三件套。
 

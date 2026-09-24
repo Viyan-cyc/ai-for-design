@@ -18,9 +18,9 @@ src/
 └── assets/
     ├── uploads/           # 页面引用的图片素材
     └── themes/            # 主题体系（换肤）
-        ├── base.css       # 字体/骨架/滚动条（与皮肤无关）
-        ├── bridge.css     # 设计 token → --el-* 桥接（Element Plus 跟随换肤）
-        └── default.css    # 默认皮肤（协议见同目录 README.md）
+        ├── base.less      # 字体/骨架/滚动条（与皮肤无关）
+        ├── bridge.less    # 设计 token → --el-* 桥接（Element Plus 跟随换肤）
+        └── default.less   # 默认皮肤（协议见同目录 README.md）
 ```
 
 > **按需能力（默认不生成）**：国际化（`src/i18n/` + App.vue 切换 UI）与主题切换 UI 均为按需能力，
@@ -29,7 +29,7 @@ src/
 ## 接入步骤
 
 1. 安装依赖（若工程尚未安装）：`npm i vue element-plus@2.13.5 @element-plus/icons-vue dayjs`。
-   页面样式为 `<style lang="less">`，工程需自备 less 编译：`npm i -D less`。
+   页面与主题样式均为 `<style lang="less">`/`.less`，工程需自备 less 编译：`npm i -D less`。
    页面含图表（`vue-echarts`）时另装：`npm i echarts vue-echarts`。
    启用国际化时另装：`npm i vue-i18n@^9.14`。
 2. 拷贝 `src/` 对应目录进工程（或只取所需页面文件夹 + `assets/themes/` + 用到的 `assets/`）。
@@ -37,7 +37,7 @@ src/
    ```js
    { path: '/device-management', component: () => import('@/pages/DeviceManagement/index.vue') }
    ```
-4. 在工程入口引入主题三件套（见 `main.js`）：`base.css`、`bridge.css`、`themes/default.css`。
+4. 在工程入口引入主题三件套（见 `main.js`）：`base.less`、`bridge.less`、`themes/default.less`。
 5. 页面颜色全部走 `var(--color-*)` 等设计 token —— 换肤体系接入后页面自动跟随（协议见同目录 README.md）。
 
 ## 国际化（按需启用）
@@ -69,7 +69,7 @@ src/
   ```
   选择持久化在 localStorage（`uxproto-theme`）。
 - 切换 UI 为按需能力（默认不在），形态按需求描述实现。
-- 当前内置 `default` 一套皮肤；深色皮肤待设计侧补齐深色 token 表后由同一流程接入。
+- 当前内置 `default` / `dark` 两套皮肤；新皮肤按 `assets/themes/README.md` 协议接入。
 
 ## mock 数据 → 真实接口
 

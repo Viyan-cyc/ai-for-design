@@ -12,7 +12,7 @@
 //   │   ├── README.md         # 接入说明
 //   │   ├── pages/{Pascal}/index.vue       # 页面起始骨架
 //   │   └── assets/                        # 主题/素材（随源码交付）
-//   │       ├── uploads/  themes/{base,bridge,default}.css
+//   │       ├── uploads/  themes/{base,bridge,default}.less
 //   ├── public/library/       # 预览运行时 UMD（真实拷贝，非链接，不随工程交付）
 //   ├── index.gts.html        # 离线预览加载器（FIXED）
 //   └── preview-data.js       # 源码映射（build.mjs 自动生成/刷新）

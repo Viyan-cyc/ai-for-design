@@ -7,7 +7,7 @@
 
 <!-- GEN:TOKEN-TABLE START (由 scripts/gen-tokens.mjs 生成，勿手改) -->
 
-token 全量定义在皮肤文件 `src/assets/themes/default.css`（375 个自定义属性，由 `scripts/gen-tokens.mjs` 从设计文档生成），命名即 design-language 规范名，无前缀：
+token 全量定义在皮肤文件 `src/assets/themes/default.less`（375 个自定义属性，由 `scripts/gen-tokens.mjs` 从设计文档生成），命名即 design-language 规范名，无前缀：
 
 | 类别 | token 形态 | 示例 |
 | --- | --- | --- |
@@ -36,11 +36,11 @@ token 全量定义在皮肤文件 `src/assets/themes/default.css`（375 个自�
 1. 先确定部位、用途与状态，再取 token；填充/文字/图标/边框分别选色，不近似互换。
 2. 未定义或待确认的值**不可使用**（如 `color-bg-6` 未定义，引用即构建失败）。
 3. 状态不可推导：不自行推算缺失的交互态色值。
-4. 默认浅色界面；深色经 dark 皮肤提供（见 themes/dark.css）。
+4. 默认浅色界面；深色经 dark 皮肤提供（见 themes/dark.less）。
 
-## 2. Element Plus 桥接（bridge.css，FIXED 不改）
+## 2. Element Plus 桥接（bridge.less，FIXED 不改）
 
-皮肤 token 经 `bridge.css` 映射到 `--el-*`，组件自动跟随皮肤。关键对位（生成页面时不用写任何 `--el-*`）：
+皮肤 token 经 `bridge.less` 映射到 `--el-*`，组件自动跟随皮肤。关键对位（生成页面时不用写任何 `--el-*`）：
 
 | EP 变量组 | 皮肤 token | 说明 |
 | --- | --- | --- |
@@ -107,8 +107,8 @@ token 全量定义在皮肤文件 `src/assets/themes/default.css`（375 个自�
 
 ## 4. 换肤协议（皮肤作者视图）
 
-- 一皮肤一文件 `src/assets/themes/{name}.css`；作用域 `html[data-theme="{name}"]`（非 `:root`）。
-- 在 `index.gts.html` 换肤插槽追加 `<link>`；运行时切换：`document.documentElement.setAttribute("data-theme", name)`。
+- 一皮肤一文件 `src/assets/themes/{name}.less`；作用域 `html[data-theme="{name}"]`（非 `:root`）。
+- 预览下 `themes/` 全部 `.less` 自动发现加载（新皮肤放入即生效）；真实工程在入口 import；运行时切换：`document.documentElement.setAttribute("data-theme", name)`。
 - token 真值 = design-language；皮肤必须完整提供页面与桥接层消费的全部 token。
 - 深色皮肤必须覆盖 `--ux-mix-base` 为深色表面色（否则 light-N 色阶发白）。
 

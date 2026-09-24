@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 // gen-tokens.mjs — 维护工具：从 design-language 真源（样式Token/设计系统.md）
-// 重新生成 default.css 的规则表格段与 design-language.md §1 速查表。
+// 重新生成 default.less 的规则表格段与 design-language.md §1 速查表。
 //
 // 范围：规则表格（约 90% token）按文档表格解析生成；散文定义的组
 // （frost-*、字体栈）是本脚本内嵌的固定模板片段——文档更新这些时改片段。
-// bridge.css 保持手写（工程映射，非文档可推导）。
+// bridge.less 保持手写（工程映射，非文档可推导）。
 //
 // 文档结构漂移时：解析报错即停（REPORT 全部列出，不产出静默结果）。
 //
@@ -319,7 +319,7 @@ function emitEntries(entries) {
   return entries.map((e) => (e.comment ? `${e.decl.padEnd(w)}  /* ${e.comment} */` : e.decl));
 }
 
-// ---------- 组装 default.css ----------
+// ---------- 组装 default.less ----------
 const out = [];
 out.push(`/* ============================================================
    皮肤：default（默认亮色皮肤）
@@ -476,12 +476,12 @@ const totalTokens = counts.semanticLight + counts.palette + counts.company + cou
 const GEN_START = '<!-- GEN:TOKEN-TABLE START (由 scripts/gen-tokens.mjs 生成，勿手改) -->';
 const GEN_END = '<!-- GEN:TOKEN-TABLE END -->';
 const pick = (arr, name, key = 'name') => arr.find((t) => t[key] === name);
-// 324 口径随统一表演进：default.css 声明数 − 紧凑档覆盖（同名 token 二次赋值）
+// 324 口径随统一表演进：default.less 声明数 − 紧凑档覆盖（同名 token 二次赋值）
 const uniqueTokens = totalTokens - spacing.length;
 const genTable = [
   GEN_START,
   '',
-  `token 全量定义在皮肤文件 \`src/assets/themes/default.css\`（${uniqueTokens} 个自定义属性，由 \`scripts/gen-tokens.mjs\` 从设计文档生成），命名即 design-language 规范名，无前缀：`,
+  `token 全量定义在皮肤文件 \`src/assets/themes/default.less\`（${uniqueTokens} 个自定义属性，由 \`scripts/gen-tokens.mjs\` 从设计文档生成），命名即 design-language 规范名，无前缀：`,
   '',
   '| 类别 | token 形态 | 示例 |',
   '| --- | --- | --- |',
@@ -506,9 +506,9 @@ const genTable = [
   GEN_END,
 ].join('\n');
 
-// ---------- 组装 dark.css ----------
-// 全量皮肤：data-theme="dark" 时 default.css 全部定义失效，深色皮肤必须提供
-// default.css 的全部 token。非颜色组（间距/圆角/边框/字体/字号/字重）与 default
+// ---------- 组装 dark.less ----------
+// 全量皮肤：data-theme="dark" 时 default.less 全部定义失效，深色皮肤必须提供
+// default.less 的全部 token。非颜色组（间距/圆角/边框/字体/字号/字重）与 default
 // 同值原样复制；颜色真值全部来自 §1.2 统一表 Dark 列（浅色变更与深色正式值同表维护）。
 // 图表色：default 11 色 + accessible 6 色均取 Dark 列；阴影取 Dark alpha；frost 为深色材质。
 const darkCss = [];
@@ -543,7 +543,7 @@ darkCss.push(...emitEntries(chartAccessible.map((t) => ({
   comment: t.use,
 }))));
 
-// 非颜色组与 default 完全同值（data-theme 切换后 default.css 失效，深色皮肤必须全量提供；
+// 非颜色组与 default 完全同值（data-theme 切换后 default.less 失效，深色皮肤必须全量提供；
 // 深色阴影/frost 材质设计师未给，沿用浅色值并已在文件头声明）。
 darkCss.push('');
 darkCss.push('  /* ======== 1.3 基础色板 / 1.4 公司辅助色（主题无关，同 default） ======== */');
@@ -616,13 +616,13 @@ const DARK_REQUIRED = [
 ];
 const darkMissing = DARK_REQUIRED.filter((k) => !darkDefined.has(k));
 if (darkMissing.length) {
-  console.log(`RESULT: FAIL | dark.css incomplete, missing required tokens: ${darkMissing.join(', ')}`);
+  console.log(`RESULT: FAIL | dark.less incomplete, missing required tokens: ${darkMissing.join(', ')}`);
   process.exit(1);
 }
 
 // ---------- 写盘 / 校验 ----------
-const cssPath = join(SKILL_DIR, 'scripts', 'preview', 'src', 'assets', 'themes', 'default.css');
-const darkPath = join(SKILL_DIR, 'scripts', 'preview', 'src', 'assets', 'themes', 'dark.css');
+const cssPath = join(SKILL_DIR, 'scripts', 'preview', 'src', 'assets', 'themes', 'default.less');
+const darkPath = join(SKILL_DIR, 'scripts', 'preview', 'src', 'assets', 'themes', 'dark.less');
 const refPath = join(SKILL_DIR, 'references', 'design-language.md');
 
 function applyToRef(refCur) {
@@ -650,9 +650,9 @@ if (checkMode) {
     process.exit(0);
   }
   console.log('RESULT: FAIL | --check drift detected:');
-  if (!cssOk) console.log('  default.css differs from generated output');
+  if (!cssOk) console.log('  default.less differs from generated output');
   if (!refOk) console.log('  design-language.md §1 differs from generated output');
-  if (!darkOk) console.log('  dark.css differs from generated output');
+  if (!darkOk) console.log('  dark.less differs from generated output');
   console.log('HINT: 去掉 --check 重跑生成器，再审查 diff');
   process.exit(1);
 }

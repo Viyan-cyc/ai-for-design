@@ -1,7 +1,7 @@
 /* ============================================================
-   base.css — 基础层（FIXED，与皮肤无关）
+   base.less — 基础层（FIXED，与皮肤无关）
    只包含：字体、滚动条、页面骨架。语义颜色一律由皮肤提供
-   （src/assets/themes/*.css），经 bridge.css 桥接到
+   （src/assets/themes/*.less），经 bridge.less 桥接到
    Element Plus 与页面。
    ============================================================ */
 
@@ -59,7 +59,7 @@ body {
 
 /* 皮肤未加载时的兜底提示（正常情况下皮肤链接存在，不会出现） */
 html:not([data-theme]) body::before {
-  content: 'THEME MISSING: no skin css loaded (themes/*.css)';
+  content: 'THEME MISSING: no skin less loaded (themes/*.less)';
   display: block;
   padding: 8px 12px;
   font-size: 12px;

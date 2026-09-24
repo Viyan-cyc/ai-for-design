@@ -269,7 +269,7 @@ box-shadow: var(--shadow-1);
 ### 错误 20：业务页面深度覆盖 EP 组件样式
 
 ```less
-/* ❌ 错误：主题层（bridge.css）已完成全部映射，页面再做覆盖即双重维护 */
+/* ❌ 错误：主题层（bridge.less）已完成全部映射，页面再做覆盖即双重维护 */
 :deep(.el-table .el-table__header) {
   background: #f5f5f5 !important;
 }

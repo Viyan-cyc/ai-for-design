@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // build-data.mjs
-// Scans {dir}/src for .vue / .js / .css / .json sources and (re)generates
+// Scans {dir}/src for .vue / .js / .less / .css / .json sources and (re)generates
 // {dir}/preview-data.js — the source map consumed by index.gts.html to
 // compile SFCs in the browser via vue3-sfc-loader.
 //
@@ -22,7 +22,7 @@ import { fileURLToPath } from 'url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-const TEXT_EXT = new Set(['.vue', '.js', '.mjs', '.css', '.json']);
+const TEXT_EXT = new Set(['.vue', '.js', '.mjs', '.css', '.less', '.json']);
 
 export function collectSources(srcDir) {
   const files = [];

@@ -14,6 +14,12 @@
 # node packages resolve relative to dirname(manifestUrl); integrity via the
 # manifest's embedded sha256 (replaces the old SHASUMS256.txt flow).
 #
+# FALLBACK: when the primary manifest is unreachable or unparseable, the
+# script retries against a bundled local manifest
+# (references/fallback-node-manifest.json, path from env-config.json
+# fallbackManifestUrl). Its asset URLs resolve via the manifest-level baseUrl
+# (public npmmirror CDN) instead of dirname(manifestUrl).
+#
 # Usage:
 #   powershell -ExecutionPolicy Bypass -File install.ps1 [-Manifest <url|path>]
 #              [-EnvDir <path>] [-Registry <npm registry>] [-ForcePortableNode]
@@ -45,6 +51,19 @@ function Read-Cfg([string]$Field) {
 }
 # manifest URL: -Manifest > env-config.json manifestUrl
 if (-not $Manifest) { $Manifest = Read-Cfg "manifestUrl" }
+# fallback manifest: env-config.json fallbackManifestUrl. A relative value is
+# a file under references/ (shipped with the skill); an http(s) value is a
+# hosted copy. Used only when the primary manifest is unreachable.
+$FallbackManifest = ""
+$FbCfg = Read-Cfg "fallbackManifestUrl"
+if ($FbCfg) {
+  if ($FbCfg -match "^https?://") {
+    $FallbackManifest = $FbCfg
+  } else {
+    $FbLocal = Join-Path $SkillDir ("references\" + $FbCfg)
+    if (Test-Path $FbLocal) { $FallbackManifest = $FbLocal }
+  }
+}
 $EnvDirName = Read-Cfg "envDirName"
 
 if (-not $EnvDir) {
@@ -132,6 +151,29 @@ function Get-Manifest([string]$Url, [string]$OutFile) {
 function Get-PlatformEntry($ManifestJson, [string]$Key) {
   return $ManifestJson.node.platforms.$Key
 }
+# Asset URL: a manifest-level baseUrl (fallback manifest points at the public
+# npmmirror CDN) wins over resolving relative to the manifest's own location.
+function Get-AssetUrl($ManifestJson, $Entry, [string]$Base) {
+  $nodeBase = ""
+  try { $nodeBase = [string]$ManifestJson.node.baseUrl } catch { }
+  if ($nodeBase) { return "$($nodeBase.TrimEnd('/'))/$($Entry.file)" }
+  if ($Entry.baseUrl) { return "$($Entry.baseUrl.TrimEnd('/'))/$($Entry.file)" }
+  return "$Base/$($Entry.file)"
+}
+# Fetch the manifest from the primary source; on failure, fall back to the
+# bundled local manifest. Returns parsed JSON or $null.
+function Get-ManifestJson([string]$OutFile) {
+  if (Get-Manifest $Manifest $OutFile) {
+    try { return (Get-Content $OutFile -Raw -Encoding UTF8 | ConvertFrom-Json) } catch { }
+  }
+  if ($FallbackManifest) {
+    Say "[manifest] primary unreachable/unparseable, using fallback: $FallbackManifest"
+    if (Get-Manifest $FallbackManifest $OutFile) {
+      try { return (Get-Content $OutFile -Raw -Encoding UTF8 | ConvertFrom-Json) } catch { }
+    }
+  }
+  return $null
+}
 
 try {
 
@@ -175,18 +217,40 @@ try {
     Say "CHECK_MODE: probe-only"
     Say "PLATFORM_HERE: $PlatformKey"
     Say "MANIFEST_URL: $Manifest"
+    if ($FallbackManifest) { Say "FALLBACK_MANIFEST: $FallbackManifest" }
     $MJson = Join-Path ([System.IO.Path]::GetTempPath()) ("ux-proto-check-" + [guid]::NewGuid().ToString("N").Substring(0, 8) + ".json")
-    if (-not (Get-Manifest $Manifest $MJson)) {
-      Fail "MANIFEST_UNREACHABLE" "cannot fetch manifest: $Manifest" "" "if this machine needs a proxy to reach the intranet, add -Proxy <addr> and re-run -Check"
+    $primaryOk = $false
+    if (Get-Manifest $Manifest $MJson) {
+      Say "MANIFEST_HTTP: OK"
+      try { $MJ = Get-Content $MJson -Raw -Encoding UTF8 | ConvertFrom-Json; $primaryOk = $true } catch { Say "MANIFEST_HTTP: not JSON" }
+    } else {
+      Say "MANIFEST_HTTP: FAIL"
     }
-    Say "MANIFEST_HTTP: OK"
-    try { $MJ = Get-Content $MJson -Raw -Encoding UTF8 | ConvertFrom-Json } catch {
-      Fail "MANIFEST_NOT_JSON" "manifest is not JSON (proxy/gateway error page?)" $_.Exception.Message ""
+    if (-not $primaryOk) {
+      if ($FallbackManifest) {
+        if (Test-Path $FallbackManifest) {
+          Say "FALLBACK_MANIFEST: OK(local) - $FallbackManifest"
+          if (Get-Manifest $FallbackManifest $MJson) {
+            try { $MJ = Get-Content $MJson -Raw -Encoding UTF8 | ConvertFrom-Json } catch { $MJ = $null }
+          }
+        } else {
+          Say "FALLBACK_MANIFEST: MISSING - $FallbackManifest"
+        }
+      }
+      if (-not $MJ) {
+        Fail "MANIFEST_UNREACHABLE" "cannot fetch manifest: $Manifest" "" "if this machine needs a proxy to reach the intranet, add -Proxy <addr> and re-run -Check"
+      }
+      Say "NOTE: primary manifest unreachable; install will fall back to the bundled manifest (fallback assets not probed in -Check)"
+      Say "CHECKED_PLATFORMS: 0"
+      Remove-Item $MJson -Force -ErrorAction SilentlyContinue
+      Say "RESULT: OK"
+      Say "NOTE: probe-only (HEAD + 1-byte Range GET); full integrity is still enforced by sha256 at install time"
+      exit 0
     }
     $bad = 0; $total = 0
     foreach ($prop in $MJ.node.platforms.PSObject.Properties) {
       $total++
-      $assetUrl = "$($Manifest -replace '/[^/]*$', '')/$($prop.Value.file)"
+      $assetUrl = Get-AssetUrl $MJ $prop.Value ($Manifest -replace '/[^/]*$', '')
       $hcode = ""; $gcode = ""
       try {
         $r = Invoke-WebRequest -Uri $assetUrl -Method Head -UseBasicParsing -TimeoutSec 60
@@ -227,11 +291,9 @@ try {
     if ($needNode) {
       $MJson = Join-Path $Tmp "manifest.json"
       Say "[manifest] $Manifest"
-      if (-not (Get-Manifest $Manifest $MJson)) {
-        Fail "MANIFEST_UNREACHABLE" "cannot fetch manifest: $Manifest" "" "run with -Check first to see per-platform status; if this machine needs a proxy, pass -Proxy <addr>. note: reaching the download step means NO usable node was found (see the [node] source line) - installing any node by any means skips this whole path"
-      }
-      try { $MJ = Get-Content $MJson -Raw -Encoding UTF8 | ConvertFrom-Json } catch {
-        Fail "MANIFEST_NOT_JSON" "manifest is not JSON (proxy/gateway/SSO error page?)" $_.Exception.Message ""
+      $MJ = Get-ManifestJson $MJson
+      if (-not $MJ) {
+        Fail "MANIFEST_UNREACHABLE" "cannot fetch manifest (primary + fallback both failed): $Manifest" "" "run with -Check first to see per-platform status; if this machine needs a proxy, pass -Proxy <addr>. note: reaching the download step means NO usable node was found (see the [node] source line) - installing any node by any means skips this whole path"
       }
 
       $Entry = Get-PlatformEntry $MJ $PlatformKey
@@ -241,7 +303,7 @@ try {
 
       $Base = "$Manifest" -replace '/[^/]*$', ''
       $PkgFile = Split-Path -Leaf $Entry.file
-      $Url = "$Base/$($Entry.file)"
+      $Url = Get-AssetUrl $MJ $Entry $Base
       $Pkg = Join-Path $Tmp $PkgFile
 
       Say "[download] $Url"

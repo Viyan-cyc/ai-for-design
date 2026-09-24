@@ -1,5 +1,6 @@
 {
   "manifestUrl": "https://octo.hdesign.huawei.com/design/fastui-env/manifest.json",
+  "fallbackManifestUrl": "fallback-node-manifest.json",
   "fallbackNpmRegistry": "http://mirrors.tools.huawei.com/npm",
   "envDirName": "EpCoder/ux-proto-env",
   "envDirEnvVar": "EP_UX_PROTO_ENV_DIR"
