@@ -125,8 +125,9 @@ main.js、api 服务层示例、主题三件套、starter 页面）。
   mock 数据文件**（它们放 `src/api/mock/`，只被 api 层消费）。starter 的 `api/demo.js` 是样例。
 - 对接真实后端 = 改 `api/` 实现（换 fetch/axios），页面零改动——这是服务层存在的意义。
 - 新增接口按同样式扩展：每个业务模块一个 `api/{模块}.js`，mock 数据沉到 `api/mock/`。
-- 交付卫生：真实页面落地后，删除 starter 预置的 `api/demo.js` + `api/mock/demo-data.js`
-  （或改造为真实模块），`src/README.md` 的迁移示例同步改指真实模块——不给交付物留死代码。
+- 交付卫生：真实页面落地后，跑 `node scripts/cleanup-starter.mjs --dir "<工程目录>"` 清理
+  starter 预置的 `api/demo.js` + `api/mock/demo-data.js`（脚本只删仍为 starter 原样的文件，
+  已改造为真实模块的会 WARN 保留），`src/README.md` 的迁移示例同步改指真实模块——不给交付物留死代码。
 
 #### 国际化：按需启用（默认不含任何 i18n 代码）
 
@@ -174,16 +175,19 @@ node scripts/fetch-icons.mjs --dir "<工程目录>" [--base-url <url>] [--timeou
 **这一步是必跑的，不是可选的。** 写完页面代码后必须执行，不能跳过。
 
 扫描 `src/` 下所有 `.vue`/`.js` 中 `@element-plus/icons-vue` 的实际 import，去重后批量请求
-IconPlus 三步 API（`getConfig → getIconInfo → getIcon×2`），命中的图标生成深浅两套 SVG 文件
-+ barrel `src/assets/icons/index.js`。预览 moduleCache 自动合并 barrel 与 EP 图标：
+IconPlus API（探测即取配置，再 `getIconInfo → getIcon×2` 并行拉深浅两套），命中的图标生成深浅
+两套 SVG 文件 + barrel `src/assets/icons/index.js`。预览 moduleCache 自动合并 barrel 与 EP 图标：
 **命中 → 公司 SVG（data-theme 纯 CSS 切换深浅），未命中 → EP 原样**。
+**重跑是增量的**：图标名对应的双文件（`.light.svg` + `.dark.svg`）已落盘即跳过网络、文件原封
+不动——已确认的图标不会被后续轮次改写；只检索新出现的名字。
 
 - **执行时机**：③ 写完页面代码后、④ build 前必须执行，**不可跳过**
 - 页面照常写 `import { Search } from '@element-plus/icons-vue'`，
   fetch-icons 负责把命中的图标替换为公司图标，源码零改动
 - **默认 base-url**：`https://octo.hdesign.huawei.com`（可通过 `--base-url` 覆盖）
 - **默认超时**：10s（单轮批量，超时整体 FAIL 不重试，已落盘的命中文件保留）
-- `RESULT: OK` + `RESOLVED: <n>, MISSED: <m>` → 继续走 ④ build
+- `RESULT: OK` + `RESOLVED: <n>, MISSED: <m>, CACHED: <c>` → 继续走 ④ build
+  （CACHED 是其中来自缓存、未发网络请求的图标数；`CACHED: n` 且全量命中时本轮零请求）
 - `RESULT: FAIL |` → 报给用户（服务异常）。已落盘的命中文件仍有效，不影响 build
 - **IconPlus 不可达时**：脚本输出 `RESOLVED: 0, MISSED: <n>` 正常退出（全部用 EP 原样），不是 FAIL
 - **miss 是正常的**：不是所有 EP 图标名都能在公司库命中，未命中的保持 EP 原样，页面天然完整
