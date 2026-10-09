@@ -77,16 +77,15 @@ function warn(msg) {
 const refreshed = refresh(root);
 if (!refreshed.ok) fatal(refreshed.reason);
 
-// ---------- whitelists ----------
-const SWT_COMPONENTS = new Set(
-  JSON.parse(readFileSync(join(__dirname, 'verify', 'whitelists', 'sweetui-components.json'), 'utf8')),
-);
-const SWT_EXPORTS = new Set(
-  JSON.parse(readFileSync(join(__dirname, 'verify', 'whitelists', 'sweetui-exports.json'), 'utf8')),
-);
-const SWT_ICONS = new Set(
-  JSON.parse(readFileSync(join(__dirname, 'verify', 'whitelists', 'sweetui-icons.json'), 'utf8')),
-);
+// whitelists — components/exports are string arrays; icons is an object
+// { name: { l, f, single } } (gen-whitelists output), hence the shape check.
+function loadWhitelist(name) {
+  const data = JSON.parse(readFileSync(join(__dirname, 'verify', 'whitelists', name), 'utf8'));
+  return new Set(Array.isArray(data) ? data : Object.keys(data));
+}
+const SWT_COMPONENTS = loadWhitelist('sweetui-components.json');
+const SWT_EXPORTS = loadWhitelist('sweetui-exports.json');
+const SWT_ICONS = loadWhitelist('sweetui-icons.json');
 const ALLOWED_BARE = new Set([
   'vue',
   '@hw-seq/sweet-ui-base',

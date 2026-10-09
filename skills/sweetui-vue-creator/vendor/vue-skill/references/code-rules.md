@@ -35,7 +35,7 @@ import { SweetButton, SweetTable, SweetForm, SweetFormItem } from '@hw-seq/sweet
 <sweet-button>提交</sweet-button>
 ```
 
-- 模板标签用 kebab-case（`<sweet-button>`，白名单 137 个）；命令式 API
+- 模板标签用 kebab-case（`<sweet-button>`，白名单 140 个）；命令式 API
   （`$msgbox`/`$alert`/`$confirm`/`$prompt`/`$sweetNotify`/`$loading`）经
   `getCurrentInstance().proxy` 取用，不需 import；vue 的 API（`ref`/`reactive`/…）
   每个文件各自 import。编译宏（`defineProps` 等）不用 import。

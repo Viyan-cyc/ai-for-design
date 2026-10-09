@@ -18,13 +18,13 @@
 
 ## 与 EP 版（generate-ux-prototype）的关键差异
 
-- **组件库**：Element Plus → SweetUI 5.6.5（137 组件，`sweet-*` kebab 标签），
+- **组件库**：Element Plus → SweetUI 5.6.5（140 组件，`sweet-*` kebab 标签），
   白名单与导出表见 `scripts/verify/whitelists/`；
 - **图标**：EP 的 `@element-plus/icons-vue` import 机制 → 统一 `<icon-plus name="X" />`
   包装组件：命中公司 icon+（fetch-icons 下载 SVG，深浅双套）渲染公司图标，
   未命中回落 SweetUI 字体图标 `sweetui-icon-{X}-l`；
 - **主题**：`data-theme` 属性 → `body[theme]` 属性（SweetUI 原生 setTheme 机制），
-  皮肤名 `default`/`dark`；bridge.less 双体系输出（`--el-*` 359 + `--swt-*` 667 槽位）；
+  皮肤名 `default`/`dark`；bridge.less 双体系输出（`--el-*` 358 + `--swt-*` 646 槽位，以实跑为准）；
 - **命名空间**：不设 namespace（保持默认 "el"，类名前缀 `.el-*`，有对应 CSS 兜底）；
 - **i18n**：不引 vue-i18n —— 组件内置文案走 `sweet-config-provider :locale`
   （locale 资产 `es/locale/lang/` 11 种），页面文案走词典 + `t()` 查表；
@@ -36,6 +36,6 @@
 ## 当前状态
 
 骨架完整（本地离线交付）：scripts、preview、references、vendor 结构与门禁逻辑就位，
-components/exports 白名单已按探针取证填 137 项；SweetUI 专属细节（UMD 注册实跑、
+components/exports 白名单已按内网实跑填 140 项（探针 137 + SweetCollection/CollectionItem/Overlay 3 项）；SweetUI 专属细节（UMD 注册实跑、
 bridge `--swt-*` 槽位接线、图标全集提取、icon+ API 实装、vendor 示例重写、端到端验证）
 需内网执行，清单见 `HANDOFF.md`。

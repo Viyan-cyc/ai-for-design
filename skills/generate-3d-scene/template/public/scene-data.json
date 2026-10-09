@@ -1,0 +1,217 @@
+{
+  "version": "1.0",
+  "meta": {
+    "name": "starter-scene",
+    "description": "模板起步场景：地面 + 图元示例 + 风机（业务 handler 示例）+ 点击卡片"
+  },
+  "scene": {
+    "background": "#0f151b",
+    "environment": {
+      "preset": "studio",
+      "intensity": 0.6
+    },
+    "fog": null
+  },
+  "camera": {
+    "type": "PerspectiveCamera",
+    "position": [
+      8,
+      6,
+      10
+    ],
+    "lookAt": [
+      0,
+      1,
+      0
+    ],
+    "fov": 50
+  },
+  "lights": [
+    {
+      "id": "DirectionalLight_001",
+      "type": "DirectionalLight",
+      "color": "#ffffff",
+      "intensity": 2.2,
+      "position": [
+        6,
+        10,
+        4
+      ],
+      "castShadow": true,
+      "shadowMapSize": 2048,
+      "shadowBias": -0.0005,
+      "shadowCameraNear": 0.5,
+      "shadowCameraFar": 200,
+      "shadowCameraLeft": -15,
+      "shadowCameraRight": 15,
+      "shadowCameraTop": 15,
+      "shadowCameraBottom": -15
+    },
+    {
+      "id": "AmbientLight_001",
+      "type": "AmbientLight",
+      "color": "#8899aa",
+      "intensity": 0.4
+    }
+  ],
+  "controls": {
+    "type": "OrbitControls",
+    "target": [
+      0,
+      1,
+      0
+    ],
+    "minDistance": 2,
+    "maxDistance": 80
+  },
+  "renderer": {
+    "toneMapping": "ACESFilmic",
+    "exposure": 1.0,
+    "shadowMap": "PCFSoft",
+    "shadowMapEnabled": true,
+    "maxPixelRatio": 2
+  },
+  "objects": [
+    {
+      "id": "ground",
+      "type": "primitive",
+      "primitive": "Plane",
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "rotation": [
+        -1.5707963,
+        0,
+        0
+      ],
+      "scale": [
+        40,
+        40,
+        1
+      ],
+      "materialOverride": {
+        "color": "#1d2b38",
+        "roughness": 0.95
+      },
+      "pickable": false,
+      "receiveShadow": true,
+      "castShadow": false
+    },
+    {
+      "id": "demo_box",
+      "type": "primitive",
+      "primitive": "Box",
+      "position": [
+        -3,
+        0.5,
+        0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "materialOverride": {
+        "color": "#3d8de4"
+      },
+      "castShadow": true,
+      "receiveShadow": true
+    },
+    {
+      "id": "demo_sphere",
+      "type": "primitive",
+      "primitive": "Sphere",
+      "position": [
+        0,
+        0.5,
+        -2
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "materialOverride": {
+        "color": "#e4b13d",
+        "metalness": 0.6,
+        "roughness": 0.3
+      },
+      "castShadow": true,
+      "receiveShadow": true
+    },
+    {
+      "id": "demo_cylinder",
+      "type": "primitive",
+      "primitive": "Cylinder",
+      "position": [
+        2.5,
+        0.5,
+        1.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1.4,
+        1
+      ],
+      "materialOverride": {
+        "color": "#5fb87a"
+      },
+      "castShadow": true,
+      "receiveShadow": true
+    },
+    {
+      "id": "wind_turbine_demo",
+      "type": "wind_turbine",
+      "assetId": "wind_turbine",
+      "position": [
+        0,
+        0,
+        3
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "spin": true
+      },
+      "castShadow": true,
+      "receiveShadow": true
+    }
+  ],
+  "cards": [
+    {
+      "id": "card_demo_box",
+      "attachTo": "demo_box",
+      "component": "example",
+      "props": {
+        "title": "设备 A-01",
+        "value": "运行正常",
+        "status": "ok"
+      },
+      "trigger": "always"
+    },
+    {
+      "id": "card_demo_sphere",
+      "attachTo": "demo_sphere",
+      "component": "example",
+      "props": {
+        "title": "储罐温度",
+        "value": "78.3°C",
+        "status": "warn"
+      },
+      "trigger": "click"
+    }
+  ]
+}

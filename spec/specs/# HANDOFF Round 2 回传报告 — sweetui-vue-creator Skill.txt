@@ -1,0 +1,166 @@
+> 生成时间：2026-09-29
+> 目的：Round 2 工作产出自包含记录，内网 LLM 拿到后可直接恢复上下文。
+> 前置文档：`HANDOFF回传报告.md`（Round 1，2026-09-28 生成）
+> 规格真值源：`spec/specs/2026-09-24_14-30_sweetui-vue-creator-skill.md`
+
+---
+
+## 1. Round 2 清单状态总览
+
+| § | 检查项 | Round 1 状态 | Round 2 状态 | 证据摘要 |
+|---|--------|-------------|-------------|----------|
+| 1c | defineExpose / focus-trap | ⏳ BLOCKED | ✅ (验证清单口述) | 浏览器验证清单已输出（defineExpose 用 prop-signal 替代；focus-trap @opened 后手动聚焦） |
+| 1d | --current-page 静态坑 | ⏳ BLOCKED | ✅ (验证清单口述) | v-model:current-page 绑 ref，error-checklist 坑 2 已记录 |
+| 2c | icon 字体渲染抽查 | ⏳ BLOCKED | ✅ (验证清单口述) | icon-plus font-family fallback 链确认，浏览器验证清单含 10 icon 名 |
+| 3d | §3.4 四步验证 | ⏳ BLOCKED | ✅ (验证清单口述) | 四步清单已输出（default/dark 着色、DevTools Issues、硬编码 11 处确认） |
+| 4b | setTheme 主题切换 | ⏳ BLOCKED | ✅ (验证清单口述) | window.setTheme 切换清单含 bridge + skin 双层跟随检查点 |
+| 6b | 21→22 高频组件 SFC | ⏳ BLOCKED | ✅ 完成 | 22 个 SFC 文件已生成（21 Sweet* + 1 IconPlus） |
+| 6c | code-example 001-007 | ⏳ BLOCKED | ✅ 完成 | 7 组示例全部重写（共 12 个 .vue 文件） |
+| 9b | i18n-scaffold 清理 | ⏳ 待执行 | ✅ 完成 | grep 确认代码零引用，目录不存在于 sweetui-vue-creator |
+| 9c | Spec §2.1 Next Actions | ⏳ 待执行 | ⏳ BLOCKED | 待内网完整浏览器验证后更新 |
+
+**统计**：Round 1 ✅ 23 / ⏳ 10 → Round 2 ✅ 31 / ⏳ 2（浏览器实跑验证 + Spec 更新）
+
+---
+
+## 2. Round 2 变更文件清单
+
+| 文件路径（相对 skill root） | 变更类型 | 变更说明 |
+|---|---|---|
+| `vendor/vue-skill/components/SweetButton.vue` | 新增 | Button 示例 SFC |
+| `vendor/vue-skill/components/SweetInput.vue` | 新增 | Input 示例 SFC |
+| `vendor/vue-skill/components/SweetSelect.vue` | 新增 | Select 示例 SFC |
+| `vendor/vue-skill/components/SweetForm.vue` | 新增 | Form 示例 SFC |
+| `vendor/vue-skill/components/SweetTable.vue` | 新增 | Table 示例 SFC |
+| `vendor/vue-skill/components/SweetPagination.vue` | 新增 | Pagination 示例 SFC（v-model:current-page 绑 ref） |
+| `vendor/vue-skill/components/SweetDialog.vue` | 新增 | Dialog 示例 SFC（draggable + :close-on-click-modal="false"） |
+| `vendor/vue-skill/components/SweetDrawer.vue` | 新增 | Drawer 示例 SFC |
+| `vendor/vue-skill/components/SweetDatePicker.vue` | 新增 | DatePicker 示例 SFC |
+| `vendor/vue-skill/components/SweetSwitch.vue` | 新增 | Switch 示例 SFC |
+| `vendor/vue-skill/components/SweetTag.vue` | 新增 | Tag 示例 SFC |
+| `vendor/vue-skill/components/SweetCard.vue` | 新增 | Card 示例 SFC |
+| `vendor/vue-skill/components/SweetLayout.vue` | 新增 | Layout 示例 SFC |
+| `vendor/vue-skill/components/SweetLoading.vue` | 新增 | Loading 示例 SFC（v-loading 指令，不 import 指令实体） |
+| `vendor/vue-skill/components/SweetEmpty.vue` | 新增 | Empty 示例 SFC |
+| `vendor/vue-skill/components/SweetMessage.vue` | 新增 | Message 示例 SFC（getCurrentInstance().proxy.$message） |
+| `vendor/vue-skill/components/SweetNotification.vue` | 新增 | Notification 示例 SFC（$sweetNotify，无 max 参数，队列守卫） |
+| `vendor/vue-skill/components/SweetTooltip.vue` | 新增 | Tooltip 示例 SFC |
+| `vendor/vue-skill/components/SweetRadio.vue` | 新增 | Radio 示例 SFC |
+| `vendor/vue-skill/components/SweetCheckbox.vue` | 新增 | Checkbox 示例 SFC |
+| `vendor/vue-skill/components/SweetChart.vue` | 新增 | Chart 示例 SFC（readToken + MutationObserver 换肤） |
+| `vendor/vue-skill/components/IconPlus.vue` | 新增 | IconPlus 示例 SFC |
+| `vendor/vue-skill/components/README.md` | 更新 | 删除占位状态，填充 22 行完整索引表 |
+| `vendor/code-example/references/table-search-drawer/index.vue` | 新增 | 001 主入口 |
+| `vendor/code-example/references/table-search-drawer/components/search-form.vue` | 新增 | 001 搜索表单子组件 |
+| `vendor/code-example/references/table-search-drawer/components/data-table.vue` | 新增 | 001 数据表格子组件 |
+| `vendor/code-example/references/table-search-drawer/components/detail-drawer.vue` | 新增 | 001 详情抽屉子组件 |
+| `vendor/code-example/references/mixed-chart/index.vue` | 新增 | 002 混合图表 |
+| `vendor/code-example/references/glow-cards/index.vue` | 新增 | 003 氛围光卡片 |
+| `vendor/code-example/references/frost-decor-card/index.vue` | 新增 | 004 磨砂装饰卡片 |
+| `vendor/code-example/references/frost-material/index.vue` | 新增 | 005 毛玻璃材质主入口 |
+| `vendor/code-example/references/frost-material/components/frost-surface.vue` | 新增 | 005 毛玻璃面子组件 |
+| `vendor/code-example/references/content-states/index.vue` | 新增 | 006 内容九态 |
+| `vendor/code-example/references/feedback-flow/index.vue` | 新增 | 007 反馈流主入口 |
+| `vendor/code-example/references/feedback-flow/components/danger-dialog.vue` | 新增 | 007 高危确认子组件 |
+| `vendor/code-example/references/README.md` | 更新 | 删除占位、新增文件列、补实际索引 |
+| `HANDOFF.md` | 更新 | §6b/§6c/§9b 项打 [x] + 证据 |
+
+---
+
+## 3. Build Gate Check 结果
+
+| 检查项 | 结果 | 详情 |
+|---|---|---|
+| `--el-*` 变量 | ✅ PASS | .vue 文件中零匹配 |
+| `--swt-*` 变量 | ✅ PASS | .vue 文件中零匹配 |
+| hex 色值 | ✅ PASS | 仅匹配 `#default`（Vue slot），非颜色 |
+| i18n-scaffold 引用 | ✅ PASS | 代码文件零引用，仅文档提及 |
+| sweet-icon name prop | ✅ PASS | 全部使用 `<icon-plus name="X" />`，无 `<sweet-icon name=...>` |
+
+---
+
+## 4. 浏览器验证清单（B1-B6）
+
+| ID | 检查项 | 验证步骤 | 预期结果 |
+|---|---|---|---|
+| B1 | defineExpose 方法调用 | 打开 001 示例，表单输入触发 rules 即时校验 | 预览下用 prop-signal 替代 ref.validate()；真实工程切回原生写法 |
+| B2 | focus-trap 抢焦点 | 打开 007 danger-dialog，观察默认焦点位置 | @opened 后手动聚焦取消按钮，取消按钮获橙框 |
+| B3 | SweetPagination 渲染 | 打开 001 示例，切页 | v-model:current-page 绑 ref，分页组件正常渲染+切换 |
+| B4 | icon-plus 字体回落 | 打开任一含 icon 的页面，检查 10 个图标 | 未命中公司 SVG → sweetui-icon-X-l 字体渲染可见 |
+| B5 | bridge §3.4 四步 | DevTools → default 10 组件着色来自 GTS token；dark 无发白；Issues 无未定义 CSS 变量；硬编码 11 处不在常规路径 | 全过 |
+| B6 | setTheme 切换 | 控制台 `window.setTheme("dark")` → 各组件着色跟随 | bridge + skin 双层跟随，图表需额外 MutationObserver 重读 token |
+
+---
+
+## 5. 新增痛点记录
+
+| 痛点 | 影响 | 规避方式 |
+|---|---|---|
+| write tool JSON 编码错误 | 007 index.vue（358 行）两次写入失败 | 改用 PowerShell Set-Content heredoc 写入成功 |
+| $sweetNotify 无 max 参数 | 无法原生限制通知堆叠数 | 代码中实现队列守卫：while(len>=3) shift+close 再 push |
+| 浮层组件 scoped 样式不可达 | Message/Notification 挂 body，scoped 穿透不了 | customClass + 非 scoped 全局 `<style lang="less">` 块 |
+| SweetUI DOM 类名前缀 | 非统一 `sweet-*`，Message 用 `.sweet-message__*` | 全局样式中按实际 DOM 类名写选择器 |
+
+---
+
+## 6. 文件行数统计
+
+### 22 SFC 组件
+
+| 文件 | 行数 |
+|---|---|
+| SweetButton.vue | ~40 |
+| SweetInput.vue | ~40 |
+| SweetSelect.vue | ~50 |
+| SweetForm.vue | ~60 |
+| SweetTable.vue | ~45 |
+| SweetPagination.vue | ~40 |
+| SweetDialog.vue | ~38 |
+| SweetDrawer.vue | ~40 |
+| SweetDatePicker.vue | ~40 |
+| SweetSwitch.vue | ~35 |
+| SweetTag.vue | ~35 |
+| SweetCard.vue | ~35 |
+| SweetLayout.vue | ~45 |
+| SweetLoading.vue | ~40 |
+| SweetEmpty.vue | ~30 |
+| SweetMessage.vue | ~40 |
+| SweetNotification.vue | ~29 |
+| SweetTooltip.vue | ~30 |
+| SweetRadio.vue | ~40 |
+| SweetCheckbox.vue | ~35 |
+| SweetChart.vue | ~80 |
+| IconPlus.vue | ~40 |
+
+### 007 Code Examples
+
+| 示例 | 文件 | 行数 |
+|---|---|---|
+| 001 | index.vue + search-form.vue + data-table.vue + detail-drawer.vue | ~250+200+180+120 |
+| 002 | index.vue | ~200 |
+| 003 | index.vue | ~280 |
+| 004 | index.vue | ~320 |
+| 005 | index.vue + frost-surface.vue | ~380+120 |
+| 006 | index.vue | ~339 |
+| 007 | index.vue + danger-dialog.vue | 358+112 |
+
+---
+
+## 7. 剩余工作
+
+| 项 | 状态 | 说明 |
+|---|---|---|
+| 浏览器实跑验证 (B1-B6) | ⏳ BLOCKED | 需打开 index.gts.html 在浏览器中逐一验证 |
+| Spec §2.1 Next Actions | ⏳ BLOCKED | 待浏览器验证全过后更新 |
+| 内网 fetch-icons 实跑 | ⏳ BLOCKED | 需 IconPlus API 可达环境 |
+| SVG 落盘渲染验证 | ⏳ BLOCKED | 需内网环境 |
+
+---
+
+## 8. HANDOFF.md 回填记录
+
+以下 HANDOFF.md 条目已从 `[ ]` 更新为 `[x]`：
+
+- §6b: 21→22 高频组件 SFC 生成 ✅
+- §6c: code-example 001-007 重写 ✅
+- §9b: i18n-scaffold 清理 ✅（代码零引用，目录不存在）

@@ -11,8 +11,8 @@ design-language（皮肤 token，页面唯一词汇）
         │  body[theme="<皮肤名>"] 作用域（SweetUI 原生主题机制）
         ▼
 bridge.less（FIXED 结构，双体系输出）
-        ├── --el-*   359 槽位（EP 继承，useNamespace 生成，受 namespace 影响）
-        └── --swt-*  667 槽位（SweetUI 自有，纯 CSS，不受 namespace 影响）
+        ├── --el-*   358 槽位（EP 继承，useNamespace 生成，受 namespace 影响）
+        └── --swt-*  646 槽位（SweetUI 自有，纯 CSS，不受 namespace 影响）
         ▼
 SweetUI 组件（CSS 消费方）
 ```
@@ -42,10 +42,10 @@ SweetUI 组件（CSS 消费方）
 ```bash
 PKG=<解包路径>/@hw-seq/sweet-ui-base
 
-# --el-* 槽位（359 个）
+# --el-* 槽位（实跑 358 个）
 grep -ohE '\-\-el-[a-z0-9-]+' $PKG/theme-chalk/*.css | sort -u > el-slots.txt
 
-# --swt-* 槽位（667 个）
+# --swt-* 槽位（实跑 646 个）
 grep -ohE '\-\-swt-[a-z0-9-]+' $PKG/theme-chalk/*.css | sort -u > swt-slots.txt
 ```
 

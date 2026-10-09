@@ -1,0 +1,1617 @@
+# HANDOFF 回传报告 — sweetui-vue-creator Skill 外网验证轮
+
+> 生成时间：2026-09-28
+> 目的：自包含 Markdown 文档，内网 LLM 拿到后可直接恢复上下文，无需再读外网任何文件。
+> 规格真值源：`spec/specs/2026-09-24_14-30_sweetui-vue-creator-skill.md`
+
+---
+
+## 1. HANDOFF 清单状态总览
+
+| § | 检查项 | 状态 | 证据摘要 |
+|---|--------|------|----------|
+| 0 | 落库前置（8 文件） | ✅ | 8 文件已拷至 `scripts/preview/public/library/`，版本确认：Vue 3.5.29 / lodash 4.18.1 / xss 1.0.15 / echarts 6.1.0 / SweetUI 5.6.5。无 var-ui-*.css。npm registry 404，本地包可用 |
+| 1a | UMD app.use(SweetUI) | ✅ | makeInstaller 模式确认有效，140 组件 + 14 指令 + 15 globalProperties 全量注册 |
+| 1b | v-loading / $msgbox 等 | ✅ | 全量 app.use 下 directives 数组逐注册，globalProperties 尾部一次性挂载 |
+| 1c | defineExpose / focus-trap | ⏳ BLOCKED | 需浏览器运行时验证，SKILL.md 已标「需浏览器实跑确认」 |
+| 1d | index.gts.html 对齐 | ✅ | `window._$1` + `const W = window['sweet-ui-base']` + `app.use(W)` 主路径已写 |
+| 2a | components/exports 白名单 | ✅ | gen-whitelists 重写（regex 扫描），重生成 components=140 / exports=500 |
+| 2b | sweetui-icons.json | ✅ | 从 theme-chalk/index.css 提取 715 CSS 类 → 404 唯一 icon name stems（307 l+f / 18 仅l / 9 仅f / 70 single） |
+| 2c | 图标字体渲染抽查 | ⏳ BLOCKED | 需浏览器验证 sweet-icon 字体渲染 |
+| 3a | --el-* / --swt-* 提取 | ✅ | `--el-*` = 358（非 359），`--swt-*` = 646（非 667），以实跑为准 |
+| 3b | bridge.less --swt-* 映射 | ✅ | 1048 行：183 --el-* 活跃 + 240 --swt-* → DL token + 391 swt-default |
+| 3c | bridge 接线区注释 | ✅ | 接线区注释标记正确完整 |
+| 3d | §3.4 四步验证 | ⏳ BLOCKED | 需浏览器 DevTools，硬编码 11 处位置已记录 |
+| 4a | gen-tokens 产出 default/dark | ✅ | 388 tokens — semantic 97×2 / palette 132 / company 15 / chart 17×2 / code 24 / shadow 10×2 / frost 23×2 |
+| 4b | 主题切换验证 | ⏳ BLOCKED | 需浏览器验证 setTheme 效果 |
+| 5a | fetch-icons IconPlus API | ⏳ 待内网 | API 从当前环境不可达；连通性探测逻辑验证通过 |
+| 5b | SVG 落盘 + 渲染 | ⏳ BLOCKED | 需内网 IconPlus API 可达环境 |
+| 5c | 不可达场景回归 | ✅ | `--base-url http://localhost:1` → `RESULT: OK, RESOLVED: 0, MISSED: 3` |
+| 6a | components_index 属性核验 | ✅ | 更新至 140 组件，select-tree defaultProps 已记录 |
+| 6b | 21 高频组件 SFC | ⏳ BLOCKED | 需内网环境生成 |
+| 6c | code-example 001-007 重写 | ⏳ BLOCKED | 需内网环境重写 |
+| 7a | 缺失回退验证 | ✅ | 4 回退组件与白名单交叉验证全过 |
+| 7b | 回退清单更新 | ✅ | 无出入，组件数 137→140 已同步 |
+| 8a | ensure-env | ✅ | `RESULT: OK, NODE_VERSION: v24.18.0, COMPILER_VERSION: 3.5.25` |
+| 8b | init | ✅ | `RESULT: OK, PAGE: DemoPage` |
+| 8c | fetch-icons + build | ✅ | fetch-icons: `OK, MISSED:1` → build: `OK (1 page, 2 comp, 6 sweet-tag)` |
+| 8d | 预览交互验证 | ⏳ BLOCKED | 需浏览器验证 |
+| 8e | 新坑回填 | ✅ | build.mjs 白名单 object→keys 修复；SKILL.md/error-checklist.md 更新 |
+| 9a | HANDOFF 证据回填 | ✅ | §0–§8 全部 [x]，浏览器项标 BLOCKED |
+| 9b | i18n-scaffold 清理 | ⏳ 待执行 | 需检查引用链后删除 |
+| 9c | Spec §2.1 Next Actions | ⏳ 待执行 | 需内网完整验证后更新 |
+
+**统计**：✅ 完成 23 项 / ⏳ BLOCKED/待执行 10 项
+
+---
+
+## 2. 变更文件清单
+
+| 文件路径（相对 skill root） | 变更类型 | 变更说明 |
+|---|---|---|
+| `scripts/build.mjs` | 修改 | L82-86: whitelist 加载兼容 `Array.isArray() ? x : Object.keys(x)` |
+| `scripts/gen-whitelists.mjs` | 重写 | regex 扫描 UMD 替代 createRequire；icons 从 theme-chalk 提取 |
+| `scripts/verify/whitelists/sweetui-components.json` | 重生成 | 140 条（+3: SweetCollection/SweetCollectionItem/SweetOverlay） |
+| `scripts/verify/whitelists/sweetui-exports.json` | 重生成 | 500 条 |
+| `scripts/verify/whitelists/sweetui-icons.json` | 重生成 | 404 条含 l/f/single 元数据（完整 JSON 见 §3.1） |
+| `scripts/preview/src/assets/themes/bridge.less` | 重生成 | 1048→1066 行，全量 --swt-* 映射（完整内容见 §3.3） |
+| `scripts/preview/src/assets/themes/default.less` | 重生成 | gen-tokens 产出 388 tokens |
+| `scripts/preview/src/assets/themes/dark.less` | 重生成 | gen-tokens 产出 388 tokens |
+| `SKILL.md` | 更新 | 组件数 137→140、图标 720→404、新增坑 6(ancilary双存)+坑 7(硬编码hex) |
+| `vendor/vue-skill/references/components_index.md` | 更新 | 140 组件，新增 3 组件表项 |
+| `vendor/vue-skill/references/error-checklist.md` | 更新 | 140 组件，新增坑 7+坑 8 |
+| `HANDOFF.md` | 全面回填 | §0–§8 全部 [x] + 证据，BLOCKED 项标注 |
+| `spec/specs/2026-09-24_14-30_sweetui-vue-creator-skill.md` | 追加 §5 | 内网验证轮 entries 11-20 |
+| `scripts/preview/public/library/*` | 新增 | 8 个库文件（vue/lodash/xss/echarts/sweet-ui-base/less/sfc-loader） |
+
+---
+
+## 3. 关键数据全量
+
+### 3.1 sweetui-icons.json（404 条完整）
+
+> 来源：`scripts/verify/whitelists/sweetui-icons.json`
+> 格式：`{ "name": { "l": bool, "f": bool, "single": bool }, ... }`
+> 统计：307 有 l+f / 18 仅 l / 9 仅 f / 70 single-style
+
+```json
+{
+  "3d": { "l": true, "f": true, "single": false },
+  "according-to-the-abnormallayer-duetoview": { "l": true, "f": true, "single": false },
+  "add": { "l": true, "f": true, "single": false },
+  "add-a-subnode": { "l": true, "f": true, "single": false },
+  "add-line": { "l": true, "f": true, "single": false },
+  "advanced-filter": { "l": true, "f": true, "single": false },
+  "altitude-measurement": { "l": true, "f": true, "single": false },
+  "angle": { "l": true, "f": true, "single": false },
+  "antenna-group": { "l": true, "f": true, "single": false },
+  "apc": { "l": true, "f": true, "single": false },
+  "area-map": { "l": true, "f": true, "single": false },
+  "arrow-add": { "l": false, "f": false, "single": true },
+  "arrow-down": { "l": false, "f": false, "single": true },
+  "arrow-down-right": { "l": true, "f": true, "single": false },
+  "arrow-left": { "l": false, "f": false, "single": true },
+  "arrow-minus": { "l": false, "f": false, "single": true },
+  "arrow-right": { "l": false, "f": false, "single": true },
+  "arrow-up": { "l": false, "f": false, "single": true },
+  "arrow-up-left": { "l": true, "f": true, "single": false },
+  "ascending": { "l": true, "f": true, "single": false },
+  "asp": { "l": true, "f": true, "single": false },
+  "asset-transfer": { "l": true, "f": true, "single": false },
+  "association": { "l": true, "f": true, "single": false },
+  "auto-add-neighbor": { "l": true, "f": true, "single": false },
+  "avatar": { "l": true, "f": true, "single": false },
+  "average": { "l": false, "f": false, "single": true },
+  "back": { "l": true, "f": true, "single": false },
+  "backtrack": { "l": true, "f": true, "single": false },
+  "backup": { "l": true, "f": true, "single": false },
+  "bar-chart": { "l": true, "f": true, "single": false },
+  "base-station": { "l": false, "f": true, "single": false },
+  "basestation": { "l": true, "f": false, "single": false },
+  "batch-selection-element": { "l": true, "f": true, "single": false },
+  "be-ready": { "l": false, "f": true, "single": false },
+  "beam": { "l": true, "f": true, "single": false },
+  "below-semicircle": { "l": false, "f": false, "single": true },
+  "beready": { "l": true, "f": false, "single": false },
+  "best-view-map": { "l": true, "f": true, "single": false },
+  "bicyclic-graph": { "l": true, "f": true, "single": false },
+  "box-plot": { "l": true, "f": true, "single": false },
+  "bubble-chart": { "l": true, "f": true, "single": false },
+  "building": { "l": true, "f": true, "single": false },
+  "byuser": { "l": true, "f": true, "single": false },
+  "cancel-editing": { "l": true, "f": true, "single": false },
+  "capacity-management": { "l": true, "f": true, "single": false },
+  "card": { "l": true, "f": true, "single": false },
+  "carrier-frequency": { "l": true, "f": true, "single": false },
+  "cell": { "l": true, "f": true, "single": false },
+  "cell-bak": { "l": true, "f": true, "single": false },
+  "cell-indoor": { "l": true, "f": true, "single": false },
+  "cell-outdoor": { "l": true, "f": true, "single": false },
+  "cell-total": { "l": true, "f": true, "single": false },
+  "change": { "l": true, "f": true, "single": false },
+  "change-password": { "l": true, "f": true, "single": false },
+  "chart-options": { "l": true, "f": true, "single": false },
+  "check-box-half-selected": { "l": false, "f": false, "single": true },
+  "check-box-selected": { "l": false, "f": false, "single": true },
+  "check-the-reverse-antenna-connection": { "l": true, "f": true, "single": false },
+  "checkbox-unselected": { "l": true, "f": false, "single": false },
+  "checkmark": { "l": true, "f": true, "single": false },
+  "checkthe-vip-user-association-area": { "l": true, "f": true, "single": false },
+  "circle-1": { "l": false, "f": false, "single": true },
+  "circle-2": { "l": false, "f": false, "single": true },
+  "circle-3": { "l": false, "f": false, "single": true },
+  "circle-4": { "l": false, "f": false, "single": true },
+  "circle-5": { "l": false, "f": false, "single": true },
+  "circle-6": { "l": false, "f": false, "single": true },
+  "circle-7": { "l": true, "f": false, "single": false },
+  "circle-check": { "l": true, "f": true, "single": false },
+  "circle-close": { "l": true, "f": true, "single": false },
+  "clean": { "l": true, "f": true, "single": false },
+  "clear-content": { "l": true, "f": true, "single": false },
+  "clear-filter": { "l": true, "f": true, "single": false },
+  "click-count-statistics": { "l": true, "f": true, "single": false },
+  "close": { "l": true, "f": true, "single": true },
+  "close8x8": { "l": false, "f": false, "single": true },
+  "collapse": { "l": false, "f": false, "single": true },
+  "collect": { "l": true, "f": false, "single": false },
+  "collected": { "l": false, "f": true, "single": false },
+  "color-select": { "l": true, "f": true, "single": false },
+  "column-select": { "l": true, "f": true, "single": false },
+  "comment": { "l": true, "f": true, "single": false },
+  "compass": { "l": true, "f": true, "single": false },
+  "complaint-handling": { "l": true, "f": true, "single": false },
+  "copy": { "l": true, "f": true, "single": false },
+  "copy-only": { "l": true, "f": true, "single": false },
+  "count": { "l": false, "f": false, "single": true },
+  "counter": { "l": true, "f": true, "single": false },
+  "create-acp-task": { "l": true, "f": true, "single": false },
+  "csv": { "l": true, "f": true, "single": false },
+  "cursor-arrow": { "l": false, "f": false, "single": true },
+  "cursor-col-resize": { "l": false, "f": false, "single": true },
+  "cursor-drag": { "l": false, "f": false, "single": true },
+  "cursor-move": { "l": false, "f": false, "single": true },
+  "cursor-pointer": { "l": false, "f": false, "single": true },
+  "cursor-scale-table": { "l": false, "f": false, "single": true },
+  "cut": { "l": true, "f": true, "single": false },
+  "dashboard": { "l": true, "f": true, "single": false },
+  "data-acquisition": { "l": false, "f": false, "single": true },
+  "data-acquisition-and": { "l": false, "f": false, "single": true },
+  "data-synchronization": { "l": true, "f": true, "single": false },
+  "date": { "l": true, "f": true, "single": false },
+  "delete": { "l": true, "f": true, "single": false },
+  "delete-line": { "l": true, "f": true, "single": false },
+  "derived-data2": { "l": true, "f": true, "single": false },
+  "derivedt-up": { "l": false, "f": true, "single": false },
+  "derivedt-up-f-1": { "l": false, "f": false, "single": true },
+  "descending": { "l": true, "f": true, "single": false },
+  "developer-options": { "l": true, "f": true, "single": false },
+  "difference": { "l": true, "f": true, "single": false },
+  "dimension": { "l": false, "f": false, "single": true },
+  "disassociate": { "l": true, "f": true, "single": false },
+  "discarded": { "l": true, "f": true, "single": false },
+  "display-setting": { "l": true, "f": true, "single": false },
+  "double-screen": { "l": true, "f": true, "single": false },
+  "down": { "l": false, "f": false, "single": true },
+  "download": { "l": true, "f": true, "single": false },
+  "download-more-index": { "l": true, "f": true, "single": false },
+  "draft": { "l": true, "f": true, "single": false },
+  "drag-zoom": { "l": false, "f": false, "single": true },
+  "draw-polygon": { "l": true, "f": true, "single": false },
+  "drill-down": { "l": true, "f": true, "single": false },
+  "drow-polygon": { "l": true, "f": true, "single": false },
+  "edit": { "l": true, "f": true, "single": false },
+  "engineering-parameter-check-and-correction": { "l": true, "f": true, "single": false },
+  "engineering-parameter-management": { "l": true, "f": true, "single": false },
+  "enter": { "l": true, "f": true, "single": false },
+  "error": { "l": true, "f": true, "single": false },
+  "event-": { "l": false, "f": false, "single": true },
+  "evu-settings": { "l": true, "f": true, "single": false },
+  "excel": { "l": true, "f": true, "single": false },
+  "expand": { "l": false, "f": false, "single": true },
+  "export": { "l": true, "f": true, "single": false },
+  "exportkmz": { "l": true, "f": true, "single": false },
+  "exportreport": { "l": true, "f": true, "single": false },
+  "fan-community": { "l": true, "f": true, "single": false },
+  "favorite": { "l": true, "f": true, "single": false },
+  "file": { "l": true, "f": true, "single": false },
+  "filter": { "l": true, "f": false, "single": false },
+  "filtered": { "l": false, "f": true, "single": false },
+  "fishbone": { "l": true, "f": true, "single": false },
+  "folder": { "l": true, "f": true, "single": false },
+  "folder-opened": { "l": true, "f": true, "single": false },
+  "frequency-analysis": { "l": true, "f": true, "single": false },
+  "frequency-point-analysis": { "l": true, "f": true, "single": false },
+  "from-the-configuration-update": { "l": true, "f": true, "single": false },
+  "full-screen": { "l": true, "f": true, "single": true },
+  "function": { "l": true, "f": true, "single": false },
+  "general": { "l": true, "f": true, "single": false },
+  "go": { "l": true, "f": true, "single": false },
+  "grid": { "l": true, "f": true, "single": false },
+  "group": { "l": true, "f": true, "single": false },
+  "group-editing": { "l": true, "f": true, "single": false },
+  "gsm-capacity-evaluation": { "l": true, "f": true, "single": false },
+  "gsm-frequency-analysis": { "l": true, "f": true, "single": false },
+  "gu-anr": { "l": true, "f": true, "single": false },
+  "help": { "l": true, "f": true, "single": false },
+  "hide": { "l": false, "f": false, "single": true },
+  "hints": { "l": false, "f": false, "single": true },
+  "home": { "l": true, "f": true, "single": false },
+  "icon-management": { "l": true, "f": true, "single": false },
+  "image": { "l": true, "f": true, "single": false },
+  "import": { "l": true, "f": true, "single": false },
+  "import-log": { "l": true, "f": true, "single": false },
+  "import-query-template": { "l": true, "f": true, "single": false },
+  "important": { "l": false, "f": false, "single": true },
+  "index-comparative-analysis": { "l": true, "f": false, "single": false },
+  "index-comparative-analysis-l-1": { "l": false, "f": false, "single": true },
+  "indicator": { "l": true, "f": true, "single": false },
+  "indoorsite": { "l": true, "f": true, "single": false },
+  "info": { "l": false, "f": true, "single": false },
+  "insert-row": { "l": true, "f": true, "single": false },
+  "inter-f": { "l": true, "f": true, "single": false },
+  "interference-analysis": { "l": true, "f": true, "single": false },
+  "interference-contrast": { "l": true, "f": true, "single": false },
+  "intersection": { "l": true, "f": true, "single": false },
+  "invisible": { "l": true, "f": true, "single": false },
+  "issue-analysis": { "l": true, "f": true, "single": false },
+  "kqi": { "l": false, "f": false, "single": true },
+  "left": { "l": false, "f": false, "single": true },
+  "legend": { "l": true, "f": true, "single": false },
+  "line": { "l": true, "f": true, "single": false },
+  "line-chart": { "l": true, "f": true, "single": false },
+  "link": { "l": true, "f": true, "single": false },
+  "lmmediate-access": { "l": true, "f": false, "single": false },
+  "load-threshold": { "l": true, "f": true, "single": false },
+  "loading": { "l": false, "f": false, "single": true },
+  "lock": { "l": true, "f": true, "single": false },
+  "lte-access-optimization": { "l": true, "f": true, "single": false },
+  "lte-call-drop-optimization": { "l": true, "f": true, "single": false },
+  "lte-capa-citye-valuation-and-optimization": { "l": true, "f": true, "single": false },
+  "lte-downlink-rate-optimization": { "l": true, "f": true, "single": false },
+  "lte-handover-optimization": { "l": true, "f": true, "single": false },
+  "lte-uplink-interference-detection": { "l": true, "f": true, "single": false },
+  "lte-uplink-rate-optimization": { "l": true, "f": true, "single": false },
+  "mail": { "l": true, "f": true, "single": false },
+  "maintain-data-now": { "l": true, "f": true, "single": false },
+  "manage-tasks": { "l": true, "f": true, "single": false },
+  "manual-drawin-go-froad": { "l": true, "f": true, "single": false },
+  "map": { "l": true, "f": true, "single": false },
+  "map-location": { "l": true, "f": true, "single": false },
+  "master-servercell": { "l": true, "f": true, "single": false },
+  "max": { "l": false, "f": false, "single": true },
+  "median": { "l": false, "f": false, "single": true },
+  "menu": { "l": true, "f": true, "single": false },
+  "message": { "l": true, "f": true, "single": false },
+  "migration-of-element": { "l": true, "f": true, "single": false },
+  "min": { "l": false, "f": false, "single": true },
+  "minor": { "l": false, "f": false, "single": true },
+  "minus": { "l": false, "f": false, "single": true },
+  "mix-chart": { "l": true, "f": true, "single": false },
+  "mobileterminal": { "l": true, "f": true, "single": false },
+  "more": { "l": true, "f": true, "single": false },
+  "more1": { "l": false, "f": false, "single": true },
+  "move": { "l": true, "f": false, "single": false },
+  "multilayer-export": { "l": true, "f": true, "single": false },
+  "nav-api": { "l": true, "f": false, "single": false },
+  "nav-fold": { "l": false, "f": false, "single": true },
+  "nav-unfold": { "l": false, "f": false, "single": true },
+  "neighbor": { "l": true, "f": true, "single": false },
+  "neighbor-b": { "l": true, "f": true, "single": false },
+  "neighbor-f": { "l": true, "f": true, "single": false },
+  "neighboring-cell-optimization": { "l": true, "f": true, "single": false },
+  "new-task": { "l": true, "f": true, "single": false },
+  "no-user-permission": { "l": true, "f": false, "single": false },
+  "nr-coverage-evaluation": { "l": true, "f": true, "single": false },
+  "object": { "l": true, "f": true, "single": false },
+  "object-group-management": { "l": true, "f": true, "single": false },
+  "obtain-the-tracking-server-information": { "l": true, "f": true, "single": false },
+  "off": { "l": true, "f": false, "single": false },
+  "ok": { "l": true, "f": true, "single": true },
+  "on": { "l": true, "f": false, "single": false },
+  "one-screen": { "l": true, "f": true, "single": false },
+  "operations-synchronization": { "l": true, "f": true, "single": false },
+  "other-data": { "l": true, "f": true, "single": false },
+  "outdoors-interferes-with-indoors": { "l": true, "f": true, "single": false },
+  "overlay-sector-analysis": { "l": true, "f": true, "single": false },
+  "parameter-browsing-and-query": { "l": true, "f": true, "single": false },
+  "parameter-change-history": { "l": true, "f": true, "single": false },
+  "paste": { "l": true, "f": true, "single": false },
+  "pause": { "l": true, "f": true, "single": false },
+  "percent": { "l": false, "f": false, "single": true },
+  "performance-alarm-and-analysis": { "l": true, "f": true, "single": false },
+  "performance-management": { "l": true, "f": true, "single": false },
+  "performance-optimization": { "l": true, "f": true, "single": false },
+  "performance-report": { "l": true, "f": true, "single": false },
+  "permission": { "l": true, "f": true, "single": false },
+  "pie-graph": { "l": true, "f": true, "single": false },
+  "pivot": { "l": true, "f": true, "single": false },
+  "planet-map": { "l": true, "f": false, "single": false },
+  "planetmap": { "l": false, "f": true, "single": false },
+  "planning": { "l": true, "f": true, "single": false },
+  "plus": { "l": false, "f": false, "single": true },
+  "pname": { "l": true, "f": true, "single": false },
+  "poi": { "l": true, "f": true, "single": false },
+  "pollutioncell": { "l": true, "f": true, "single": false },
+  "polygon-line": { "l": true, "f": true, "single": false },
+  "port-definition": { "l": true, "f": false, "single": false },
+  "portdefinition": { "l": false, "f": true, "single": false },
+  "possible": { "l": true, "f": true, "single": false },
+  "private-network-community": { "l": true, "f": true, "single": false },
+  "property": { "l": true, "f": true, "single": false },
+  "property-setting": { "l": true, "f": true, "single": false },
+  "public-participation-status-statistics": { "l": true, "f": true, "single": false },
+  "publish": { "l": true, "f": true, "single": false },
+  "px-polygon-setting": { "l": true, "f": true, "single": false },
+  "query-data-volume": { "l": true, "f": true, "single": false },
+  "quick-simulation": { "l": true, "f": true, "single": false },
+  "quit": { "l": true, "f": true, "single": false },
+  "radial-bar-chart": { "l": true, "f": true, "single": false },
+  "ranging": { "l": true, "f": true, "single": false },
+  "rank-chart": { "l": true, "f": true, "single": false },
+  "redio-selected": { "l": false, "f": false, "single": true },
+  "redio-unselected": { "l": false, "f": false, "single": true },
+  "redo": { "l": false, "f": false, "single": true },
+  "refresh": { "l": true, "f": true, "single": false },
+  "refresh-left": { "l": false, "f": false, "single": true },
+  "refresh-right": { "l": false, "f": false, "single": true },
+  "related-cell": { "l": true, "f": true, "single": false },
+  "related-words-statistics-indexes": { "l": true, "f": true, "single": false },
+  "reset": { "l": true, "f": true, "single": false },
+  "restore-screen": { "l": true, "f": true, "single": false },
+  "result": { "l": true, "f": true, "single": false },
+  "result-kpi": { "l": true, "f": true, "single": false },
+  "result-l1": { "l": false, "f": false, "single": true },
+  "right": { "l": false, "f": false, "single": true },
+  "ring-chart": { "l": true, "f": true, "single": false },
+  "road": { "l": true, "f": true, "single": false },
+  "rotate": { "l": true, "f": true, "single": false },
+  "ruler": { "l": true, "f": true, "single": false },
+  "run": { "l": true, "f": true, "single": false },
+  "sau-settings": { "l": true, "f": true, "single": false },
+  "save": { "l": true, "f": true, "single": false },
+  "save-as": { "l": true, "f": true, "single": false },
+  "scale-to-original": { "l": false, "f": false, "single": true },
+  "scatter-chart": { "l": true, "f": true, "single": false },
+  "screen": { "l": true, "f": true, "single": false },
+  "screens": { "l": true, "f": true, "single": false },
+  "sdr": { "l": true, "f": true, "single": false },
+  "search": { "l": true, "f": true, "single": true },
+  "search1": { "l": true, "f": true, "single": false },
+  "secondary-statistics": { "l": true, "f": true, "single": false },
+  "select-the-network-element": { "l": true, "f": true, "single": false },
+  "seleted-range": { "l": true, "f": true, "single": false },
+  "serious-warning": { "l": true, "f": true, "single": false },
+  "service-cell": { "l": false, "f": true, "single": false },
+  "servicecell": { "l": true, "f": false, "single": false },
+  "seting": { "l": true, "f": true, "single": false },
+  "setting-performance-alarms": { "l": true, "f": true, "single": false },
+  "setting-vip": { "l": true, "f": true, "single": false },
+  "sfn-cellline": { "l": true, "f": true, "single": false },
+  "share": { "l": true, "f": true, "single": false },
+  "simulation5g": { "l": true, "f": true, "single": false },
+  "single-cell-connection": { "l": true, "f": true, "single": false },
+  "single-cell-detail": { "l": true, "f": true, "single": false },
+  "single-cell-presentation": { "l": true, "f": true, "single": false },
+  "singling": { "l": true, "f": true, "single": false },
+  "site-total": { "l": true, "f": true, "single": false },
+  "siteindoor": { "l": true, "f": true, "single": false },
+  "siteoutdoor": { "l": true, "f": true, "single": false },
+  "skin-peeler": { "l": true, "f": true, "single": false },
+  "slow": { "l": true, "f": true, "single": false },
+  "sort": { "l": true, "f": true, "single": false },
+  "stacked-chart": { "l": true, "f": true, "single": false },
+  "stacked-chart-full": { "l": true, "f": true, "single": false },
+  "standard-deviation": { "l": false, "f": false, "single": true },
+  "start": { "l": true, "f": true, "single": false },
+  "start-for-ecast-creating-feature-library": { "l": true, "f": true, "single": false },
+  "statistics": { "l": true, "f": true, "single": false },
+  "stop": { "l": true, "f": true, "single": false },
+  "stretch": { "l": false, "f": false, "single": true },
+  "subscribed": { "l": true, "f": true, "single": false },
+  "success": { "l": true, "f": true, "single": false },
+  "summation1": { "l": false, "f": false, "single": true },
+  "switch-target-cell": { "l": true, "f": true, "single": false },
+  "table": { "l": true, "f": true, "single": false },
+  "table-more": { "l": true, "f": true, "single": false },
+  "task-5g": { "l": true, "f": true, "single": false },
+  "task-list": { "l": true, "f": true, "single": false },
+  "tatp-segmentation-analysis": { "l": true, "f": true, "single": false },
+  "template": { "l": true, "f": true, "single": false },
+  "text": { "l": true, "f": true, "single": false },
+  "thumbs-up": { "l": true, "f": true, "single": false },
+  "time-grain": { "l": true, "f": true, "single": false },
+  "time-line-green": { "l": false, "f": false, "single": true },
+  "timer": { "l": true, "f": true, "single": false },
+  "tip": { "l": true, "f": true, "single": false },
+  "tips": { "l": false, "f": false, "single": true },
+  "top-n-cell-analysis": { "l": true, "f": true, "single": false },
+  "top-n-cell-settings": { "l": true, "f": true, "single": false },
+  "topic-6d": { "l": true, "f": true, "single": false },
+  "topic-base": { "l": true, "f": true, "single": false },
+  "topic-cellrate": { "l": true, "f": true, "single": false },
+  "topic-complaint": { "l": true, "f": true, "single": false },
+  "topic-coverage": { "l": true, "f": true, "single": false },
+  "topic-experience": { "l": true, "f": true, "single": false },
+  "topic-mimo": { "l": true, "f": true, "single": false },
+  "topic-network-planning": { "l": true, "f": true, "single": false },
+  "topic-plan": { "l": true, "f": true, "single": false },
+  "topic-quality": { "l": true, "f": true, "single": false },
+  "topic-scale": { "l": true, "f": true, "single": false },
+  "topic-service": { "l": true, "f": true, "single": false },
+  "topic-sum": { "l": true, "f": true, "single": false },
+  "topic-total": { "l": true, "f": true, "single": false },
+  "topic-traffic": { "l": true, "f": true, "single": false },
+  "topic-user": { "l": true, "f": true, "single": false },
+  "topic-voice": { "l": true, "f": true, "single": false },
+  "topicapacity": { "l": true, "f": true, "single": false },
+  "toview-the-chart": { "l": true, "f": true, "single": false },
+  "toview-the-kpl-details": { "l": true, "f": true, "single": false },
+  "track": { "l": true, "f": true, "single": false },
+  "tree": { "l": true, "f": true, "single": false },
+  "triple-screen": { "l": true, "f": true, "single": false },
+  "turn": { "l": true, "f": true, "single": false },
+  "ul-coverage-evaluation": { "l": true, "f": true, "single": false },
+  "umts-capacity-evaluation": { "l": true, "f": true, "single": false },
+  "undo": { "l": false, "f": false, "single": true },
+  "union": { "l": true, "f": true, "single": false },
+  "unlock": { "l": true, "f": true, "single": false },
+  "unshare": { "l": true, "f": true, "single": false },
+  "unsorted": { "l": true, "f": true, "single": false },
+  "up": { "l": false, "f": false, "single": true },
+  "upload": { "l": true, "f": true, "single": false },
+  "upon-semicircle": { "l": false, "f": false, "single": true },
+  "urgent": { "l": false, "f": false, "single": true },
+  "user-1": { "l": false, "f": false, "single": true },
+  "user-permission": { "l": true, "f": false, "single": false },
+  "user1": { "l": true, "f": false, "single": false },
+  "user2": { "l": true, "f": true, "single": false },
+  "variance": { "l": false, "f": false, "single": true },
+  "view": { "l": false, "f": false, "single": true },
+  "view-alarms": { "l": true, "f": true, "single": false },
+  "view-logs": { "l": true, "f": true, "single": false },
+  "view-proble-mareas": { "l": true, "f": true, "single": false },
+  "view-task": { "l": true, "f": true, "single": false },
+  "view-task-result": { "l": true, "f": true, "single": false },
+  "vip-event": { "l": true, "f": true, "single": false },
+  "vip-scenario": { "l": true, "f": true, "single": false },
+  "visible": { "l": true, "f": true, "single": false },
+  "waiting": { "l": true, "f": true, "single": false },
+  "warning": { "l": true, "f": true, "single": false },
+  "warning-circle": { "l": true, "f": true, "single": false },
+  "zoom-in": { "l": true, "f": true, "single": false },
+  "zoom-out": { "l": true, "f": true, "single": false }
+}
+```
+
+### 3.2 sweetui-components.json 摘要
+
+> 来源：`scripts/verify/whitelists/sweetui-components.json`
+> 总数：140 个组件
+> 新增 3 项（探针 1.1 未发现）：SweetCollection / SweetCollectionItem / SweetOverlay
+
+完整列表已在仓库文件中，此处不重复。关键差异：
+- 探针原报 137 → 实际 140（+3）
+- 缺失 4 项确认不在白名单中：sweet-textarea / sweet-check-tag / sweet-avatar-group / sweet-image-viewer
+
+### 3.3 bridge.less --swt-* SECTION 2 映射全量
+
+> 来源：`scripts/preview/src/assets/themes/bridge.less`（1066 行）
+> 作用域：`body[theme="default"]`
+> 注释约定：右侧 `→` 为 DL token 或 color-mix 表达式；`/* swt-default */` 保留 SWT :root 默认值
+
+#### 完整 bridge.less 内容
+
+```less
+/* ============================================================
+   bridge.less — 桥接层：design-language token → SweetUI 双变量体系
+   ============================================================
+   把皮肤定义的语义 token（--color-* / --space-size-* 等，
+   命名即 design-language 样式Token 的规范名）映射到 SweetUI 的
+   双变量体系：
+     - --el-*（358 个，EP 继承，useNamespace 生成，受 namespace 影响）
+     - --swt-*（646 个，SweetUI 自有，纯 CSS，不受 namespace 影响）
+   任何皮肤只要按协议提供同名 token，SweetUI 组件即自动跟随换肤；
+   light-N 色阶由 color-mix 对 --ux-mix-base 派生（深色皮肤须覆盖
+   --ux-mix-base 为深色表面色，见 themes/README.md）。
+
+   作用域：body[theme="default"]（非 :root）——SweetUI 原生主题机制
+   是 body[theme] 属性（setTheme → body.setAttribute），特异性高于
+   sweet-ui-base.css :root 默认值，无需加载 vars/var-ui-*.css。
+
+   注释约定：
+     - 右侧 `→` 后为 design-language token 或 color-mix 表达式
+     - `/* swt-default */` — 该槽位无 design-language 等价，保留
+       sweet-ui-base.css :root 默认值
+   ============================================================ */
+
+body[theme="default"] {
+
+  /* ================================================================
+     SECTION 1: --el-* 映射（358 槽位；组件特定槽位无 DL 等价者
+     保留 sweet-ui-base.css 默认值，不逐一列出）
+     ================================================================ */
+
+  /* ---- 1.1 高亮色 → primary ---- */
+  --el-color-primary: var(--color-brand);
+  --el-color-primary-light-3: var(--color-brand-hover, color-mix(in srgb, var(--color-brand) 70%, var(--ux-mix-base)));
+  --el-color-primary-light-5: color-mix(in srgb, var(--color-brand) 50%, var(--ux-mix-base));
+  --el-color-primary-light-7: color-mix(in srgb, var(--color-brand) 30%, var(--ux-mix-base));
+  --el-color-primary-light-8: color-mix(in srgb, var(--color-brand) 20%, var(--ux-mix-base));
+  --el-color-primary-light-9: var(--color-select, color-mix(in srgb, var(--color-brand) 10%, var(--ux-mix-base)));
+  --el-color-primary-dark-2: var(--color-brand-active, color-mix(in srgb, var(--color-brand) 80%, #000000));
+
+  /* ---- 1.2 功能色（success / warning / danger / info）----
+     light-N 色阶一律 color-mix 派生，不接 --color-*-subtle
+     （subtle 是中等色面，与组件前景同亮度，接入后字底融合）。 ---- */
+  --el-color-success: var(--color-success);
+  --el-color-success-light-3: color-mix(in srgb, var(--color-success) 70%, var(--ux-mix-base));
+  --el-color-success-light-5: color-mix(in srgb, var(--color-success) 50%, var(--ux-mix-base));
+  --el-color-success-light-7: color-mix(in srgb, var(--color-success) 30%, var(--ux-mix-base));
+  --el-color-success-light-8: color-mix(in srgb, var(--color-success) 20%, var(--ux-mix-base));
+  --el-color-success-light-9: color-mix(in srgb, var(--color-success) 10%, var(--ux-mix-base));
+  --el-color-success-dark-2: color-mix(in srgb, var(--color-success) 80%, #000000);
+
+  --el-color-warning: var(--color-warning);
+  --el-color-warning-light-3: color-mix(in srgb, var(--color-warning) 70%, var(--ux-mix-base));
+  --el-color-warning-light-5: color-mix(in srgb, var(--color-warning) 50%, var(--ux-mix-base));
+  --el-color-warning-light-7: color-mix(in srgb, var(--color-warning) 30%, var(--ux-mix-base));
+  --el-color-warning-light-8: color-mix(in srgb, var(--color-warning) 20%, var(--ux-mix-base));
+  --el-color-warning-light-9: color-mix(in srgb, var(--color-warning) 10%, var(--ux-mix-base));
+  --el-color-warning-dark-2: color-mix(in srgb, var(--color-warning) 80%, #000000);
+
+  --el-color-danger: var(--color-error);
+  --el-color-danger-light-3: color-mix(in srgb, var(--color-error) 70%, var(--ux-mix-base));
+  --el-color-danger-light-5: color-mix(in srgb, var(--color-error) 50%, var(--ux-mix-base));
+  --el-color-danger-light-7: color-mix(in srgb, var(--color-error) 30%, var(--ux-mix-base));
+  --el-color-danger-light-8: color-mix(in srgb, var(--color-error) 20%, var(--ux-mix-base));
+  --el-color-danger-light-9: color-mix(in srgb, var(--color-error) 10%, var(--ux-mix-base));
+  --el-color-danger-dark-2: color-mix(in srgb, var(--color-error) 80%, #000000);
+
+  --el-color-error: var(--color-error);
+  --el-color-info: var(--color-info);
+  --el-color-info-light-3: color-mix(in srgb, var(--color-info) 70%, var(--ux-mix-base));
+  --el-color-info-light-5: color-mix(in srgb, var(--color-info) 50%, var(--ux-mix-base));
+  --el-color-info-light-7: color-mix(in srgb, var(--color-info) 30%, var(--ux-mix-base));
+  --el-color-info-light-8: color-mix(in srgb, var(--color-info) 20%, var(--ux-mix-base));
+  --el-color-info-light-9: color-mix(in srgb, var(--color-info) 10%, var(--ux-mix-base));
+  --el-color-info-dark-2: color-mix(in srgb, var(--color-info) 80%, #000000);
+
+  /* ---- 1.3 文本色（design-language 文本色五级直接对位） ---- */
+  --el-text-color-primary: var(--color-text-primary);
+  --el-text-color-regular: var(--color-text-primary);
+  --el-text-color-secondary: var(--color-text-secondary);
+  --el-text-color-placeholder: var(--color-text-placeholder);
+  --el-text-color-disabled: var(--color-text-disabled);
+  --el-text-color-inverse: var(--color-text-inverse);
+
+  /* ---- 1.4 背景色 ---- */
+  --el-bg-color: var(--color-bg-4);
+  --el-bg-color-page: var(--color-bg-1);
+  --el-bg-color-overlay: var(--color-bg-4);
+
+  /* ---- 1.5 边框色 ---- */
+  --el-border-color: var(--color-border);
+  --el-border-color-light: var(--color-border);
+  --el-border-color-lighter: var(--color-border-separator);
+  --el-border-color-extra-light: var(--color-border-separator-subtle);
+  --el-border-color-dark: var(--color-border-hover);
+  --el-border-color-darker: var(--color-border-hover);
+  --el-border-color-hover: var(--color-border-hover);
+  --el-border-color-focus: var(--color-border-focus);
+
+  /* ---- 1.6 填充色 ---- */
+  --el-fill-color: var(--color-fill);
+  --el-fill-color-light: var(--color-hover);
+  --el-fill-color-lighter: var(--color-hover);
+  --el-fill-color-extra-light: var(--color-hover);
+  --el-fill-color-dark: var(--color-fill-disabled);
+  --el-fill-color-darker: var(--color-fill-disabled);
+  --el-fill-color-blank: var(--color-fill-subtle);
+
+  /* ---- 1.7 遮罩 / 阴影 ---- */
+  --el-mask-color: var(--color-bg-mask);
+  --el-mask-color-extra-light: color-mix(in srgb, var(--color-bg-mask) 50%, transparent);
+  --el-overlay-color: var(--color-bg-mask);
+  --el-box-shadow: var(--shadow-6);
+  --el-box-shadow-light: var(--shadow-3);
+  --el-box-shadow-lighter: var(--shadow-1);
+  --el-box-shadow-dark: var(--shadow-6);
+
+  /* ---- 1.8 圆角 / 字体 / 边框宽 ---- */
+  --el-border-radius-base: var(--radius-size-normal);
+  --el-border-radius-small: var(--radius-size-small);
+  --el-border-radius-round: var(--radius-size-full);
+  --el-border-radius-circle: 100%;
+  --el-font-family: var(--font-family);
+  --el-border-width: var(--border-width-normal);
+  --el-component-size: 32px;
+
+  /* ---- 1.9 --el-* 组件特定对位 ---- */
+  --el-table-bg-color: var(--color-bg-2);
+  --el-table-border-color: var(--color-border);
+  --el-table-current-row-bg-color: var(--color-select);
+  --el-table-expanded-cell-bg-color: var(--color-bg-2);
+  --el-table-header-bg-color: var(--color-table-header);
+  --el-table-header-text-color: var(--color-text-primary);
+  --el-table-row-hover-bg-color: var(--color-hover);
+  --el-table-text-color: var(--color-text-primary);
+  --el-table-tr-bg-color: var(--color-bg-2);
+
+  --el-dialog-bg-color: var(--color-bg-4);
+  --el-dialog-border-radius: var(--radius-size-medium);
+  --el-dialog-box-shadow: var(--shadow-6);
+
+  --el-card-bg-color: var(--color-bg-2);
+  --el-card-border-color: var(--color-border);
+  --el-card-border-radius: var(--radius-size-medium);
+
+  --el-popover-bg-color: var(--color-bg-4);
+  --el-popover-border-color: var(--color-border);
+  --el-popover-border-radius: var(--radius-size-medium);
+  --el-popover-title-text-color: var(--color-text-primary);
+
+  --el-popper-border-color: var(--color-border);
+
+  --el-input-bg-color: var(--color-fill-subtle);
+  --el-input-border-color: var(--color-border);
+  --el-input-text-color: var(--color-text-primary);
+  --el-input-placeholder-color: var(--color-text-placeholder);
+  --el-input-hover-border-color: var(--color-border-hover);
+  --el-input-focus-border-color: var(--color-border-focus);
+  --el-input-focus-color: var(--color-brand);
+  --el-input-icon-color: var(--color-icon-secondary);
+  --el-input-icon-color-hover: var(--color-icon-hover);
+  --el-input-bg-disabled-color: var(--color-fill-disabled);
+  --el-input-border-disabled-color: var(--color-border-disabled);
+  --el-input-text-color-disabled: var(--color-text-disabled);
+  --el-input-number-bg-color: var(--color-fill-subtle);
+  --el-input-number-bg-color-disabled: var(--color-fill-disabled);
+  --el-input-number-border-color: var(--color-border);
+
+  --el-checkbox-bg-color: var(--color-fill-subtle);
+  --el-checkbox-checked-bg-color: var(--color-brand);
+  --el-checkbox-checked-icon-color: var(--color-text-inverse);
+  --el-checkbox-checked-input-border-color: var(--color-brand);
+  --el-checkbox-checked-text-color: var(--color-brand);
+  --el-checkbox-disabled-border-color: var(--color-border-disabled);
+  --el-checkbox-disabled-checked-input-fill: var(--color-brand-disabled);
+  --el-checkbox-disabled-checked-icon-color: var(--color-text-disabled);
+  --el-checkbox-disabled-input-fill: var(--color-fill-disabled);
+  --el-checkbox-input-border-color-hover: var(--color-border-hover);
+  --el-checkbox-text-color: var(--color-text-primary);
+
+  --el-radio-input-bg-color: var(--color-fill-subtle);
+  --el-radio-input-border-color: var(--color-border);
+  --el-radio-input-border-color-hover: var(--color-border-hover);
+  --el-radio-text-color: var(--color-text-primary);
+  --el-radio-button-checked-bg-color: var(--color-brand);
+  --el-radio-button-checked-border-color: var(--color-brand);
+  --el-radio-button-checked-text-color: var(--color-text-inverse);
+
+  --el-menu-text-color: var(--color-text-primary);
+  --el-menu-active-color: var(--color-brand);
+  --el-menu-hover-bg-color: var(--color-hover);
+  --el-menu-border-color: var(--color-border-separator-subtle);
+  --el-menu-item-hover-fill: var(--color-hover);
+
+  --el-link-text-color-normal: var(--color-link);
+  --el-link-text-color-hover: var(--color-link-hover);
+  --el-link-text-color-active: var(--color-link-active);
+  --el-link-text-color-disabled: var(--color-link-disabled);
+
+  --el-message-text-color: var(--color-text-primary);
+  --el-message-close-hover-color: var(--color-text-primary);
+
+  --el-messagebox-color: var(--color-text-primary);
+  --el-messagebox-content-color: var(--color-text-primary);
+  --el-messagebox-title-color: var(--color-text-primary);
+
+  --el-notification-content-color: var(--color-text-primary);
+  --el-notification-title-color: var(--color-text-primary);
+
+  --el-pagination-text-color: var(--color-text-primary);
+  --el-pagination-hover-color: var(--color-brand);
+  --el-pagination-button-color: var(--color-text-primary);
+  --el-pagination-button-bg-color: var(--color-fill-subtle);
+
+  --el-dropdown-menu-box-shadow: var(--shadow-3);
+
+  --el-select-input-color: var(--color-text-primary);
+  --el-select-input-focus-border-color: var(--color-border-focus);
+  --el-select-border-color-hover: var(--color-border-hover);
+
+  --el-tag-text-color: var(--color-text-primary);
+  --el-tag-hover-color: var(--color-brand);
+
+  --el-tree-text-color: var(--color-text-primary);
+  --el-tree-node-hover-bg-color: var(--color-hover);
+  --el-tree-expand-icon-color: var(--color-icon-secondary);
+
+  --el-collapse-header-text-color: var(--color-text-primary);
+  --el-collapse-content-text-color: var(--color-text-primary);
+  --el-collapse-border-color: var(--color-border-separator-subtle);
+  --el-collapse-content-bg-color: var(--color-bg-2);
+
+  --el-alert-description-font-size: var(--font-size-small);
+  --el-alert-title-font-size: var(--font-size-normal);
+
+  --el-result-title-font-size: var(--font-size-medium);
+  --el-result-subtitle-margin-top: var(--space-size-8);
+
+  --el-slider-main-bg-color: var(--color-brand);
+  --el-slider-runway-bg-color: var(--color-fill);
+
+  --el-transfer-border-color: var(--color-border);
+  --el-transfer-panel-header-bg-color: var(--color-bg-2);
+
+  --el-calendar-selected-bg-color: var(--color-select);
+
+  --el-avatar-text-color: var(--color-text-inverse);
+
+  --el-badge-bg-color: var(--color-error);
+
+  --el-rate-fill-color: var(--color-brand);
+
+  --el-timeline-node-color: var(--color-brand);
+
+  --el-switch-on-color: var(--color-brand);
+  --el-switch-off-color: var(--color-border);
+
+  --el-progress-circle-stroke: var(--color-brand);
+
+  --el-empty-fill-color-0: var(--color-text-disabled);
+
+  --el-skeleton-color: var(--color-hover);
+
+  --el-result-color: var(--color-brand);
+
+  --el-backtop-hover-bg-color: var(--color-hover);
+  --el-backtop-text-color: var(--color-text-primary);
+
+  --el-scrollbar-bg-color: var(--color-fill);
+  --el-scrollbar-hover-bg-color: var(--color-hover);
+
+  /* ================================================================
+     SECTION 2: --swt-* 映射（646 槽位全部覆盖）
+     ================================================================ */
+
+  /* ---- 2.1 品牌色 / Accent ---- */
+  --swt-color-primary: var(--color-brand);
+  --swt-color-primary-hover: var(--color-brand-hover);
+  --swt-color-primary-active: var(--color-brand-active);
+  --swt-color-primary-light-8: color-mix(in srgb, var(--color-brand) 20%, var(--ux-mix-base));
+
+  --swt-color-brand-normal: var(--color-brand);
+  --swt-color-brand-hover: var(--color-brand-hover);
+  --swt-color-brand-active: var(--color-brand-active);
+  --swt-color-brand-focus: var(--color-brand-focus);
+  --swt-color-brand-normal-opacity20: color-mix(in srgb, var(--color-brand) 20%, var(--ux-mix-base));
+  --swt-color-brand-normal-opacity40: color-mix(in srgb, var(--color-brand) 40%, var(--ux-mix-base));
+
+  --swt-color-brand-text-normal: var(--color-brand);
+  --swt-color-brand-text-hover: var(--color-brand-hover);
+  --swt-color-brand-text-active: var(--color-brand-active);
+  --swt-color-brand-text-focus: var(--color-brand-focus);
+
+  --swt-color-accent-normal: var(--color-brand);
+  --swt-color-accent-hover: var(--color-brand-hover);
+  --swt-color-accent-active: var(--color-brand-active);
+  --swt-color-accent-focus: var(--color-brand-focus);
+  --swt-color-accent-disabled: var(--color-brand-disabled);
+  --swt-color-accent-bg-selected: var(--color-select);
+  --swt-color-accent-normal-opacity20: color-mix(in srgb, var(--color-brand) 20%, var(--ux-mix-base));
+  --swt-color-accent-normal-opacity40: color-mix(in srgb, var(--color-brand) 40%, var(--ux-mix-base));
+
+  --swt-color-accent-text-normal: var(--color-brand);
+  --swt-color-accent-text-hover: var(--color-brand-hover);
+  --swt-color-accent-text-active: var(--color-brand-active);
+  --swt-color-accent-text-focus: var(--color-brand-focus);
+  --swt-color-accent-text-disabled: var(--color-brand-disabled);
+
+  /* ---- 2.2 功能色 — success ---- */
+  --swt-color-function-success-normal: var(--color-success);
+  --swt-color-function-success-hover: var(--color-success-hover);
+  --swt-color-function-success-active: var(--color-success-active);
+  --swt-color-function-success-focus: var(--color-success);
+  --swt-color-function-success-disabled: var(--color-success-disabled);
+  --swt-color-function-success-background: var(--color-success-subtler);
+  --swt-color-function-success-background1: var(--color-success-subtle);
+
+  --swt-color-function-success-text-normal: var(--color-success);
+  --swt-color-function-success-text-hover: var(--color-success-hover);
+  --swt-color-function-success-text-active: var(--color-success-active);
+  --swt-color-function-success-text-focus: var(--color-success);
+  --swt-color-function-success-text-disabled: var(--color-success-disabled);
+
+  /* ---- 2.2 功能色 — warning ---- */
+  --swt-color-function-warning-normal: var(--color-warning);
+  --swt-color-function-warning-hover: var(--color-warning-hover);
+  --swt-color-function-warning-active: var(--color-warning-active);
+  --swt-color-function-warning-focus: var(--color-warning);
+  --swt-color-function-warning-disabled: var(--color-warning-disabled);
+  --swt-color-function-warning-background: var(--color-warning-subtler);
+  --swt-color-function-warning-background1: var(--color-warning-subtle);
+
+  --swt-color-function-warning-text-normal: var(--color-warning);
+  --swt-color-function-warning-text-hover: var(--color-warning-hover);
+  --swt-color-function-warning-text-active: var(--color-warning-active);
+  --swt-color-function-warning-text-focus: var(--color-warning);
+  --swt-color-function-warning-text-disabled: var(--color-warning-disabled);
+
+  /* ---- 2.2 功能色 — urgent (= error) ---- */
+  --swt-color-function-urgent-normal: var(--color-error);
+  --swt-color-function-urgent-hover: var(--color-error-hover);
+  --swt-color-function-urgent-active: var(--color-error-active);
+  --swt-color-function-urgent-focus: var(--color-error);
+  --swt-color-function-urgent-disabled: var(--color-error-disabled);
+  --swt-color-function-urgent-background: var(--color-error-subtler);
+  --swt-color-function-urgent-background1: var(--color-error-subtle);
+  --swt-color-function-urgent-normal-opacity20: color-mix(in srgb, var(--color-error) 20%, var(--ux-mix-base));
+  --swt-color-function-urgent-normal-opacity40: color-mix(in srgb, var(--color-error) 40%, var(--ux-mix-base));
+
+  --swt-color-function-urgent-text-normal: var(--color-error);
+  --swt-color-function-urgent-text-hover: var(--color-error-hover);
+  --swt-color-function-urgent-text-active: var(--color-error-active);
+  --swt-color-function-urgent-text-focus: var(--color-error);
+  --swt-color-function-urgent-text-disabled: var(--color-error-disabled);
+
+  /* ---- 2.2 功能色 — important (= error) ---- */
+  --swt-color-function-important-normal: var(--color-error);
+  --swt-color-function-important-hover: var(--color-error-hover);
+  --swt-color-function-important-active: var(--color-error-active);
+  --swt-color-function-important-focus: var(--color-error);
+  --swt-color-function-important-disabled: var(--color-error-disabled);
+  --swt-color-function-important-background: var(--color-error-subtler);
+  --swt-color-function-important-background1: var(--color-error-subtle);
+
+  --swt-color-function-important-text-normal: var(--color-error);
+  --swt-color-function-important-text-hover: var(--color-error-hover);
+  --swt-color-function-important-text-active: var(--color-error-active);
+  --swt-color-function-important-text-focus: var(--color-error);
+  --swt-color-function-important-text-disabled: var(--color-error-disabled);
+
+  /* ---- 2.2 功能色 — prompt (= info) ---- */
+  --swt-color-function-prompt-normal: var(--color-info);
+  --swt-color-function-prompt-hover: var(--color-info-primary-hover);
+  --swt-color-function-prompt-active: var(--color-info-primary-active);
+  --swt-color-function-prompt-focus: var(--color-info);
+  --swt-color-function-prompt-disabled: var(--color-info-primary-disabled);
+  --swt-color-function-prompt-background: var(--color-info-primary-subtler);
+  --swt-color-function-prompt-background1: var(--color-info-subtle);
+
+  --swt-color-function-prompt-text-normal: var(--color-info);
+  --swt-color-function-prompt-text-hover: var(--color-info-primary-hover);
+  --swt-color-function-prompt-text-active: var(--color-info-primary-active);
+  --swt-color-function-prompt-text-focus: var(--color-info);
+  --swt-color-function-prompt-text-disabled: var(--color-info-primary-disabled);
+
+  /* ---- 2.2 功能色 — invalid (= error) ---- */
+  --swt-color-function-invalid-normal: var(--color-error);
+
+  /* ---- 2.3 语义色阶 — success light/dark ---- */
+  --swt-color-success-dark-2: color-mix(in srgb, var(--color-success) 80%, #000000);
+  --swt-color-success-light-3: color-mix(in srgb, var(--color-success) 70%, var(--ux-mix-base));
+  --swt-color-success-light-5: color-mix(in srgb, var(--color-success) 50%, var(--ux-mix-base));
+  --swt-color-success-light-8: color-mix(in srgb, var(--color-success) 20%, var(--ux-mix-base));
+  --swt-color-success-light-9: color-mix(in srgb, var(--color-success) 10%, var(--ux-mix-base));
+
+  /* ---- 2.3 语义色阶 — warning light/dark ---- */
+  --swt-color-warning-dark-2: color-mix(in srgb, var(--color-warning) 80%, #000000);
+  --swt-color-warning-light-3: color-mix(in srgb, var(--color-warning) 70%, var(--ux-mix-base));
+  --swt-color-warning-light-5: color-mix(in srgb, var(--color-warning) 50%, var(--ux-mix-base));
+  --swt-color-warning-light-8: color-mix(in srgb, var(--color-warning) 20%, var(--ux-mix-base));
+  --swt-color-warning-light-9: color-mix(in srgb, var(--color-warning) 10%, var(--ux-mix-base));
+
+  /* ---- 2.3 语义色阶 — danger (= error) light ---- */
+  --swt-color-danger-light-8: color-mix(in srgb, var(--color-error) 20%, var(--ux-mix-base));
+  --swt-color-danger-light-9: color-mix(in srgb, var(--color-error) 10%, var(--ux-mix-base));
+
+  /* ---- 2.3 语义色阶 — error light ---- */
+  --swt-color-error-light-3: color-mix(in srgb, var(--color-error) 70%, var(--ux-mix-base));
+
+  /* ---- 2.3 语义色阶 — info light/dark ---- */
+  --swt-color-info-dark-2: color-mix(in srgb, var(--color-info) 80%, #000000);
+  --swt-color-info-light-3: color-mix(in srgb, var(--color-info) 70%, var(--ux-mix-base));
+  --swt-color-info-light-5: color-mix(in srgb, var(--color-info) 50%, var(--ux-mix-base));
+  --swt-color-info-light-8: color-mix(in srgb, var(--color-info) 20%, var(--ux-mix-base));
+  --swt-color-info-light-9: color-mix(in srgb, var(--color-info) 10%, var(--ux-mix-base));
+
+  /* ---- 2.4 标签背景色 ---- */
+  --swt-color-tag-success-background: var(--color-success-subtler);
+  --swt-color-tag-warning-background: var(--color-warning-subtler);
+  --swt-color-tag-urgent-background: var(--color-error-subtler);
+  --swt-color-tag-prompt-background: var(--color-info-primary-subtler);
+
+  /* ---- 2.5 分割线 ---- */
+  --swt-color-dividing-line-primary: var(--color-border-separator);
+  --swt-color-dividing-line-secondary: var(--color-border-separator-subtle);
+
+  /* ---- 2.6 背景色 ---- */
+  --swt-bg-color: var(--color-bg-4);
+  --swt-bg-color-overlay: var(--color-bg-4);
+  --swt-bg-color-page: var(--color-bg-1);
+
+  --swt-color-bg-primary: var(--color-bg-4);
+  --swt-color-bg-secondary: var(--color-bg-3);
+  --swt-color-bg-hover: var(--color-hover);
+  --swt-color-bg-selected: var(--color-select);
+  --swt-color-bg-disabled: var(--color-fill-disabled);
+  --swt-color-bg-mask: var(--color-bg-mask);
+  --swt-color-zebra: var(--color-hover);
+
+  --swt-color-bg-primary-button-hover: var(--color-brand-hover);
+  --swt-color-bg-brand-round-button-hover: var(--color-brand-hover);
+  --swt-color-bg-danger-button-hover: var(--color-error-hover);
+  --swt-color-bg-urgent-button-hover: var(--color-error-hover);
+  --swt-color-bg-gray-round-button-hover: var(--color-hover);
+  --swt-color-bg-text-button-hover: var(--color-hover);
+  --swt-color-bg-text-button-active: var(--color-hover);
+  --swt-color-bg-prompt-text-button-active: var(--color-info-primary-subtler);
+  --swt-color-bg-success-text-button-hover: var(--color-success-subtler);
+  --swt-color-bg-success-text-button-active: var(--color-success-subtler);
+  --swt-color-bg-warning-text-button-hover: var(--color-warning-subtler);
+  --swt-color-bg-warning-text-button-active: var(--color-warning-subtler);
+  --swt-color-bg-urgent-text-button-hover: var(--color-error-subtler);
+  --swt-color-bg-urgent-text-button-active: var(--color-error-subtler);
+
+  /* ---- 2.7 文本色 ---- */
+  --swt-color-text-primary: var(--color-text-primary);
+  --swt-color-text-secondary: var(--color-text-secondary);
+  --swt-color-text-disabled: var(--color-text-disabled);
+  --swt-color-text-extra: var(--color-text-secondary);
+  --swt-color-placeholder: var(--color-text-placeholder);
+
+  --swt-text-color-primary: var(--color-text-primary);
+  --swt-text-color-regular: var(--color-text-primary);
+  --swt-text-color-secondary: var(--color-text-secondary);
+  --swt-text-color-placeholder: var(--color-text-placeholder);
+  --swt-text-color-disabled: var(--color-text-disabled);
+  --swt-text-color: var(--color-text-primary);
+  --swt-text-font-size: var(--font-size-normal);
+
+  /* ---- 2.8 边框色 ---- */
+  --swt-border-color: var(--color-border);
+  --swt-border-color-light: var(--color-border);
+  --swt-border-color-dark: var(--color-border-hover);
+  --swt-border-color-darker: var(--color-border-hover);
+  --swt-border-color-extra-light: var(--color-border-separator-subtle);
+
+  --swt-color-border: var(--color-border);
+  --swt-color-border-hover: var(--color-border-hover);
+  --swt-color-border-disabled: var(--color-border-disabled);
+
+  /* ---- 2.9 边框宽度 ---- */
+  --swt-border-width: var(--border-width-normal);
+  --swt-border-width-normal: var(--border-width-normal);
+  --swt-border-width-medium: var(--border-width-medium);
+  --swt-border-width-independent: var(--border-width-independent);
+  --swt-border-width-none: var(--border-width-none);
+
+  /* ---- 2.10 边框样式 ---- */
+  --swt-border-style-dashed: var(--border-style-dashed);
+  --swt-border-style-dotted: var(--border-style-dotted);
+  --swt-border-style-solid: var(--border-style-solid);
+
+  --swt-border: 0; /* swt-default */
+  --swt-border-style: solid; /* swt-default (composite) */
+
+  /* ---- 2.11 边框圆角 ---- */
+  --swt-radius-size-small: var(--radius-size-small);
+  --swt-radius-size-normal: var(--radius-size-normal);
+  --swt-radius-size-medium: var(--radius-size-normal);
+  --swt-radius-size-big: var(--radius-size-big);
+  --swt-radius-size-big1: var(--radius-size-big1);
+  --swt-radius-size-big2: var(--radius-size-big2);
+  --swt-radius-size-infinity: var(--radius-size-full);
+  --swt-border-radius-circle: 100%;
+  --swt-border-radius-round: var(--radius-size-full);
+
+  /* ---- 2.12 填充色 ---- */
+  --swt-fill-color: var(--color-fill);
+  --swt-fill-color-light: var(--color-hover);
+  --swt-fill-color-lighter: var(--color-hover);
+  --swt-fill-color-extra-light: var(--color-hover);
+  --swt-fill-color-dark: var(--color-fill-disabled);
+  --swt-fill-color-darker: var(--color-fill-disabled);
+  --swt-fill-color-blank: var(--color-fill-subtle);
+
+  --swt-fill-color-0: #fff; /* swt-default */
+  --swt-fill-color-1: #f3f3f3; /* swt-default */
+  --swt-fill-color-2: #e8e8e8; /* swt-default */
+  --swt-fill-color-3: #dedede; /* swt-default */
+  --swt-fill-color-4: #d4d4d4; /* swt-default */
+  --swt-fill-color-5: #c9c9c9; /* swt-default */
+  --swt-fill-color-6: #bfbfbf; /* swt-default */
+  --swt-fill-color-7: #b5b5b5; /* swt-default */
+  --swt-fill-color-8: #aaaaaa; /* swt-default */
+  --swt-fill-color-9: #a0a0a0; /* swt-default */
+
+  --swt-disabled-bg-color: var(--color-fill-disabled);
+  --swt-selected-bg-color: var(--color-select);
+  --swt-color-filling-hover: var(--color-hover);
+
+  /* ---- 2.13 阴影 ---- */
+  --swt-box-shadow: var(--shadow-3);
+  --swt-box-shadow-light: var(--shadow-1);
+  --swt-box-shadow-lighter: var(--shadow-1);
+  --swt-box-shadow-dark: var(--shadow-6);
+
+  --swt-shadow1: var(--shadow-1);
+  --swt-shadow2: var(--shadow-3);
+  --swt-shadow2-l: var(--shadow-2-left);
+  --swt-shadow2-r: var(--shadow-2-right);
+  --swt-shadow3: var(--shadow-3);
+  --swt-shadow4: var(--shadow-5);
+  --swt-shadow4-t: var(--shadow-4-top);
+  --swt-shadow4-b: var(--shadow-4-bottom);
+  --swt-shadow4-l: var(--shadow-4-left);
+  --swt-shadow4-r: var(--shadow-4-right);
+  --swt-shadow5: var(--shadow-5);
+  --swt-shadow6: var(--shadow-6);
+
+  --swt-filter-shadow-light: none; /* swt-default */
+  --swt-filter-shadow-dark: none; /* swt-default */
+  --swt-color-shadow-opacity: 0.1; /* swt-default */
+
+  /* ---- 2.14 间距 ---- */
+  --swt-space-size-4: var(--space-size-4);
+  --swt-space-size-8: var(--space-size-8);
+  --swt-space-size-12: var(--space-size-12);
+  --swt-space-size-16: var(--space-size-16);
+  --swt-space-size-20: var(--space-size-20);
+  --swt-space-size-24: var(--space-size-24);
+  --swt-space-size-32: var(--space-size-32);
+  --swt-space-size-40: var(--space-size-40);
+  --swt-space-size-48: var(--space-size-48);
+  --swt-space-size-56: var(--space-size-56);
+  --swt-space-size-64: var(--space-size-64);
+  --swt-space-size-72: var(--space-size-72);
+  --swt-space-size-80: var(--space-size-80);
+
+  --swt-space-size-2: 2px; /* swt-default (no --space-size-2 in DL) */
+
+  /* ---- 2.15 字号 ---- */
+  --swt-font-size-mini: var(--font-size-small);
+  --swt-font-size-mini1: var(--font-size-small);
+  --swt-font-size-small: var(--font-size-small);
+  --swt-font-size-small1: var(--font-size-small);
+  --swt-font-size-normal: var(--font-size-normal);
+  --swt-font-size-normal1: var(--font-size-normal1);
+  --swt-font-size-normal2: var(--font-size-normal1);
+  --swt-font-size-medium: var(--font-size-medium);
+  --swt-font-size-subtitle1: var(--font-size-medium);
+  --swt-font-size-big: var(--font-size-big);
+  --swt-font-size-big1: var(--font-size-big1);
+  --swt-font-size-big2: var(--font-size-big2);
+  --swt-font-size-big3: var(--font-size-big3);
+  --swt-font-size-big4: var(--font-size-big4);
+  --swt-font-size-big5: var(--font-size-big5);
+  --swt-font-size-big6: var(--font-size-big6);
+  --swt-font-size-headline8: var(--font-size-big6);
+
+  /* ---- 2.16 行高 ---- */
+  --swt-font-line-height-mini: var(--font-line-height-small);
+  --swt-font-line-height-mini1: var(--font-line-height-small);
+  --swt-font-line-height-small: var(--font-line-height-small);
+  --swt-font-line-height-normal: var(--font-line-height-normal);
+  --swt-font-line-height-normal1: var(--font-line-height-normal1);
+  --swt-font-line-height-medium: var(--font-line-height-medium);
+  --swt-font-line-height-subtitle1: var(--font-line-height-medium);
+  --swt-font-line-height-big: var(--font-line-height-big);
+  --swt-font-line-height-big1: var(--font-line-height-big1);
+  --swt-font-line-height-big2: var(--font-line-height-big2);
+  --swt-font-line-height-big3: var(--font-line-height-big3);
+  --swt-font-line-height-big4: var(--font-line-height-big4);
+  --swt-font-line-height-big5: var(--font-line-height-big5);
+  --swt-font-line-height-big6: var(--font-line-height-big6);
+  --swt-font-line-height-headline8: var(--font-line-height-big6);
+
+  /* ---- 2.17 字重 ---- */
+  --swt-font-weight-light: var(--font-weight-light);
+  --swt-font-weight-normal: var(--font-weight-normal);
+  --swt-font-weight-medium: var(--font-weight-bold);
+  --swt-font-weight-bold: var(--font-weight-bold);
+
+  --swt-font-weight-thin: 100; /* swt-default */
+  --swt-font-weight-black: 900; /* swt-default */
+
+  /* ---- 2.18 字体族 ---- */
+  --swt-font-family-en: var(--font-family-en);
+  --swt-font-family-zh: var(--font-family-zh);
+
+  --swt-font-family-other: monospace; /* swt-default */
+
+  /* ---- 2.19 组件特定 — 表格 ---- */
+  --swt-table-row-hover-bg-color: var(--color-hover);
+  --swt-table-hover-td: var(--color-hover);
+  --swt-table-striped: var(--color-hover);
+  --swt-table-checked-row: var(--color-select);
+  --swt-table-current-row-bg-color: var(--color-select);
+  --swt-table-th: var(--color-table-header);
+
+  /* ---- 2.19 组件特定 — 开关 ---- */
+  --swt-switch-on-color: var(--color-brand);
+  --swt-switch-off-color: var(--color-border-hover);
+  --swt-switch-border-color: transparent; /* swt-default */
+
+  /* ---- 2.19 组件特定 — 标签 ---- */
+  --swt-tag-border-width: var(--border-width-normal);
+
+  /* ---- 2.19 组件特定 — 按钮 ---- */
+  --swt-button-disabled-bg: var(--color-fill-disabled);
+
+  /* ---- 2.19 组件特定 — 日期 ---- */
+  --swt-color-date-active: var(--color-brand); /* swt-default */
+
+  /* ---- 2.20 灰度色板（无 DL 等价，保留 SWT 默认值） ---- */
+  --swt-color-gray1: #ffffff; /* swt-default */
+  --swt-color-gray2: #fafafa; /* swt-default */
+  --swt-color-gray3: #f5f5f5; /* swt-default */
+  --swt-color-gray4: #f0f0f0; /* swt-default */
+  --swt-color-gray5: #d9d9d9; /* swt-default */
+  --swt-color-gray6: #bfbfbf; /* swt-default */
+  --swt-color-gray7: #8c8c8c; /* swt-default */
+  --swt-color-gray8: #595959; /* swt-default */
+  --swt-color-gray9: #404040; /* swt-default */
+  --swt-color-gray10: #303030; /* swt-default */
+  --swt-color-gray11: #1f1f1f; /* swt-default */
+  --swt-color-gray12: #141414; /* swt-default */
+  --swt-color-gray13: #000000; /* swt-default */
+  --swt-color-gray1-opacity80: rgba(255, 255, 255, 0.8); /* swt-default */
+  --swt-color-gray2-opacity70: rgba(250, 250, 250, 0.7); /* swt-default */
+  --swt-color-gray4-opacity60: rgba(240, 240, 240, 0.6); /* swt-default */
+  --swt-color-gray6-opacity5: rgba(191, 191, 191, 0.05); /* swt-default */
+  --swt-color-gray11-opacity20: rgba(31, 31, 31, 0.2); /* swt-default */
+  --swt-color-gray11-opacity30: rgba(31, 31, 31, 0.3); /* swt-default */
+  --swt-color-gray11-opacity40: rgba(31, 31, 31, 0.4); /* swt-default */
+
+  /* ---- 2.21 辅助色板 — ancilary（旧拼写） ---- */
+  --swt-color-ancilary-blue1: #eef3fe; /* swt-default */
+  --swt-color-ancilary-blue2: #d0d8fd; /* swt-default */
+  --swt-color-ancilary-blue3: #b0bffd; /* swt-default */
+  --swt-color-ancilary-blue4: #8ca3fa; /* swt-default */
+  --swt-color-ancilary-blue5: #668cf7; /* swt-default */
+  --swt-color-ancilary-blue6: #2070f3; /* swt-default */
+  --swt-color-ancilary-blue7: #1f55b5; /* swt-default */
+  --swt-color-ancilary-blue8: #1b3f86; /* swt-default */
+  --swt-color-ancilary-blue9: #112857; /* swt-default */
+  --swt-color-ancilary-blue10: #081635; /* swt-default */
+  --swt-color-ancilary-cyan1: #e8fcfd; /* swt-default */
+  --swt-color-ancilary-cyan2: #c9f6f9; /* swt-default */
+  --swt-color-ancilary-cyan3: #a4ecf1; /* swt-default */
+  --swt-color-ancilary-cyan4: #7ddfe7; /* swt-default */
+  --swt-color-ancilary-cyan5: #55ccd9; /* swt-default */
+  --swt-color-ancilary-cyan6: #2cb8c9; /* swt-default */
+  --swt-color-ancilary-cyan7: #1c94a4; /* swt-default */
+  --swt-color-ancilary-cyan8: #127180; /* swt-default */
+  --swt-color-ancilary-cyan9: #094c57; /* swt-default */
+  --swt-color-ancilary-cyan10: #04282f; /* swt-default */
+  --swt-color-ancilary-fuchsia1: #fdf2ff; /* swt-default */
+  --swt-color-ancilary-fuchsia2: #f9dcff; /* swt-default */
+  --swt-color-ancilary-fuchsia3: #f3beff; /* swt-default */
+  --swt-color-ancilary-fuchsia4: #e99bfe; /* swt-default */
+  --swt-color-ancilary-fuchsia5: #db73fd; /* swt-default */
+  --swt-color-ancilary-fuchsia6: #cc4afc; /* swt-default */
+  --swt-color-ancilary-fuchsia7: #9e2eb5; /* swt-default */
+  --swt-color-ancilary-fuchsia8: #6b1d7a; /* swt-default */
+  --swt-color-ancilary-fuchsia9: #43104f; /* swt-default */
+  --swt-color-ancilary-fuchsia10: #2a0633; /* swt-default */
+  --swt-color-ancilary-green1: #f2fbe9; /* swt-default */
+  --swt-color-ancilary-green2: #dff4cc; /* swt-default */
+  --swt-color-ancilary-green3: #c6e9a8; /* swt-default */
+  --swt-color-ancilary-green4: #a8db81; /* swt-default */
+  --swt-color-ancilary-green5: #87c859; /* swt-default */
+  --swt-color-ancilary-green6: #62b42e; /* swt-default */
+  --swt-color-ancilary-green7: #488e20; /* swt-default */
+  --swt-color-ancilary-green8: #316614; /* swt-default */
+  --swt-color-ancilary-green9: #1b3e0a; /* swt-default */
+  --swt-color-ancilary-green10: #0c2004; /* swt-default */
+  --swt-color-ancilary-lime1: #f5ffee; /* swt-default */
+  --swt-color-ancilary-lime2: #e4fddb; /* swt-default */
+  --swt-color-ancilary-lime3: #cef8bb; /* swt-default */
+  --swt-color-ancilary-lime4: #b4f28f; /* swt-default */
+  --swt-color-ancilary-lime5: #96e95e; /* swt-default */
+  --swt-color-ancilary-lime6: #7ad830; /* swt-default */
+  --swt-color-ancilary-lime7: #5bb81a; /* swt-default */
+  --swt-color-ancilary-lime8: #3f8a10; /* swt-default */
+  --swt-color-ancilary-lime9: #285c0a; /* swt-default */
+  --swt-color-ancilary-lime10: #173805; /* swt-default */
+  --swt-color-ancilary-orange1: #fef5e8; /* swt-default */
+  --swt-color-ancilary-orange2: #fde2bd; /* swt-default */
+  --swt-color-ancilary-orange3: #fcce92; /* swt-default */
+  --swt-color-ancilary-orange4: #f9b766; /* swt-default */
+  --swt-color-ancilary-orange5: #f69e39; /* swt-default */
+  --swt-color-ancilary-orange6: #f4840c; /* swt-default */
+  --swt-color-ancilary-orange7: #c76207; /* swt-default */
+  --swt-color-ancilary-orange8: #954304; /* swt-default */
+  --swt-color-ancilary-orange9: #642802; /* swt-default */
+  --swt-color-ancilary-orange10: #3d1601; /* swt-default */
+  --swt-color-ancilary-prasinous1: #ecfee4; /* swt-default */
+  --swt-color-ancilary-prasinous2: #d6fbc4; /* swt-default */
+  --swt-color-ancilary-prasinous3: #b9f49a; /* swt-default */
+  --swt-color-ancilary-prasinous4: #97ea6b; /* swt-default */
+  --swt-color-ancilary-prasinous5: #73da3e; /* swt-default */
+  --swt-color-ancilary-prasinous6: #56c31f; /* swt-default */
+  --swt-color-ancilary-prasinous7: #3f9d14; /* swt-default */
+  --swt-color-ancilary-prasinous8: #2b750c; /* swt-default */
+  --swt-color-ancilary-prasinous9: #1a4d06; /* swt-default */
+  --swt-color-ancilary-prasinous10: #0e3003; /* swt-default */
+  --swt-color-ancilary-purple1: #f7edfe; /* swt-default */
+  --swt-color-ancilary-purple2: #e8cffe; /* swt-default */
+  --swt-color-ancilary-purple3: #d9b1fd; /* swt-default */
+  --swt-color-ancilary-purple4: #cb8efb; /* swt-default */
+  --swt-color-ancilary-purple5: #bf68fa; /* swt-default */
+  --swt-color-ancilary-purple6: #b62bf7; /* swt-default */
+  --swt-color-ancilary-purple7: #8a21bc; /* swt-default */
+  --swt-color-ancilary-purple8: #651b8b; /* swt-default */
+  --swt-color-ancilary-purple9: #41125a; /* swt-default */
+  --swt-color-ancilary-purple10: #260937; /* swt-default */
+  --swt-color-ancilary-red1: #fee7e8; /* swt-default */
+  --swt-color-ancilary-red2: #fabdc1; /* swt-default */
+  --swt-color-ancilary-red3: #f59297; /* swt-default */
+  --swt-color-ancilary-red4: #ee696f; /* swt-default */
+  --swt-color-ancilary-red5: #e7434a; /* swt-default */
+  --swt-color-ancilary-red6: #e02128; /* swt-default */
+  --swt-color-ancilary-red7: #c7000b; /* swt-default */
+  --swt-color-ancilary-red8: #850f12; /* swt-default */
+  --swt-color-ancilary-red9: #59080a; /* swt-default */
+  --swt-color-ancilary-red10: #350305; /* swt-default */
+  --swt-color-ancilary-rose1: #fee5f2; /* swt-default */
+  --swt-color-ancilary-rose2: #fcc3e0; /* swt-default */
+  --swt-color-ancilary-rose3: #f99ac7; /* swt-default */
+  --swt-color-ancilary-rose4: #f470ab; /* swt-default */
+  --swt-color-ancilary-rose5: #ed448a; /* swt-default */
+  --swt-color-ancilary-rose6: #e61866; /* swt-default */
+  --swt-color-ancilary-rose7: #c40054; /* swt-default */
+  --swt-color-ancilary-rose8: #811439; /* swt-default */
+  --swt-color-ancilary-rose9: #540d24; /* swt-default */
+  --swt-color-ancilary-rose10: #330614; /* swt-default */
+  --swt-color-ancilary-sapphire1: #e8f0fe; /* swt-default */
+  --swt-color-ancilary-sapphire2: #cdd9fd; /* swt-default */
+  --swt-color-ancilary-sapphire3: #adbdfb; /* swt-default */
+  --swt-color-ancilary-sapphire4: #85a0f8; /* swt-default */
+  --swt-color-ancilary-sapphire5: #5e82f4; /* swt-default */
+  --swt-color-ancilary-sapphire6: #3b65ef; /* swt-default */
+  --swt-color-ancilary-sapphire7: #2d4ec2; /* swt-default */
+  --swt-color-ancilary-sapphire8: #1e368d; /* swt-default */
+  --swt-color-ancilary-sapphire9: #122158; /* swt-default */
+  --swt-color-ancilary-sapphire10: #0a1035; /* swt-default */
+  --swt-color-ancilary-yellow1: #fefce0; /* swt-default */
+  --swt-color-ancilary-yellow2: #fef8b8; /* swt-default */
+  --swt-color-ancilary-yellow3: #fef08a; /* swt-default */
+  --swt-color-ancilary-yellow4: #fde55c; /* swt-default */
+  --swt-color-ancilary-yellow5: #fcd72e; /* swt-default */
+  --swt-color-ancilary-yellow6: #fcc800; /* swt-default */
+  --swt-color-ancilary-yellow7: #d19f00; /* swt-default */
+  --swt-color-ancilary-yellow8: #9e7400; /* swt-default */
+  --swt-color-ancilary-yellow9: #614500; /* swt-default */
+  --swt-color-ancilary-yellow10: #2e1f00; /* swt-default */
+
+  /* ---- 2.22 辅助色板 — ancillary（新拼写，重复旧拼写集） ---- */
+  --swt-color-ancillary-blue1: #eef3fe; /* swt-default */
+  --swt-color-ancillary-blue2: #d0d8fd; /* swt-default */
+  --swt-color-ancillary-blue3: #b0bffd; /* swt-default */
+  --swt-color-ancillary-blue4: #8ca3fa; /* swt-default */
+  --swt-color-ancillary-blue5: #668cf7; /* swt-default */
+  --swt-color-ancillary-blue6: #2070f3; /* swt-default */
+  --swt-color-ancillary-blue7: #1f55b5; /* swt-default */
+  --swt-color-ancillary-blue8: #1b3f86; /* swt-default */
+  --swt-color-ancillary-blue9: #112857; /* swt-default */
+  --swt-color-ancillary-blue10: #081635; /* swt-default */
+  --swt-color-ancillary-cyan1: #e8fcfd; /* swt-default */
+  --swt-color-ancillary-cyan2: #c9f6f9; /* swt-default */
+  --swt-color-ancillary-cyan3: #a4ecf1; /* swt-default */
+  --swt-color-ancillary-cyan4: #7ddfe7; /* swt-default */
+  --swt-color-ancillary-cyan5: #55ccd9; /* swt-default */
+  --swt-color-ancillary-cyan6: #2cb8c9; /* swt-default */
+  --swt-color-ancillary-cyan7: #1c94a4; /* swt-default */
+  --swt-color-ancillary-cyan8: #127180; /* swt-default */
+  --swt-color-ancillary-cyan9: #094c57; /* swt-default */
+  --swt-color-ancillary-cyan10: #04282f; /* swt-default */
+  --swt-color-ancillary-fuchsia1: #fdf2ff; /* swt-default */
+  --swt-color-ancillary-fuchsia2: #f9dcff; /* swt-default */
+  --swt-color-ancillary-fuchsia3: #f3beff; /* swt-default */
+  --swt-color-ancillary-fuchsia4: #e99bfe; /* swt-default */
+  --swt-color-ancillary-fuchsia5: #db73fd; /* swt-default */
+  --swt-color-ancillary-fuchsia6: #cc4afc; /* swt-default */
+  --swt-color-ancillary-fuchsia7: #9e2eb5; /* swt-default */
+  --swt-color-ancillary-fuchsia8: #6b1d7a; /* swt-default */
+  --swt-color-ancillary-fuchsia9: #43104f; /* swt-default */
+  --swt-color-ancillary-fuchsia10: #2a0633; /* swt-default */
+  --swt-color-ancillary-green1: #f2fbe9; /* swt-default */
+  --swt-color-ancillary-green2: #dff4cc; /* swt-default */
+  --swt-color-ancillary-green3: #c6e9a8; /* swt-default */
+  --swt-color-ancillary-green4: #a8db81; /* swt-default */
+  --swt-color-ancillary-green5: #87c859; /* swt-default */
+  --swt-color-ancillary-green6: #62b42e; /* swt-default */
+  --swt-color-ancillary-green7: #488e20; /* swt-default */
+  --swt-color-ancillary-green8: #316614; /* swt-default */
+  --swt-color-ancillary-green9: #1b3e0a; /* swt-default */
+  --swt-color-ancillary-green10: #0c2004; /* swt-default */
+  --swt-color-ancillary-lime1: #f5ffee; /* swt-default */
+  --swt-color-ancillary-lime2: #e4fddb; /* swt-default */
+  --swt-color-ancillary-lime3: #cef8bb; /* swt-default */
+  --swt-color-ancillary-lime4: #b4f28f; /* swt-default */
+  --swt-color-ancillary-lime5: #96e95e; /* swt-default */
+  --swt-color-ancillary-lime6: #7ad830; /* swt-default */
+  --swt-color-ancillary-lime7: #5bb81a; /* swt-default */
+  --swt-color-ancillary-lime8: #3f8a10; /* swt-default */
+  --swt-color-ancillary-lime9: #285c0a; /* swt-default */
+  --swt-color-ancillary-lime10: #173805; /* swt-default */
+  --swt-color-ancillary-orange1: #fef5e8; /* swt-default */
+  --swt-color-ancillary-orange2: #fde2bd; /* swt-default */
+  --swt-color-ancillary-orange3: #fcce92; /* swt-default */
+  --swt-color-ancillary-orange4: #f9b766; /* swt-default */
+  --swt-color-ancillary-orange5: #f69e39; /* swt-default */
+  --swt-color-ancillary-orange6: #f4840c; /* swt-default */
+  --swt-color-ancillary-orange7: #c76207; /* swt-default */
+  --swt-color-ancillary-orange8: #954304; /* swt-default */
+  --swt-color-ancillary-orange9: #642802; /* swt-default */
+  --swt-color-ancillary-orange10: #3d1601; /* swt-default */
+  --swt-color-ancillary-prasinous1: #ecfee4; /* swt-default */
+  --swt-color-ancillary-prasinous2: #d6fbc4; /* swt-default */
+  --swt-color-ancillary-prasinous3: #b9f49a; /* swt-default */
+  --swt-color-ancillary-prasinous4: #97ea6b; /* swt-default */
+  --swt-color-ancillary-prasinous5: #73da3e; /* swt-default */
+  --swt-color-ancillary-prasinous6: #56c31f; /* swt-default */
+  --swt-color-ancillary-prasinous7: #3f9d14; /* swt-default */
+  --swt-color-ancillary-prasinous8: #2b750c; /* swt-default */
+  --swt-color-ancillary-prasinous9: #1a4d06; /* swt-default */
+  --swt-color-ancillary-prasinous10: #0e3003; /* swt-default */
+  --swt-color-ancillary-purple1: #f7edfe; /* swt-default */
+  --swt-color-ancillary-purple2: #e8cffe; /* swt-default */
+  --swt-color-ancillary-purple3: #d9b1fd; /* swt-default */
+  --swt-color-ancillary-purple4: #cb8efb; /* swt-default */
+  --swt-color-ancillary-purple5: #bf68fa; /* swt-default */
+  --swt-color-ancillary-purple6: #b62bf7; /* swt-default */
+  --swt-color-ancillary-purple7: #8a21bc; /* swt-default */
+  --swt-color-ancillary-purple8: #651b8b; /* swt-default */
+  --swt-color-ancillary-purple9: #41125a; /* swt-default */
+  --swt-color-ancillary-purple10: #260937; /* swt-default */
+  --swt-color-ancillary-red1: #fee7e8; /* swt-default */
+  --swt-color-ancillary-red2: #fabdc1; /* swt-default */
+  --swt-color-ancillary-red3: #f59297; /* swt-default */
+  --swt-color-ancillary-red4: #ee696f; /* swt-default */
+  --swt-color-ancillary-red5: #e7434a; /* swt-default */
+  --swt-color-ancillary-red6: #e02128; /* swt-default */
+  --swt-color-ancillary-red7: #c7000b; /* swt-default */
+  --swt-color-ancillary-red8: #850f12; /* swt-default */
+  --swt-color-ancillary-red9: #59080a; /* swt-default */
+  --swt-color-ancillary-red10: #350305; /* swt-default */
+  --swt-color-ancillary-rose1: #fee5f2; /* swt-default */
+  --swt-color-ancillary-rose2: #fcc3e0; /* swt-default */
+  --swt-color-ancillary-rose3: #f99ac7; /* swt-default */
+  --swt-color-ancillary-rose4: #f470ab; /* swt-default */
+  --swt-color-ancillary-rose5: #ed448a; /* swt-default */
+  --swt-color-ancillary-rose6: #e61866; /* swt-default */
+  --swt-color-ancillary-rose7: #c40054; /* swt-default */
+  --swt-color-ancillary-rose8: #811439; /* swt-default */
+  --swt-color-ancillary-rose9: #540d24; /* swt-default */
+  --swt-color-ancillary-rose10: #330614; /* swt-default */
+  --swt-color-ancillary-sapphire1: #e8f0fe; /* swt-default */
+  --swt-color-ancillary-sapphire2: #cdd9fd; /* swt-default */
+  --swt-color-ancillary-sapphire3: #adbdfb; /* swt-default */
+  --swt-color-ancillary-sapphire4: #85a0f8; /* swt-default */
+  --swt-color-ancillary-sapphire5: #5e82f4; /* swt-default */
+  --swt-color-ancillary-sapphire6: #3b65ef; /* swt-default */
+  --swt-color-ancillary-sapphire7: #2d4ec2; /* swt-default */
+  --swt-color-ancillary-sapphire8: #1e368d; /* swt-default */
+  --swt-color-ancillary-sapphire9: #122158; /* swt-default */
+  --swt-color-ancillary-sapphire10: #0a1035; /* swt-default */
+  --swt-color-ancillary-yellow1: #fefce0; /* swt-default */
+  --swt-color-ancillary-yellow2: #fef8b8; /* swt-default */
+  --swt-color-ancillary-yellow3: #fef08a; /* swt-default */
+  --swt-color-ancillary-yellow4: #fde55c; /* swt-default */
+  --swt-color-ancillary-yellow5: #fcd72e; /* swt-default */
+  --swt-color-ancillary-yellow6: #fcc800; /* swt-default */
+  --swt-color-ancillary-yellow7: #d19f00; /* swt-default */
+  --swt-color-ancillary-yellow8: #9e7400; /* swt-default */
+  --swt-color-ancillary-yellow9: #614500; /* swt-default */
+  --swt-color-ancillary-yellow10: #2e1f00; /* swt-default */
+
+  /* ---- 2.23 颜色常量 / 透明度 / 叠加色 ---- */
+  --swt-color-white: #ffffff; /* swt-default */
+  --swt-color-black: #000000; /* swt-default */
+
+  --swt-color-opacity0: 0; /* swt-default */
+  --swt-color-opacity1: 0.01; /* swt-default */
+  --swt-color-opacity2: 0.02; /* swt-default */
+  --swt-color-opacity3: 0.03; /* swt-default */
+  --swt-color-opacity4: 0.04; /* swt-default */
+  --swt-color-opacity5: 0.05; /* swt-default */
+  --swt-color-opacity6: 0.06; /* swt-default */
+  --swt-color-opacity7: 0.07; /* swt-default */
+  --swt-color-opacity8: 0.08; /* swt-default */
+  --swt-color-opacity9: 0.09; /* swt-default */
+  --swt-color-opacity10: 0.1; /* swt-default */
+
+  --swt-opacity0: 0; /* swt-default */
+  --swt-opacity5: 0.05; /* swt-default */
+  --swt-opacity10: 0.1; /* swt-default */
+  --swt-opacity15: 0.15; /* swt-default */
+  --swt-opacity20: 0.2; /* swt-default */
+  --swt-opacity25: 0.25; /* swt-default */
+  --swt-opacity30: 0.3; /* swt-default */
+  --swt-opacity35: 0.35; /* swt-default */
+  --swt-opacity40: 0.4; /* swt-default */
+  --swt-opacity45: 0.45; /* swt-default */
+  --swt-opacity50: 0.5; /* swt-default */
+  --swt-opacity55: 0.55; /* swt-default */
+  --swt-opacity60: 0.6; /* swt-default */
+  --swt-opacity65: 0.65; /* swt-default */
+  --swt-opacity70: 0.7; /* swt-default */
+  --swt-opacity75: 0.75; /* swt-default */
+  --swt-opacity80: 0.8; /* swt-default */
+  --swt-opacity85: 0.85; /* swt-default */
+  --swt-opacity90: 0.9; /* swt-default */
+  --swt-opacity95: 0.95; /* swt-default */
+  --swt-opacity100: 1; /* swt-default */
+
+  --swt-color-overlay-gray1-and-accent-normal-opacity5: rgba(0, 103, 209, 0.05); /* swt-default */
+  --swt-color-overlay-gray1-and-accent-normal-opacity10: rgba(0, 103, 209, 0.1); /* swt-default */
+  --swt-color-overlay-gray1-and-accent-normal-opacity20: rgba(0, 103, 209, 0.2); /* swt-default */
+  --swt-color-overlay-gray1-and-gray5-opacity20: rgba(217, 217, 217, 0.2); /* swt-default */
+  --swt-color-overlay-gray1-and-gray6-opacity10: rgba(191, 191, 191, 0.1); /* swt-default */
+  --swt-color-overlay-gray1-and-gray12-opacity5: rgba(20, 20, 20, 0.05); /* swt-default */
+  --swt-color-overlay-gray1-and-gray12-opacity10: rgba(20, 20, 20, 0.1); /* swt-default */
+  --swt-color-overlay-gray1-and-gray13-opacity10: rgba(0, 0, 0, 0.1); /* swt-default */
+  --swt-color-overlay-gray1-and-urgent-normal-opacity10: rgba(224, 33, 40, 0.1); /* swt-default */
+  --swt-color-overlay-gray1-and-urgent-normal-opacity20: rgba(224, 33, 40, 0.2); /* swt-default */
+
+  /* ---- 2.24 图表色（空后缀，CSS 异常，不映射） ---- */
+  --swt-color-chart-: initial; /* swt-default (empty suffix — CSS anomaly) */
+
+  /* ---- 2.25 过渡（无 DL 等价，保留 SWT 默认） ---- */
+  --swt-transition-duration: 0.3s; /* swt-default */
+  --swt-transition-duration-fast: 0.2s; /* swt-default */
+  --swt-transition-function-ease-in-out-bezier: cubic-bezier(0.645, 0.045, 0.355, 1); /* swt-default */
+  --swt-transition-function-fast-bezier: cubic-bezier(0.23, 1, 0.32, 1); /* swt-default */
+  --swt-transition-fade: opacity 0.3s cubic-bezier(0.23, 1, 0.32, 1); /* swt-default */
+  --swt-transition-md-fade: transform 0.3s cubic-bezier(0.23, 1, 0.32, 1), opacity 0.3s cubic-bezier(0.23, 1, 0.32, 1); /* swt-default */
+  --swt-transition-fade-linear: opacity 0.2s linear; /* swt-default */
+  --swt-transition-border: border-color 0.2s cubic-bezier(0.645, 0.045, 0.355, 1); /* swt-default */
+  --swt-transition-box-shadow: box-shadow 0.3s cubic-bezier(0.645, 0.045, 0.355, 1); /* swt-default */
+  --swt-transition-color: color 0.2s cubic-bezier(0.645, 0.045, 0.355, 1); /* swt-default */
+  --swt-transition-all: all 0.3s cubic-bezier(0.645, 0.045, 0.355, 1); /* swt-default */
+
+  /* ---- 2.26 层级 / 光标 ---- */
+  --swt-index-normal: 1; /* swt-default */
+  --swt-index-popper: 2000; /* swt-default */
+  --swt-index-top: 9999; /* swt-default */
+  --swt-cursor-default: default; /* swt-default */
+  --swt-cursor-not-allowed: not-allowed; /* swt-default */
+  --swt-cursor-pointer: pointer; /* swt-default */
+  --swt-cursor-text: text; /* swt-default */
+
+  /* ---- 2.27 组件尺寸 ---- */
+  --swt-component-size: 32px; /* swt-default */
+  --swt-component-size-large: 40px; /* swt-default */
+  --swt-component-size-small: 24px; /* swt-default */
+
+  /* ---- 2.28 组件特定 — 轮播 ---- */
+  --swt-carousel-arrow-background: rgba(31, 31, 31, 0.11); /* swt-default */
+  --swt-carousel-arrow-font-size: 12px; /* swt-default */
+  --swt-carousel-arrow-hover-background: rgba(31, 31, 31, 0.23); /* swt-default */
+  --swt-carousel-arrow-size: 36px; /* swt-default */
+  --swt-carousel-indicator-dot-bg-color: rgba(0, 0, 0, 0.3); /* swt-default */
+  --swt-carousel-indicator-dot-bg-size: 8px; /* swt-default */
+  --swt-carousel-indicator-dot-color: rgba(255, 255, 255, 0.3); /* swt-default */
+  --swt-carousel-indicator-dot-size: 8px; /* swt-default */
+  --swt-carousel-indicator-height: 16px; /* swt-default */
+  --swt-carousel-indicator-line-bg-color: rgba(0, 0, 0, 0.3); /* swt-default */
+  --swt-carousel-indicator-line-color: rgba(255, 255, 255, 0.3); /* swt-default */
+  --swt-carousel-indicator-line-size: 6px; /* swt-default */
+  --swt-carousel-indicator-out-color: rgba(255, 255, 255, 0.3); /* swt-default */
+  --swt-carousel-indicator-padding-horizontal: 4px; /* swt-default */
+  --swt-carousel-indicator-padding-vertical: 12px; /* swt-default */
+  --swt-carousel-indicator-width: 30px; /* swt-default */
+  --swt-carousel-space-arrow: 16px; /* swt-default */
+
+  /* ---- 2.29 组件特定 — 复选框 / 单选 / 输入禁用 ---- */
+  --swt-check-border-color: #c9c9c9; /* swt-default */
+  --swt-check-disabled-bg-color: #dfdfdf; /* swt-default */
+  --swt-check-disabled-border-color: #e8e8e8; /* swt-default */
+  --swt-checked-disabled-bg-color: #e0e0e0; /* swt-default */
+  --swt-input-disabled: #dfdfdf; /* swt-default */
+  --swt-radio-disabled-input-fill: #dfdfdf; /* swt-default */
+  --swt-option-clicked-disabled-bg-color: #f3f3f3; /* swt-default */
+
+  /* ---- 2.30 组件特定 — 计分卡 / 步骤 / 标签页 / 进度 ---- */
+  --swt-score-card-bg-color: #ffffff; /* swt-default */
+  --swt-score-card-border: 1px solid var(--color-border); /* swt-default */
+  --swt-score-card-font-size: 36px; /* swt-default */
+  --swt-score-card-shadow: 0 4px 12px 0 rgba(0, 0, 0, 0.1); /* swt-default */
+  --swt-score-card-text-color: var(--color-text-primary); /* swt-default */
+  --swt-step-color-border: #c9c9c9; /* swt-default */
+  --swt-tabs-header-min-width: 80px; /* swt-default */
+  --swt-tabs-item-bg: transparent; /* swt-default */
+  --swt-tag-height: 24px; /* swt-default */
+  --swt-tag-line-height: 22px; /* swt-default */
+  --swt-timeline-item-default-offset: 32px; /* swt-default */
+  --swt-top-menu-bg-color: #ffffff; /* swt-default */
+  --swt-transfer-disable-bg-color: #f3f3f3; /* swt-default */
+  --swt-progress-custom-stroke: var(--color-brand); /* swt-default */
+
+  /* ---- 2.31 组件特定 — 按钮加载 / 主按钮禁用 ---- */
+  --swt-button-loading-bg-color: var(--color-brand); /* swt-default */
+  --swt-button-primary-disabled: #c0c4cc; /* swt-default */
+  --swt-button-primary-disabled-text: #ffffff; /* swt-default */
+
+  /* ---- 2.32 样式配置 ---- */
+  --swt-icon-style: line; /* swt-default */
+  --swt-illustration-style: flat; /* swt-default */
+}
+
+/* ---- 状态对位修正 ---- */
+
+.el-input__wrapper:hover,
+.el-select__wrapper:hover,
+.el-textarea__inner:hover {
+  box-shadow: 0 0 0 1px var(--color-border-hover) inset;
+}
+.el-input__wrapper.is-focus,
+.el-select__wrapper.is-focused,
+.el-textarea__inner:focus {
+  box-shadow: 0 0 0 var(--border-width-medium) var(--color-border-focus) inset;
+}
+
+.el-button.is-disabled,
+.el-input.is-disabled .el-input__inner,
+.el-textarea.is-disabled .el-textarea__inner {
+  color: var(--color-text-disabled);
+}
+```
+
+---
+
+## 4. 修订摘要
+
+| 文件 | 修订内容 | 原值 → 新值 |
+|---|---|---|
+| SKILL.md | 组件数 | 137 → 140 |
+| SKILL.md | 图标数 | 720 → 404（语义名 stem） |
+| SKILL.md | 新增坑 6 | `--swt-color-ancilary-*` vs `--swt-color-ancillary-*` 拼写双存 |
+| SKILL.md | 新增坑 7 | 硬编码 hex 11 处（高级组件 variant） |
+| error-checklist.md | 组件数 | 137 → 140 |
+| error-checklist.md | 新增坑 7 | CSS 硬编码 hex 不可覆盖 |
+| error-checklist.md | 新增坑 8 | ancilary/ancillary 拼写双存 |
+| build.mjs L82-86 | 白名单加载兼容 | `new Set(jsonData)` → `Array.isArray(x) ? x : Object.keys(x)` |
+| components_index.md | 组件表 | 新增 SweetCollection/SweetCollectionItem/SweetOverlay 行 |
+| components_index.md | 图标字体集文案 | 720 → 404 |
+| gen-whitelists.mjs | 提取方式 | createRequire → regex 扫描 UMD + theme-chalk CSS |
+| HANDOFF.md | §0–§8 证据 | 全部 [x] + 证据摘要，10 项标 BLOCKED |
+| Spec §5 | 内网验证 entries | 新增 entries 11–20 |
+
+---
+
+## 5. BLOCKED 项完整清单
+
+> 以下 10 项需浏览器/内网环境验证，CLI 无法完成。
+
+| ID | 项 | 阻塞原因 | 内网验证步骤 |
+|---|---|---|---|
+| B1 | defineExpose 方法调用 | 需浏览器运行时 | 预览中 `formRef.validate()` 实跑 |
+| B2 | focus-trap 抢焦点 | 需浏览器运行时 | Dialog 打开后键盘导航实测 |
+| B3 | SweetPagination 静态 current-page 静默不渲染 | 探针已确认但程度待测 | `<sweet-pagination :current-page="1">` 渲染实测 |
+| B4 | icon 字体渲染抽查 10 个 | 需浏览器 | `<icon-plus name="search">` 等渲染为字体图标 |
+| B5 | bridge §3.4 四步验证 | 需 DevTools | default/dark 着色、devtools 变量告警 |
+| B6 | setTheme 主题切换 | 需浏览器 | `window.setTheme("dark")` → 组件跟随 |
+| B7 | 21 高频组件 SFC 生成 | 需内网 API 文档 | 按内网文档生成 `vendor/vue-skill/components/` |
+| B8 | code-example 001-007 重写 | 需内网 API 文档 | 按内网文档重写 `vendor/code-example/` |
+| B9 | i18n-scaffold 清理 | 需 grep 引用链 | 确认无引用后删除 `scripts/preview/i18n-scaffold/` |
+| B10 | Spec §2.1 Next Actions | 依赖 B1–B9 | 全部 BLOCKED 解除后打勾 |
+
+---
+
+## 6. 硬编码 hex 位置清单（SweetUI CSS 11 处）
+
+| 选择器 | 色值 | 组件 |
+|---|---|---|
+| `.sweet-cmp-table` | `#bcd4fc` | 对比表 |
+| `.sweet-custom-select` | `#c1c1c1` | 自定义选择器 |
+| `.sweet-custom-select` | `#999` | 自定义选择器 |
+| `.sweet-side-panel__header` | `#c1c1c1` | 侧滑面板 |
+| `.sweet-genex-table` 相关 | 若干 | 扩展表格 |
+| `.sweet-map-*` 相关 | 若干 | 地图组件 |
+
+> 常规页面路径不触发这些选择器；无法从组件外部 CSS 覆盖。

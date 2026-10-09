@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>3D Scene</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: #0f151b;
+      }
+      #scene-canvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module">
+      // 双入口分流：?edit=1 → 编辑态（edit-main），否则二开态（main）。
+      // 二选一，防双开（两个 WebGL context 与渲染循环同时跑、DOM 互相覆盖）
+      if (new URLSearchParams(window.location.search).get('edit') === '1') {
+        import('/src/edit/edit-main.ts');
+      } else {
+        import('/src/main.ts');
+      }
+    </script>
+  </body>
+</html>

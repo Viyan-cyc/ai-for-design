@@ -7,7 +7,7 @@
 
 | 文件 | 内容 | 什么时候读 |
 | --- | --- | --- |
-| `references/components_index.md` | SweetUI 137 组件索引、import 写法、缺失回退清单 | 确定用哪些组件时 |
+| `references/components_index.md` | SweetUI 140 组件索引、import 写法、缺失回退清单 | 确定用哪些组件时 |
 | `references/code-rules.md` | 编码规则：Token、样式、组件使用、通信、性能、内存 | 写代码前通读一遍 |
 | `references/error-checklist.md` | 常见错误 ❌/✅ 对照 | 生成后自检 |
 | `templates/README.md` → 具体模板 | 整页布局骨架（5 份） | 页面结构与模板相近时直接抄 |

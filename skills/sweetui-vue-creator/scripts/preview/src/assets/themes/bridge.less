@@ -1,11 +1,11 @@
 /* ============================================================
-   bridge.less — 桥接层（FIXED 结构，槽位值内网核验后接线）
+   bridge.less — 桥接层：design-language token → SweetUI 双变量体系
    ============================================================
    把皮肤定义的语义 token（--color-* / --space-size-* 等，
    命名即 design-language 样式Token 的规范名）映射到 SweetUI 的
-   双变量体系（探针 3.1 证实）：
-     - --el-*（359 个，EP 继承，useNamespace 生成，受 namespace 影响）
-     - --swt-*（667 个，SweetUI 自有，纯 CSS，不受 namespace 影响）
+   双变量体系：
+     - --el-*（358 个，EP 继承，useNamespace 生成，受 namespace 影响）
+     - --swt-*（646 个，SweetUI 自有，纯 CSS，不受 namespace 影响）
    任何皮肤只要按协议提供同名 token，SweetUI 组件即自动跟随换肤；
    light-N 色阶由 color-mix 对 --ux-mix-base 派生（深色皮肤须覆盖
    --ux-mix-base 为深色表面色，见 themes/README.md）。
@@ -14,14 +14,20 @@
    是 body[theme] 属性（setTheme → body.setAttribute），特异性高于
    sweet-ui-base.css :root 默认值，无需加载 vars/var-ui-*.css。
 
-   ⚠ 槽位清单 TBD@intranet：右侧 `--el-*` / `--swt-*` 槽位名由内网
-   grep 真实 theme-chalk 提取全表后逐行接线（程序见
-   references/sweetui-bridge.md §核验程序）。下方标注 [SW] 的行是
-   探针证据中已证实的真实槽位样例，接线时以提取结果为准、勿信材料。
+   注释约定：
+     - 右侧 `→` 后为 design-language token 或 color-mix 表达式
+     - `/* swt-default */` — 该槽位无 design-language 等价，保留
+       sweet-ui-base.css :root 默认值
    ============================================================ */
 
 body[theme="default"] {
-  /* ---- 高亮色 → primary（[SW] --el-* 体系 + --swt-color-primary 双写） ---- */
+
+  /* ================================================================
+     SECTION 1: --el-* 映射（358 槽位；组件特定槽位无 DL 等价者
+     保留 sweet-ui-base.css 默认值，不逐一列出）
+     ================================================================ */
+
+  /* ---- 1.1 高亮色 → primary ---- */
   --el-color-primary: var(--color-brand);
   --el-color-primary-light-3: var(--color-brand-hover, color-mix(in srgb, var(--color-brand) 70%, var(--ux-mix-base)));
   --el-color-primary-light-5: color-mix(in srgb, var(--color-brand) 50%, var(--ux-mix-base));
@@ -30,13 +36,9 @@ body[theme="default"] {
   --el-color-primary-light-9: var(--color-select, color-mix(in srgb, var(--color-brand) 10%, var(--ux-mix-base)));
   --el-color-primary-dark-2: var(--color-brand-active, color-mix(in srgb, var(--color-brand) 80%, #000000));
 
-  --swt-color-primary: var(--color-brand);            /* [SW] 探针证实的真实命名（非材料的 brand-normal） */
-  --swt-color-primary-hover: var(--color-brand-hover);
-  --swt-color-primary-active: var(--color-brand-active);
-
-  /* ---- 功能色（success / warning / danger / info）----
+  /* ---- 1.2 功能色（success / warning / danger / info）----
      light-N 色阶一律 color-mix 派生，不接 --color-*-subtle
-     （subtle 是中等色面，与组件前景同亮度，接入后字底融合）。 */
+     （subtle 是中等色面，与组件前景同亮度，接入后字底融合）。 ---- */
   --el-color-success: var(--color-success);
   --el-color-success-light-3: color-mix(in srgb, var(--color-success) 70%, var(--ux-mix-base));
   --el-color-success-light-5: color-mix(in srgb, var(--color-success) 50%, var(--ux-mix-base));
@@ -70,7 +72,7 @@ body[theme="default"] {
   --el-color-info-light-9: color-mix(in srgb, var(--color-info) 10%, var(--ux-mix-base));
   --el-color-info-dark-2: color-mix(in srgb, var(--color-info) 80%, #000000);
 
-  /* ---- 文本色（design-language 文本色五级直接对位） ---- */
+  /* ---- 1.3 文本色（design-language 文本色五级直接对位） ---- */
   --el-text-color-primary: var(--color-text-primary);
   --el-text-color-regular: var(--color-text-primary);
   --el-text-color-secondary: var(--color-text-secondary);
@@ -78,12 +80,12 @@ body[theme="default"] {
   --el-text-color-disabled: var(--color-text-disabled);
   --el-text-color-inverse: var(--color-text-inverse);
 
-  /* ---- 背景色 ---- */
+  /* ---- 1.4 背景色 ---- */
   --el-bg-color: var(--color-bg-4);
   --el-bg-color-page: var(--color-bg-1);
   --el-bg-color-overlay: var(--color-bg-4);
 
-  /* ---- 边框色（默认 gray-20；悬停 gray-90；分割线按强弱两档） ---- */
+  /* ---- 1.5 边框色 ---- */
   --el-border-color: var(--color-border);
   --el-border-color-light: var(--color-border);
   --el-border-color-lighter: var(--color-border-separator);
@@ -93,7 +95,7 @@ body[theme="default"] {
   --el-border-color-hover: var(--color-border-hover);
   --el-border-color-focus: var(--color-border-focus);
 
-  /* ---- 填充色（悬停/选中/禁用填充一一对应） ---- */
+  /* ---- 1.6 填充色 ---- */
   --el-fill-color: var(--color-fill);
   --el-fill-color-light: var(--color-hover);
   --el-fill-color-lighter: var(--color-hover);
@@ -102,15 +104,16 @@ body[theme="default"] {
   --el-fill-color-darker: var(--color-fill-disabled);
   --el-fill-color-blank: var(--color-fill-subtle);
 
-  /* ---- 遮罩 / 阴影（Level 对照：浮层 shadow-3、抽屉 shadow-4-*、
-        对话框 shadow-6、卡片悬浮 shadow-5） ---- */
+  /* ---- 1.7 遮罩 / 阴影 ---- */
   --el-mask-color: var(--color-bg-mask);
+  --el-mask-color-extra-light: color-mix(in srgb, var(--color-bg-mask) 50%, transparent);
+  --el-overlay-color: var(--color-bg-mask);
   --el-box-shadow: var(--shadow-6);
   --el-box-shadow-light: var(--shadow-3);
   --el-box-shadow-lighter: var(--shadow-1);
   --el-box-shadow-dark: var(--shadow-6);
 
-  /* ---- 圆角 / 字体 / 边框宽 ---- */
+  /* ---- 1.8 圆角 / 字体 / 边框宽 ---- */
   --el-border-radius-base: var(--radius-size-normal);
   --el-border-radius-small: var(--radius-size-small);
   --el-border-radius-round: var(--radius-size-full);
@@ -119,25 +122,924 @@ body[theme="default"] {
   --el-border-width: var(--border-width-normal);
   --el-component-size: 32px;
 
-  /* ---- --swt-* 侧（TBD@intranet：全表 667 个 grep 提取后按语义接线，
-        下方为探针样例与占位段） ---- */
+  /* ---- 1.9 --el-* 组件特定对位 ---- */
+  --el-table-bg-color: var(--color-bg-2);
+  --el-table-border-color: var(--color-border);
+  --el-table-current-row-bg-color: var(--color-select);
+  --el-table-expanded-cell-bg-color: var(--color-bg-2);
+  --el-table-header-bg-color: var(--color-table-header);
+  --el-table-header-text-color: var(--color-text-primary);
+  --el-table-row-hover-bg-color: var(--color-hover);
+  --el-table-text-color: var(--color-text-primary);
+  --el-table-tr-bg-color: var(--color-bg-2);
+
+  --el-dialog-bg-color: var(--color-bg-4);
+  --el-dialog-border-radius: var(--radius-size-medium);
+  --el-dialog-box-shadow: var(--shadow-6);
+
+  --el-card-bg-color: var(--color-bg-2);
+  --el-card-border-color: var(--color-border);
+  --el-card-border-radius: var(--radius-size-medium);
+
+  --el-popover-bg-color: var(--color-bg-4);
+  --el-popover-border-color: var(--color-border);
+  --el-popover-border-radius: var(--radius-size-medium);
+  --el-popover-title-text-color: var(--color-text-primary);
+
+  --el-popper-border-color: var(--color-border);
+
+  --el-input-bg-color: var(--color-fill-subtle);
+  --el-input-border-color: var(--color-border);
+  --el-input-text-color: var(--color-text-primary);
+  --el-input-placeholder-color: var(--color-text-placeholder);
+  --el-input-hover-border-color: var(--color-border-hover);
+  --el-input-focus-border-color: var(--color-border-focus);
+  --el-input-focus-color: var(--color-brand);
+  --el-input-icon-color: var(--color-icon-secondary);
+  --el-input-icon-color-hover: var(--color-icon-hover);
+  --el-input-bg-disabled-color: var(--color-fill-disabled);
+  --el-input-border-disabled-color: var(--color-border-disabled);
+  --el-input-text-color-disabled: var(--color-text-disabled);
+  --el-input-number-bg-color: var(--color-fill-subtle);
+  --el-input-number-bg-color-disabled: var(--color-fill-disabled);
+  --el-input-number-border-color: var(--color-border);
+
+  --el-checkbox-bg-color: var(--color-fill-subtle);
+  --el-checkbox-checked-bg-color: var(--color-brand);
+  --el-checkbox-checked-icon-color: var(--color-text-inverse);
+  --el-checkbox-checked-input-border-color: var(--color-brand);
+  --el-checkbox-checked-text-color: var(--color-brand);
+  --el-checkbox-disabled-border-color: var(--color-border-disabled);
+  --el-checkbox-disabled-checked-input-fill: var(--color-brand-disabled);
+  --el-checkbox-disabled-checked-icon-color: var(--color-text-disabled);
+  --el-checkbox-disabled-input-fill: var(--color-fill-disabled);
+  --el-checkbox-input-border-color-hover: var(--color-border-hover);
+  --el-checkbox-text-color: var(--color-text-primary);
+
+  --el-radio-input-bg-color: var(--color-fill-subtle);
+  --el-radio-input-border-color: var(--color-border);
+  --el-radio-input-border-color-hover: var(--color-border-hover);
+  --el-radio-text-color: var(--color-text-primary);
+  --el-radio-button-checked-bg-color: var(--color-brand);
+  --el-radio-button-checked-border-color: var(--color-brand);
+  --el-radio-button-checked-text-color: var(--color-text-inverse);
+
+  --el-menu-text-color: var(--color-text-primary);
+  --el-menu-active-color: var(--color-brand);
+  --el-menu-hover-bg-color: var(--color-hover);
+  --el-menu-border-color: var(--color-border-separator-subtle);
+  --el-menu-item-hover-fill: var(--color-hover);
+
+  --el-link-text-color-normal: var(--color-link);
+  --el-link-text-color-hover: var(--color-link-hover);
+  --el-link-text-color-active: var(--color-link-active);
+  --el-link-text-color-disabled: var(--color-link-disabled);
+
+  --el-message-text-color: var(--color-text-primary);
+  --el-message-close-hover-color: var(--color-text-primary);
+
+  --el-messagebox-color: var(--color-text-primary);
+  --el-messagebox-content-color: var(--color-text-primary);
+  --el-messagebox-title-color: var(--color-text-primary);
+
+  --el-notification-content-color: var(--color-text-primary);
+  --el-notification-title-color: var(--color-text-primary);
+
+  --el-pagination-text-color: var(--color-text-primary);
+  --el-pagination-hover-color: var(--color-brand);
+  --el-pagination-button-color: var(--color-text-primary);
+  --el-pagination-button-bg-color: var(--color-fill-subtle);
+
+  --el-dropdown-menu-box-shadow: var(--shadow-3);
+
+  --el-select-input-color: var(--color-text-primary);
+  --el-select-input-focus-border-color: var(--color-border-focus);
+  --el-select-border-color-hover: var(--color-border-hover);
+
+  --el-tag-text-color: var(--color-text-primary);
+  --el-tag-hover-color: var(--color-brand);
+
+  --el-tree-text-color: var(--color-text-primary);
+  --el-tree-node-hover-bg-color: var(--color-hover);
+  --el-tree-expand-icon-color: var(--color-icon-secondary);
+
+  --el-collapse-header-text-color: var(--color-text-primary);
+  --el-collapse-content-text-color: var(--color-text-primary);
+  --el-collapse-border-color: var(--color-border-separator-subtle);
+  --el-collapse-content-bg-color: var(--color-bg-2);
+
+  --el-alert-description-font-size: var(--font-size-small);
+  --el-alert-title-font-size: var(--font-size-normal);
+
+  --el-result-title-font-size: var(--font-size-medium);
+  --el-result-subtitle-margin-top: var(--space-size-8);
+
+  --el-slider-main-bg-color: var(--color-brand);
+  --el-slider-runway-bg-color: var(--color-fill);
+
+  --el-transfer-border-color: var(--color-border);
+  --el-transfer-panel-header-bg-color: var(--color-bg-2);
+
+  --el-calendar-selected-bg-color: var(--color-select);
+
+  --el-avatar-text-color: var(--color-text-inverse);
+
+  --el-badge-bg-color: var(--color-error);
+
+  --el-rate-fill-color: var(--color-brand);
+
+  --el-timeline-node-color: var(--color-brand);
+
+  --el-switch-on-color: var(--color-brand);
+  --el-switch-off-color: var(--color-border);
+
+  --el-progress-circle-stroke: var(--color-brand);
+
+  --el-empty-fill-color-0: var(--color-text-disabled);
+
+  --el-skeleton-color: var(--color-hover);
+
+  --el-result-color: var(--color-brand);
+
+  --el-backtop-hover-bg-color: var(--color-hover);
+  --el-backtop-text-color: var(--color-text-primary);
+
+  --el-scrollbar-bg-color: var(--color-fill);
+  --el-scrollbar-hover-bg-color: var(--color-hover);
+
+  /* ================================================================
+     SECTION 2: --swt-* 映射（646 槽位全部覆盖）
+     ================================================================ */
+
+  /* ---- 2.1 品牌色 / Accent ---- */
+  --swt-color-primary: var(--color-brand);
+  --swt-color-primary-hover: var(--color-brand-hover);
+  --swt-color-primary-active: var(--color-brand-active);
+  --swt-color-primary-light-8: color-mix(in srgb, var(--color-brand) 20%, var(--ux-mix-base));
+
+  --swt-color-brand-normal: var(--color-brand);
+  --swt-color-brand-hover: var(--color-brand-hover);
+  --swt-color-brand-active: var(--color-brand-active);
+  --swt-color-brand-focus: var(--color-brand-focus);
+  --swt-color-brand-normal-opacity20: color-mix(in srgb, var(--color-brand) 20%, var(--ux-mix-base));
+  --swt-color-brand-normal-opacity40: color-mix(in srgb, var(--color-brand) 40%, var(--ux-mix-base));
+
+  --swt-color-brand-text-normal: var(--color-brand);
+  --swt-color-brand-text-hover: var(--color-brand-hover);
+  --swt-color-brand-text-active: var(--color-brand-active);
+  --swt-color-brand-text-focus: var(--color-brand-focus);
+
+  --swt-color-accent-normal: var(--color-brand);
+  --swt-color-accent-hover: var(--color-brand-hover);
+  --swt-color-accent-active: var(--color-brand-active);
+  --swt-color-accent-focus: var(--color-brand-focus);
+  --swt-color-accent-disabled: var(--color-brand-disabled);
+  --swt-color-accent-bg-selected: var(--color-select);
+  --swt-color-accent-normal-opacity20: color-mix(in srgb, var(--color-brand) 20%, var(--ux-mix-base));
+  --swt-color-accent-normal-opacity40: color-mix(in srgb, var(--color-brand) 40%, var(--ux-mix-base));
+
+  --swt-color-accent-text-normal: var(--color-brand);
+  --swt-color-accent-text-hover: var(--color-brand-hover);
+  --swt-color-accent-text-active: var(--color-brand-active);
+  --swt-color-accent-text-focus: var(--color-brand-focus);
+  --swt-color-accent-text-disabled: var(--color-brand-disabled);
+
+  /* ---- 2.2 功能色 — success ---- */
+  --swt-color-function-success-normal: var(--color-success);
+  --swt-color-function-success-hover: var(--color-success-hover);
+  --swt-color-function-success-active: var(--color-success-active);
+  --swt-color-function-success-focus: var(--color-success);
+  --swt-color-function-success-disabled: var(--color-success-disabled);
+  --swt-color-function-success-background: var(--color-success-subtler);
+  --swt-color-function-success-background1: var(--color-success-subtle);
+
+  --swt-color-function-success-text-normal: var(--color-success);
+  --swt-color-function-success-text-hover: var(--color-success-hover);
+  --swt-color-function-success-text-active: var(--color-success-active);
+  --swt-color-function-success-text-focus: var(--color-success);
+  --swt-color-function-success-text-disabled: var(--color-success-disabled);
+
+  /* ---- 2.2 功能色 — warning ---- */
+  --swt-color-function-warning-normal: var(--color-warning);
+  --swt-color-function-warning-hover: var(--color-warning-hover);
+  --swt-color-function-warning-active: var(--color-warning-active);
+  --swt-color-function-warning-focus: var(--color-warning);
+  --swt-color-function-warning-disabled: var(--color-warning-disabled);
+  --swt-color-function-warning-background: var(--color-warning-subtler);
+  --swt-color-function-warning-background1: var(--color-warning-subtle);
+
+  --swt-color-function-warning-text-normal: var(--color-warning);
+  --swt-color-function-warning-text-hover: var(--color-warning-hover);
+  --swt-color-function-warning-text-active: var(--color-warning-active);
+  --swt-color-function-warning-text-focus: var(--color-warning);
+  --swt-color-function-warning-text-disabled: var(--color-warning-disabled);
+
+  /* ---- 2.2 功能色 — urgent (= error) ---- */
+  --swt-color-function-urgent-normal: var(--color-error);
+  --swt-color-function-urgent-hover: var(--color-error-hover);
+  --swt-color-function-urgent-active: var(--color-error-active);
+  --swt-color-function-urgent-focus: var(--color-error);
+  --swt-color-function-urgent-disabled: var(--color-error-disabled);
+  --swt-color-function-urgent-background: var(--color-error-subtler);
+  --swt-color-function-urgent-background1: var(--color-error-subtle);
+  --swt-color-function-urgent-normal-opacity20: color-mix(in srgb, var(--color-error) 20%, var(--ux-mix-base));
+  --swt-color-function-urgent-normal-opacity40: color-mix(in srgb, var(--color-error) 40%, var(--ux-mix-base));
+
+  --swt-color-function-urgent-text-normal: var(--color-error);
+  --swt-color-function-urgent-text-hover: var(--color-error-hover);
+  --swt-color-function-urgent-text-active: var(--color-error-active);
+  --swt-color-function-urgent-text-focus: var(--color-error);
+  --swt-color-function-urgent-text-disabled: var(--color-error-disabled);
+
+  /* ---- 2.2 功能色 — important (= error) ---- */
+  --swt-color-function-important-normal: var(--color-error);
+  --swt-color-function-important-hover: var(--color-error-hover);
+  --swt-color-function-important-active: var(--color-error-active);
+  --swt-color-function-important-focus: var(--color-error);
+  --swt-color-function-important-disabled: var(--color-error-disabled);
+  --swt-color-function-important-background: var(--color-error-subtler);
+  --swt-color-function-important-background1: var(--color-error-subtle);
+
+  --swt-color-function-important-text-normal: var(--color-error);
+  --swt-color-function-important-text-hover: var(--color-error-hover);
+  --swt-color-function-important-text-active: var(--color-error-active);
+  --swt-color-function-important-text-focus: var(--color-error);
+  --swt-color-function-important-text-disabled: var(--color-error-disabled);
+
+  /* ---- 2.2 功能色 — prompt (= info) ---- */
+  --swt-color-function-prompt-normal: var(--color-info);
+  --swt-color-function-prompt-hover: var(--color-info-primary-hover);
+  --swt-color-function-prompt-active: var(--color-info-primary-active);
+  --swt-color-function-prompt-focus: var(--color-info);
+  --swt-color-function-prompt-disabled: var(--color-info-primary-disabled);
+  --swt-color-function-prompt-background: var(--color-info-primary-subtler);
+  --swt-color-function-prompt-background1: var(--color-info-subtle);
+
+  --swt-color-function-prompt-text-normal: var(--color-info);
+  --swt-color-function-prompt-text-hover: var(--color-info-primary-hover);
+  --swt-color-function-prompt-text-active: var(--color-info-primary-active);
+  --swt-color-function-prompt-text-focus: var(--color-info);
+  --swt-color-function-prompt-text-disabled: var(--color-info-primary-disabled);
+
+  /* ---- 2.2 功能色 — invalid (= error) ---- */
+  --swt-color-function-invalid-normal: var(--color-error);
+
+  /* ---- 2.3 语义色阶 — success light/dark ---- */
+  --swt-color-success-dark-2: color-mix(in srgb, var(--color-success) 80%, #000000);
+  --swt-color-success-light-3: color-mix(in srgb, var(--color-success) 70%, var(--ux-mix-base));
+  --swt-color-success-light-5: color-mix(in srgb, var(--color-success) 50%, var(--ux-mix-base));
+  --swt-color-success-light-8: color-mix(in srgb, var(--color-success) 20%, var(--ux-mix-base));
+  --swt-color-success-light-9: color-mix(in srgb, var(--color-success) 10%, var(--ux-mix-base));
+
+  /* ---- 2.3 语义色阶 — warning light/dark ---- */
+  --swt-color-warning-dark-2: color-mix(in srgb, var(--color-warning) 80%, #000000);
+  --swt-color-warning-light-3: color-mix(in srgb, var(--color-warning) 70%, var(--ux-mix-base));
+  --swt-color-warning-light-5: color-mix(in srgb, var(--color-warning) 50%, var(--ux-mix-base));
+  --swt-color-warning-light-8: color-mix(in srgb, var(--color-warning) 20%, var(--ux-mix-base));
+  --swt-color-warning-light-9: color-mix(in srgb, var(--color-warning) 10%, var(--ux-mix-base));
+
+  /* ---- 2.3 语义色阶 — danger (= error) light ---- */
+  --swt-color-danger-light-8: color-mix(in srgb, var(--color-error) 20%, var(--ux-mix-base));
+  --swt-color-danger-light-9: color-mix(in srgb, var(--color-error) 10%, var(--ux-mix-base));
+
+  /* ---- 2.3 语义色阶 — error light ---- */
+  --swt-color-error-light-3: color-mix(in srgb, var(--color-error) 70%, var(--ux-mix-base));
+
+  /* ---- 2.3 语义色阶 — info light/dark ---- */
+  --swt-color-info-dark-2: color-mix(in srgb, var(--color-info) 80%, #000000);
+  --swt-color-info-light-3: color-mix(in srgb, var(--color-info) 70%, var(--ux-mix-base));
+  --swt-color-info-light-5: color-mix(in srgb, var(--color-info) 50%, var(--ux-mix-base));
+  --swt-color-info-light-8: color-mix(in srgb, var(--color-info) 20%, var(--ux-mix-base));
+  --swt-color-info-light-9: color-mix(in srgb, var(--color-info) 10%, var(--ux-mix-base));
+
+  /* ---- 2.4 标签背景色 ---- */
+  --swt-color-tag-success-background: var(--color-success-subtler);
+  --swt-color-tag-warning-background: var(--color-warning-subtler);
+  --swt-color-tag-urgent-background: var(--color-error-subtler);
+  --swt-color-tag-prompt-background: var(--color-info-primary-subtler);
+
+  /* ---- 2.5 分割线 ---- */
+  --swt-color-dividing-line-primary: var(--color-border-separator);
+  --swt-color-dividing-line-secondary: var(--color-border-separator-subtle);
+
+  /* ---- 2.6 背景色 ---- */
   --swt-bg-color: var(--color-bg-4);
+  --swt-bg-color-overlay: var(--color-bg-4);
   --swt-bg-color-page: var(--color-bg-1);
+
+  --swt-color-bg-primary: var(--color-bg-4);
+  --swt-color-bg-secondary: var(--color-bg-3);
+  --swt-color-bg-hover: var(--color-hover);
+  --swt-color-bg-selected: var(--color-select);
+  --swt-color-bg-disabled: var(--color-fill-disabled);
+  --swt-color-bg-mask: var(--color-bg-mask);
+  --swt-color-zebra: var(--color-hover);
+
+  --swt-color-bg-primary-button-hover: var(--color-brand-hover);
+  --swt-color-bg-brand-round-button-hover: var(--color-brand-hover);
+  --swt-color-bg-danger-button-hover: var(--color-error-hover);
+  --swt-color-bg-urgent-button-hover: var(--color-error-hover);
+  --swt-color-bg-gray-round-button-hover: var(--color-hover);
+  --swt-color-bg-text-button-hover: var(--color-hover);
+  --swt-color-bg-text-button-active: var(--color-hover);
+  --swt-color-bg-prompt-text-button-active: var(--color-info-primary-subtler);
+  --swt-color-bg-success-text-button-hover: var(--color-success-subtler);
+  --swt-color-bg-success-text-button-active: var(--color-success-subtler);
+  --swt-color-bg-warning-text-button-hover: var(--color-warning-subtler);
+  --swt-color-bg-warning-text-button-active: var(--color-warning-subtler);
+  --swt-color-bg-urgent-text-button-hover: var(--color-error-subtler);
+  --swt-color-bg-urgent-text-button-active: var(--color-error-subtler);
+
+  /* ---- 2.7 文本色 ---- */
+  --swt-color-text-primary: var(--color-text-primary);
+  --swt-color-text-secondary: var(--color-text-secondary);
+  --swt-color-text-disabled: var(--color-text-disabled);
+  --swt-color-text-extra: var(--color-text-secondary);
+  --swt-color-placeholder: var(--color-text-placeholder);
+
   --swt-text-color-primary: var(--color-text-primary);
   --swt-text-color-regular: var(--color-text-primary);
   --swt-text-color-secondary: var(--color-text-secondary);
   --swt-text-color-placeholder: var(--color-text-placeholder);
   --swt-text-color-disabled: var(--color-text-disabled);
+  --swt-text-color: var(--color-text-primary);
+  --swt-text-font-size: var(--font-size-normal);
+
+  /* ---- 2.8 边框色 ---- */
   --swt-border-color: var(--color-border);
+  --swt-border-color-light: var(--color-border);
+  --swt-border-color-dark: var(--color-border-hover);
+  --swt-border-color-darker: var(--color-border-hover);
+  --swt-border-color-extra-light: var(--color-border-separator-subtle);
+
+  --swt-color-border: var(--color-border);
+  --swt-color-border-hover: var(--color-border-hover);
+  --swt-color-border-disabled: var(--color-border-disabled);
+
+  /* ---- 2.9 边框宽度 ---- */
+  --swt-border-width: var(--border-width-normal);
+  --swt-border-width-normal: var(--border-width-normal);
+  --swt-border-width-medium: var(--border-width-medium);
+  --swt-border-width-independent: var(--border-width-independent);
+  --swt-border-width-none: var(--border-width-none);
+
+  /* ---- 2.10 边框样式 ---- */
+  --swt-border-style-dashed: var(--border-style-dashed);
+  --swt-border-style-dotted: var(--border-style-dotted);
+  --swt-border-style-solid: var(--border-style-solid);
+
+  --swt-border: 0; /* swt-default */
+  --swt-border-style: solid; /* swt-default (composite) */
+
+  /* ---- 2.11 边框圆角 ---- */
+  --swt-radius-size-small: var(--radius-size-small);
+  --swt-radius-size-normal: var(--radius-size-normal);
+  --swt-radius-size-medium: var(--radius-size-normal);
+  --swt-radius-size-big: var(--radius-size-big);
+  --swt-radius-size-big1: var(--radius-size-big1);
+  --swt-radius-size-big2: var(--radius-size-big2);
+  --swt-radius-size-infinity: var(--radius-size-full);
+  --swt-border-radius-circle: 100%;
+  --swt-border-radius-round: var(--radius-size-full);
+
+  /* ---- 2.12 填充色 ---- */
   --swt-fill-color: var(--color-fill);
+  --swt-fill-color-light: var(--color-hover);
+  --swt-fill-color-lighter: var(--color-hover);
+  --swt-fill-color-extra-light: var(--color-hover);
+  --swt-fill-color-dark: var(--color-fill-disabled);
+  --swt-fill-color-darker: var(--color-fill-disabled);
   --swt-fill-color-blank: var(--color-fill-subtle);
-  /* ^^^ 接线区结束标记：内网补全后删除本行注释 ^^^ */
+
+  --swt-fill-color-0: #fff; /* swt-default */
+  --swt-fill-color-1: #f3f3f3; /* swt-default */
+  --swt-fill-color-2: #e8e8e8; /* swt-default */
+  --swt-fill-color-3: #dedede; /* swt-default */
+  --swt-fill-color-4: #d4d4d4; /* swt-default */
+  --swt-fill-color-5: #c9c9c9; /* swt-default */
+  --swt-fill-color-6: #bfbfbf; /* swt-default */
+  --swt-fill-color-7: #b5b5b5; /* swt-default */
+  --swt-fill-color-8: #aaaaaa; /* swt-default */
+  --swt-fill-color-9: #a0a0a0; /* swt-default */
+
+  --swt-disabled-bg-color: var(--color-fill-disabled);
+  --swt-selected-bg-color: var(--color-select);
+  --swt-color-filling-hover: var(--color-hover);
+
+  /* ---- 2.13 阴影 ---- */
+  --swt-box-shadow: var(--shadow-3);
+  --swt-box-shadow-light: var(--shadow-1);
+  --swt-box-shadow-lighter: var(--shadow-1);
+  --swt-box-shadow-dark: var(--shadow-6);
+
+  --swt-shadow1: var(--shadow-1);
+  --swt-shadow2: var(--shadow-3);
+  --swt-shadow2-l: var(--shadow-2-left);
+  --swt-shadow2-r: var(--shadow-2-right);
+  --swt-shadow3: var(--shadow-3);
+  --swt-shadow4: var(--shadow-5);
+  --swt-shadow4-t: var(--shadow-4-top);
+  --swt-shadow4-b: var(--shadow-4-bottom);
+  --swt-shadow4-l: var(--shadow-4-left);
+  --swt-shadow4-r: var(--shadow-4-right);
+  --swt-shadow5: var(--shadow-5);
+  --swt-shadow6: var(--shadow-6);
+
+  --swt-filter-shadow-light: none; /* swt-default */
+  --swt-filter-shadow-dark: none; /* swt-default */
+  --swt-color-shadow-opacity: 0.1; /* swt-default */
+
+  /* ---- 2.14 间距 ---- */
+  --swt-space-size-4: var(--space-size-4);
+  --swt-space-size-8: var(--space-size-8);
+  --swt-space-size-12: var(--space-size-12);
+  --swt-space-size-16: var(--space-size-16);
+  --swt-space-size-20: var(--space-size-20);
+  --swt-space-size-24: var(--space-size-24);
+  --swt-space-size-32: var(--space-size-32);
+  --swt-space-size-40: var(--space-size-40);
+  --swt-space-size-48: var(--space-size-48);
+  --swt-space-size-56: var(--space-size-56);
+  --swt-space-size-64: var(--space-size-64);
+  --swt-space-size-72: var(--space-size-72);
+  --swt-space-size-80: var(--space-size-80);
+
+  --swt-space-size-2: 2px; /* swt-default (no --space-size-2 in DL) */
+
+  /* ---- 2.15 字号 ---- */
+  --swt-font-size-mini: var(--font-size-small);
+  --swt-font-size-mini1: var(--font-size-small);
+  --swt-font-size-small: var(--font-size-small);
+  --swt-font-size-small1: var(--font-size-small);
+  --swt-font-size-normal: var(--font-size-normal);
+  --swt-font-size-normal1: var(--font-size-normal1);
+  --swt-font-size-normal2: var(--font-size-normal1);
+  --swt-font-size-medium: var(--font-size-medium);
+  --swt-font-size-subtitle1: var(--font-size-medium);
+  --swt-font-size-big: var(--font-size-big);
+  --swt-font-size-big1: var(--font-size-big1);
+  --swt-font-size-big2: var(--font-size-big2);
+  --swt-font-size-big3: var(--font-size-big3);
+  --swt-font-size-big4: var(--font-size-big4);
+  --swt-font-size-big5: var(--font-size-big5);
+  --swt-font-size-big6: var(--font-size-big6);
+  --swt-font-size-headline8: var(--font-size-big6);
+
+  /* ---- 2.16 行高 ---- */
+  --swt-font-line-height-mini: var(--font-line-height-small);
+  --swt-font-line-height-mini1: var(--font-line-height-small);
+  --swt-font-line-height-small: var(--font-line-height-small);
+  --swt-font-line-height-normal: var(--font-line-height-normal);
+  --swt-font-line-height-normal1: var(--font-line-height-normal1);
+  --swt-font-line-height-medium: var(--font-line-height-medium);
+  --swt-font-line-height-subtitle1: var(--font-line-height-medium);
+  --swt-font-line-height-big: var(--font-line-height-big);
+  --swt-font-line-height-big1: var(--font-line-height-big1);
+  --swt-font-line-height-big2: var(--font-line-height-big2);
+  --swt-font-line-height-big3: var(--font-line-height-big3);
+  --swt-font-line-height-big4: var(--font-line-height-big4);
+  --swt-font-line-height-big5: var(--font-line-height-big5);
+  --swt-font-line-height-big6: var(--font-line-height-big6);
+  --swt-font-line-height-headline8: var(--font-line-height-big6);
+
+  /* ---- 2.17 字重 ---- */
+  --swt-font-weight-light: var(--font-weight-light);
+  --swt-font-weight-normal: var(--font-weight-normal);
+  --swt-font-weight-medium: var(--font-weight-bold);
+  --swt-font-weight-bold: var(--font-weight-bold);
+
+  --swt-font-weight-thin: 100; /* swt-default */
+  --swt-font-weight-black: 900; /* swt-default */
+
+  /* ---- 2.18 字体族 ---- */
+  --swt-font-family-en: var(--font-family-en);
+  --swt-font-family-zh: var(--font-family-zh);
+
+  --swt-font-family-other: monospace; /* swt-default */
+
+  /* ---- 2.19 组件特定 — 表格 ---- */
+  --swt-table-row-hover-bg-color: var(--color-hover);
+  --swt-table-hover-td: var(--color-hover);
+  --swt-table-striped: var(--color-hover);
+  --swt-table-checked-row: var(--color-select);
+  --swt-table-current-row-bg-color: var(--color-select);
+  --swt-table-th: var(--color-table-header);
+
+  /* ---- 2.19 组件特定 — 开关 ---- */
+  --swt-switch-on-color: var(--color-brand);
+  --swt-switch-off-color: var(--color-border-hover);
+  --swt-switch-border-color: transparent; /* swt-default */
+
+  /* ---- 2.19 组件特定 — 标签 ---- */
+  --swt-tag-border-width: var(--border-width-normal);
+
+  /* ---- 2.19 组件特定 — 按钮 ---- */
+  --swt-button-disabled-bg: var(--color-fill-disabled);
+
+  /* ---- 2.19 组件特定 — 日期 ---- */
+  --swt-color-date-active: var(--color-brand); /* swt-default */
+
+  /* ---- 2.20 灰度色板（无 DL 等价，保留 SWT 默认值） ---- */
+  --swt-color-gray1: #ffffff; /* swt-default */
+  --swt-color-gray2: #fafafa; /* swt-default */
+  --swt-color-gray3: #f5f5f5; /* swt-default */
+  --swt-color-gray4: #f0f0f0; /* swt-default */
+  --swt-color-gray5: #d9d9d9; /* swt-default */
+  --swt-color-gray6: #bfbfbf; /* swt-default */
+  --swt-color-gray7: #8c8c8c; /* swt-default */
+  --swt-color-gray8: #595959; /* swt-default */
+  --swt-color-gray9: #404040; /* swt-default */
+  --swt-color-gray10: #303030; /* swt-default */
+  --swt-color-gray11: #1f1f1f; /* swt-default */
+  --swt-color-gray12: #141414; /* swt-default */
+  --swt-color-gray13: #000000; /* swt-default */
+  --swt-color-gray1-opacity80: rgba(255, 255, 255, 0.8); /* swt-default */
+  --swt-color-gray2-opacity70: rgba(250, 250, 250, 0.7); /* swt-default */
+  --swt-color-gray4-opacity60: rgba(240, 240, 240, 0.6); /* swt-default */
+  --swt-color-gray6-opacity5: rgba(191, 191, 191, 0.05); /* swt-default */
+  --swt-color-gray11-opacity20: rgba(31, 31, 31, 0.2); /* swt-default */
+  --swt-color-gray11-opacity30: rgba(31, 31, 31, 0.3); /* swt-default */
+  --swt-color-gray11-opacity40: rgba(31, 31, 31, 0.4); /* swt-default */
+
+  /* ---- 2.21 辅助色板 — ancilary（旧拼写） ---- */
+  --swt-color-ancilary-blue1: #eef3fe; /* swt-default */
+  --swt-color-ancilary-blue2: #d0d8fd; /* swt-default */
+  --swt-color-ancilary-blue3: #b0bffd; /* swt-default */
+  --swt-color-ancilary-blue4: #8ca3fa; /* swt-default */
+  --swt-color-ancilary-blue5: #668cf7; /* swt-default */
+  --swt-color-ancilary-blue6: #2070f3; /* swt-default */
+  --swt-color-ancilary-blue7: #1f55b5; /* swt-default */
+  --swt-color-ancilary-blue8: #1b3f86; /* swt-default */
+  --swt-color-ancilary-blue9: #112857; /* swt-default */
+  --swt-color-ancilary-blue10: #081635; /* swt-default */
+  --swt-color-ancilary-cyan1: #e8fcfd; /* swt-default */
+  --swt-color-ancilary-cyan2: #c9f6f9; /* swt-default */
+  --swt-color-ancilary-cyan3: #a4ecf1; /* swt-default */
+  --swt-color-ancilary-cyan4: #7ddfe7; /* swt-default */
+  --swt-color-ancilary-cyan5: #55ccd9; /* swt-default */
+  --swt-color-ancilary-cyan6: #2cb8c9; /* swt-default */
+  --swt-color-ancilary-cyan7: #1c94a4; /* swt-default */
+  --swt-color-ancilary-cyan8: #127180; /* swt-default */
+  --swt-color-ancilary-cyan9: #094c57; /* swt-default */
+  --swt-color-ancilary-cyan10: #04282f; /* swt-default */
+  --swt-color-ancilary-fuchsia1: #fdf2ff; /* swt-default */
+  --swt-color-ancilary-fuchsia2: #f9dcff; /* swt-default */
+  --swt-color-ancilary-fuchsia3: #f3beff; /* swt-default */
+  --swt-color-ancilary-fuchsia4: #e99bfe; /* swt-default */
+  --swt-color-ancilary-fuchsia5: #db73fd; /* swt-default */
+  --swt-color-ancilary-fuchsia6: #cc4afc; /* swt-default */
+  --swt-color-ancilary-fuchsia7: #9e2eb5; /* swt-default */
+  --swt-color-ancilary-fuchsia8: #6b1d7a; /* swt-default */
+  --swt-color-ancilary-fuchsia9: #43104f; /* swt-default */
+  --swt-color-ancilary-fuchsia10: #2a0633; /* swt-default */
+  --swt-color-ancilary-green1: #f2fbe9; /* swt-default */
+  --swt-color-ancilary-green2: #dff4cc; /* swt-default */
+  --swt-color-ancilary-green3: #c6e9a8; /* swt-default */
+  --swt-color-ancilary-green4: #a8db81; /* swt-default */
+  --swt-color-ancilary-green5: #87c859; /* swt-default */
+  --swt-color-ancilary-green6: #62b42e; /* swt-default */
+  --swt-color-ancilary-green7: #488e20; /* swt-default */
+  --swt-color-ancilary-green8: #316614; /* swt-default */
+  --swt-color-ancilary-green9: #1b3e0a; /* swt-default */
+  --swt-color-ancilary-green10: #0c2004; /* swt-default */
+  --swt-color-ancilary-lime1: #f5ffee; /* swt-default */
+  --swt-color-ancilary-lime2: #e4fddb; /* swt-default */
+  --swt-color-ancilary-lime3: #cef8bb; /* swt-default */
+  --swt-color-ancilary-lime4: #b4f28f; /* swt-default */
+  --swt-color-ancilary-lime5: #96e95e; /* swt-default */
+  --swt-color-ancilary-lime6: #7ad830; /* swt-default */
+  --swt-color-ancilary-lime7: #5bb81a; /* swt-default */
+  --swt-color-ancilary-lime8: #3f8a10; /* swt-default */
+  --swt-color-ancilary-lime9: #285c0a; /* swt-default */
+  --swt-color-ancilary-lime10: #173805; /* swt-default */
+  --swt-color-ancilary-orange1: #fef5e8; /* swt-default */
+  --swt-color-ancilary-orange2: #fde2bd; /* swt-default */
+  --swt-color-ancilary-orange3: #fcce92; /* swt-default */
+  --swt-color-ancilary-orange4: #f9b766; /* swt-default */
+  --swt-color-ancilary-orange5: #f69e39; /* swt-default */
+  --swt-color-ancilary-orange6: #f4840c; /* swt-default */
+  --swt-color-ancilary-orange7: #c76207; /* swt-default */
+  --swt-color-ancilary-orange8: #954304; /* swt-default */
+  --swt-color-ancilary-orange9: #642802; /* swt-default */
+  --swt-color-ancilary-orange10: #3d1601; /* swt-default */
+  --swt-color-ancilary-prasinous1: #ecfee4; /* swt-default */
+  --swt-color-ancilary-prasinous2: #d6fbc4; /* swt-default */
+  --swt-color-ancilary-prasinous3: #b9f49a; /* swt-default */
+  --swt-color-ancilary-prasinous4: #97ea6b; /* swt-default */
+  --swt-color-ancilary-prasinous5: #73da3e; /* swt-default */
+  --swt-color-ancilary-prasinous6: #56c31f; /* swt-default */
+  --swt-color-ancilary-prasinous7: #3f9d14; /* swt-default */
+  --swt-color-ancilary-prasinous8: #2b750c; /* swt-default */
+  --swt-color-ancilary-prasinous9: #1a4d06; /* swt-default */
+  --swt-color-ancilary-prasinous10: #0e3003; /* swt-default */
+  --swt-color-ancilary-purple1: #f7edfe; /* swt-default */
+  --swt-color-ancilary-purple2: #e8cffe; /* swt-default */
+  --swt-color-ancilary-purple3: #d9b1fd; /* swt-default */
+  --swt-color-ancilary-purple4: #cb8efb; /* swt-default */
+  --swt-color-ancilary-purple5: #bf68fa; /* swt-default */
+  --swt-color-ancilary-purple6: #b62bf7; /* swt-default */
+  --swt-color-ancilary-purple7: #8a21bc; /* swt-default */
+  --swt-color-ancilary-purple8: #651b8b; /* swt-default */
+  --swt-color-ancilary-purple9: #41125a; /* swt-default */
+  --swt-color-ancilary-purple10: #260937; /* swt-default */
+  --swt-color-ancilary-red1: #fee7e8; /* swt-default */
+  --swt-color-ancilary-red2: #fabdc1; /* swt-default */
+  --swt-color-ancilary-red3: #f59297; /* swt-default */
+  --swt-color-ancilary-red4: #ee696f; /* swt-default */
+  --swt-color-ancilary-red5: #e7434a; /* swt-default */
+  --swt-color-ancilary-red6: #e02128; /* swt-default */
+  --swt-color-ancilary-red7: #c7000b; /* swt-default */
+  --swt-color-ancilary-red8: #850f12; /* swt-default */
+  --swt-color-ancilary-red9: #59080a; /* swt-default */
+  --swt-color-ancilary-red10: #350305; /* swt-default */
+  --swt-color-ancilary-rose1: #fee5f2; /* swt-default */
+  --swt-color-ancilary-rose2: #fcc3e0; /* swt-default */
+  --swt-color-ancilary-rose3: #f99ac7; /* swt-default */
+  --swt-color-ancilary-rose4: #f470ab; /* swt-default */
+  --swt-color-ancilary-rose5: #ed448a; /* swt-default */
+  --swt-color-ancilary-rose6: #e61866; /* swt-default */
+  --swt-color-ancilary-rose7: #c40054; /* swt-default */
+  --swt-color-ancilary-rose8: #811439; /* swt-default */
+  --swt-color-ancilary-rose9: #540d24; /* swt-default */
+  --swt-color-ancilary-rose10: #330614; /* swt-default */
+  --swt-color-ancilary-sapphire1: #e8f0fe; /* swt-default */
+  --swt-color-ancilary-sapphire2: #cdd9fd; /* swt-default */
+  --swt-color-ancilary-sapphire3: #adbdfb; /* swt-default */
+  --swt-color-ancilary-sapphire4: #85a0f8; /* swt-default */
+  --swt-color-ancilary-sapphire5: #5e82f4; /* swt-default */
+  --swt-color-ancilary-sapphire6: #3b65ef; /* swt-default */
+  --swt-color-ancilary-sapphire7: #2d4ec2; /* swt-default */
+  --swt-color-ancilary-sapphire8: #1e368d; /* swt-default */
+  --swt-color-ancilary-sapphire9: #122158; /* swt-default */
+  --swt-color-ancilary-sapphire10: #0a1035; /* swt-default */
+  --swt-color-ancilary-yellow1: #fefce0; /* swt-default */
+  --swt-color-ancilary-yellow2: #fef8b8; /* swt-default */
+  --swt-color-ancilary-yellow3: #fef08a; /* swt-default */
+  --swt-color-ancilary-yellow4: #fde55c; /* swt-default */
+  --swt-color-ancilary-yellow5: #fcd72e; /* swt-default */
+  --swt-color-ancilary-yellow6: #fcc800; /* swt-default */
+  --swt-color-ancilary-yellow7: #d19f00; /* swt-default */
+  --swt-color-ancilary-yellow8: #9e7400; /* swt-default */
+  --swt-color-ancilary-yellow9: #614500; /* swt-default */
+  --swt-color-ancilary-yellow10: #2e1f00; /* swt-default */
+
+  /* ---- 2.22 辅助色板 — ancillary（新拼写，重复旧拼写集） ---- */
+  --swt-color-ancillary-blue1: #eef3fe; /* swt-default */
+  --swt-color-ancillary-blue2: #d0d8fd; /* swt-default */
+  --swt-color-ancillary-blue3: #b0bffd; /* swt-default */
+  --swt-color-ancillary-blue4: #8ca3fa; /* swt-default */
+  --swt-color-ancillary-blue5: #668cf7; /* swt-default */
+  --swt-color-ancillary-blue6: #2070f3; /* swt-default */
+  --swt-color-ancillary-blue7: #1f55b5; /* swt-default */
+  --swt-color-ancillary-blue8: #1b3f86; /* swt-default */
+  --swt-color-ancillary-blue9: #112857; /* swt-default */
+  --swt-color-ancillary-blue10: #081635; /* swt-default */
+  --swt-color-ancillary-cyan1: #e8fcfd; /* swt-default */
+  --swt-color-ancillary-cyan2: #c9f6f9; /* swt-default */
+  --swt-color-ancillary-cyan3: #a4ecf1; /* swt-default */
+  --swt-color-ancillary-cyan4: #7ddfe7; /* swt-default */
+  --swt-color-ancillary-cyan5: #55ccd9; /* swt-default */
+  --swt-color-ancillary-cyan6: #2cb8c9; /* swt-default */
+  --swt-color-ancillary-cyan7: #1c94a4; /* swt-default */
+  --swt-color-ancillary-cyan8: #127180; /* swt-default */
+  --swt-color-ancillary-cyan9: #094c57; /* swt-default */
+  --swt-color-ancillary-cyan10: #04282f; /* swt-default */
+  --swt-color-ancillary-fuchsia1: #fdf2ff; /* swt-default */
+  --swt-color-ancillary-fuchsia2: #f9dcff; /* swt-default */
+  --swt-color-ancillary-fuchsia3: #f3beff; /* swt-default */
+  --swt-color-ancillary-fuchsia4: #e99bfe; /* swt-default */
+  --swt-color-ancillary-fuchsia5: #db73fd; /* swt-default */
+  --swt-color-ancillary-fuchsia6: #cc4afc; /* swt-default */
+  --swt-color-ancillary-fuchsia7: #9e2eb5; /* swt-default */
+  --swt-color-ancillary-fuchsia8: #6b1d7a; /* swt-default */
+  --swt-color-ancillary-fuchsia9: #43104f; /* swt-default */
+  --swt-color-ancillary-fuchsia10: #2a0633; /* swt-default */
+  --swt-color-ancillary-green1: #f2fbe9; /* swt-default */
+  --swt-color-ancillary-green2: #dff4cc; /* swt-default */
+  --swt-color-ancillary-green3: #c6e9a8; /* swt-default */
+  --swt-color-ancillary-green4: #a8db81; /* swt-default */
+  --swt-color-ancillary-green5: #87c859; /* swt-default */
+  --swt-color-ancillary-green6: #62b42e; /* swt-default */
+  --swt-color-ancillary-green7: #488e20; /* swt-default */
+  --swt-color-ancillary-green8: #316614; /* swt-default */
+  --swt-color-ancillary-green9: #1b3e0a; /* swt-default */
+  --swt-color-ancillary-green10: #0c2004; /* swt-default */
+  --swt-color-ancillary-lime1: #f5ffee; /* swt-default */
+  --swt-color-ancillary-lime2: #e4fddb; /* swt-default */
+  --swt-color-ancillary-lime3: #cef8bb; /* swt-default */
+  --swt-color-ancillary-lime4: #b4f28f; /* swt-default */
+  --swt-color-ancillary-lime5: #96e95e; /* swt-default */
+  --swt-color-ancillary-lime6: #7ad830; /* swt-default */
+  --swt-color-ancillary-lime7: #5bb81a; /* swt-default */
+  --swt-color-ancillary-lime8: #3f8a10; /* swt-default */
+  --swt-color-ancillary-lime9: #285c0a; /* swt-default */
+  --swt-color-ancillary-lime10: #173805; /* swt-default */
+  --swt-color-ancillary-orange1: #fef5e8; /* swt-default */
+  --swt-color-ancillary-orange2: #fde2bd; /* swt-default */
+  --swt-color-ancillary-orange3: #fcce92; /* swt-default */
+  --swt-color-ancillary-orange4: #f9b766; /* swt-default */
+  --swt-color-ancillary-orange5: #f69e39; /* swt-default */
+  --swt-color-ancillary-orange6: #f4840c; /* swt-default */
+  --swt-color-ancillary-orange7: #c76207; /* swt-default */
+  --swt-color-ancillary-orange8: #954304; /* swt-default */
+  --swt-color-ancillary-orange9: #642802; /* swt-default */
+  --swt-color-ancillary-orange10: #3d1601; /* swt-default */
+  --swt-color-ancillary-prasinous1: #ecfee4; /* swt-default */
+  --swt-color-ancillary-prasinous2: #d6fbc4; /* swt-default */
+  --swt-color-ancillary-prasinous3: #b9f49a; /* swt-default */
+  --swt-color-ancillary-prasinous4: #97ea6b; /* swt-default */
+  --swt-color-ancillary-prasinous5: #73da3e; /* swt-default */
+  --swt-color-ancillary-prasinous6: #56c31f; /* swt-default */
+  --swt-color-ancillary-prasinous7: #3f9d14; /* swt-default */
+  --swt-color-ancillary-prasinous8: #2b750c; /* swt-default */
+  --swt-color-ancillary-prasinous9: #1a4d06; /* swt-default */
+  --swt-color-ancillary-prasinous10: #0e3003; /* swt-default */
+  --swt-color-ancillary-purple1: #f7edfe; /* swt-default */
+  --swt-color-ancillary-purple2: #e8cffe; /* swt-default */
+  --swt-color-ancillary-purple3: #d9b1fd; /* swt-default */
+  --swt-color-ancillary-purple4: #cb8efb; /* swt-default */
+  --swt-color-ancillary-purple5: #bf68fa; /* swt-default */
+  --swt-color-ancillary-purple6: #b62bf7; /* swt-default */
+  --swt-color-ancillary-purple7: #8a21bc; /* swt-default */
+  --swt-color-ancillary-purple8: #651b8b; /* swt-default */
+  --swt-color-ancillary-purple9: #41125a; /* swt-default */
+  --swt-color-ancillary-purple10: #260937; /* swt-default */
+  --swt-color-ancillary-red1: #fee7e8; /* swt-default */
+  --swt-color-ancillary-red2: #fabdc1; /* swt-default */
+  --swt-color-ancillary-red3: #f59297; /* swt-default */
+  --swt-color-ancillary-red4: #ee696f; /* swt-default */
+  --swt-color-ancillary-red5: #e7434a; /* swt-default */
+  --swt-color-ancillary-red6: #e02128; /* swt-default */
+  --swt-color-ancillary-red7: #c7000b; /* swt-default */
+  --swt-color-ancillary-red8: #850f12; /* swt-default */
+  --swt-color-ancillary-red9: #59080a; /* swt-default */
+  --swt-color-ancillary-red10: #350305; /* swt-default */
+  --swt-color-ancillary-rose1: #fee5f2; /* swt-default */
+  --swt-color-ancillary-rose2: #fcc3e0; /* swt-default */
+  --swt-color-ancillary-rose3: #f99ac7; /* swt-default */
+  --swt-color-ancillary-rose4: #f470ab; /* swt-default */
+  --swt-color-ancillary-rose5: #ed448a; /* swt-default */
+  --swt-color-ancillary-rose6: #e61866; /* swt-default */
+  --swt-color-ancillary-rose7: #c40054; /* swt-default */
+  --swt-color-ancillary-rose8: #811439; /* swt-default */
+  --swt-color-ancillary-rose9: #540d24; /* swt-default */
+  --swt-color-ancillary-rose10: #330614; /* swt-default */
+  --swt-color-ancillary-sapphire1: #e8f0fe; /* swt-default */
+  --swt-color-ancillary-sapphire2: #cdd9fd; /* swt-default */
+  --swt-color-ancillary-sapphire3: #adbdfb; /* swt-default */
+  --swt-color-ancillary-sapphire4: #85a0f8; /* swt-default */
+  --swt-color-ancillary-sapphire5: #5e82f4; /* swt-default */
+  --swt-color-ancillary-sapphire6: #3b65ef; /* swt-default */
+  --swt-color-ancillary-sapphire7: #2d4ec2; /* swt-default */
+  --swt-color-ancillary-sapphire8: #1e368d; /* swt-default */
+  --swt-color-ancillary-sapphire9: #122158; /* swt-default */
+  --swt-color-ancillary-sapphire10: #0a1035; /* swt-default */
+  --swt-color-ancillary-yellow1: #fefce0; /* swt-default */
+  --swt-color-ancillary-yellow2: #fef8b8; /* swt-default */
+  --swt-color-ancillary-yellow3: #fef08a; /* swt-default */
+  --swt-color-ancillary-yellow4: #fde55c; /* swt-default */
+  --swt-color-ancillary-yellow5: #fcd72e; /* swt-default */
+  --swt-color-ancillary-yellow6: #fcc800; /* swt-default */
+  --swt-color-ancillary-yellow7: #d19f00; /* swt-default */
+  --swt-color-ancillary-yellow8: #9e7400; /* swt-default */
+  --swt-color-ancillary-yellow9: #614500; /* swt-default */
+  --swt-color-ancillary-yellow10: #2e1f00; /* swt-default */
+
+  /* ---- 2.23 颜色常量 / 透明度 / 叠加色 ---- */
+  --swt-color-white: #ffffff; /* swt-default */
+  --swt-color-black: #000000; /* swt-default */
+
+  --swt-color-opacity0: 0; /* swt-default */
+  --swt-color-opacity1: 0.01; /* swt-default */
+  --swt-color-opacity2: 0.02; /* swt-default */
+  --swt-color-opacity3: 0.03; /* swt-default */
+  --swt-color-opacity4: 0.04; /* swt-default */
+  --swt-color-opacity5: 0.05; /* swt-default */
+  --swt-color-opacity6: 0.06; /* swt-default */
+  --swt-color-opacity7: 0.07; /* swt-default */
+  --swt-color-opacity8: 0.08; /* swt-default */
+  --swt-color-opacity9: 0.09; /* swt-default */
+  --swt-color-opacity10: 0.1; /* swt-default */
+
+  --swt-opacity0: 0; /* swt-default */
+  --swt-opacity5: 0.05; /* swt-default */
+  --swt-opacity10: 0.1; /* swt-default */
+  --swt-opacity15: 0.15; /* swt-default */
+  --swt-opacity20: 0.2; /* swt-default */
+  --swt-opacity25: 0.25; /* swt-default */
+  --swt-opacity30: 0.3; /* swt-default */
+  --swt-opacity35: 0.35; /* swt-default */
+  --swt-opacity40: 0.4; /* swt-default */
+  --swt-opacity45: 0.45; /* swt-default */
+  --swt-opacity50: 0.5; /* swt-default */
+  --swt-opacity55: 0.55; /* swt-default */
+  --swt-opacity60: 0.6; /* swt-default */
+  --swt-opacity65: 0.65; /* swt-default */
+  --swt-opacity70: 0.7; /* swt-default */
+  --swt-opacity75: 0.75; /* swt-default */
+  --swt-opacity80: 0.8; /* swt-default */
+  --swt-opacity85: 0.85; /* swt-default */
+  --swt-opacity90: 0.9; /* swt-default */
+  --swt-opacity95: 0.95; /* swt-default */
+  --swt-opacity100: 1; /* swt-default */
+
+  --swt-color-overlay-gray1-and-accent-normal-opacity5: rgba(0, 103, 209, 0.05); /* swt-default */
+  --swt-color-overlay-gray1-and-accent-normal-opacity10: rgba(0, 103, 209, 0.1); /* swt-default */
+  --swt-color-overlay-gray1-and-accent-normal-opacity20: rgba(0, 103, 209, 0.2); /* swt-default */
+  --swt-color-overlay-gray1-and-gray5-opacity20: rgba(217, 217, 217, 0.2); /* swt-default */
+  --swt-color-overlay-gray1-and-gray6-opacity10: rgba(191, 191, 191, 0.1); /* swt-default */
+  --swt-color-overlay-gray1-and-gray12-opacity5: rgba(20, 20, 20, 0.05); /* swt-default */
+  --swt-color-overlay-gray1-and-gray12-opacity10: rgba(20, 20, 20, 0.1); /* swt-default */
+  --swt-color-overlay-gray1-and-gray13-opacity10: rgba(0, 0, 0, 0.1); /* swt-default */
+  --swt-color-overlay-gray1-and-urgent-normal-opacity10: rgba(224, 33, 40, 0.1); /* swt-default */
+  --swt-color-overlay-gray1-and-urgent-normal-opacity20: rgba(224, 33, 40, 0.2); /* swt-default */
+
+  /* ---- 2.24 图表色（空后缀，CSS 异常，不映射） ---- */
+  --swt-color-chart-: initial; /* swt-default (empty suffix — CSS anomaly) */
+
+  /* ---- 2.25 过渡（无 DL 等价，保留 SWT 默认） ---- */
+  --swt-transition-duration: 0.3s; /* swt-default */
+  --swt-transition-duration-fast: 0.2s; /* swt-default */
+  --swt-transition-function-ease-in-out-bezier: cubic-bezier(0.645, 0.045, 0.355, 1); /* swt-default */
+  --swt-transition-function-fast-bezier: cubic-bezier(0.23, 1, 0.32, 1); /* swt-default */
+  --swt-transition-fade: opacity 0.3s cubic-bezier(0.23, 1, 0.32, 1); /* swt-default */
+  --swt-transition-md-fade: transform 0.3s cubic-bezier(0.23, 1, 0.32, 1), opacity 0.3s cubic-bezier(0.23, 1, 0.32, 1); /* swt-default */
+  --swt-transition-fade-linear: opacity 0.2s linear; /* swt-default */
+  --swt-transition-border: border-color 0.2s cubic-bezier(0.645, 0.045, 0.355, 1); /* swt-default */
+  --swt-transition-box-shadow: box-shadow 0.3s cubic-bezier(0.645, 0.045, 0.355, 1); /* swt-default */
+  --swt-transition-color: color 0.2s cubic-bezier(0.645, 0.045, 0.355, 1); /* swt-default */
+  --swt-transition-all: all 0.3s cubic-bezier(0.645, 0.045, 0.355, 1); /* swt-default */
+
+  /* ---- 2.26 层级 / 光标 ---- */
+  --swt-index-normal: 1; /* swt-default */
+  --swt-index-popper: 2000; /* swt-default */
+  --swt-index-top: 9999; /* swt-default */
+  --swt-cursor-default: default; /* swt-default */
+  --swt-cursor-not-allowed: not-allowed; /* swt-default */
+  --swt-cursor-pointer: pointer; /* swt-default */
+  --swt-cursor-text: text; /* swt-default */
+
+  /* ---- 2.27 组件尺寸 ---- */
+  --swt-component-size: 32px; /* swt-default */
+  --swt-component-size-large: 40px; /* swt-default */
+  --swt-component-size-small: 24px; /* swt-default */
+
+  /* ---- 2.28 组件特定 — 轮播 ---- */
+  --swt-carousel-arrow-background: rgba(31, 31, 31, 0.11); /* swt-default */
+  --swt-carousel-arrow-font-size: 12px; /* swt-default */
+  --swt-carousel-arrow-hover-background: rgba(31, 31, 31, 0.23); /* swt-default */
+  --swt-carousel-arrow-size: 36px; /* swt-default */
+  --swt-carousel-indicator-dot-bg-color: rgba(0, 0, 0, 0.3); /* swt-default */
+  --swt-carousel-indicator-dot-bg-size: 8px; /* swt-default */
+  --swt-carousel-indicator-dot-color: rgba(255, 255, 255, 0.3); /* swt-default */
+  --swt-carousel-indicator-dot-size: 8px; /* swt-default */
+  --swt-carousel-indicator-height: 16px; /* swt-default */
+  --swt-carousel-indicator-line-bg-color: rgba(0, 0, 0, 0.3); /* swt-default */
+  --swt-carousel-indicator-line-color: rgba(255, 255, 255, 0.3); /* swt-default */
+  --swt-carousel-indicator-line-size: 6px; /* swt-default */
+  --swt-carousel-indicator-out-color: rgba(255, 255, 255, 0.3); /* swt-default */
+  --swt-carousel-indicator-padding-horizontal: 4px; /* swt-default */
+  --swt-carousel-indicator-padding-vertical: 12px; /* swt-default */
+  --swt-carousel-indicator-width: 30px; /* swt-default */
+  --swt-carousel-space-arrow: 16px; /* swt-default */
+
+  /* ---- 2.29 组件特定 — 复选框 / 单选 / 输入禁用 ---- */
+  --swt-check-border-color: #c9c9c9; /* swt-default */
+  --swt-check-disabled-bg-color: #dfdfdf; /* swt-default */
+  --swt-check-disabled-border-color: #e8e8e8; /* swt-default */
+  --swt-checked-disabled-bg-color: #e0e0e0; /* swt-default */
+  --swt-input-disabled: #dfdfdf; /* swt-default */
+  --swt-radio-disabled-input-fill: #dfdfdf; /* swt-default */
+  --swt-option-clicked-disabled-bg-color: #f3f3f3; /* swt-default */
+
+  /* ---- 2.30 组件特定 — 计分卡 / 步骤 / 标签页 / 进度 ---- */
+  --swt-score-card-bg-color: #ffffff; /* swt-default */
+  --swt-score-card-border: 1px solid var(--color-border); /* swt-default */
+  --swt-score-card-font-size: 36px; /* swt-default */
+  --swt-score-card-shadow: 0 4px 12px 0 rgba(0, 0, 0, 0.1); /* swt-default */
+  --swt-score-card-text-color: var(--color-text-primary); /* swt-default */
+  --swt-step-color-border: #c9c9c9; /* swt-default */
+  --swt-tabs-header-min-width: 80px; /* swt-default */
+  --swt-tabs-item-bg: transparent; /* swt-default */
+  --swt-tag-height: 24px; /* swt-default */
+  --swt-tag-line-height: 22px; /* swt-default */
+  --swt-timeline-item-default-offset: 32px; /* swt-default */
+  --swt-top-menu-bg-color: #ffffff; /* swt-default */
+  --swt-transfer-disable-bg-color: #f3f3f3; /* swt-default */
+  --swt-progress-custom-stroke: var(--color-brand); /* swt-default */
+
+  /* ---- 2.31 组件特定 — 按钮加载 / 主按钮禁用 ---- */
+  --swt-button-loading-bg-color: var(--color-brand); /* swt-default */
+  --swt-button-primary-disabled: #c0c4cc; /* swt-default */
+  --swt-button-primary-disabled-text: #ffffff; /* swt-default */
+
+  /* ---- 2.32 样式配置 ---- */
+  --swt-icon-style: line; /* swt-default */
+  --swt-illustration-style: flat; /* swt-default */
 }
 
-/* ---- 状态对位修正（design-language 组件状态 → SweetUI 类名钩子，
-     类名前缀默认 el-（namespace 默认 "el"，不设 sweet）） ---- */
+/* ---- 状态对位修正 ---- */
 
-/* 输入件悬停边框：gray-90；获焦边框：brand-50 + 2px 获焦宽 */
 .el-input__wrapper:hover,
 .el-select__wrapper:hover,
 .el-textarea__inner:hover {
@@ -149,7 +1051,6 @@ body[theme="default"] {
   box-shadow: 0 0 0 var(--border-width-medium) var(--color-border-focus) inset;
 }
 
-/* 禁用统一走文本/边框/填充禁用 token，不做整体透明化 */
 .el-button.is-disabled,
 .el-input.is-disabled .el-input__inner,
 .el-textarea.is-disabled .el-textarea__inner {

@@ -349,7 +349,7 @@ SweetUI 图表的 chartTheme 是 JS 静态对象，不读 CSS 变量——换肤
 
 ### 坑 5：使用白名单外的组件（build 直接拒绝）
 
-SweetUI 5.6.5 共 137 个组件（白名单 `scripts/verify/whitelists/sweetui-components.json`）。
+SweetUI 5.6.5 共 140 个组件（白名单 `scripts/verify/whitelists/sweetui-components.json`）。
 EP 有而 SweetUI 没有的常见组件，按回退写法：
 
 | EP 有、SweetUI 没有 | 回退写法 |
@@ -373,3 +373,35 @@ sweet-icon 没有 name prop（只有 iconClass/size/color），name 写上去不
 <!-- ✅ 正确 -->
 <icon-plus name="search" />
 ```
+
+### 坑 7：硬编码 hex 无法从外部覆盖
+
+SweetUI CSS 里有 11 处硬编码 hex（集中在高级组件的 variant 样式：
+`.sweet-cmp-table` `#bcd4fc`、`.sweet-custom-select` `#c1c1c1`/`#999`、
+`.sweet-side-panel__header` `#c1c1c1`、`.sweet-genex-table`/`.sweet-map-*` 若干）。
+这些不在 CSS 变量体系里，页面写 `--color-*` token 也不会影响到它们；
+常规页面路径（表格/表单/弹窗/按钮）不触发这些选择器，遇到即可放过。
+
+### 坑 8：`ancilary` / `ancillary` 拼写双存
+
+`--swt-color-ancilary-*`（旧拼写）与 `--swt-color-ancillary-*`（新拼写）
+在 sweet-ui-base.css 中**同时存在、值相同**。页面不会用到它们（辅助色板
+无 design-language 等价，bridge 保留默认值）；若在 DevTools 里看到两套同名
+变量只差一个 h，不是 bug。
+
+### 坑 9：`$sweetNotify` 没有 max 参数
+
+EP 的 ElNotification 有 `max` 限制堆叠数；SweetUI 的 `$sweetNotify` 无此参数。
+需要限制时在页面侧做队列守卫：超过上限先 `close()` 最早的再 push。
+
+### 坑 10：命令式浮层组件 scoped 样式不可达
+
+`$message`/`$sweetNotify`/`$msgbox` 挂载在 body 下，SFC 的 scoped 样式
+穿透不到。要定制浮层外观：调用时传 `customClass`，样式写在组件的
+**非 scoped** `<style lang="less">` 块里（全文件唯一，避免泄漏）。
+
+### 坑 11：SweetUI DOM 类名前缀并非统一 `sweet-`
+
+多数组件类名是 `sweet-*`，但个别浮层走别的钩子（如 Message 的实际
+DOM 类是 `.sweet-message__*`）。写 customClass 配套样式前，先在 DevTools
+里确认真实类名，不要按组件名推断。

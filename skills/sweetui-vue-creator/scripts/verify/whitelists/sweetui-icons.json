@@ -1,1 +1,2022 @@
-[]
+{
+  "3d": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "according-to-the-abnormallayer-duetoview": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "add": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "add-a-subnode": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "add-line": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "advanced-filter": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "altitude-measurement": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "angle": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "antenna-group": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "apc": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "area-map": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "arrow-add": {
+    "l": false,
+    "f": false,
+    "single": true
+  },
+  "arrow-down": {
+    "l": false,
+    "f": false,
+    "single": true
+  },
+  "arrow-down-right": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "arrow-left": {
+    "l": false,
+    "f": false,
+    "single": true
+  },
+  "arrow-minus": {
+    "l": false,
+    "f": false,
+    "single": true
+  },
+  "arrow-right": {
+    "l": false,
+    "f": false,
+    "single": true
+  },
+  "arrow-up": {
+    "l": false,
+    "f": false,
+    "single": true
+  },
+  "arrow-up-left": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "ascending": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "asp": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "asset-transfer": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "association": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "auto-add-neighbor": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "avatar": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "average": {
+    "l": false,
+    "f": false,
+    "single": true
+  },
+  "back": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "backtrack": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "backup": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "bar-chart": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "base-station": {
+    "l": false,
+    "f": true,
+    "single": false
+  },
+  "basestation": {
+    "l": true,
+    "f": false,
+    "single": false
+  },
+  "batch-selection-element": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "be-ready": {
+    "l": false,
+    "f": true,
+    "single": false
+  },
+  "beam": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "below-semicircle": {
+    "l": false,
+    "f": false,
+    "single": true
+  },
+  "beready": {
+    "l": true,
+    "f": false,
+    "single": false
+  },
+  "best-view-map": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "bicyclic-graph": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "box-plot": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "bubble-chart": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "building": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "byuser": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "cancel-editing": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "capacity-management": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "card": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "carrier-frequency": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "cell": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "cell-bak": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "cell-indoor": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "cell-outdoor": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "cell-total": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "change": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "change-password": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "chart-options": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "check-box-half-selected": {
+    "l": false,
+    "f": false,
+    "single": true
+  },
+  "check-box-selected": {
+    "l": false,
+    "f": false,
+    "single": true
+  },
+  "check-the-reverse-antenna-connection": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "checkbox-unselected": {
+    "l": true,
+    "f": false,
+    "single": false
+  },
+  "checkmark": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "checkthe-vip-user-association-area": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "circle-1": {
+    "l": false,
+    "f": false,
+    "single": true
+  },
+  "circle-2": {
+    "l": false,
+    "f": false,
+    "single": true
+  },
+  "circle-3": {
+    "l": false,
+    "f": false,
+    "single": true
+  },
+  "circle-4": {
+    "l": false,
+    "f": false,
+    "single": true
+  },
+  "circle-5": {
+    "l": false,
+    "f": false,
+    "single": true
+  },
+  "circle-6": {
+    "l": false,
+    "f": false,
+    "single": true
+  },
+  "circle-7": {
+    "l": true,
+    "f": false,
+    "single": false
+  },
+  "circle-check": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "circle-close": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "clean": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "clear-content": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "clear-filter": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "click-count-statistics": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "close": {
+    "l": true,
+    "f": true,
+    "single": true
+  },
+  "close8x8": {
+    "l": false,
+    "f": false,
+    "single": true
+  },
+  "collapse": {
+    "l": false,
+    "f": false,
+    "single": true
+  },
+  "collect": {
+    "l": true,
+    "f": false,
+    "single": false
+  },
+  "collected": {
+    "l": false,
+    "f": true,
+    "single": false
+  },
+  "color-select": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "column-select": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "comment": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "compass": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "complaint-handling": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "copy": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "copy-only": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "count": {
+    "l": false,
+    "f": false,
+    "single": true
+  },
+  "counter": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "create-acp-task": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "csv": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "cursor-arrow": {
+    "l": false,
+    "f": false,
+    "single": true
+  },
+  "cursor-col-resize": {
+    "l": false,
+    "f": false,
+    "single": true
+  },
+  "cursor-drag": {
+    "l": false,
+    "f": false,
+    "single": true
+  },
+  "cursor-move": {
+    "l": false,
+    "f": false,
+    "single": true
+  },
+  "cursor-pointer": {
+    "l": false,
+    "f": false,
+    "single": true
+  },
+  "cursor-scale-table": {
+    "l": false,
+    "f": false,
+    "single": true
+  },
+  "cut": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "dashboard": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "data-acquisition": {
+    "l": false,
+    "f": false,
+    "single": true
+  },
+  "data-acquisition-and": {
+    "l": false,
+    "f": false,
+    "single": true
+  },
+  "data-synchronization": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "date": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "delete": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "delete-line": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "derived-data2": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "derivedt-up": {
+    "l": false,
+    "f": true,
+    "single": false
+  },
+  "derivedt-up-f-1": {
+    "l": false,
+    "f": false,
+    "single": true
+  },
+  "descending": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "developer-options": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "difference": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "dimension": {
+    "l": false,
+    "f": false,
+    "single": true
+  },
+  "disassociate": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "discarded": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "display-setting": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "double-screen": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "down": {
+    "l": false,
+    "f": false,
+    "single": true
+  },
+  "download": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "download-more-index": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "draft": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "drag-zoom": {
+    "l": false,
+    "f": false,
+    "single": true
+  },
+  "draw-polygon": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "drill-down": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "drow-polygon": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "edit": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "engineering-parameter-check-and-correction": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "engineering-parameter-management": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "enter": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "error": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "event-": {
+    "l": false,
+    "f": false,
+    "single": true
+  },
+  "evu-settings": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "excel": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "expand": {
+    "l": false,
+    "f": false,
+    "single": true
+  },
+  "export": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "exportkmz": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "exportreport": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "fan-community": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "favorite": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "file": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "filter": {
+    "l": true,
+    "f": false,
+    "single": false
+  },
+  "filtered": {
+    "l": false,
+    "f": true,
+    "single": false
+  },
+  "fishbone": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "folder": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "folder-opened": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "frequency-analysis": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "frequency-point-analysis": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "from-the-configuration-update": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "full-screen": {
+    "l": true,
+    "f": true,
+    "single": true
+  },
+  "function": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "general": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "go": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "grid": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "group": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "group-editing": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "gsm-capacity-evaluation": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "gsm-frequency-analysis": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "gu-anr": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "help": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "hide": {
+    "l": false,
+    "f": false,
+    "single": true
+  },
+  "hints": {
+    "l": false,
+    "f": false,
+    "single": true
+  },
+  "home": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "icon-management": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "image": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "import": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "import-log": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "import-query-template": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "important": {
+    "l": false,
+    "f": false,
+    "single": true
+  },
+  "index-comparative-analysis": {
+    "l": true,
+    "f": false,
+    "single": false
+  },
+  "index-comparative-analysis-l-1": {
+    "l": false,
+    "f": false,
+    "single": true
+  },
+  "indicator": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "indoorsite": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "info": {
+    "l": false,
+    "f": true,
+    "single": false
+  },
+  "insert-row": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "inter-f": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "interference-analysis": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "interference-contrast": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "intersection": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "invisible": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "issue-analysis": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "kqi": {
+    "l": false,
+    "f": false,
+    "single": true
+  },
+  "left": {
+    "l": false,
+    "f": false,
+    "single": true
+  },
+  "legend": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "line": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "line-chart": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "link": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "lmmediate-access": {
+    "l": true,
+    "f": false,
+    "single": false
+  },
+  "load-threshold": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "loading": {
+    "l": false,
+    "f": false,
+    "single": true
+  },
+  "lock": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "lte-access-optimization": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "lte-call-drop-optimization": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "lte-capa-citye-valuation-and-optimization": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "lte-downlink-rate-optimization": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "lte-handover-optimization": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "lte-uplink-interference-detection": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "lte-uplink-rate-optimization": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "mail": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "maintain-data-now": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "manage-tasks": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "manual-drawin-go-froad": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "map": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "map-location": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "master-servercell": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "max": {
+    "l": false,
+    "f": false,
+    "single": true
+  },
+  "median": {
+    "l": false,
+    "f": false,
+    "single": true
+  },
+  "menu": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "message": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "migration-of-element": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "min": {
+    "l": false,
+    "f": false,
+    "single": true
+  },
+  "minor": {
+    "l": false,
+    "f": false,
+    "single": true
+  },
+  "minus": {
+    "l": false,
+    "f": false,
+    "single": true
+  },
+  "mix-chart": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "mobileterminal": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "more": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "more1": {
+    "l": false,
+    "f": false,
+    "single": true
+  },
+  "move": {
+    "l": true,
+    "f": false,
+    "single": false
+  },
+  "multilayer-export": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "nav-api": {
+    "l": true,
+    "f": false,
+    "single": false
+  },
+  "nav-fold": {
+    "l": false,
+    "f": false,
+    "single": true
+  },
+  "nav-unfold": {
+    "l": false,
+    "f": false,
+    "single": true
+  },
+  "neighbor": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "neighbor-b": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "neighbor-f": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "neighboring-cell-optimization": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "new-task": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "no-user-permission": {
+    "l": true,
+    "f": false,
+    "single": false
+  },
+  "nr-coverage-evaluation": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "object": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "object-group-management": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "obtain-the-tracking-server-information": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "off": {
+    "l": true,
+    "f": false,
+    "single": false
+  },
+  "ok": {
+    "l": true,
+    "f": true,
+    "single": true
+  },
+  "on": {
+    "l": true,
+    "f": false,
+    "single": false
+  },
+  "one-screen": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "operations-synchronization": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "other-data": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "outdoors-interferes-with-indoors": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "overlay-sector-analysis": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "parameter-browsing-and-query": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "parameter-change-history": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "paste": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "pause": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "percent": {
+    "l": false,
+    "f": false,
+    "single": true
+  },
+  "performance-alarm-and-analysis": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "performance-management": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "performance-optimization": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "performance-report": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "permission": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "pie-graph": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "pivot": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "planet-map": {
+    "l": true,
+    "f": false,
+    "single": false
+  },
+  "planetmap": {
+    "l": false,
+    "f": true,
+    "single": false
+  },
+  "planning": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "plus": {
+    "l": false,
+    "f": false,
+    "single": true
+  },
+  "pname": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "poi": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "pollutioncell": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "polygon-line": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "port-definition": {
+    "l": true,
+    "f": false,
+    "single": false
+  },
+  "portdefinition": {
+    "l": false,
+    "f": true,
+    "single": false
+  },
+  "possible": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "private-network-community": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "property": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "property-setting": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "public-participation-status-statistics": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "publish": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "px-polygon-setting": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "query-data-volume": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "quick-simulation": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "quit": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "radial-bar-chart": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "ranging": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "rank-chart": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "redio-selected": {
+    "l": false,
+    "f": false,
+    "single": true
+  },
+  "redio-unselected": {
+    "l": false,
+    "f": false,
+    "single": true
+  },
+  "redo": {
+    "l": false,
+    "f": false,
+    "single": true
+  },
+  "refresh": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "refresh-left": {
+    "l": false,
+    "f": false,
+    "single": true
+  },
+  "refresh-right": {
+    "l": false,
+    "f": false,
+    "single": true
+  },
+  "related-cell": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "related-words-statistics-indexes": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "reset": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "restore-screen": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "result": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "result-kpi": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "result-l1": {
+    "l": false,
+    "f": false,
+    "single": true
+  },
+  "right": {
+    "l": false,
+    "f": false,
+    "single": true
+  },
+  "ring-chart": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "road": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "rotate": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "ruler": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "run": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "sau-settings": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "save": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "save-as": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "scale-to-original": {
+    "l": false,
+    "f": false,
+    "single": true
+  },
+  "scatter-chart": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "screen": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "screens": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "sdr": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "search": {
+    "l": true,
+    "f": true,
+    "single": true
+  },
+  "search1": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "secondary-statistics": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "select-the-network-element": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "seleted-range": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "serious-warning": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "service-cell": {
+    "l": false,
+    "f": true,
+    "single": false
+  },
+  "servicecell": {
+    "l": true,
+    "f": false,
+    "single": false
+  },
+  "seting": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "setting-performance-alarms": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "setting-vip": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "sfn-cellline": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "share": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "simulation5g": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "single-cell-connection": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "single-cell-detail": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "single-cell-presentation": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "singling": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "site-total": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "siteindoor": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "siteoutdoor": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "skin-peeler": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "slow": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "sort": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "stacked-chart": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "stacked-chart-full": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "standard-deviation": {
+    "l": false,
+    "f": false,
+    "single": true
+  },
+  "start": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "start-for-ecast-creating-feature-library": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "statistics": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "stop": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "stretch": {
+    "l": false,
+    "f": false,
+    "single": true
+  },
+  "subscribed": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "success": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "summation1": {
+    "l": false,
+    "f": false,
+    "single": true
+  },
+  "switch-target-cell": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "table": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "table-more": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "task-5g": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "task-list": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "tatp-segmentation-analysis": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "template": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "text": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "thumbs-up": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "time-grain": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "time-line-green": {
+    "l": false,
+    "f": false,
+    "single": true
+  },
+  "timer": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "tip": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "tips": {
+    "l": false,
+    "f": false,
+    "single": true
+  },
+  "top-n-cell-analysis": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "top-n-cell-settings": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "topic-6d": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "topic-base": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "topic-cellrate": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "topic-complaint": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "topic-coverage": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "topic-experience": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "topic-mimo": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "topic-network-planning": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "topic-plan": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "topic-quality": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "topic-scale": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "topic-service": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "topic-sum": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "topic-total": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "topic-traffic": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "topic-user": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "topic-voice": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "topicapacity": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "toview-the-chart": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "toview-the-kpl-details": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "track": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "tree": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "triple-screen": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "turn": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "ul-coverage-evaluation": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "umts-capacity-evaluation": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "undo": {
+    "l": false,
+    "f": false,
+    "single": true
+  },
+  "union": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "unlock": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "unshare": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "unsorted": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "up": {
+    "l": false,
+    "f": false,
+    "single": true
+  },
+  "upload": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "upon-semicircle": {
+    "l": false,
+    "f": false,
+    "single": true
+  },
+  "urgent": {
+    "l": false,
+    "f": false,
+    "single": true
+  },
+  "user-1": {
+    "l": false,
+    "f": false,
+    "single": true
+  },
+  "user-permission": {
+    "l": true,
+    "f": false,
+    "single": false
+  },
+  "user1": {
+    "l": true,
+    "f": false,
+    "single": false
+  },
+  "user2": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "variance": {
+    "l": false,
+    "f": false,
+    "single": true
+  },
+  "view": {
+    "l": false,
+    "f": false,
+    "single": true
+  },
+  "view-alarms": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "view-logs": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "view-proble-mareas": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "view-task": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "view-task-result": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "vip-event": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "vip-scenario": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "visible": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "waiting": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "warning": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "warning-circle": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "zoom-in": {
+    "l": true,
+    "f": true,
+    "single": false
+  },
+  "zoom-out": {
+    "l": true,
+    "f": true,
+    "single": false
+  }
+}

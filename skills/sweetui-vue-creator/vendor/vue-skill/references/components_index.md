@@ -8,7 +8,7 @@
 - 命名机械对应：模板标签 kebab-case `sweet-big-table` ↔ import 名 PascalCase `SweetBigTable`；
   子组件（`sweet-table-column`/`sweet-form-item`/`sweet-option` 等）随宿主组件一起 import。
 - ★ = 高频组件（`vue-skill/components/` 下有可直接抄的示例 SFC）。
-- 组件全集 137 个（白名单 `scripts/verify/whitelists/sweetui-components.json`，build 校验）。
+- 组件全集 140 个（探针 137 + gen-whitelists 补 SweetCollection/CollectionItem/Overlay）（白名单 `scripts/verify/whitelists/sweetui-components.json`，build 校验）。
 
 ## 组件选择
 
@@ -157,6 +157,8 @@ props 合并自 Select + Tree + VirtualTree，关键内建项：
 | sweet-card-pagination / sweet-min-pagination | 卡片分页 / 迷你分页 |
 | sweet-side-panel / sweet-bottom-panel / sweet-panel | 侧滑 / 底部 / 面板容器 |
 | sweet-validate | 校验 |
+| sweet-overlay | 遮罩层 |
+| sweet-collection / sweet-collection-item | 集合/项容器（gen-whitelists 实跑发现，探针未列） |
 | sweet-icon | 字体图标（仅 iconClass/size/color，页面不直接用——统一 icon-plus，code-rules 2.5.1） |
 | sweet-config-provider | 全局配置（:locale；**不设 namespace**，SKILL 硬约束 3） |
 

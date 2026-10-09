@@ -286,13 +286,13 @@ build 的编译/token 错误是你自己的代码问题，修完重跑，不转�
 - **样式一律 `<style scoped>`**；禁止 `:root` / `html` / `body` / `body[theme]` 选择器（build 会拒）。
 - **所有颜色走 token**：`var(--color-brand)` 这类规范名；页面局部派生值用 `--page-*` 前缀定义。
   页面里不写 hex 色值（build 检查）、不引用 `--el-*` / `--swt-*`（那是 bridge 的映射输出，页面只认 design-language 名）。
-- **只用真实 SweetUI 组件**，模板标签一律 **kebab-case**（`<sweet-table>`，白名单 137 个），
+- **只用真实 SweetUI 组件**，模板标签一律 **kebab-case**（`<sweet-table>`，白名单 140 个），
   根组件 `<sweet-config-provider :locale="...">` **不设 namespace**（默认 "el"——设 "sweet"
   会改类名前缀且无对应 CSS 兜底）。模板里用到的每个组件、vue 的 API（`ref`/`reactive`/…）
   **每个文件各自 import**——漏 import 编译能过但运行时白屏。编译宏（`defineProps` 等）不用 import。
 - 图标一律 `<icon-plus name="X" />`（包装组件在 `src/components/icon-plus.vue`，已随骨架就位）：
   - 命中公司 icon+（fetch-icons 已下载 SVG）→ 渲染公司双主题图标；
-  - 未命中 → 自动回落 SweetUI 自带字体图标 `sweetui-icon-{X}-l`（SW 集共 720 个）；
+  - 未命中 → 自动回落 SweetUI 自带字体图标 `sweetui-icon-{X}-l`（SW 集共 404 个语义名（715 个字体类））；
   - **不要直接写 `<sweet-icon>`**（它没有 name prop，只有 iconClass/size/color），也不要
     `import` 图标名——那是 EP 的机制，SweetUI 侧不存在。
 - 间距/圆角/字号/投影等同样用 token：`var(--space-size-16)`、`var(--radius-size-normal)`、
@@ -302,7 +302,7 @@ build 的编译/token 错误是你自己的代码问题，修完重跑，不转�
   字体禁用 vw/vh 视口缩放；多卡片用响应式栅格（细则见 code-rules 第十二节）。
   build 会对 `zoom` 与 font-size vw/vh 出 WARN。
 - token 速查与协议见 `references/design-language.md`；组件/导出/图标白名单见
-  `scripts/verify/whitelists/*.json`（SweetUI 5.6.5：137 组件）。
+  `scripts/verify/whitelists/*.json`（SweetUI 5.6.5：140 组件）。
 
 #### UMD 运行时已知坑（预览跑 UMD、真实工程跑构建工具，行为有差异——按下面写法写两边都稳）
 

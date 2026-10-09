@@ -44,21 +44,21 @@
 
 ## 2. 白名单与图标全集提取
 
-- [ ] components/exports 白名单已按探针 1.1 填 137 项，跑一遍校验：
+- [ ] components/exports 白名单已按内网实跑填 140 项，跑一遍校验：
       `node scripts/gen-whitelists.mjs`（从已装包 `dist/sweet-ui-base.umd.cjs` require 提取，
       `/^Sweet[A-Z]/` 过滤）——输出与 `scripts/verify/whitelists/sweetui-*.json` 比对，
       不一致以实跑提取为准更新；
 - [ ] 图标白名单 `sweetui-icons.json`（当前空占位）：从 `theme-chalk/index.css` 提取，
       `grep -oE '\.sweetui-icon-[a-z0-9-]+-(l|f)\b'` 取语义名去 `-l/-f` 后缀去重
-      （探针：全集 720 个；提取口径见 `scripts/verify/whitelists/README.md`）；
+      （内网实跑：715 CSS 类 → 404 语义名；提取口径见 `scripts/verify/whitelists/README.md`）；
 - [ ] 抽查 10 个图标名：`<icon-plus name="X">` 未命中公司库时回落类名
       `sweetui-icon-X-l` 在浏览器里真实渲染（sweet-icon 字体生效）。
 
 ## 3. bridge 双体系槽位接线（核验程序全文见 `references/sweetui-bridge.md` §3）
 
 - [ ] 提取全表：
-      `grep -ohE '\-\-el-[a-z0-9-]+' $PKG/theme-chalk/*.css | sort -u > el-slots.txt`（预期 359）
-      `grep -ohE '\-\-swt-[a-z0-9-]+' $PKG/theme-chalk/*.css | sort -u > swt-slots.txt`（预期 667）；
+      `grep -ohE '\-\-el-[a-z0-9-]+' $PKG/theme-chalk/*.css | sort -u > el-slots.txt`（预期 358）
+      `grep -ohE '\-\-swt-[a-z0-9-]+' $PKG/theme-chalk/*.css | sort -u > swt-slots.txt`（预期 646）；
 - [ ] 按 sweetui-bridge.md §3.2 语义对齐表，把 `--swt-*` 映射逐行写进
       `scripts/preview/src/assets/themes/bridge.less` 占位段（`--swt-*` 接线区结束标记处），
       **以 grep 提取结果为唯一事实**（材料 `--swt-color-brand-normal` 命名不真实；

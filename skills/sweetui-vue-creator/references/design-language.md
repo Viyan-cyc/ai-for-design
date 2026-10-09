@@ -40,7 +40,7 @@ token 全量定义在皮肤文件 `src/assets/themes/default.less`（375 个自�
 
 ## 2. SweetUI 桥接（bridge.less，FIXED 不改）
 
-皮肤 token 经 `bridge.less` 映射到双体系变量（`--el-*` 359 槽位 + `--swt-*` 667 槽位），
+皮肤 token 经 `bridge.less` 映射到双体系变量（`--el-*` 358 槽位 + `--swt-*` 646 槽位，以实跑为准），
 SweetUI 组件自动跟随皮肤。关键对位（生成页面时不用写任何 `--el-*`/`--swt-*`）：
 
 | `--el-*` 变量组（EP 同名直引） | 皮肤 token | 说明 |
@@ -71,8 +71,8 @@ SweetUI 组件自动跟随皮肤。关键对位（生成页面时不用写任何
 
 ### 3.2 组件使用
 
-- 只用真实 SweetUI 组件（137 个，白名单校验）；不要用外观近似的原生元素替代组件。
-- 5.6.5 实际导出的组件/属性见 `scripts/verify/whitelists/*.json`（组件 137 / 导出 137）。
+- 只用真实 SweetUI 组件（140 个，白名单校验）；不要用外观近似的原生元素替代组件。
+- 5.6.5 实际导出的组件/属性见 `scripts/verify/whitelists/*.json`（组件 140 / 导出 500）。
 - 组件状态（默认/悬停/按下/聚焦/禁用/加载）由 SweetUI 类名 + 桥接 token 自动获得，
   页面不重绘状态色。
 - 图标统一 `<icon-plus name="X" />` 包装组件；不 import 图标、不直写 `<sweet-icon>`。

@@ -1,0 +1,161 @@
+/**
+ * editor.css — 编辑器设计令牌与共享原语（Spline 风格：中性深灰 + 悬浮面板）
+ *
+ * 作用域 .edit-scope（EditApp 根节点），不污染二开态页面样式。
+ */
+
+.edit-scope {
+  --ed-panel: rgba(23, 27, 32, 0.94);
+  --ed-input: #2a313a;
+  --ed-input-hover: #343d48;
+  --ed-border: rgba(255, 255, 255, 0.09);
+  --ed-text: #e7eaee;
+  --ed-dim: #97a1ac;
+  --ed-accent: #3d7eff;
+  --ed-accent-soft: rgba(61, 126, 255, 0.18);
+  --ed-danger: #e5484d;
+  --ed-shadow: 0 8px 28px rgba(0, 0, 0, 0.4);
+  --ed-radius: 10px;
+  --ed-radius-s: 6px;
+}
+
+/* ---- 悬浮面板（左树/右属性） ---- */
+
+.ed-panel {
+  position: absolute;
+  top: 64px;
+  bottom: 14px;
+  width: 248px;
+  display: flex;
+  flex-direction: column;
+  background: var(--ed-panel);
+  border: 1px solid var(--ed-border);
+  border-radius: var(--ed-radius);
+  box-shadow: var(--ed-shadow);
+  backdrop-filter: blur(12px);
+  overflow: hidden;
+  pointer-events: auto;
+}
+
+.ed-panel--left {
+  left: 14px;
+}
+
+.ed-panel--right {
+  right: 14px;
+  width: 292px;
+}
+
+/* ---- 输入原语 ---- */
+
+.edit-scope input[type='number'],
+.edit-scope input[type='text'],
+.edit-scope select {
+  width: 100%;
+  box-sizing: border-box;
+  background: var(--ed-input);
+  border: 1px solid transparent;
+  border-radius: var(--ed-radius-s);
+  color: var(--ed-text);
+  padding: 4px 7px;
+  font-size: 12px;
+  outline: none;
+}
+
+.edit-scope input:focus,
+.edit-scope select:focus {
+  border-color: var(--ed-accent);
+}
+
+.edit-scope input[type='color'] {
+  width: 40px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid var(--ed-border);
+  border-radius: var(--ed-radius-s);
+  background: var(--ed-input);
+  cursor: pointer;
+}
+
+.edit-scope input[type='checkbox'] {
+  accent-color: var(--ed-accent);
+}
+
+/* ---- 按钮原语 ---- */
+
+.ed-btn {
+  background: var(--ed-input);
+  color: var(--ed-text);
+  border: 0;
+  border-radius: var(--ed-radius-s);
+  padding: 4px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.ed-btn:hover:not(:disabled) {
+  background: var(--ed-input-hover);
+}
+
+.ed-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.ed-btn--primary {
+  background: var(--ed-accent);
+  color: #fff;
+}
+
+.ed-btn--primary:hover:not(:disabled) {
+  background: #558fff;
+}
+
+.ed-btn--active {
+  background: var(--ed-accent-soft);
+  color: var(--ed-accent);
+}
+
+.ed-btn--danger:hover:not(:disabled) {
+  background: var(--ed-danger);
+  color: #fff;
+}
+
+/* ---- 表单行 ---- */
+
+.ed-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.ed-row > label:first-child,
+.ed-label {
+  color: var(--ed-dim);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+/* ---- 分区 ---- */
+
+.ed-sec {
+  padding: 10px 12px;
+  border-top: 1px solid var(--ed-border);
+}
+
+.ed-sec:first-child {
+  border-top: 0;
+}
+
+.ed-sec__t {
+  margin: 0 0 8px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ed-dim);
+  letter-spacing: 0.04em;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}

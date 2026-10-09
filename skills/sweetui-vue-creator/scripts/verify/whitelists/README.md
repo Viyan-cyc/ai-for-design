@@ -3,7 +3,7 @@
 当前为空数组占位。**真实内容由内网生成**：
 
 ```bash
-# 从 SweetUI 包 theme-chalk 字体图标类名提取（720 个）：
+# 从 SweetUI 包 theme-chalk 字体图标类名提取（715 个 CSS 类 → 404 个语义名）：
 grep -oE '\.sweetui-icon-[a-z0-9-]+' <解包路径>/@hw-seq/sweet-ui-base/theme-chalk/*.css \
   | sed 's/.*://' | sort -u | sed 's/^\.//' > icons-raw.txt
 
