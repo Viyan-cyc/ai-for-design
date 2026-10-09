@@ -9,6 +9,8 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import type { ModelSpecReport, Vec3 } from '../types';
+import type { StateVisual } from '../materials';
+import { applyVisualToMaterial, loadTexture } from '../materials';
 
 /** 资产规格默认上限（与 skill 的 model-spec.md 对齐） */
 export const MODEL_SPEC_LIMITS = {
@@ -24,6 +26,9 @@ interface CacheEntry {
   root: THREE.Object3D;
   report: ModelSpecReport;
   promise: Promise<void>;
+
+  /** 多状态资产的贴图集（manifest.states 声明：key → 贴图 URL；applyState 消费） */
+  textures?: Map<string, string>;
 }
 
 const countStats = (root: THREE.Object3D): { triangles: number; nodeCount: number } => {
@@ -108,6 +113,71 @@ export class AssetEngine {
   /** 已缓存资产的规格报告（无需重新解析） */
   getReport(assetId: string): ModelSpecReport | null {
     return this.cache.get(assetId)?.report ?? null;
+  }
+
+  /**
+   * 登记多状态资产的贴图集（manifest.states：状态 key → 视觉规格；贴图 key → URL）。
+   * 入库管线（批次 2）/ init 脚手架按资产 manifest 调用；无登记 = 常规资产开箱即用。
+   */
+  registerAssetStates(assetId: string, states: { textures: Record<string, string>; visualByState: Record<string, StateVisual> }): void {
+    const entry = this.cache.get(assetId);
+    if (!entry) {
+      console.warn(`[AssetEngine] registerAssetStates: 资产未加载 ${assetId}`);
+      return;
+    }
+    entry.textures = new Map(Object.entries(states.textures));
+    this.stateVisuals.set(assetId, states.visualByState);
+  }
+
+  /** 资产 id → 状态视觉表（applyState 查表用） */
+  private stateVisuals = new Map<string, Record<string, StateVisual>>();
+
+  /**
+   * applyState（v3 §4.9.4）：按状态换视觉。
+   * - map 键：查登记的贴图集换 map（材质克隆后换引用）
+   * - model 键：几何级变体兜底（swapper 由 handler 提供）
+   * - 其余键：材质参数
+   * 资产未登记贴图集时 map 键降级忽略（warn 一次）。
+   */
+  async applyState(
+    root: THREE.Object3D,
+    assetId: string,
+    stateName: string,
+    opts: { modelSwapper?: (modelKey: string) => void } = {},
+  ): Promise<void> {
+    const visual = this.stateVisuals.get(assetId)?.[stateName];
+    if (!visual) {
+      if (stateName !== 'default') {
+        console.warn(`[AssetEngine] 未登记的状态: ${assetId}.${stateName}`);
+      }
+      return;
+    }
+    if (visual.model && opts.modelSwapper) {
+      opts.modelSwapper(visual.model);
+      return;
+    }
+    const entry = this.cache.get(assetId);
+    const texUrl = visual.map && entry?.textures?.get(visual.map);
+    const pending: Array<Promise<void>> = [];
+    root.traverse((child) => {
+      const mesh = child as THREE.Mesh;
+      if (!mesh.isMesh) {
+        return;
+      }
+      const base = Array.isArray(mesh.material) ? mesh.material[0] : mesh.material;
+      const std = (base ?? new THREE.MeshStandardMaterial()).clone() as THREE.MeshStandardMaterial;
+      if (texUrl) {
+        pending.push(loadTexture(texUrl).then((tex) => {
+          std.map = tex;
+          std.needsUpdate = true;
+        }));
+      } else if (visual.map) {
+        console.warn(`[AssetEngine] 贴图集缺 key: ${assetId}.${visual.map}（状态 ${stateName}）`);
+      }
+      applyVisualToMaterial(std, visual);
+      mesh.material = std;
+    });
+    await Promise.all(pending);
   }
 
   private buildReport(assetId: string, root: THREE.Object3D): ModelSpecReport {

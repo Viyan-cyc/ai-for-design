@@ -45,18 +45,21 @@ const duplicateSelected = (): void => {
   if (!anchorId) {
     return;
   }
-  const def = props.bridge.handle.serialize().objects.find((o) => o.id === anchorId);
-  if (!def) {
+  const sceneEngine = props.bridge.handle.internals.sceneEngine;
+  const node = sceneEngine.getNode(anchorId);
+  const type = sceneEngine.getNodeType(anchorId);
+  if (!node || !type) {
     return;
   }
   counter += 1;
-  const newId = `${def.id}_copy_${String(counter).padStart(3, '0')}`;
+  const newId = `${node.id}_copy_${String(counter).padStart(3, '0')}`;
+  const basePos = node.position ?? [0, 0, 0];
   props.bridge.commit('复制', () => {
     props.bridge.handle.update({
-      upsert: [{
-        ...def,
+      [type]: [{
+        ...node,
         id: newId,
-        position: [def.position[0] + 1, def.position[1], def.position[2]],
+        position: [basePos[0] + 1, basePos[1], basePos[2]],
       }],
     });
   });
@@ -65,12 +68,11 @@ const duplicateSelected = (): void => {
 const addPrimitive = (kind: string): void => {
   counter += 1;
   const id = `${kind}_${String(counter).padStart(3, '0')}`;
+  // v3：图元种类 = 分组 key（type 即 key，节点无 type 字段）
   props.bridge.commit(`添加${kind}`, () => {
     props.bridge.handle.update({
-      upsert: [{
+      [kind]: [{
         id,
-        type: 'primitive',
-        primitive: kind as 'Box' | 'Sphere' | 'Cylinder' | 'Plane' | 'Cone' | 'Torus',
         position: [0, 0.5, 0],
         rotation: [0, 0, 0],
         scale: 1,

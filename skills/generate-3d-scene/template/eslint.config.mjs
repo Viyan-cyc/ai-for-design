@@ -285,6 +285,17 @@ export default defineConfig([
     },
   },
 
+  // scripts/ CLI 工具（冒烟/模型生成）：console 是输出接口，魔数是二进制协议常量
+  {
+    files: ['scripts/**/*.mjs'],
+    rules: {
+      'no-console': 'off',
+      'no-magic-numbers': 'off',
+      'line-comment-position': 'off',
+      'id-length': 'off',
+    },
+  },
+
   // 配置文件覆盖
   {
     files: ['*.config.js', '*.config.ts', '*.config.mjs', '.*rc.js'],

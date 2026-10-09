@@ -161,9 +161,14 @@ export class LayoutGizmo {
       obj.scale.copy(start.scale);
       return;
     }
+    // v3：按所属分组回写（type = 分组 key；经 update 幂等 upsert 进撤销栈）
+    const type = this.bridge.handle.internals.sceneEngine.getNodeType(id);
+    if (!type) {
+      return;
+    }
     this.bridge.commit('变换', () => {
       this.bridge.handle.update({
-        patch: [{
+        [type]: [{
           id,
           position: [obj.position.x, obj.position.y, obj.position.z],
           rotation: [obj.rotation.x, obj.rotation.y, obj.rotation.z],

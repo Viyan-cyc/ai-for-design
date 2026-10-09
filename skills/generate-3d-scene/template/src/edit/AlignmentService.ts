@@ -10,6 +10,7 @@
  */
 import * as THREE from 'three';
 import type { Bridge } from './Bridge';
+import type { TreeSceneFragment } from '@/scene-core/types';
 
 export type AlignAxis = 'x' | 'y' | 'z';
 export type AlignMode = 'origin' | 'center' | 'min' | 'max';
@@ -111,12 +112,27 @@ export const computeDistribute = (
   });
 };
 
-/** 应用 patch（bridge.commit 内调用；label 进撤销栈） */
+/** 应用 patch（bridge.commit 内调用；label 进撤销栈）。v3：按所属分组聚合 position 片段 */
 export const applyPatches = (bridge: Bridge, patches: PositionPatch[]): void => {
   if (patches.length === 0) {
     return;
   }
+  const sceneEngine = bridge.handle.internals.sceneEngine;
+  const byType = new Map<string, PositionPatch[]>();
+  for (const p of patches) {
+    const type = sceneEngine.getNodeType(p.id);
+    if (!type) {
+      continue;
+    }
+    const list = byType.get(type) ?? [];
+    list.push(p);
+    byType.set(type, list);
+  }
   bridge.commit('对齐/分布', () => {
-    bridge.handle.update({ patch: patches.map((p) => ({ id: p.id, position: p.position })) });
+    const frag: TreeSceneFragment = {};
+    byType.forEach((nodes, type) => {
+      frag[type] = nodes;
+    });
+    bridge.handle.update(frag);
   });
 };

@@ -8,14 +8,16 @@
  *   —— commit 前拍快照（撤销栈），再 apply 到 handle
  *
  * 其余 edit 文件不直接 import engine 内部，只经 Bridge 与 handle 交互（铁律 2）。
+ * v3：快照 = serialize() 原样（SceneData v3 五用途一格式，undo 快照零转换）；
+ *     重建 = 喂整份数据给 handle.update()（幂等 upsert）；卡片级联删除由引擎 removeObject 负责。
  */
 import * as THREE from 'three';
 import type { SceneHandle } from '@/scene-core/createScene';
-import type { SceneDataJSON } from '@/scene-core/types';
+import type { SceneData } from '@/scene-core/types';
 
-/** 编辑器快照（撤销栈元素：全量 serialize，简单可靠） */
+/** 编辑器快照（撤销栈元素：全量 serialize，v3 零转换） */
 interface Snapshot {
-  data: SceneDataJSON;
+  data: SceneData;
   label: string;
 }
 
@@ -116,8 +118,8 @@ export class Bridge {
   // ---- 快照与变更 ----
 
   private takeSnapshot(label: string): void {
-    // 深拷贝：serialize 返回的 objects 是引擎内部 def 引用，后续 patch 会原地改 def，
-    // 不 clone 撤销栈里存的是"当前值"，undo 失效
+    // v3 serialize 返回全新对象图（分组数组逐节点浅拷贝），但 undo 仍需深拷贝：
+    // update 路径会原地改引擎 entries 里的 node 对象，快照必须与引擎态隔离
     this.undoStack.push({ data: structuredClone(this.handle.serialize()), label });
     if (this.undoStack.length > 50) {
       this.undoStack.shift();
@@ -173,37 +175,34 @@ export class Bridge {
     this.rebuild(snap.data);
   }
 
-  /** 从快照重建场景（全量：物体 + 环境/灯光/相机/控制器/渲染器/卡片一起恢复） */
-  private rebuild(data: SceneDataJSON): void {
-    const alive = new Set(data.objects.map((o) => o.id));
-    this.selection = this.selection.filter((id) => alive.has(id));
-    // 全量重建：先删全部再建（数据量级 ≤千级，全量重建成本可接受，正确性优先）
-    const current = this.handle.internals.sceneEngine.getAllIds();
-    if (current.length > 0) {
-      this.handle.update({ remove: current });
+  /** 从快照重建场景（v3：整份数据喂 update，幂等 upsert + 引擎级联处理增删） */
+  private rebuild(data: SceneData): void {
+    const alive = new Set<string>();
+    for (const [key, val] of Object.entries(data)) {
+      if (!['version', 'meta', 'scene', 'camera', 'lights', 'controls', 'renderer', 'remove', '__visuals'].includes(key)
+        && Array.isArray(val)) {
+        (val as Array<{ id: string }>).forEach((n) => alive.add(n.id));
+      }
     }
-    this.handle.update({ upsert: data.objects });
-    this.handle.update({
-      scene: data.scene,
-      lights: data.lights,
-      camera: data.camera,
-      controls: data.controls,
-      renderer: data.renderer,
-      cards: data.cards,
-    });
+    this.selection = this.selection.filter((id) => alive.has(id));
+    // 全量重建：remove 全部现存 → 整份快照喂回（v3 五用途一格式，无转换）
+    const current = this.handle.internals.sceneEngine.getAllIds();
+    this.handle.update({ remove: current.length > 0 ? current : undefined });
+    const { remove: _drop, ...frag } = data;
+    void _drop;
+    this.handle.update(frag);
     this.emit();
   }
 
-  // ---- 删除（含卡片级联） ----
+  // ---- 删除（v3：引擎级联子树 + 内联卡片；快照经 undo 恢复） ----
 
-  /** 删除物体：attachTo 指向被删物体的卡片一起删（undo 时经快照恢复） */
+  /** 删除物体（引擎 removeObject 级联：子节点与内联卡片一起消失） */
   removeObjects(ids: string[]): void {
     if (ids.length === 0) {
       return;
     }
     this.commit('删除', () => {
-      const cards = this.handle.serialize().cards.filter((c) => !ids.includes(c.attachTo));
-      this.handle.update({ remove: ids, cards });
+      this.handle.update({ remove: ids });
     });
     this.clearSelection();
   }

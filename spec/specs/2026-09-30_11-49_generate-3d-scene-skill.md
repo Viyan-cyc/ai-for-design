@@ -114,7 +114,10 @@
 - ~~用户澄清 Q1-Q5~~（2026-09-30 全部裁决，见 §0）
 - ~~Q5 组件库组织方案~~ → 已裁决 Option C，经 Plan Approved 2026-09-30 一并确认（§3 Decision 同步）
 - ~~进入 Plan~~ → Plan Approved 2026-09-30
-- **当前（2026-10-08）**：Spec 评审决议已全部落定（§4.8），待执行"数据结构 v3 重构"批次（见 §4.9）后继续批次 2
+- ~~组件库接入机制终裁~~（2026-10-09，§3 Decision 修订：tarball + file: 依赖 + 全 md 生成链，见 §3 Decision 2026-10-09 增补）
+- ~~批次 C~~（2026-10-09 全部完成，含源仓构建链存量修复，见 §4.7 批次 C 执行记录）
+- ~~批次 R~~（2026-10-09 全部完成，R.1–R.9 四道门禁全绿，见 §4.7 批次 R 执行记录与 Plan-Execution Diff #16）
+- **当前（2026-10-09）**：执行批次 2（资产管线）→ **批次 M（材质编辑器+材质库，§4.10 契约，2026-10-09 立项）** → 批次 3（构建门禁+双模式交付）。**批次 T（场景树 Spline 化，§4.11 契约，用户已评审批准）已插队**：R 收口（用户侧 v3 代码 review 进行中）→ T → 2 → M → 3
 
 ## 3. Innovate (Optional: Options & Decision)
 - Skipped: false（Q5 组件库组织是方案级分叉，按用户要求给出方案对比）
@@ -135,6 +138,25 @@
 - Selected: **C**（经 Plan Approved 2026-09-30 一并确认）
 - Why: 组件的本质是"可 import 的代码"而非"待加载的模型"——LLM 用组件的正确姿势是"知道有什么 → 读源码学用法 → import 使用"，这是 vendor 模式而非检索模式；但 14+ 组件全量塞上下文不经济，目录清单+按需读源码是业界（含 generate-ux-prototype 的 vendor 路由）验证过的平衡点。模型库则保持向量检索（二进制模型无法常驻上下文，检索是唯一入口）
 - User Decision: Accepted（2026-09-30 Plan Approved 即确认；2026-10-08 评审复核时锚定）
+
+### Decision 增补：组件库接入机制终裁（2026-10-09，用户裁决）
+
+> 原因：skill 导出给所有用户——别人机器上没有 3d-components 文件夹，"外部路径引用"不成立。且 3d-components 是内网团队私有资产：最终形态是"看文档 → import → 不可见源码、不可改"，持续更新。
+
+- **形态演进三段**（临时方案必须是最终方案的子集，杜绝返工）：
+  1. **现在（验证期）**：`npm pack` 出标准 tgz → skill `vendor/` 携带 → 产物工程 `package.json` 写 `"@a3d/a3d-components": "file:./vendor/a3d-components-<ver>.tgz"`。import 路径（`@a3d/a3d-components/core` 等）与未来真包完全一致，发 npm 后产物工程只改版本号一行。
+  2. **未来（发包后）**：产物工程改走内网 registry 版本号依赖，skill 不再携带 tgz。
+  3. **已否决**：~~vendor src 进 skill~~（私有源码随 skill 扩散）、~~直接拷 dist 进产物工程~~（import 变相对路径，发包时全工程改写）、~~JSON catalog~~（见下）。
+- **LLM 文档链 = 两级 md，源码零读取**（token 三级阶梯）：
+  - Tier-1 常驻：`references/component-catalog.md`——每组件一行（name + 一句话 + importPath），~1.5K tokens，LLM 每次可读
+  - Tier-2 按需：`references/component-docs/<Name>.md`——constructor + options 表 + 最小示例，LLM 决定用某组件时才读
+  - 逃生口：`.d.ts` 随 tgz 进产物工程 node_modules（类型契约必需，vue-tsc/IDE 依赖），LLM 仅在 md 歧义时才读
+- **文档单一真相源 = 组件源码 TSDoc**：summary/options/@default/@example 全部写进源码注释，`typedoc --json` 提取 → 脚本格式化为上述两级 md。手维护文档必漂移（现状 HTML→JSON 链已是二次转手实证），源码生成永不漂移。全 md 不用 JSON（消费者只有 LLM+脚本，md 人可直接审）。
+- **作者协议**（写进 3d-components 源仓 CONTRIBUTING）：新组件 ① 类头部 TSDoc（summary + @example）② options 每字段 TSDoc + @default ③ barrel 导出 ④ 跑 sync-components.mjs。机器门禁：sync 脚本发现"已导出但 TSDoc 缺失"→ 非零退出。
+- **组件持续更新机制**：3d-components 仓库保持开发主线；组件改完 → 源仓跑 `node <skill>/scripts/sync-components.mjs`（pack → 拷 tgz + 生成两级 md → 版本戳写 catalog）→ skill 内组件资产即新。交付工程各自钉 tgz 版本，升级显式。
+- **UXAI 仓影响边界**：`docs/components.json` 现有另一消费者 UXAI `sync-catalog.mjs`——不迁移不动它；新链独立产出 md，components.json 去留后续单独定，不阻塞本任务。
+- **源仓顺带修正（P1，两行）**：peerDeps `three: ">=0.150.0"` 收窄为 `">=0.183.0 <0.190.0"`（0.x minor 即破坏）；`@types/three` 对齐 `^0.185.0`。license/publishConfig 用户明确不动。
+- User Decision: Accepted（2026-10-09，用户裁决"前期源码可见不必须→不做；深查 d.ts 非必经→保留逃生口；全 md；跨仓库执行授权模型读写"）
 
 ## 4. Plan (Contract)
 
@@ -185,6 +207,8 @@ generate-3d-scene/
 │       ├── smoke-visual.mjs          # 视觉冒烟（多模态档）：渲染帧截图产出给 LLM 看图判断
 │       └── perf-fps.mjs              # 性能门禁：CDP 实测帧率 ≥40fps（1 分钟采样，p95 判定）
 ├── template/                         # 母版工程（见 4.3，结构完整可独立 build）
+├── vendor/
+│   └── a3d-components-<ver>.tgz     # 3d-components npm pack 产物（sync-components.mjs 同步，最终发包后移除）
 └── assets/
     ├── models/                       # 模型二进制（glb/gltf）
     ├── thumbnails/                   # 缩略图
@@ -192,10 +216,10 @@ generate-3d-scene/
     └── search-index.json             # 向量索引（build-search-index.mjs 产物，随资产更新重跑）
 ```
 
-**3d-components 组件库的接入**（不复制进 skill，引用路径 + 生成清单）：
-- `scripts/gen-component-catalog.mjs`（执行期一次性工具，放 skill 外或执行后清理）：读 `D:\cyc\project\octo\test\3d-components\src` + `docs/components.json` → 生成 `references/component-catalog.md`（常驻清单：名称/一句话/ importPath/关键 props 表）+ 每组件一段源码摘录路径索引
-- LLM 用法：先读 catalog 判断"有没有能用的" → 有则按 importPath 读源码学用法 → import 进 handler
-- 组件库物理位置不动（用户沉淀资产，保持独立演进）；skill 只依赖清单文件，清单过期重跑生成脚本
+**3d-components 组件库的接入**（2026-10-09 终裁，详见 §3 Decision 增补；不 vendor src、不外部路径引用）：
+- `scripts/sync-components.mjs`：**在 3d-components 源仓侧执行**——`npm pack` 出 tgz → 拷入 skill `vendor/` → `typedoc --json` 提取 TSDoc → 生成 `references/component-catalog.md`（Tier-1 一行一组件）+ `references/component-docs/<Name>.md`（Tier-2 用法页）→ 版本戳写入 catalog 头部；发现已导出但 TSDoc 缺失的组件 → 非零退出（机器门禁）
+- 产物工程消费：init.mjs `--with-components` 时复制 tgz 进产物工程 `vendor/` + package.json 写 `"@a3d/a3d-components": "file:./vendor/a3d-components-<ver>.tgz"`；import 路径 `@a3d/a3d-components/core` 与未来真包一致
+- LLM 用法：读 Tier-1 catalog 判断"有没有能用的" → 按需读 Tier-2 用法页学 options → 在 handler 里 import（源码零读取；`.d.ts` 仅歧义时逃生口）
 
 ### 4.2 Signatures（关键契约，Plan 期只定签名不写实现）
 
@@ -332,7 +356,8 @@ LLM 调参期：init 出编辑态工程（core+edit 全量）→ LLM 起 dev ser
 ```
 第1层 检索命中 → 直接用（search-assets top-k 有合适资产）
 第2层 检索近似 → 参考改造（命中同类但细节不符：加载后 scale/材质覆盖/组合多个）
-第3层 组件拼装 → 用组件库按需组合（读 component-catalog，import 组件代码建模）
+第3层 组件拼装 → 用组件库按需组合（读 component-catalog.md + 按需 component-docs/<Name>.md，
+                     handler 内 import '@a3d/a3d-components/...'，源码零读取，见 §3 Decision 增补）
 第4层 Blender 建模 → 环境可用（MCP 或 headless）时，LLM 写 bpy 脚本建模导出 GLB
                      （多模态：视口截图迭代纠错；非多模态：bpy 输出结构化 JSON 数值自查）
                      → 产出必过 validate-model 门禁 → 回注册资产库（建模↔检索闭环）
@@ -389,6 +414,15 @@ S9 交付        strip-edit 出二开包 + INTEGRATION_GUIDE 校验 + 验证报�
 - [ ] 1.8 docs/INTEGRATION_GUIDE.md（二开文档）
 - [ ] 1.9 template 自身 build 通过 + 手动冒烟（starter 场景可渲染）
 
+**批次 T：场景树 Spline 化（2026-10-09 立项，待用户评审；插序建议置顶执行）**
+> 依据 §4.11 契约。现状：OutlineTree.vue 为平铺列表（无层级/搜索/显隐/锁定）；数据层 SceneNode.parentId 已支持层级（v3 契约"可跨分组组树"），__visuals.visible 已存在（批次 R.6）。锁定为新增字段。
+- [ ] T.1 OutlineTree.vue 树化重写：分组 key 作可折叠根节点（chevron + 名称 + 计数），组内按 parentId 嵌套缩进；跨分组父子按分区优先（父在 A 组、子在 B 组时子随父分区显示）；孤儿节点（parentId 指向不存在 id）挂根级并 warn
+- [ ] T.2 搜索行：id 子串匹配（不区分大小写），命中节点 + 祖先链自动展开；清空恢复全树；无结果显示空态
+- [ ] T.3 行内显隐按钮（eye）：走 `update({__visuals:{[id]:{visible:…}}})` 现成通道（undo 天然可恢复）；父隐藏时子按钮呈继承态（图标半透明 + tooltip）；按钮点击不冒泡为选区
+- [ ] T.4 行内锁定按钮（lock）：VisualOverride 扩 `locked?: boolean`；语义 = Spline 同款——视口点选跳过锁定物体、Gizmo 不吸附，树中仍可点选（看属性不受影响）
+- [ ] T.5 锁定过滤接线：RaycastEngine（拾取跳过 locked）+ SelectionService（框选跳过）+ LayoutGizmo（transform 跳过）；过滤入口统一 `getVisual(id)?.locked`（经 handle.internals）
+- [ ] T.6 冒烟扩展（smoke-r.mjs 增段）：树 DOM 层级断言（分组根 + 嵌套子节点）/ 搜索过滤断言 / eye 落库断言（__visuals.visible 回读）/ lock 拾取跳过断言（raycast 不命中锁定物体）+ 三绿（vue-tsc / build / eslint）
+
 **批次 2：资产管线**
 - [ ] 2.1 manifest schema 校验器（import-assets 内嵌）+ 样例压缩包（example+rack 两个 GLB 从 3d-templete 库转入做种子资产）
 - [ ] 2.2 import-assets.mjs：解压/校验/规格门禁（validate-model）/落库
@@ -396,9 +430,19 @@ S9 交付        strip-edit 出二开包 + INTEGRATION_GUIDE 校验 + 验证报�
 - [ ] 2.4 build-search-index.mjs：n-gram TF-IDF 词法向量索引 + 内置检索冒烟样例
 - [ ] 2.5 search-assets.mjs CLI（query → top-k JSON）+ 检索质量验证（中文查询命中种子资产）
 
+**批次 M：材质编辑器 + 材质库（2026-10-09 立项，批次 2 之后、批次 3 之前执行）**
+> 依据 §4.10 契约（参数契约已对照实装 three@0.185.1 校正）。五项裁决见 §4.10.0。edit/ 新增 MaterialLibService.ts；core 侧 materials.ts 扩工厂（工厂不依赖 edit，铁律保持）。
+- [ ] M.1 types.ts：MaterialSpec 类型 + VisualOverride 扩 materialType/libraryRef（与 inline 调参字段互斥）+ RESERVED_KEYS 补 `__materialLib`
+- [ ] M.2 materials.ts：createMaterialFromSpec 工厂（三类型实例化 + 贴图槽 colorSpace 三分桶表 + Vector2/枚举/数组反序列化 + attenuationDistance null↔Infinity 还原）+ 类型切换参数迁移规则（共有参数保留、目标类型特有参数取默认；Standard→Physical 时 roughness/metalness 保留）
+- [ ] M.3 edit/MaterialLibService.ts：库 CRUD + 单例实例注册表（mat_id → 材质实例）+ 引用追踪 + 热更广播（改 spec → 热改/重建共享实例 → 引用物体即时变化）+ 种子材质 4 个（glass/carpaint/brushed_metal/velvet）+ undo 集成（serialize 快照机制现成）
+- [ ] M.4 PropertyPanel 材质分区改造：材质库下拉 +「另存为新材质」「断开链接」+ 类型下拉（three.js 原生类名）+ 全量参数分组折叠（基础默认展开，Physical 进阶组默认折叠）+ 贴图槽按类型显隐 + transmission>0 时 opacity 提示 + aoMap/lightMap 第二 UV 提示
+- [ ] M.5 template/vite.config.ts dev middleware：`POST /__gts3d/upload-texture`（binary body + 扩展名白名单 png/jpg/jpeg/webp/avif + 文件名 sanitize 防路径穿越 + 重名自动后缀）→ 写 `public/assets/textures/` → 返回相对 URL；dev-only 不进 build 产物；面板文件选择接线
+- [ ] M.6 冒烟扩展（smoke-r.mjs 增段或 smoke-m.mjs）：类型切换 instanceof 断言 / colorSpace 断言（map=SRGBColorSpace、normalMap=NoColorSpace）/ 共享实例 === 断言 / 改库热更两物体同变 / serialize 带回 __materialLib+libraryRef / undo 覆盖库编辑 / 上传端点→map 生效 / attenuationDistance null 往返
+- [ ] M.7 三绿（vue-tsc / build / eslint）+ 冒烟 PASS + INTEGRATION_GUIDE __visuals 转录章节补材质库段（libraryMaterials 转录格式样例）
+
 **批次 3：构建门禁 + 双模式交付**
 - [ ] 3.1 build.mjs：结构扫描 + 三条铁律（core↛edit / edit 只走 handle / strip 后零 edit 引用）+ import 白名单 + **场景预算静态估算（R1-3：calls≤400/triangles≤1M/材质≤32，读 validate-model 报告）**
-- [ ] 3.2 strip-edit.mjs：剔除 edit/ → 二开包 + **剥离视觉层（materialOverride）+ 输出转录清单** + 自检
+- [ ] 3.2 strip-edit.mjs：剔除 edit/ → 二开包 + **剥离编辑器私有区（__visuals + __materialLib，含 libraryRef）+ 输出转录清单（物体视觉 override 表 + 材质库表 + 引用表，格式见 §4.10.6）** + 自检
 - [ ] 3.3 init.mjs：母版复制 → 目标目录 + 占位替换 + **资产库→目标工程 public/assets 复制/映射（R2-5）** + 首次 build 校验
 
 **批次 4：验证回路**
@@ -409,24 +453,39 @@ S9 交付        strip-edit 出二开包 + INTEGRATION_GUIDE 校验 + 验证报�
 
 **批次 5：skill 大脑 + 收尾**
 - [ ] 5.1 install-blender.mjs（缓存探测/镜像拉取/解压登记/失败降级）
-- [ ] 5.4 gen-component-catalog.mjs 跑通 → component-catalog.md 产出（**提前到 5.2 前**，SKILL.md 依赖其产物）
-- [ ] 5.2 SKILL.md（九步工作流 + 4.4 降级阶梯 + 硬约束：规格门禁/铁律/诚实分级/内网纪律/数据结构 v3 生成纪律）
+- [x] 5.4 ~~gen-component-catalog.mjs 跑通 → component-catalog.md 产出~~ → **由批次 C 接管**（sync-components.mjs，2026-10-09 终裁），提前完成- [ ] 5.2 SKILL.md（九步工作流 + 4.4 降级阶梯 + 硬约束：规格门禁/铁律/诚实分级/内网纪律/数据结构 v3 生成纪律）
 - [ ] 5.3 references/ 文档（scene-workflow/asset-pipeline/model-spec/modeling-channels/verification/scene-engineering/component-catalog 生成/eslint-notes）+ **"生产数据→update 片段"翻译模式章节（MQTT/WebSocket 示例，一等公民）**
 - [ ] 5.5 README.md（投放说明/资产库准备/镜像配置/**内网 npm 安装方式**）
 - [ ] 5.6 端到端演练：文字描述 → 全流程 → 编辑态工程 + 二开包 + 验证报告全绿
 - [ ] 5.7 用户验收（截图/演示/文档过目）→ Review
 
+**批次 C：3d-components 上游改造 + 组件库接入链（2026-10-09 新增，批次 R 之前执行）**
+> 依据 §3 Decision 增补。跨仓库：源仓 `D:\cyc\project\octo\test\3d-components`（用户已授权读写），skill 侧落在 generate-3d-scene。
+- [x] C.1 源仓 package.json：peerDeps three 收窄 `>=0.183.0 <0.190.0` + @types/three 对齐 `^0.185.0`（license/publishConfig 用户明确不动）
+- [x] C.2 源仓 TSDoc 回填：导出面组件类头部（summary + @example）+ options 接口字段（描述 + @default）；以 typedoc 提取结果为完成依据
+- [x] C.3 skill `scripts/sync-components.mjs`：npm pack → tgz 入 skill vendor/ → typedoc --json → 生成 Tier-1 component-catalog.md + Tier-2 component-docs/<Name>.md → 版本戳；TSDoc 缺失门禁（非零退出）
+- [x] C.4 跑通全链 + 验证：catalog 内容抽查 vs 源码语义一致；tgz 内含 dist js + .d.ts、不含 src/map；产物工程 file: 依赖安装 + import + vue-tsc 通过（最小验证工程）
+- [x] C.5 源仓 CONTRIBUTING 作者协议章节（TSDoc 要求 + sync 命令 + 门禁说明）
+
+**批次 C 执行记录（Reverse Sync，2026-10-09）**：
+- **C.1 扩展为构建链修复**：peerDeps/@types 版本两行照改（three 运行时 devDep 一并对齐 ^0.185.0，lock 实装 0.185.1）。但发现 `npm run build` 的 **dts 生成链是存量坏的**（干净树复现）：ec8964d（2026-08-07）把健康单文件 tsconfig.json 拆成 Vue 脚手架式 references 时，tsconfig.app.json 丢失 target/lib/moduleResolution/strict 全部核心项 + 混入 TS 5.9.3 不认的 `"ignoreDeprecations": "6.0"`，且 `dist/*.d.ts` 全是空壳 `export {}`。修复：tsconfig.app.json 补回核心项（target ES2022/moduleResolution bundler/lib ES2022+DOM/strict，strictNullChecks+noImplicitAny 关——234 个 null 错误全在 vendored 三方代码）；dts 插件 tsconfigPath 指向 tsconfig.app.json；Edge3D `declare type`、EventDispatcher 泛型监听表修复 2 处自家源码类型错误。剩余 25 个 TS 错误全在 InstancedMesh2 vendored 代码，**typedoc 用 `--skipErrorChecking` 绕过**（不影响文档生成）。修复后 dist/es/index.d.ts 295KB 真实声明。
+- **C.2 盘点结论**（typedoc 全量提取 113 顶层导出）：类/接口级文档 100% 已有（26 类、78 Options 接口全有 doc）；20/26 类有 @example；646 options 字段 584 有文档（90%）、286 带 @default。**自家代码回填**：HtmlOptions 22 字段 + PivotControlsOptions 8 字段 + PivotControls/Html 类 @example + PivotControlsLike/ControlsLike.enabled（共 30+ 字段与 2 个 @example）；**vendored 豁免**（CameraControls 系/InstancedMesh2 系/PointerCaptureTarget 等 30 个字段，camera 模块为重写版三方代码不强制补）。TSDoc 门禁首跑即拦下 PivotControls/Html 缺 @example，验证门禁有效。
+- **C.3 脚本要点**：`--src` 参数定位源仓（默认相对约定，可 `A3D_SRC` 环境变量）；npm pack `--json` 输出整体 JSON 直接 parse（Windows 无前导噪音）；typedoc @example 内容是 `{kind:'code'}` 结构化片段（text 自带围栏，脚本剥外层统一重包裹）；importPath 从 barrel index.ts 正则反查（`export { X as Y }` 形态兼容）；tier-2 表格含类型/默认值/说明三列。
+- **C.4 验证证据**：① tgz 白名单生效——0 个 .map、22 个 .d.ts、无 src（package.json files 加 `!dist/**/*.map`）；② 最小验证工程 `file:./vendor.tgz` 安装成功（6 包）；③ strict tsc 0 errors——core/heat/controls 三入口 import + options 类型约束 + `@ts-expect-error` 验证 PivotControls 必填 camera/renderer 校验真实生效；④ 26 个组件用法页 + catalog 抽查（Html/HeatMap/Rack）与源码语义一致；⑤ 门禁通过（26 组件全有 doc+example，vendored 6 类豁免）。验证工程 .tmp-a3d-verify 残留在 gts/test 下（rm 被安全检查拦，需用户手删，内容无价值）。
+- **运行时发现（type-check 的价值实证）**：HeatMap 是纹理生成器（implements IDisposable 非 Object3D），d.ts @example 即正确用法（`map: heatMap.texture`）——验证脚本首版按 Object3D 误用被 tsc 拦下，证明"d.ts 随包走"的类型契约按预期工作。
+- 源仓 git 状态：9 文件修改 + CONTRIBUTING.md 新增，未提交（用户自决提交时机）。
+
 **批次 R：数据结构 v3 统一重构（2026-10-08 裁决新增，批次 2 之前执行）**
 > 依据 §4.9。批次 1 已按 v2 扁平结构落地，本批次把内外统一为 key:Array v3。改动集中、越晚越贵。
-- [ ] R.1 types.ts 重写：SceneData → TreeScene v3 形态（保留 key：version/meta/scene/camera/lights/controls/renderer/remove + 开放 type 分组）；节点 {id, parentId, position, rotation, scale, card?, params}；**删除 MaterialOverride 数据类型与 materialOverride 字段**
-- [ ] R.2 SceneEngine 改造：objects[] 扁平存储 → 分组字典 + id→node 索引（3d-templete buildNodeIndex 模式）；upsert 幂等 / remove 先行 / params 整块替换（3d-templete updateTreeScene 语义）
-- [ ] R.3 材质归代码：新建 materials.ts 状态视觉注册表（stateMaterials，3d-templete registerMaterials 模式）+ AssetEngine applyState(obj, state)（map 换贴图 / model 换实例）；删除 applyMaterialOverride 数据驱动路径（编辑器视觉层除外，见 R.6）
-- [ ] R.4 卡片内联：CardConfig 顶层数组 → 节点 card sibling 字段；cards/registry 挂载逻辑随节点生命周期（删节点=卡片消失，级联删除类别消灭）；卡片 props 从本节点 params 自动注入
-- [ ] R.5 图元底座：primitive 工厂一个文件吃全部几何体（3d-templete Primitive/geometry 模式），默认材质从代码取；starter scene-data.json 重写为 v3（分组：ground/cars 演示/handler 示例用 example.glb，R1-2 决议）
-- [ ] R.6 编辑器视觉层：PropertyPanel 材质分区保留（调参体验不变），但值存入编辑器私有视觉层（serialize 内部字段，不进交付数据）；strip-edit 剥离 + 转录清单（哪些物体调了什么值 → LLM 转录进 materials.ts/handler 默认值）
-- [ ] R.7 存量联动改造：SceneHandle.update 签名换 TreeSceneFragment；Bridge/save/undo（structuredClone 快照）适配 v3；windTurbine handler 改造为通用 example handler（R1-2）；main.ts/edit-main.ts 适配
-- [ ] R.8 验证：vue-tsc 绿 / build 绿（铁律隔离保持）/ eslint 0 errors / headless 冒烟（v3 starter 渲染 + 卡片跟随 + update 片段幂等 upsert 断言 + applyState 换贴图断言）
-- [ ] R.9 INTEGRATION_GUIDE 重写对齐 v3（数据层只有业务属性 / 材质在 materials.ts / 卡片内联 / 生产数据接 update）
+- [x] R.1 types.ts 重写：SceneData → TreeScene v3 形态（保留 key：version/meta/scene/camera/lights/controls/renderer/remove + 开放 type 分组）；节点 {id, parentId, position, rotation, scale, card?, params}；**删除 MaterialOverride 数据类型与 materialOverride 字段**
+- [x] R.2 SceneEngine 改造：objects[] 扁平存储 → 分组字典 + id→node 索引（3d-templete buildNodeIndex 模式）；upsert 幂等 / remove 先行 / params 整块替换（3d-templete updateTreeScene 语义）
+- [x] R.3 材质归代码：新建 materials.ts 状态视觉注册表（stateMaterials，3d-templete registerMaterials 模式）+ AssetEngine applyState(obj, state)（map 换贴图 / model 换实例）；删除 applyMaterialOverride 数据驱动路径（编辑器视觉层除外，见 R.6）
+- [x] R.4 卡片内联：CardConfig 顶层数组 → 节点 card sibling 字段；cards/registry 挂载逻辑随节点生命周期（删节点=卡片消失，级联删除类别消灭）；卡片 props 从本节点 params 自动注入
+- [x] R.5 图元底座：primitive 工厂一个文件吃全部几何体（3d-templete Primitive/geometry 模式），默认材质从代码取；starter scene-data.json 重写为 v3（分组：ground/cars 演示/handler 示例用 example.glb，R1-2 决议）
+- [x] R.6 编辑器视觉层：PropertyPanel 材质分区保留（调参体验不变），但值存入编辑器私有视觉层（serialize 内部字段，不进交付数据）；strip-edit 剥离 + 转录清单（哪些物体调了什么值 → LLM 转录进 materials.ts/handler 默认值）
+- [x] R.7 存量联动改造：SceneHandle.update 签名换 TreeSceneFragment；Bridge/save/undo（structuredClone 快照）适配 v3；windTurbine handler 改造为通用 example handler（R1-2）；main.ts/edit-main.ts 适配
+- [x] R.8 验证：vue-tsc 绿 / build 绿（铁律隔离保持）/ eslint 0 errors / headless 冒烟（v3 starter 渲染 + 卡片跟随 + update 片段幂等 upsert 断言 + applyState 换贴图断言）
+- [x] R.9 INTEGRATION_GUIDE 重写对齐 v3（数据层只有业务属性 / 材质在 materials.ts / 卡片内联 / 生产数据接 update）
 
 ### 4.8 Spec Review Notes
 
@@ -537,7 +596,7 @@ S9 交付        strip-edit 出二开包 + INTEGRATION_GUIDE 校验 + 验证报�
 }
 ```
 
-- **保留 key 全集**：version / meta / scene / camera / lights / controls / renderer / remove。其余任何 key 都是 type 分组（type=key 名），未注册 handler 的分组 warn 跳过（3d-templete 语义）。
+- **保留 key 全集**：version / meta / scene / camera / lights / controls / renderer / remove / `__visuals` / `__materialLib`（后两者为编辑器私有区，双下划线族，交付剥离，材质库契约见 §4.10）。其余任何 key 都是 type 分组（type=key 名），未注册 handler 的分组 warn 跳过（3d-templete 语义）。
 - **节点字段**：`{ id, parentId?, position?, rotation?, scale?, card?, params? }`。无 type 字段（type=分组 key）。id 全场唯一（幂等键）。
 - **更新语义**（与 3d-templete updateTreeScene 一致）：remove 先行 → 每节点存在即 update / 不存在即 create → params 整块替换（不做深合并，后端语义简单可预测）→ 不 diff（有数据就走）。
 - **生产数据接入**：后端/轮询/WebSocket 推同格式片段 `{"cars":[{…}], "remove":[…]}` 直接喂 `handle.update()`。翻译层（业务消息→片段）由二开者按 INTEGRATION_GUIDE 模式写，模板给 MQTT/轮询两个示例适配器。
@@ -602,10 +661,159 @@ LLM 转录 → 调好的值写进 materials.ts / handler 默认值
 - ~~全库强制白模化~~：单状态资产被迫拆 glb+png，入库管线复杂度翻倍；多状态是例外不是常态。
 - ~~多 GLB 变体为主方案~~：几何复制 N 份内存翻倍；降级为几何级变体兜底（states.model）。
 
+### 4.10 材质编辑器与材质库契约（2026-10-09 裁决定稿，批次 M 执行依据）
+
+> 用户需求：选中物体后可编辑材质——Lambert/Standard/Physical 三类型切换（默认 Standard），按类型编辑参数与贴图；调好的材质存入材质库供其他物体复用（参照 Spline 材质面板）。参数契约已对照**实装 three@0.185.1**（template/node_modules 的 @types .d.ts + three.core.js 构造函数源码）逐项校正，非文档/记忆转述。
+
+#### 4.10.0 裁决记录（2026-10-09，用户"都按你推荐的来"）
+
+1. **插入位置**：批次 2 之后、批次 3 之前（唯一硬依赖是 strip-edit 3.2 须知晓材质库；与批次 2 零依赖）
+2. **库编辑语义：共享热更**——mat_id → 单例材质实例，N 物体引用共享同一实例；改库即全部引用者实时变化（Spline 同款）；「另存为新材质」「断开链接」做 fork 出口
+3. **贴图上传通道：vite dev middleware**（POST 专用端点，dev-only，冒烟可自动化）
+4. **种子库材质：内置 4 个**（玻璃/车漆/拉丝金属/绒布，全 Physical，各演示一组进阶参数）；未被引用不参与交付转录
+5. **参数呈现：全量 + 分组折叠**——基础组默认展开，Physical 进阶组默认折叠
+
+**清单校正结论**（用户原始清单三处结构性错误，0.185.1 实装为准）：
+- normalMap/bumpMap/displacementMap/alphaMap/emissiveMap/aoMap/lightMap/envMap 是三材质**共有**（Lambert r134+ per-fragment 重写后齐备），非 Standard 特有；Lambert 也有 envMapIntensity
+- Lambert 真正特有：specularMap、combine、reflectivity、refractionRatio；Standard 特有仅 roughness/metalness 族
+- Physical 的 reflectivity 是 ior 的派生 getter/setter（源码 `this.ior = (1 + 0.4*reflectivity)/(1 - 0.4*reflectivity)`），**不做独立控件**；补充 dispersion（色散，r169+）
+- ior 合法范围 1.0–2.333（非 2.5）；anisotropyRotation 默认 0（@types 文档标 1 是文档错误）
+- transmission > 0 时 opacity 应保持 1（物理透射不走 alpha 混合），面板联动提示
+
+#### 4.10.1 数据契约（编辑器私有区，v3 兼容）
+
+```jsonc
+// scene-data.json 编辑器私有区（与 __visuals 同族，双下划线，交付剥离）
+"__materialLib": {
+  "mat_001": {
+    "name": "玻璃",                          // 显示名（转录时转 snake_case 键）
+    "spec": {
+      "type": "MeshPhysicalMaterial",        // 'MeshLambertMaterial'|'MeshStandardMaterial'|'MeshPhysicalMaterial'，缺省 Standard
+      "color": "#ffffff",                     // Color → #rrggbb 字符串
+      "roughness": 0.05,                      // 标量直存
+      "transmission": 1, "ior": 1.5, "thickness": 0.5,
+      "attenuationDistance": null,            // null = Infinity（JSON.stringify(Infinity) 产 null，序列化用 null 表示无穷，加载还原）
+      "map": "assets/textures/wood.png",      // 贴图槽：相对 URL 字符串；缺省/null = 清除
+      "normalScale": [1, 1],                  // Vector2 → 二元数组
+      "side": "DoubleSide",                   // 枚举字符串（FrontSide|BackSide|DoubleSide）
+      "iridescenceThicknessRange": [100, 400] // 二元数组
+    }
+  }
+},
+"__visuals": {
+  "car_01": { "libraryRef": "mat_001", "castShadow": true }   // libraryRef 与 inline 调参字段互斥
+}
+```
+
+- `libraryRef` 与 inline 字段（color/roughness/…）**互斥**：引用库 = 材质来自共享实例；断开链接 = 库 spec 拷贝为 inline 值；另存为 = inline 值打包成新库条目并引用
+- undo/redo、保存、serialize 复用 __visuals 现有机制（structuredClone 快照天然覆盖 __materialLib）
+- **交付侧终点**（转录产物，materials.ts）：`export const libraryMaterials = { glass: { type: 'MeshPhysicalMaterial', transmission: 1, ior: 1.5, … } }`——与 stateMaterials **并存不合并**（stateMaterials 管"业务类型→状态→视觉"换装，libraryMaterials 管"名字→材质"跨物体复用，两个问题两个表）
+
+#### 4.10.2 参数契约（面板全量清单，0.185.1 实装校正值；格式：参数(默认值, 范围)）
+
+**通用（三类型）**：
+color(#ffffff) / opacity(1, 0–1) / transparent(false) / alphaTest(0, 0–1) / side(FrontSide) / flatShading(false) / wireframe(false) / fog(true) / vertexColors(false) / emissive(#000000) / emissiveIntensity(1)
+
+**共有贴图槽**（+伴随参数）：
+map / emissiveMap / normalMap(normalScale [1,1]、normalMapType TangentSpaceNormalMap) / bumpMap(bumpScale 1) / displacementMap(displacementScale 1、displacementBias 0) / alphaMap / aoMap(aoMapIntensity 1) / lightMap(lightMapIntensity 1) / envMap(envMapIntensity 1)
+
+**Lambert 特有**：specularMap / combine(MultiplyOperation) / reflectivity(1) / refractionRatio(0.98)
+**Standard 特有**：roughness(1, 0–1) + roughnessMap / metalness(0, 0–1) + metalnessMap
+**Physical 特有**（继承 Standard 全部）：
+- 清漆：clearcoat(0, 0–1) / clearcoatRoughness(0) / clearcoatNormalMap(clearcoatNormalScale [1,1]) / clearcoatMap / clearcoatRoughnessMap
+- 透射：transmission(0, 0–1) / transmissionMap / thickness(0) / thicknessMap / attenuationColor(#ffffff) / attenuationDistance(Infinity) / **dispersion(0)**（色散）
+- 镜面：specularIntensity(1, 0–1) / specularIntensityMap / specularColor(#ffffff) / specularColorMap
+- 织物：sheen(0, 0–1) / sheenColor(#000000) / sheenColorMap / sheenRoughness(1) / sheenRoughnessMap
+- 虹彩：iridescence(0, 0–1) / iridescenceIOR(1.3, 1.0–2.333) / iridescenceThicknessRange([100,400]) / iridescenceMap / iridescenceThicknessMap
+- 各向异性：anisotropy(0, 0–1) / anisotropyRotation(0) / anisotropyMap
+- 光学：ior(1.5, 1.0–2.333)
+- 不做独立控件：reflectivity（ior 派生）
+
+**类型切换参数迁移**：共有参数保留迁移；目标类型特有参数取默认值；Standard→Physical 时 roughness/metalness 保留（继承关系）。
+
+#### 4.10.3 贴图色彩空间（三分桶，材质工厂机器执行）
+
+| 桶 | 槽 |
+|---|---|
+| SRGBColorSpace（显式设置） | map、emissiveMap、specularMap(Lambert)、sheenColorMap、specularColorMap |
+| LinearSRGBColorSpace（显式设置） | lightMap、envMap（典型 .hdr/.exr 浮点格式） |
+| NoColorSpace（Texture 默认，无需设置） | 其余全部数据槽 |
+
+aoMap/lightMap 需第二 UV：0.185 由 `texture.channel`（0=uv、1=uv1）选择，GLTF TEXCOORD_1 自动映射；图元无 uv1 时槽位带提示文案。
+
+#### 4.10.4 运行时结构
+
+- **core 侧**：materials.ts 扩 `createMaterialFromSpec(spec: MaterialSpec): Mesh 材质实例`（按 type 实例化 + colorSpace 三分桶赋值 + 反序列化 + Infinity 还原）——工厂不依赖 edit（铁律保持），edit 经 handle/internals 调用
+- **edit/MaterialLibService.ts**（新文件）：库 CRUD + 实例注册表（mat_id → 单例）+ 引用追踪（__visuals 反查）+ 热更广播 + 种子材质
+- **共享实例语义**：同 mat_id 物体 `material === 同一实例`（材质数≤32 预算正贡献）；改库热更（标量热改/贴图异步换/类型变更重建）
+- **种子材质**：glass{transmission:1, ior:1.5, roughness:0.05, thickness:0.5} / carpaint{clearcoat:1, clearcoatRoughness:0.1, metalness:0.7, roughness:0.35} / brushed_metal{metalness:1, roughness:0.35, anisotropy:1} / velvet{sheen:1, sheenRoughness:0.5, roughness:1, metalness:0}
+- **上传**：vite dev middleware `POST /__gts3d/upload-texture`（binary body + 扩展名白名单 + sanitize + 重名后缀）→ `public/assets/textures/` → 相对 URL；dev-only 不进 build
+
+#### 4.10.5 面板结构（PropertyPanel 材质分区）
+
+- 顶部：材质库下拉（未引用=「未入库」+ inline 调参；引用中=显示库名，编辑即改库）+「另存为新材质」「断开链接」
+- 类型下拉：三类型，值用 three.js 原生类名（命名纪律）
+- 分组折叠：基础默认展开 / Standard 参数组 / Physical 进阶组（清漆/透射/镜面/织物/虹彩/各向异性）默认折叠 / 贴图槽区按类型显隐
+- transmission>0 时 opacity 旁提示「透射材质应保持 opacity=1」
+
+#### 4.10.6 交付转录（strip-edit 扩展，批次 3.2）
+
+- 剥离 __materialLib + __visuals（含 libraryRef）——编辑器私有区整体不进二开包
+- 转录清单新增两表：①材质库表（mat_id/name/spec 摘要）②引用表（nodeId → mat_id）；未被引用的种子材质不列出
+- LLM 转录产物：materials.ts 增 libraryMaterials 段 + handler 接线（`obj.material = libraryMaterials.glass`）
+- INTEGRATION_GUIDE __visuals 转录章节同步补材质库段
+
+#### 4.10.7 已知边界与陷阱
+
+- **JSON 无穷**：attenuationDistance 默认 Infinity → 序列化 null、加载还原（冒烟断言往返）
+- **@types 文档 vs 源码冲突两处**：anisotropyRotation @default 1 实为 0；displacementScale @default 0 实为 1——以源码为准
+- Lambert specularMap 是 SRGB 桶（d.ts 明示 color data，与"高光图=数据图"直觉相反）
+
+### 4.11 场景树契约（2026-10-09 立项待评审，批次 T 执行依据）
+
+> 用户需求：场景树仿 Spline——子节点可展开、可搜索、节点可显示隐藏、可锁定解锁（用户提供了 Spline 场景面板 DOM 结构作参照：场景列表区 + 搜索框 + 类型过滤 + 树区，树节点带 chevron/类型图标/名称/锁定/显隐按钮）。
+
+#### 4.11.1 数据与现状
+
+- **已有（零改动）**：`SceneNode.parentId`（v3 契约，可跨分组组树）；`__visuals.visible`（批次 R.6，`update({__visuals})` 通道 + undo/serialize/strip-edit 全链现成）
+- **新增**：`VisualOverride` 扩 `locked?: boolean`（编辑器私有区，同 visible 族——serialize 自动携带、strip-edit 剥离、undo 可恢复）
+
+#### 4.11.2 交互契约
+
+| 交互 | 行为 |
+|---|---|
+| 树结构 | 分组 key 为可折叠根（chevron + 类型名 + 计数）；组内按 parentId 嵌套（缩进 + 子节点 chevron）；跨分组父子分区优先；孤儿节点挂根级 warn |
+| 展开/折叠 | chevron 点击切换；默认全展开（分组根 + 有子节点） |
+| 搜索 | id 子串匹配不区分大小写；命中 + 祖先链自动展开；清空恢复；空态提示 |
+| 点选 | 树内点选 = 视口同款选中（Shift 累计）；双击 = F 聚焦（现状保持） |
+| 显隐（eye） | 点击切换 `__visuals.visible`；父隐藏时子呈继承态（图标半透明）；点击不改选区 |
+| 锁定（lock） | 点击切换 `__visuals.locked`；锁定物体视口点选跳过、Gizmo 不吸附、树中仍可点选看属性；点击不改选区 |
+| 图标 | 线性 SVG 图标（编辑器既有风格）；类型图标按分组 key 映射（复用 Spline 式 typeIcon 思路，图标集内建 |
+
+#### 4.11.3 已否决/推迟项（防回潮）
+
+- **拖拽重排/重父**：数据层 parentId 虽支持，但编辑器拖拽改父子涉及 transform 语义（局部/世界坐标切换）——推迟到有真实需求再议，记为 v2 候选
+- **Filter by Type 类型过滤**（Spline 有）：当前分组根即类型，重复功能——不做
+- **场景列表**（Spline 多场景切换）：模板单场景——不做
+- **行内重命名**：id 是幂等键且生产数据引用它，重命名 = 全链 id 迁移——不做（改显示名走 params 或未来 display name 字段）
+
+#### 4.11.4 契约边界
+
+- OutlineTree 重写限于 `edit/OutlineTree.vue` 单文件 + `materials.ts`（VisualOverride 扩字段）+ Raycast/Selection/Gizmo 三处锁定过滤 + smoke-r.mjs 增段；core→edit 铁律、命名纪律（UI 文案用 three.js/Spline 通用语义，无自造名）不变
+- 锁定过滤读 `__visuals` 走 handle.internals 现有通道（edit 已在用），core 不感知"锁定"业务语义——core 只暴露 getVisual，"locked 物体跳过拾取"是 edit 侧过滤逻辑
+- Physical 各效果默认关闭、按启用计费（官方类文档）——面板不做使用限制，批次 4 性能门禁兜底
+- combine(MixOperation) 时才与 reflectivity 联动——面板暴露枚举即可
+
 ## 5. Execute Log
 - Plan Approved：2026-09-30（用户指令"plan approved"）。状态 [ACTIVE]，进入 Execute。
 - **Spec 评审（review_spec）2026-10-08 完成**：GO with conditions。P1 四项 / P2 七项 / P3 七项，详见 §4.8 评审记录 1。
 - **评审决议全部落定（2026-10-08）**：R1-1～R1-4、R2-3/R2-4/R2-7 逐项裁决完毕（§4.8 评审决议）。评审后用户三轮深挖 scene-data 定位与材质归属，裁决**数据结构 v3**（§4.9）：key:Array 单一结构、数据无材质（四层归位）、卡片内联、资产双形态、编辑器视觉层剥离转录。新增批次 R（9 原子项）置于批次 2 之前。**下一动作：执行批次 R**。
+- **组件库接入机制终裁（2026-10-09）**：用户提出"skill 导出给所有用户，别人机器上没有 3d-components 文件夹"——原方案"外部路径引用 + 读源码"不成立。经三轮收敛（npm 私仓形态 → 验证期临时方案 → 文档格式与作者协议），裁决：tarball + file: 依赖（发 npm 后零迁移）、LLM 文档两级 md（catalog 常驻 + 用法页按需，源码零读取）、TSDoc 单一真相源脚本生成、作者协议 + TSDoc 缺失门禁。源码可见/JSON 格式被否。**新增批次 C（5 原子项）置于批次 R 之前**，checklist 5.4 由批次 C 接管。跨仓库执行授权：用户明示"读和写都同意，不必问我"。见 §3 Decision 增补、§4.7 批次 C。
+- **批次 C 完成（2026-10-09）**：C.1–C.5 全部落地并验证通过（详见 §4.7 批次 C 执行记录）。附带修复源仓存量构建链断裂（tsconfig 拆分丢配置 → d.ts 空壳），d.ts 295KB 真实声明恢复。skill 新增 vendor/a3d-a3d-components-0.1.0.tgz（0 map、22 d.ts）+ scripts/sync-components.mjs + references/component-catalog.md + references/component-docs/ 26 页。源仓 9 文件改动未提交（提交时机用户自决）。**下一动作：批次 R**。
+- **批次 R 完成（2026-10-09）**：R.1–R.9 全部落地并四道门禁全绿（vue-tsc / build / eslint 0 errors / headless 冒烟 SMOKE PASS——S1 v3 starter 渲染 4 物体三分组、S2 卡片 DOM、S3 update 片段幂等 upsert+remove、S4 applyState 贴图换装 map 已指 example.jpg、S5 serialize 分组字典完整含 cars）。执行中用户打断质询 scene-data.json params 出现 castShadow/receiveShadow（违反 v3 核心"数据只有业务属性"）——确认有效，全链路修正：params 净化 + 阴影默认值归 handler 代码（applyShadowDefaults）+ 编辑器开关统一走 __visuals（VisualOverride 扩 castShadow/receiveShadow/visible），见 Plan-Execution Diff #16。新增 scripts/smoke-r.mjs 冒烟设施（Node ≥22 原生 WebSocket 连 CDP，无 puppeteer 依赖）。**下一动作：批次 2（资产管线），批间停等确认**。
+- **批次 M 立项（2026-10-09）**：用户提出材质编辑器需求（选中物体编辑材质：Lambert/Standard/Physical 三类型切换、贴图编辑、材质库复用，参照 Spline 材质面板 + three.js 材质属性清单）。对照实装 three@0.185.1（template/node_modules @types .d.ts + three.core.js 构造源码，非记忆转述）校正清单：三处结构性错误（normalMap/bumpMap/alphaMap 等为三材质共有非 Standard 特有；aoMap/lightMap 非 Lambert 特有且 Lambert 有 envMapIntensity；Physical reflectivity 是 ior 派生 getter 不做独立控件）+ 补漏（dispersion r169+/alphaTest/fog/vertexColors/iridescenceThicknessRange）+ 修正（ior 上限 2.333 非 2.5；anisotropyRotation 默认 0；色彩空间三分桶非两分——lightMap/envMap 属 LinearSRGB）。五项裁决（用户"都按你推荐的来"）：①批次 2 后插入 ②库共享热更 ③vite dev middleware 上传 ④内置 4 种子材质 ⑤全量参数+分组折叠。契约落 §4.10（数据契约/参数契约/色彩空间/运行时/面板/交付转录/陷阱），checklist 落 §4.7 批次 M（M.1–M.7），批次 3.2 剥离范围扩 __materialLib，§4.9.2 保留 key 全集同步。**执行序：批次 2 → 批次 M → 批次 3**。
+- **批次 T 立项（2026-10-09，待用户评审）**：用户提出场景树仿 Spline（子节点展开、搜索、显隐、锁定解锁，附 Spline 场景面板 DOM 作参照）。现状核实：OutlineTree.vue 平铺列表无四能力；SceneNode.parentId 数据层已支持层级；__visuals.visible 现成（R.6）；locked 需新增。契约落 §4.11（数据现状/交互契约/否决项/边界），checklist 落 §4.7 批次 T（T.1–T.6：树化/搜索/eye/lock/锁定过滤接线/冒烟）。插序建议 T → 2 → M → 3（编辑器验收节奏连续，与资产管线零耦合，规模小单会话可闭环）。**等待用户评审**。
+- **批次 T 评审通过（2026-10-09）**：用户裁决「可以的，按你排的顺序来」——插序 T → 2 → M → 3 置顶执行，契约无异议。**执行刹车（同日）**：进入 Execute 前用户澄清——批次 R（scene-data v3）尚在用户侧代码 review 中，批次 T 不得抢跑；执行序：**R 收口 → T → 2 → M → 3**。批次 T checklist 零代码改动，契约/checklist 保持立项状态待 R 收口后执行。
 - 编辑器交互详细设计决议：推迟到批次 1.6 执行前，对照 Spline 逐项定交互，方案过用户确认后落 Spec 再写代码（用户 2026-09-30 裁决"到达该章节后再详细设计"）
 - **编辑器交互设计 v1.1 已确认（2026-09-30 用户"可以的。确认了"）**：功能=点选高亮/Gizmo 变换（G/R/S，TransformControls）/属性面板七分区/物体树（点选定位+双击聚焦）/物体增删复制（图元菜单+Del+Ctrl+D）/保存（Ctrl+S）/F 聚焦/撤销重做（快照栈 Ctrl+Z/Ctrl+Shift+Z）/Shift 多选/对齐分布（Align：选轴+菜单=对齐|居中|最小|最大，基准=最后选中；Distribute：选轴 ≥3 物体等距）/吸附开关（TransformControls 原生 snap 参数）。布局=顶工具条+左物体树 240px+右属性面板 280px，深色工具风，纯 Vue 不引 UI 库。对齐/分布最初被误裁为"不做"，用户纠正（成百上千物体下是刚需）后并入 v1；吸附原拟推迟 v2，讨论中明确"吸附=过程磁吸（便宜）/对齐=结果整理（自研几何计算）"分工后一并进 v1。维持不做（架构理由）：事件编排/动画时间线/物理/变量——属 handler 业务层，编辑器只管"长什么样"不管"做什么"。文件八件：Bridge/SelectionService/LayoutGizmo/PropertyPanel/OutlineTree/Toolbar/SaveService/AlignmentService
 - 批次间停等确认（4.7 批次划分约定）
@@ -637,7 +845,66 @@ LLM 转录 → 调好的值写进 materials.ts / handler 默认值
 - **验收修复后复验（2026-09-30）**：vue-tsc 绿 / build 绿（edit-main 仍独立 chunk 47.55 kB，隔离保持）/ eslint 0 errors；二开态像素直方图 31% 背景 + 69% 着色；编辑态截图确认：视口全屏铺底不变形、悬浮工具条+左树+右属性面板 Spline 玻璃风格、图元渲染正常。四项验收缺陷修复均有证据
 
 ## 6. Review Verdict
-- 待 Execute 后填写
+
+### 评审记录 2（2026-10-09，批次 C 代码评审，mandatory three-axis）
+
+**评审范围**：批次 C 全部产物——sync-components.mjs 脚本、源仓 9 文件改动、生成的 26 页 component-docs + catalog、tgz。评审方式：产物全量重读 × 源仓 barrel/dist 交叉验证 × 生成物逐行抽验。
+
+#### Review Matrix
+
+| 轴 | 检查项 | 结论 | 证据 |
+|---|---|---|---|
+| Axis-1 Spec 质量 | 批次 C 目标/边界/验收可验证 | PASS | §4.7 批次 C 五项均有机器可验证验收（tgz 内容/file: 安装/tsc/门禁） |
+| Axis-1 | 用户四条裁决落实（无源码/无 JSON/md 生成/作者协议） | PASS | tgz 0 src 0 map；全 md；CONTRIBUTING.md 四条协议 |
+| Axis-2 Spec-Code 一致 | 目录树 vs 实际产物 | PASS | vendor/ + sync-components.mjs + 两级 md 均在 §4.1 声明位置 |
+| Axis-2 | Tier-1/Tier-2 token 预算符合裁决 | PASS | catalog 26 行紧凑表；用法页按需读 |
+| Axis-2 | catalog importPath 准确性 | **FAIL（P1）** | findImportPath 只解析命名导出 `export { X }`，不识别 `export * from './X'` 星号重导出——PivotControls/GizmoHelper/GizmoViewport 三个组件（controls/helper barrel 均为星号形态）静默降级到根入口 `'@a3d/a3d-components'`。根入口运行时确实可达（dist 验证 export * 链生效），**功能不坏但偏离「子域入口」最优实践**（tree-shaking 面积大），且 LLM 按此 import 与 sub-barrel 文档不一致 |
+| Axis-3 代码内在质量 | 生成的 md 表格渲染 | **FAIL（P1）** | `@default` 含围栏污染：typedoc 把多行 @default（如 HtmlOptions.occlude 的 "false" 竟带 ```ts 围栏）原样注入表格单元格——`````ts` 四反引号破坏 21/26 页共 189 处单元格（Html.md 15 处、PivotControls.md 22 处、BitmapText.md 30 处…）。渲染器显示破版；根因是源码 TSDoc 的 @default 写法含 code block 语法 + 脚本未剥 |
+| Axis-3 | EventDispatcher 类型修复 | PARTIAL | 行为正确（tsc 过/运行时无损），但 `as Listener<CameraControlsEventType>` 断言在 3 处（ts-eslint 警告 2 处 unnecessary-assertion 与 1 处必要断言并存）——类型签名 `Listener<T>` vs 存储类型不匹配靠断言缝合，可接受（vendored 重写件），不阻塞 |
+| Axis-3 | 脚本健壮性 | PARTIAL | npm pack JSON 解析有降级链 ✓；门禁豁免名单机制 ✓；但 `require_('fs')` 与顶部 import 混用（风格）；typedoc kind 硬编码数值（注释已声明跨版本稳定，可接受） |
+| Axis-3 | tgz 内容 | PASS | 0 .map / 22 .d.ts / 无 src / files 白名单生效 |
+| Axis-3 | 最小工程验证 | PASS | file: 安装 + 三入口 import + strict tsc 0 错 + @ts-expect-error 证明必填校验生效 |
+
+#### Overall Verdict: **CONDITIONAL PASS（两 P1 修复后 PASS）**
+
+- **P1-1 importPath 星号重导出失效**：修 findImportPath——解析 `export * from './<dir>'` 后递归读子 barrel（src/controls/PivotControls/index.ts 的命名导出）；重跑 sync 修正 3 组件路径为 `/controls`、`/helper`
+- **P1-2 @default 围栏污染**：脚本 defaultText() 剥围栏（同 exampleText 的 kind:'code' 处理）；**另需决策**：源码 TSDoc 的 @default 该不该写多行 code block？裁决建议——@default 只写单行值（多行说明挪进字段描述），脚本同时做剥壳兜底
+- P2（不阻塞）：EventDispatcher 断言风格、require_('fs') 统一、catalog「使用纪律」节提及的未来 npm 形态句子保持
+- 修复后需重跑：sync 脚本 → 26 页 + catalog 重新生成 → 抽验 3 组件 importPath + 189 处围栏清零
+
+#### 评审记录 2 修复闭环（2026-10-09，用户裁决 a 方案：脚本剥壳 + 源码规范双保险）
+
+- **P1-1 修复**：findImportPath 重写为 parseBarrel（named + stars 双收集）+ barrelExportsClass 递归（防环 depth≤2，星号指向目录时读其 index.ts）。**二次暴露根因**：根 src/index.ts 亦有 `export * from './controls'` 星号链，而 BARRELS 数组 index 排首位 → 修复后仍命中根入口。终修：BARRELS 改子域优先、index 兜底置末（tree-shaking 最优 + 与子域文档一致）。
+- **P1-2 修复**：defaultText() 剥围栏 + 取首行。**真相修正**：typedoc 把**所有** @default（含最普通的 `0.001`）都解析为 `{kind:'code'}` 围栏块——是 typedoc 固有行为而非源码写法问题，源码 TSDoc 无需改动；脚本剥壳即全治。CONTRIBUTING 仍补"@default 单行值"规范（防多行默认值被首行截断丢信息，属真实约束）。
+- **复验证据（全绿）**：① 全 26 组件 importPath 逐一核过——PivotControls→`/controls`、GizmoHelper/GizmoViewport→`/helper`，其余 23 个不变且正确，doc 页首行 import 与 catalog 一致；② 四反引号 189 处 → **0 残留**（全 26 页 grep 零命中）；③ 重灾区单元格复验：Html.eps=`0.001`、PivotControls.scale=`1`、BitmapText.fontSize=`72`，表格渲染正常；④ tgz 门禁照常通过。
+- **Verdict 升级：CONDITIONAL PASS → PASS**（两 P1 关闭，P2 挂账不阻塞）。批次 C 关闭。
+
+### 评审记录 3（2026-10-09，P1 修复轮代码复检，mandatory three-axis）
+
+**评审范围**：sync-components.mjs 修复后全文（findImportPath 重写 + defaultText 剥壳 + BARRELS 重排）。方式：脚本逐行重读 × 递归边界用例推演 × 生成物边界扫描（union 转义/列完整性/oneLiner 截断）× 性能量级评估。
+
+#### Review Matrix
+
+| # | 检查项 | 结论 | 证据 |
+|---|---|---|---|
+| 1 | P1-1 修复正确性（递归逻辑） | PASS | barrelExportsClass depth≤2 防环；星号指向目录才递归（layouts 无类目录不炸）；根链 root→controls→PivotControls 三层在 depth 边界内命中（实测 true） |
+| 2 | P1-1 修复正确性（优先级） | PASS | BARRELS 子域优先 + index 置末；26 组件全表 importPath 逐一复核无回归（core 14/graph 4/heat 1/helper 2/controls 1/camera 1/interactive 1/loader 1/material 2） |
+| 3 | P1-2 修复正确性 | PASS | defaultText 剥围栏 + 首行截断；189→0 残留；单行默认值不受影响（eps=0.001/scale=1/fontSize=72 复验） |
+| 4 | union 类型列转义 | PASS | typeToString join `' \\|'` + 说明列 `desc.replace(/\|/g,'\\|')` 双保险；实测 Html.style → `string \| Partial<CSSStyleDeclaration>` 渲染正确 |
+| 5 | catalog 表格列完整性 | PASS | 全 26 行 split('|') 列数恒 6，零破坏（oneLiner 内未转义竖线会破坏列——扫描零命中） |
+| 6 | 英文 oneLiner 句点截断 | PARTIAL（P3） | `split(/[。.\n]/)[0]` 对英文句子遇小数点/缩写提前截断（HeatMap 现值止于 "generator" 附近恰好无害，但 "e.g." 类句子会截出半句）。当前 26 组件无一触发，风险挂账 |
+| 7 | 递归性能（无缓存重复读盘） | PASS（P4） | 26 类 × 12 barrel ≈ 300+ 次 readFileSync，实测 26 次根递归 21ms → 全表 <2s。一次性同步工具非热路径，不值得加缓存 |
+| 8 | 深层边界（depth=2 上限） | PASS | 现仓库最深链 3 层（root→域→子目录）恰在边界内；若未来出现 4 层嵌套 barrel 会静默失配 → 由 11 号兜底根入口覆盖（降级不报错，可接受） |
+| 9 | defaultText 首行截断信息丢失 | PASS（已缓解） | CONTRIBUTING 已规范"@default 单行值"；脚本首行截断是表格约束下的正确取舍（多行值无法进单元格） |
+| 10 | require_('fs') 与 import 混用 | P2 挂账 | createRequire 已为 pack 解析引入，`require_('fs').readdirSync` 可改顶部 import readdirSync——功能正确，风格瑕疵 |
+
+#### Overall Verdict: **PASS**
+
+- 修复轮两项 P1 均正确落地且无回归；新增两项边界发现（6 号英文 oneLiner 截断、7 号读盘无缓存）均为 P3/P4 级，当前零触发、不影响交付，挂账批次 5 收尾时顺手处理或不处理
+- 8 号（depth 上限静默降级）与 10 号（require 混用）已知悉并接受，理由如上
+- 批次 C 复检关闭。P2/P3/P4 汇总挂账清单：EventDispatcher 断言风格、require_('fs') 统一、oneLiner 英文句点截断、barrel 递归缓存
+
+
 
 ## 7. Plan-Execution Diff
 - 批次 1 已暴露的偏差与修复（批次 2 前无需返工 Plan）：
@@ -695,6 +962,26 @@ LLM 转录 → 调好的值写进 materials.ts / handler 默认值
      - **Tab 拆分（方案 A）**：PropertyPanel 加「物体/场景」双页签——物体页=变换/物体开关/对齐分布/材质（选中相关），场景页=场景/相机/灯光/控制器/渲染器（全局配置）。交互：选中物体自动切物体页、清空选中（ESC/点空白）自动回场景页（watch selectionCount immediate）、未选中时物体 Tab 禁用 + 物体页显示空态提示；用户手动切页不被打断（仅选中态变化才跳转）。样式：prop-panel__tabs 玻璃态页签条（复用 --ed-* 设计令牌）
      - **复验证据**：eslint 0 errors / vue-tsc 绿 / build 绿；dev server 冒烟 A-G 七项——A/B 迁移后场景装载正常（灯实例 type 读回 DirectionalLight/AmbientLight、cameraType=PerspectiveCamera、controlsCfgType=OrbitControls、boxCast=true 回归保持）；C 相机往返切换（ortho→persp→ser 全对）；D side 路径（materialOverride side='DoubleSide' → 实例 side=2 即 THREE.DoubleSide + serialize 带回）；E Tab 交互（默认场景页+灯光区可见、点物体树选中→自动切物体页+变换区可见+灯光区隐藏、ESC 清空→回场景页）；F 原生类型新增灯（PointLight 实例正确 + id snake_case）；G render calls 22>19（阴影 pass 在跑）；`pageerrors: []`。冒烟设施与 dev server 已清理（端口 5199 释放）
      - **追加修正（同日，用户两连反馈）**：① 新增灯 id 出现 `_light_light_` 双重冗余——上轮 snake 转换叠加旧 `_light_` 后缀所致（DirectionalLight→snake 后 directional_light 再拼后缀）；② 用户质询「为什么要做 snake 转换，有必要吗」——反思：id 只是标识符，snake 转换是为风格统一服务的冗余代码层，且正是冗余 bug 的来源。裁决方案 1：**删除转换，id 直接 `${type}_${序号}`**（`SpotLight_001`，id 与 type 直读对应）；starter 存量 id 同步改 `DirectionalLight_001`/`AmbientLight_001`。复验 PASS：starter 按新 id 装载、引擎实例正确、UI 新增生成 `SpotLight_001` 无冗余、零 pageerror
+  16. **批次 R 执行记录（2026-10-09，R.1–R.9 全部完成，四道门禁全绿）**：
+     - **R.1 types.ts**：SceneData 重写为 v3（保留 key version/meta/scene/camera/lights/controls/renderer/remove/__visuals + 开放 type 分组索引签名）；SceneNode {id, parentId?, position?, rotation?, scale?, card?, params?}；新增 TreeSceneFragment（update 片段，同构全可选）/ UpdateStats / RESERVED_KEYS（Set 常量，运行时消费）；删除 SceneDataJSON/SceneObjectNode/ScenePatch/MaterialOverride/EnvironmentPreset（environment 收窄 {intensity}|null，preset 归代码）
+     - **R.2 SceneEngine**：entries Map<id,{obj,node,type}> 单一真相索引（分组字典不另存，序列化时按 type 聚合）；registerFactory 按 key 分发；applyFragment 实现 remove 先行（子树级联）→ 存在同 type 原地 update / 类型不同重建 / 缺失 create → __visuals 应用；params/card 整块替换不深合并；buildTree 按 parentId 依赖序；removeObject 迭代式子树级联返回全删 id
+     - **R.3 材质归代码**：新建 materials.ts——stateMaterials 注册表（starter: cars normal/alarm/maintenance）、StateVisual（mapUrl/map/color/…/side/model）、applyState（model 键→modelSwapper 换实例，mapUrl 异步换贴图，其余参数热改）、loadTexture+texCache、PRIMITIVE_DEFAULT_COLOR、VisualOverride/applyVisualOverride（编辑器视觉层）；AssetEngine.applyState 消费 manifest.states 贴图集（registerAssetStates）；删除 utils/material.ts 数据驱动 materialOverride 路径
+     - **R.4 卡片内联**：CardSpec 进节点（{type, trigger: click|always, offset}）；cards/registry 挂载 key `${nodeId}/card`，props 自动注入 {...node.params, id}；卡片随节点生命周期（引擎 removeObject 级联 + unmountCard 显式 element.remove()）；trigger 收窄为 click|always（R2-3 决议，hover 移除）
+     - **R.5 图元底座**：primitives.ts 一文件产六图元几何（低段数 16/8）+ 默认材质（PRIMITIVE_DEFAULT_COLOR）；registry 按 PRIMITIVE_KINDS 循环注册 'Box'/'Sphere'/… 每种图元一个分组 key；starter scene-data.json 重写 v3——保留区（version/meta/scene/camera PerspectiveCamera [8,6,10] lookAt [0,1,0]/lights DirectionalLight_001+AmbientLight_001/controls/renderer）+ 业务区（Box:[ground 40×40]、cars:[car_01 status normal + card always、car_02 status alarm + card click]、examples:[example_01 spin]），资产用 example.glb（R1-2 决议），params 净化无任何渲染字段
+     - **R.6 编辑器视觉层**：`__visuals` 保留 key；VisualOverride {color/metalness/…/side + castShadow/receiveShadow/visible}；PropertyPanel 材质分区/物体开关（显示/投影/受影）全部经 `update({__visuals:{[id]:…}})` 落库（undo 可恢复），load 从 sceneEngine.getVisual 读回；serialize 自动携带 __visuals（空则删 key）；strip-edit 剥离+转录清单归批次 3
+     - **R.7 存量联动**：SceneHandle.update 签名 TreeSceneFragment；Bridge rebuild = 整份快照 remove 全部当前 id 再喂（幂等 upsert 天然去重）；removeObjects 直喂 {remove}；example handler（windTurbine 泛化）注册 'cars'+'examples' 双分组共享资产工厂（status 查 stateMaterials[type]、spin 走 onFrame）；createScene serialize 重建分组字典 + 清除陈旧 key + lookAt=controls.target（R2-7）；EnvironmentEngine 去掉 preset 参数；main.ts/edit-main.ts/Toolbar（复制+加图元改分组 key form）/OutlineTree（分组平铺）/LayoutGizmo（getNodeType→分组回写）/AlignmentService（patch 按分组聚合）/edit-main Ctrl+D（getNode+getNodeType）全部适配
+     - **用户打断质询（执行中，确认有效）**：starter scene-data.json 的 params 里出现 castShadow/receiveShadow——违反 v3 核心「数据只有业务属性」，且属后端覆盖类 bug（生产 params 推送会静默抹掉渲染开关，与被否决的"transform 混入 params"同类）。修正：① params 全净化；② 阴影默认值归代码——registry/example handler 的 applyShadowDefaults（traverse 全部 mesh cast+receive=true）；③ 编辑器个体开关统一走 __visuals（VisualOverride 扩三字段，applyVisualOverride 处理 root.visible + traverse 阴影标志）。原则固化：**params 只放业务字段（后端推什么放什么）；渲染默认值在代码；个体差异在 __visuals（交付转录进代码）**
+     - **连带发现与修复**：① examples/cars 分组 handler 注册晚于 buildTree 节点被 warn 跳过——入口模式定为「createScene → registerHandler → 按数据原样重喂业务分组（幂等 upsert）」，main.ts/edit-main.ts 落地；② EnvironmentEngine 还引已删的 EnvironmentPreset（TS2305）；③ SceneEngine.attachObject 漏写 type（TS2345）；④ materials.ts/EnvironmentEngine 注释与文件头同步 v3 语义
+     - **R.8 验证**：vue-tsc --noEmit 绿 / npm run build 绿（edit-main chunk 80.13 kB gzip 20.58，铁律隔离 grep 零命中）/ eslint 0 errors（49 warnings 均为既有基线：no-continue/object-curly-newline/__visuals 命名约定豁免类）/ headless Edge 冒烟（scripts/smoke-r.mjs，Node 22+ 原生 WebSocket 连 CDP 端口 9223，swiftshader）**SMOKE PASS**——S1 渲染（4 物体、groups=[Box,cars,examples]、fps>0 活性断言）、S2 卡片 DOM×4、S3 幂等（r1.created=2/r2.created=0/r2.updated=2）+ remove（rm.removed=2、数量复原）、S4 applyState 贴图（car_01 material.map → localhost:5199/assets/textures/example.jpg）、S5 serialize 分组字典完整含 cars
+     - **冒烟技巧沉淀**：① Node ≥22 有原生 WebSocket，CDP 冒烟无需 puppeteer；② swiftshader 下 canvas drawImage 拿不到 WebGL 前缓冲（preserveDrawingBuffer:false），像素断言不可靠——改用 renderLoop.getStats().fps 活性断言；③ `window.__gts3d` 只在 edit-main 挂（DEV 守卫），冒烟走 ?edit=1；④ handler 后注册的分组必须重喂——v3 幂等 upsert 让「注册后整组重喂」成为零成本的标准入口模式
+     - **R.9 INTEGRATION_GUIDE 全量重写**：v3 语义（key:Array 单一结构/保留区+业务区/节点字段表/不存在字段清单）、内建分组表（图元六种+asset）、三大二开任务（换模型/写 handler/状态视觉 materials.ts/卡片内联）、handle API 与生产数据接入（轮询+MQTT 代码示例、remove 先行→upsert→params 整块替换语义声明）、__visuals 交付转录章节、FAQ 更新（"想改物体颜色不是改数据"）
+     - **批次 R 收尾增强（同日，用户两项反馈「卡片要有内容、加低模树」）**：
+       - **空卡片根因**：ExampleCard 期望 title/value props，而卡片系统注入的是 params+id——params 没有这些字段，渲染成空壳。修复：ExampleCard 重写为直接渲染业务 params（name/status/speed/id）——标题=name 回落 id、状态徽章（运行/告警/检修，配色与 materials.ts 状态语义同源）、速度行、编号行；scene-data.json cars 组补 name 业务字段（巡逻车 01/02），card offset 1.0→1.4（卡不压车顶）
+       - **低模树（初版载体错误，用户质询后重构）**：用户质询「低模不是直接写代码在 tree-handler 里写就可以了吗，还要生成 glb 吗？以后自然语言找不到树模型降级简模时也是生成 glb？」——质询有效。初版写了 make-tree-model.mjs 生成 tree.glb（70 三角面），违反 Spec §4.5 降级阶梯第 5 层（LLM 直写代码）自己定的序：GLB 不可 review 不可 diff、改一棵树要重跑脚本、且「会生成 GLB 的脚本」会误导后续自然语言流程跟着造二进制。重构：删除 tree.glb 与 make-tree-model.mjs；新建 handlers/procedural/tree.ts——three.js 图元几何组合（CylinderGeometry 干 + 三层 ConeGeometry 冠，~百面，业务 params 可调 trunkColor/foliageColor/height），挂 trees 分组，handlers/index.ts + scene-core/index.ts 导出，两入口注册 + 重喂名单加 trees；scene-data.json 树节点去 assetId（纯代码物体无资产引用）。**规则固化（GUIDE §3.1）：简模/组合体降级 = 写 handler 组合图元，GLB 管线只留给美术资产（贴图/绑定/动画）**
+       - **复验证据**：eslint 0 errors / build 绿 / SMOKE PASS——groups=[Box,trees,cars,examples]、trees=5 全渲染；S2 卡片内容、S3 幂等、S5 serialize 分组全部保持
+       - **冒烟强化**：S2 从数 DOM 个数升级为内容断言（texts 含「巡逻车」+status 徽章文案）、S1 加 5 棵树存在性断言（防 asset 分组回归）
+       - **eslint scripts/ 覆盖块**：JS 段 no-console:error 误伤 CLI 工具（冒烟/模型生成的 console 是输出接口）——加 scripts/**/*.mjs 覆盖（no-console/no-magic-numbers/line-comment-position/id-length off，魔数即二进制协议常量）；make-tree-model 两处 for 单语句 curly 修复
+       - **复验证据**：eslint 0 errors / build 绿 / SMOKE PASS——S1 objCount=9、trees=5、groups=[Box,asset,cars,examples]；S2 卡片内容「巡逻车 01运行速度1.2 m/s编号car_01」等两张、titled=true；S3 幂等保持；S5 serialize 含 asset 分组
 
 ## 8. Archive Record (Recommended at closure)
 - 待任务收口后填写

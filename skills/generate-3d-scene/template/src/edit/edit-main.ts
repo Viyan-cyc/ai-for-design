@@ -7,8 +7,8 @@
  */
 import { createApp } from 'vue';
 import { createScene, ExampleCard } from '@/scene-core';
-import { registerExampleHandler } from '@/scene-core/handlers';
-import type { SceneDataJSON } from '@/scene-core/types';
+import { registerExampleHandler, registerTreeHandler } from '@/scene-core/handlers';
+import type { SceneData, SceneNode } from '@/scene-core/types';
 import { Bridge } from './Bridge';
 import { SelectionService } from './SelectionService';
 import { LayoutGizmo } from './LayoutGizmo';
@@ -36,18 +36,28 @@ const boot = async (): Promise<void> => {
   if (!res.ok) {
     throw new Error(`[edit-main] scene-data.json 加载失败: ${res.status}`);
   }
-  const data = (await res.json()) as SceneDataJSON;
+  const data = (await res.json()) as SceneData;
 
   // 卡片组件注册表（编辑态所见即二开所得）
   const handle = await createScene(canvas, data, { example: ExampleCard });
 
-  // 业务 handler 示例（注册要赶在首次建树前——createScene 已建树，
-  // 追加类型经 update 重建：wind_turbine 节点此时才被工厂分发）
+  // 业务 handler 示例（注册要赶在首次建树后重喂——createScene 建树时 examples/cars
+  // 分组尚无工厂被 warn 跳过，注册后按数据原样重喂，幂等 upsert 补建缺失节点）
   registerExampleHandler(
     handle.internals.sceneEngine,
     handle.internals.assetEngine,
     (cb) => void handle.internals.renderLoop.onFrame((delta) => cb(delta)),
   );
+  registerTreeHandler(handle.internals.sceneEngine);
+  const refeed: Record<string, unknown> = {};
+  for (const [key, val] of Object.entries(data)) {
+    if (Array.isArray(val) && (key === 'examples' || key === 'cars' || key === 'trees')) {
+      refeed[key] = val;
+    }
+  }
+  if (Object.keys(refeed).length > 0) {
+    handle.update(refeed);
+  }
   handle.refreshCards();
 
   // 编辑服务
@@ -100,14 +110,15 @@ const boot = async (): Promise<void> => {
       if (!anchorId) {
         return;
       }
-      const def = handle.serialize().objects.find((o) => o.id === anchorId);
-      if (def) {
+      const node = handle.internals.sceneEngine.getNode(anchorId) as SceneNode | null;
+      const type = handle.internals.sceneEngine.getNodeType(anchorId);
+      if (node && type) {
         bridge.commit('复制', () => {
           handle.update({
-            upsert: [{
-              ...def,
-              id: `${def.id}_copy_${Date.now() % 10000}`,
-              position: [def.position[0] + 1, def.position[1], def.position[2]],
+            [type]: [{
+              ...node,
+              id: `${node.id}_copy_${Date.now() % 10000}`,
+              position: [node.position![0] + 1, node.position![1], node.position![2]],
             }],
           });
         });

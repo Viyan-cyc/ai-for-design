@@ -1,23 +1,22 @@
 /**
  * EnvironmentEngine — IBL 环境光照（RoomEnvironment PMREM 生成）
  *
- * preset 决定环境贴图风格（当前用 RoomEnvironment 生成室内中性环境，强度可调；
- * 后续 preset 扩展 HDRI 文件时只改本文件的 resolveEnvironment 实现）。
+ * v3：数据层只有 intensity（preset 收窄为代码内实现细节——当前统一 RoomEnvironment
+ * 中性影棚光；后续扩展 HDRI 风格时只改本文件的 resolveEnvironment 实现）。
  */
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
-import type { EnvironmentPreset } from '../types';
 
 export class EnvironmentEngine {
   private pmrem: THREE.PMREMGenerator | null = null;
 
   private currentEnv: THREE.Texture | null = null;
 
-  /** 应用环境配置（scene.environment） */
+  /** 应用环境配置（scene.environment；null = 关闭环境光） */
   async apply(
     renderer: THREE.WebGLRenderer,
     scene: THREE.Scene,
-    env: { preset: EnvironmentPreset; intensity: number } | null,
+    env: { intensity: number } | null,
   ): Promise<void> {
     // 先清理旧环境
     if (this.currentEnv) {

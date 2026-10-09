@@ -7,6 +7,8 @@
  */
 import { onMounted, ref } from 'vue';
 import type { Bridge } from './Bridge';
+import { RESERVED_KEYS } from '@/scene-core/types';
+import type { SceneNode } from '@/scene-core/types';
 
 const props = defineProps<{ bridge: Bridge }>();
 
@@ -19,8 +21,20 @@ const items = ref<Item[]>([]);
 const selected = ref<string[]>([]);
 
 const refresh = (): void => {
+  // v3：分组字典平铺（type = 分组 key；跳过保留 key 与非数组值）
   const data = props.bridge.handle.serialize();
-  items.value = data.objects.map((o) => ({ id: o.id, type: o.type }));
+  const out: Item[] = [];
+  for (const [key, val] of Object.entries(data)) {
+    if (RESERVED_KEYS.has(key) || !Array.isArray(val)) {
+      continue;
+    }
+    (val as SceneNode[]).forEach((n) => {
+      if (n && typeof n === 'object' && n.id) {
+        out.push({ id: n.id, type: key });
+      }
+    });
+  }
+  items.value = out;
 };
 
 onMounted(() => {

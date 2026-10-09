@@ -1,10 +1,16 @@
 /**
- * scene-core/types — 公共类型定义（scene-data.json schema 的 TS 形态 + Handle API）
+ * scene-core/types — 公共类型定义（scene-data.json v3 schema 的 TS 形态 + Handle API）
  *
- * scene-data.json 是唯一数据载体：LLM 生成、编辑态回写、二开者修改，三方共用本文件类型。
- * 结构分组：meta / scene / camera / lights / controls / renderer / objects / cards。
- * objects 用扁平数组 + parentId 组树（跨分组父子关系），增量更新按 id 定位。
+ * v3 核心原则（Spec §4.9）：数据只有业务属性，视觉全部在代码。
+ * - key:Array 单一结构贯穿内外：scene-data.json = 引擎内部存储 = 编辑器序列化产物
+ *   = 生产更新片段 = undo 快照，零格式转换。
+ * - 保留 key：version / meta / scene / camera / lights / controls / renderer / remove / __visuals。
+ *   其余任何 key 都是 type 分组（type = key 名），分组名即业务类型，类型决定视觉。
+ * - 节点无 type 字段（type = 所在分组 key）、无材质/贴图/模型引用字段（材质在 materials.ts）。
+ * - 卡片内联在节点（card 字段），无顶层 cards 数组、无 attachTo 配对。
  */
+
+import type { VisualOverride } from './materials';
 
 /** three.js 颜色（hex 字符串，如 '#87CEEB'） */
 export type ColorHex = string;
@@ -12,18 +18,9 @@ export type ColorHex = string;
 /** [x, y, z] 三元组 */
 export type Vec3 = [number, number, number];
 
-/** 场景数据根对象（scene-data.json 的结构） */
-export interface SceneDataJSON {
-  version: string;
-  meta: SceneMeta;
-  scene: SceneEnvironment;
-  camera: CameraConfig;
-  lights: LightConfig[];
-  controls: ControlsConfig;
-  renderer: RendererConfig;
-  objects: SceneObjectNode[];
-  cards: CardConfig[];
-}
+// ══════════════════════════════════════════════════════════════
+// 保留区（舞台配置：环境/相机/灯光/控制器/renderer——非物体材质，保留在数据）
+// ══════════════════════════════════════════════════════════════
 
 /** 场景元信息 */
 export interface SceneMeta {
@@ -31,20 +28,18 @@ export interface SceneMeta {
   description: string;
 }
 
-/** 环境配置 */
+/** 环境配置（v3：preset 收窄，统一 RoomEnvironment，只暴露强度） */
 export interface SceneEnvironment {
 
   /** 背景色 hex；透明背景用 null（配 CSS） */
   background: ColorHex | null;
 
-  /** IBL 环境预设；null = 不启用环境贴图 */
-  environment: { preset: EnvironmentPreset; intensity: number } | null;
+  /** IBL 环境强度；null = 不启用环境贴图 */
+  environment: { intensity: number } | null;
 
   /** 雾；null = 不启用 */
   fog: { type: 'linear'; color: ColorHex; near: number; far: number } | null;
 }
-
-export type EnvironmentPreset = 'studio' | 'city' | 'sunset' | 'dawn' | 'night' | 'warehouse' | 'forest' | 'apartment' | 'park' | 'lobby';
 
 /** 相机配置 */
 export interface CameraConfig {
@@ -159,122 +154,122 @@ export interface RendererConfig {
   maxPixelRatio?: number;
 }
 
-/** 物体节点（扁平数组元素，parentId 组树） */
-export interface SceneObjectNode {
+// ══════════════════════════════════════════════════════════════
+// 业务区（type 分组 + 节点）
+// ══════════════════════════════════════════════════════════════
 
-  /** 场景内唯一 id（snake_case） */
-  id: string;
+/**
+ * 内联卡片规格（节点 sibling 字段，场景作者所有）。
+ * type = cards/registry 注册的组件 key；显示内容从本节点 params 自动注入（生产数据源）。
+ */
+export interface CardSpec {
 
-  /** 分组类型：'asset'（GLB 模型）/ 'primitive'（图元）/ 自定义 handler 类型 */
+  /** 卡片组件注册名（cards/registry 的 components 表 key） */
   type: string;
 
-  /** type=asset 时的资产 id（资产库检索所得） */
-  assetId?: string;
+  /** 显示触发：'always'（默认，常显）/ 'click'（点击物体切换，互斥关闭其余 click 卡片） */
+  trigger?: 'click' | 'always';
 
-  /** type=primitive 时的图元种类（three.js 几何类名，省略 Geometry 后缀） */
-  primitive?: 'Box' | 'Sphere' | 'Cylinder' | 'Plane' | 'Cone' | 'Torus';
+  /** 锚点相对物体的偏移（默认 [0,1,0] 顶在物体上方） */
+  offset?: Vec3;
+}
+
+/**
+ * 场景节点（v3：数据只有业务属性 + transform + 卡片，无 type/材质字段）。
+ * type = 所在分组 key；id 全场唯一（幂等键）。
+ */
+export interface SceneNode {
+
+  /** 场景内唯一 id（幂等键） */
+  id: string;
+
+  /** 父节点 id；根节点为 null/缺省（可跨分组组树，父先建） */
   parentId?: string | null;
-  position: Vec3;
 
-  /** 欧拉角（弧度） */
-  rotation: Vec3;
+  /** 世界坐标（缺省 [0,0,0]） */
+  position?: Vec3;
 
-  /** 统一缩放或三轴缩放 */
-  scale: number | Vec3;
+  /** 欧拉角弧度（缺省 [0,0,0]） */
+  rotation?: Vec3;
 
-  /** 材质覆盖（资产/图元通用） */
-  materialOverride?: MaterialOverride | null;
+  /** 统一缩放或三轴缩放（缺省 1） */
+  scale?: number | Vec3;
 
-  /** 命中检测开关（纯装饰物可关，节省 raycast 预算） */
-  pickable?: boolean;
+  /** 内联卡片（场景作者所有；删节点 = 卡片级联消失） */
+  card?: CardSpec;
 
-  /** 显示开关（隐藏物体不参与渲染） */
-  visible?: boolean;
-
-  /** 投射阴影（物体遮挡光源产生影子；需 renderer.shadowMapEnabled + 灯 castShadow 同时开启） */
-  castShadow?: boolean;
-
-  /** 接收阴影（物体表面显示其他物体的影子；地面等承载面建议开启） */
-  receiveShadow?: boolean;
-
-  /** 自定义参数（handler 扩展用，透传给 handler） */
+  /** 业务属性（生产数据源所有，整块替换；params.status 驱动状态视觉） */
   params?: Record<string, unknown>;
 }
 
-/** 材质覆盖 */
-export interface MaterialOverride {
-  color?: ColorHex;
-  metalness?: number;
-  roughness?: number;
-  opacity?: number;
+/** 节点带所属分组（引擎 getNodesWithType 返回；分组 key 即 type） */
+export type TypedSceneNode = SceneNode & { type: string };
 
-  /** 贴图资产 id 或相对路径 */
-  map?: string | null;
-  emissive?: ColorHex;
-  emissiveIntensity?: number;
+/** 保留 key：不作为 type 分组解析 */
+export const RESERVED_KEYS = new Set([
+  'version', 'meta', 'scene', 'camera', 'lights', 'controls', 'renderer', 'remove', '__visuals',
+]);
 
-  /** 线框模式 */
-  wireframe?: boolean;
+/**
+ * scene-data.json v3（完整文档）。
+ * 保留区必填；业务区 = 任意 type 分组（key=类型名，value=SceneNode[]）。
+ * __visuals = 编辑器私有视觉层（serialize 自动携带，交付时 strip-edit 剥离，手写数据不要出现）。
+ */
+export interface SceneData {
+  version: string;
+  meta: SceneMeta;
+  scene: SceneEnvironment;
+  camera: CameraConfig;
+  lights: LightConfig[];
+  controls: ControlsConfig;
+  renderer: RendererConfig;
 
-  /** 平直着色（low-poly 风格常用） */
-  flatShading?: boolean;
+  /** 编辑器私有视觉层（调参产物；不进交付数据——strip-edit 剥离 + 转录清单） */
+  __visuals?: Record<string, VisualOverride>;
 
-  /** 面渲染方向（three.js 原生：'FrontSide' | 'BackSide' | 'DoubleSide'） */
-  side?: 'FrontSide' | 'BackSide' | 'DoubleSide';
+  /** type 分组：key=业务类型名，value=节点数组（单个实例也包一层数组） */
+  [type: string]: unknown;
 }
 
-/** 2D 卡片配置 */
-export interface CardConfig {
-  id: string;
-
-  /** 绑定的物体 id（卡片 CSS2D 锚点跟随该物体） */
-  attachTo: string;
-
-  /** 卡片组件注册名（cards/registry 中注册的 key） */
-  component: string;
-
-  /** 传给卡片组件的 props */
-  props: Record<string, unknown>;
-
-  /** 显示触发方式 */
-  trigger: 'click' | 'always' | 'hover';
-}
-
-/** 增量更新补丁（handle.update 的入参） */
-export interface ScenePatch {
-
-  /** 新增或全量替换的物体（按 id 匹配，存在则替换） */
-  upsert?: SceneObjectNode[];
-
-  /** 要删除的物体 id 列表 */
-  remove?: string[];
-
-  /** 局部参数更新（按 id 定位，浅合并 params/materialOverride/transform） */
-  patch?: Array<{
-    id: string;
-    position?: Vec3;
-    rotation?: Vec3;
-    scale?: number | Vec3;
-    materialOverride?: Partial<MaterialOverride> | null;
-    visible?: boolean;
-    pickable?: boolean;
-    castShadow?: boolean;
-    receiveShadow?: boolean;
-    params?: Record<string, unknown>;
-  }>;
-
-  /** 环境/灯光/相机/控制器/渲染器同步更新 */
+/**
+ * 更新片段（handle.update 的入参）——与 SceneData 同构，全部字段可选。
+ * 喂整份 = 建场景；喂片段 = 增量。语义：remove 先行 → 每节点存在即 update /
+ * 不存在即 create → params 整块替换 → 不 diff（有数据就走）。
+ */
+export interface TreeSceneFragment {
+  version?: string;
+  meta?: SceneMeta;
   scene?: Partial<SceneEnvironment>;
-  lights?: LightConfig[];
   camera?: Partial<CameraConfig>;
+  lights?: LightConfig[];
   controls?: Partial<ControlsConfig>;
   renderer?: Partial<RendererConfig>;
 
-  /**
-   * 卡片配置整组替换（与 lights 同协议：全量传入，缺的删除、新的挂载）。
-   * 删除物体时由编辑层同步传入（级联删除 attachTo 失效的卡片）。
-   */
-  cards?: CardConfig[];
+  /** 按 id 删除（先于分组处理；含子树与内联卡片级联） */
+  remove?: string[];
+
+  /** 编辑器私有视觉层写入（生产数据永远不要发这个 key） */
+  __visuals?: Record<string, VisualOverride>;
+
+  /** type 分组片段：key=类型名，value=节点数组（节点字段全部可选，缺的不动） */
+  [type: string]: unknown;
+}
+
+// ══════════════════════════════════════════════════════════════
+// 运行时类型（非数据 schema）
+// ══════════════════════════════════════════════════════════════
+
+/** 增量更新结果（幂等性断言/日志用） */
+export interface UpdateStats {
+
+  /** 本次新创建的节点 id */
+  created: string[];
+
+  /** 本次原地更新（未重建实例）的节点 id */
+  updated: string[];
+
+  /** 本次删除的节点 id（含级联子节点） */
+  removed: string[];
 }
 
 /** 射线拾取结果 */
