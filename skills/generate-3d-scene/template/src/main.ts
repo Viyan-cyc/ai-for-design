@@ -55,6 +55,11 @@ const boot = async (): Promise<void> => {
 
   // Vue UI 层（2D 卡片之外的页面级 UI，如数据大屏侧栏）
   createApp(App, { handle }).mount('#app');
+
+  // dev-only：调试口（冒烟脚本/控制台直接读引擎态；生产 build 自动剔除）
+  if (import.meta.env.DEV) {
+    (window as unknown as Record<string, unknown>).__gts3d = handle;
+  }
 };
 
 void boot();

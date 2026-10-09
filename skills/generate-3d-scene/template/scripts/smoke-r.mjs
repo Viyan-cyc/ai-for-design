@@ -159,19 +159,35 @@ const main = async () => {
     })()`);
     console.log('S4 applyState贴图:', JSON.stringify(s4));
 
-    // ── S5（编辑态附加）：serialize 含 __visuals 通道 & 分组字典 ──
-    if (EDIT_MODE) {
-      const s5 = await evaluate(`(() => {
-        const h = window.__gts3d;
-        const ser = h.serialize();
-        const keys = Object.keys(ser);
-        return { keys: keys.slice(0, 12), hasBoxGroup: Array.isArray(ser.Box), hasCars: Array.isArray(ser.cars) };
-      })()`);
-      console.log('S5 serialize分组:', JSON.stringify(s5));
-    }
+    // ── S5：serialize 分组字典 & __visuals 通道 ──
+    const s5 = await evaluate(`(() => {
+      const h = window.__gts3d;
+      const ser = h.serialize();
+      return { keys: Object.keys(ser).slice(0, 12),
+        hasBoxGroup: Array.isArray(ser.Box), hasCars: Array.isArray(ser.cars),
+        hasTrees: Array.isArray(ser.trees) };
+    })()`);
+    console.log('S5 serialize分组:', JSON.stringify(s5));
+
+    // ── S6：片段更新保留字段（P0 回归断言：transform-only 片段不得抹 params/card） ──
+    const s6 = await evaluate(`(() => {
+      const h = window.__gts3d;
+      const before = h.internals.sceneEngine.getNode('car_01');
+      h.update({ cars: [{ id: 'car_01', position: [-3.5, 0.5, 0] }] });
+      const after = h.internals.sceneEngine.getNode('car_01');
+      const paramsKept = !!after?.params && after.params.assetId === before?.params?.assetId
+        && after.params.status === before?.params?.status;
+      const cardKept = !!after?.card && after.card.type === before?.card?.type;
+      // 还原位置（不污染后续断言）
+      h.update({ cars: [{ id: 'car_01', position: [-3, 0.5, 0] }] });
+      return { paramsKept, cardKept, params: after?.params, card: after?.card };
+    })()`);
+    console.log('S6 片段保留字段:', JSON.stringify(s6));
 
     const pass = s1.ok === true && s3.idemOk === true && s3.rmOk === true
-      && s2.count >= 2 && s2.titled === true;
+      && s2.count >= 2 && s2.titled === true
+      && s4.ok === true && s5.hasCars === true && s5.hasTrees === true
+      && s6.paramsKept === true && s6.cardKept === true;
     console.log(pass ? 'SMOKE PASS' : 'SMOKE FAIL');
     process.exitCode = pass ? 0 : 1;
   } finally {

@@ -28,7 +28,14 @@ export class CameraEngine {
     this.camera.position.set(...config.position);
     this.camera.lookAt(this.lookTarget);
     this.camera.updateProjectionMatrix();
+    this.lastPerspFov = config.fov ?? 50;
+    this.lastPerspNear = config.near ?? 0.1;
   }
+
+  /** 透视参数记忆（ortho→persp 往返切换不丢用户配置） */
+  private lastPerspFov = 50;
+
+  private lastPerspNear = 0.1;
 
   /** 当前投影类型（面板回显与切换判断用） */
   get type(): 'PerspectiveCamera' | 'OrthographicCamera' {
@@ -43,6 +50,11 @@ export class CameraEngine {
       return;
     }
     const old = this.camera;
+    // 离开透视前记住用户配置（fov/near 面板可调，切回时不丢）
+    if (old instanceof THREE.PerspectiveCamera) {
+      this.lastPerspFov = old.fov;
+      this.lastPerspNear = old.near;
+    }
     const distance = old.position.distanceTo(this.lookTarget);
     const height = distance * Math.tan(THREE.MathUtils.degToRad(old instanceof THREE.PerspectiveCamera ? old.fov : 50) / 2) * 2;
     let next: THREE.PerspectiveCamera | THREE.OrthographicCamera;
@@ -51,7 +63,7 @@ export class CameraEngine {
       const halfW = halfH * aspect;
       next = new THREE.OrthographicCamera(-halfW, halfW, halfH, -halfH, 0.1, old.far * 2);
     } else {
-      next = new THREE.PerspectiveCamera(50, aspect, 0.1, old.far);
+      next = new THREE.PerspectiveCamera(this.lastPerspFov, aspect, this.lastPerspNear, old.far);
     }
     next.position.copy(old.position);
     next.lookAt(this.lookTarget);

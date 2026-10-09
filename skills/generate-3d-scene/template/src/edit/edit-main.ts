@@ -113,12 +113,13 @@ const boot = async (): Promise<void> => {
       const node = handle.internals.sceneEngine.getNode(anchorId) as SceneNode | null;
       const type = handle.internals.sceneEngine.getNodeType(anchorId);
       if (node && type) {
+        const basePos = node.position ?? [0, 0, 0];
         bridge.commit('复制', () => {
           handle.update({
             [type]: [{
               ...node,
               id: `${node.id}_copy_${Date.now() % 10000}`,
-              position: [node.position![0] + 1, node.position![1], node.position![2]],
+              position: [basePos[0] + 1, basePos[1], basePos[2]],
             }],
           });
         });

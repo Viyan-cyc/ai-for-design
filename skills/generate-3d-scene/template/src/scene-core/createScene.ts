@@ -242,6 +242,8 @@ export const createScene = async (
         }
         if (frag.camera.lookAt) {
           cameraEngine.setLookAt(frag.camera.lookAt);
+          // OrbitControls 每帧按 target 拉回视线——lookAt 编辑必须同步 target，否则无效且 serialize 丢弃
+          controlsEngine.setTarget(frag.camera.lookAt);
         }
         if (frag.camera.type !== undefined) {
           cameraEngine.setProjectionType(

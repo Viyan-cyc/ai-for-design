@@ -34,6 +34,28 @@ const extractGroups = (frag: TreeSceneFragment): Array<[string, SceneNode[]]> =>
   return groups;
 };
 
+/**
+ * 释放节点实例的非共享 GPU 资源。GLB 实例是缓存根的 clone（geometry/material
+ * 与源共享，AssetEngine.dispose 统一释放）——按 userData.isClone 标记跳过；
+ * handler 每节点新建的独立 geometry/material 在此释放（编辑器反复增删不漏）。
+ */
+const disposeInstance = (root: THREE.Object3D): void => {
+  root.traverse((child) => {
+    const mesh = child as THREE.Mesh;
+    if (!mesh.isMesh) {
+      return;
+    }
+    if ((mesh.userData as { isClone?: boolean }).isClone) {
+      return;
+    }
+    mesh.geometry?.dispose();
+    const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+    mats.forEach((m) => {
+      m?.dispose();
+    });
+  });
+};
+
 export class SceneEngine {
   readonly scene: THREE.Scene;
 
@@ -50,6 +72,9 @@ export class SceneEngine {
   onNodeCreated: ((id: string) => void) | null = null;
 
   onNodeRemoved: ((id: string) => void) | null = null;
+
+  /** params 原地更新后触发（handler 重放状态视觉/动画参数用） */
+  onNodeUpdated: ((id: string) => void) | null = null;
 
   constructor() {
     this.scene = new THREE.Scene();
@@ -195,17 +220,28 @@ export class SceneEngine {
     this.onNodeCreated?.(node.id);
   }
 
-  /** 重建节点（视觉清除/结构性变化时：同 id 同 type 重建实例） */
+  /** 重建节点（视觉清除/结构性变化时：同 id 重建实例）。子节点实体重挂到新实例下，不留孤儿 */
   private recreateNode(type: string, node: SceneNode): void {
     const old = this.entries.get(node.id);
-    if (old) {
-      old.obj.removeFromParent();
-      this.entries.delete(node.id);
-      this.onNodeRemoved?.(node.id);
+    if (!old) {
+      this.createNode(type, node);
+      return;
     }
+    // 收集以旧实例为 3D 父的子节点实体（跨分组组树的挂载目标要跟着换）
+    const childObjs: THREE.Object3D[] = [];
+    this.entries.forEach((e) => {
+      if (e.node.parentId === node.id && e.obj.parent === old.obj) {
+        childObjs.push(e.obj);
+      }
+    });
+    old.obj.removeFromParent();
+    this.entries.delete(node.id);
+    this.onNodeRemoved?.(node.id);
     const obj = this.createNode(type, node);
     if (obj) {
-      this.onNodeCreated?.(node.id);
+      childObjs.forEach((child) => {
+        obj.add(child);
+      });
     }
   }
 
@@ -259,26 +295,36 @@ export class SceneEngine {
       }
     }
 
-    // 2. 分组 upsert（幂等：存在即 update）
+    // 2. 分组 upsert（幂等：存在即 update）。
+    // 父先建：片段内 child 先于 parent 出现（或跨分组组树）时，先建/更新父再挂子，
+    // 否则 child 命中"父不存在"挂到场景根且永不再挂（undo rebuild 每次都会踩）。
+    const pending = new Map<string, { type: string; node: SceneNode }>();
     for (const [type, nodes] of extractGroups(frag)) {
       for (const incoming of nodes) {
         if (!incoming || typeof incoming !== 'object' || !incoming.id) {
           continue;
         }
-        const existing = this.entries.get(incoming.id);
-        if (existing && existing.type === type) {
-          this.updateNodeInPlace(existing, incoming);
-          stats.updated.push(incoming.id);
-        } else if (existing) {
-          this.recreateNode(type, incoming);
-          stats.updated.push(incoming.id);
-        } else {
-          const obj = this.createNode(type, incoming);
-          if (obj) {
-            stats.created.push(incoming.id);
-          }
-        }
+        pending.set(incoming.id, { type, node: incoming });
       }
+    }
+    const visit = (item: { type: string; node: SceneNode }): void => {
+      const incoming = item.node;
+      const parentId = incoming.parentId ?? null;
+      if (parentId && pending.has(parentId) && !this.entries.has(parentId)) {
+        visit(pending.get(parentId)!);
+      }
+      if (this.entries.get(incoming.id)?.type === item.type) {
+        this.updateNodeInPlace(this.entries.get(incoming.id)!, incoming);
+        stats.updated.push(incoming.id);
+      } else if (this.entries.has(incoming.id)) {
+        this.recreateNode(item.type, incoming);
+        stats.updated.push(incoming.id);
+      } else if (this.createNode(item.type, incoming)) {
+        stats.created.push(incoming.id);
+      }
+    };
+    for (const item of pending.values()) {
+      visit(item);
     }
 
     // 3. 编辑器视觉层
@@ -292,27 +338,34 @@ export class SceneEngine {
   }
 
   /**
-   * 原地更新（不重建实例）：transform / params 整块替换 / card / 父子关系。
-   * updateObject 语义（Spec §4.2 core API：同格式片段幂等 upsert，不重建场景）。
+   * 原地更新（不重建实例）：transform / params / card / 父子关系。
+   * 契约（types.ts TreeSceneFragment）：节点字段全部可选，**缺的不动**——
+   * 编辑器片段（Gizmo/对齐只发 transform）不得抹掉业务 params/card。
+   * params/card 显式给值才替换（整块替换语义只对「给了数据」生效）。
    */
   private updateNodeInPlace(entry: NodeEntry, incoming: SceneNode): void {
     const { obj } = entry;
-    // parentId 变化：重新挂树
-    const newParentId = incoming.parentId ?? null;
-    if ((entry.node.parentId ?? null) !== newParentId) {
-      const parent = newParentId ? this.entries.get(newParentId)?.obj : undefined;
-      if (newParentId && !parent) {
-        console.warn(`[SceneEngine] 更新时父节点不存在: ${newParentId}（id=${entry.node.id}），保持原父`);
-      } else {
-        (parent ?? this.scene).add(obj);
+    // parentId：undefined = 不动；显式 null = 解挂到场景根
+    if (incoming.parentId !== undefined) {
+      const newParentId = incoming.parentId ?? null;
+      if ((entry.node.parentId ?? null) !== newParentId) {
+        const parent = newParentId ? this.entries.get(newParentId)?.obj : undefined;
+        if (newParentId && !parent) {
+          console.warn(`[SceneEngine] 更新时父节点不存在: ${newParentId}（id=${entry.node.id}），保持原父`);
+        } else {
+          (parent ?? this.scene).add(obj);
+        }
+        entry.node.parentId = newParentId;
       }
     }
     // transform（显式字段，引擎消费）
     if (incoming.position !== undefined) {
       obj.position.set(...(incoming.position as Vec3));
+      entry.node.position = incoming.position;
     }
     if (incoming.rotation !== undefined) {
       obj.rotation.set(...(incoming.rotation as Vec3));
+      entry.node.rotation = incoming.rotation;
     }
     if (incoming.scale !== undefined) {
       const s = incoming.scale;
@@ -321,17 +374,16 @@ export class SceneEngine {
       } else {
         obj.scale.set(...(s as Vec3));
       }
+      entry.node.scale = s;
     }
-    // card / params 整块替换（更新不 diff：有数据就走）
-    entry.node = {
-      id: entry.node.id,
-      parentId: newParentId,
-      position: incoming.position ?? entry.node.position,
-      rotation: incoming.rotation ?? entry.node.rotation,
-      scale: incoming.scale ?? entry.node.scale,
-      card: incoming.card ?? undefined,
-      params: incoming.params ?? undefined,
-    };
+    // card / params：给了才整块替换（undefined = 不动；显式值 = 替换）
+    if (incoming.card !== undefined) {
+      entry.node.card = incoming.card;
+    }
+    if (incoming.params !== undefined) {
+      entry.node.params = incoming.params;
+      this.onNodeUpdated?.(incoming.id);
+    }
   }
 
   /** 删除物体（含子树级联），返回全部被删 id */
@@ -357,6 +409,7 @@ export class SceneEngine {
     toRemove.forEach((eid) => {
       const target = this.entries.get(eid);
       if (target) {
+        disposeInstance(target.obj);
         target.obj.removeFromParent();
         this.entries.delete(eid);
         this.visuals.delete(eid);

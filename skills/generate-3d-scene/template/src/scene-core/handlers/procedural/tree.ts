@@ -28,14 +28,14 @@ export const registerTreeHandler = (sceneEngine: SceneEngine): void => {
     const group = new THREE.Group();
     handlerUtils.applyTransform(group, node);
     const params = node.params ?? {};
-    const scale = typeof node.scale === 'number' ? node.scale : 1;
+    // node.scale 由 group transform 统一作用，此处不重复乘（双重缩放会破坏干冠比例）
     const height = typeof params.height === 'number' ? params.height : 1;
     const trunkColor = typeof params.trunkColor === 'string' ? params.trunkColor : TRUNK_COLOR;
 
     // 树干（锥度圆柱）
     const trunkMat = new THREE.MeshStandardMaterial({ color: trunkColor, roughness: 0.95 });
     const trunk = new THREE.Mesh(
-      new THREE.CylinderGeometry(TRUNK.radius * height, TRUNK.top * height, TRUNK.height * height, TRUNK.segments),
+      new THREE.CylinderGeometry(TRUNK.top * height, TRUNK.radius * height, TRUNK.height * height, TRUNK.segments),
       trunkMat,
     );
     trunk.position.y = (TRUNK.height * height) / 2;
@@ -47,10 +47,10 @@ export const registerTreeHandler = (sceneEngine: SceneEngine): void => {
         ? params.foliageColor
         : tier.color;
       const cone = new THREE.Mesh(
-        new THREE.ConeGeometry(tier.radius * scale * height, tier.height * height, TRUNK.segments),
+        new THREE.ConeGeometry(tier.radius * height, tier.height * height, TRUNK.segments),
         new THREE.MeshStandardMaterial({ color, roughness: 0.9, flatShading: true }),
       );
-      cone.position.y = tier.y * height + (TRUNK.height * height - TRUNK.height) / 2;
+      cone.position.y = tier.y * height;
       group.add(cone);
     });
     return group;

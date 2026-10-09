@@ -87,6 +87,9 @@ const checkNaming = (root: THREE.Object3D): string[] => {
 export class AssetEngine {
   private cache = new Map<string, CacheEntry>();
 
+  /** 加载中防重表（并发 getInstance 同一资产复用同一 promise） */
+  private loading = new Map<string, Promise<unknown>>();
+
   private loader = new GLTFLoader();
 
   /**
@@ -97,17 +100,34 @@ export class AssetEngine {
   async getInstance(assetId: string, url: string): Promise<THREE.Object3D> {
     let entry = this.cache.get(assetId);
     if (!entry) {
-      const gltf = await this.loader.loadAsync(url);
-      const root = gltf.scene;
-      entry = {
-        root,
-        report: this.buildReport(assetId, root),
-        promise: Promise.resolve(),
-      };
-      this.cache.set(assetId, entry);
-      this.warnIfOversized(entry.report);
+      // 并发请求同一未加载资产复用同一 promise（防重复下载/重复解析）
+      if (this.loading.has(assetId)) {
+        await this.loading.get(assetId);
+        return this.getInstance(assetId, url);
+      }
+      const load = this.loader.loadAsync(url);
+      this.loading.set(assetId, load);
+      try {
+        const gltf = await load;
+        const root = gltf.scene;
+        entry = {
+          root,
+          report: this.buildReport(assetId, root),
+          promise: Promise.resolve(),
+        };
+        this.cache.set(assetId, entry);
+        this.warnIfOversized(entry.report);
+      } finally {
+        this.loading.delete(assetId);
+      }
     }
-    return entry.root.clone(true);
+    const instance = entry.root.clone(true);
+    // 标记共享 clone：geometry/material 与缓存根同源，删除时 SceneEngine 不释放
+    // （统一由 AssetEngine.dispose 释放），防误 dispose 共享资源
+    instance.traverse((child) => {
+      (child.userData as { isClone?: boolean }).isClone = true;
+    });
+    return instance;
   }
 
   /** 已缓存资产的规格报告（无需重新解析） */
@@ -164,18 +184,22 @@ export class AssetEngine {
       if (!mesh.isMesh) {
         return;
       }
-      const base = Array.isArray(mesh.material) ? mesh.material[0] : mesh.material;
-      const std = (base ?? new THREE.MeshStandardMaterial()).clone() as THREE.MeshStandardMaterial;
+      const base = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+      const cloned = base.map((m) => (m ?? new THREE.MeshStandardMaterial()).clone() as THREE.MeshStandardMaterial);
       if (texUrl) {
         pending.push(loadTexture(texUrl).then((tex) => {
-          std.map = tex;
-          std.needsUpdate = true;
+          cloned.forEach((std) => {
+            std.map = tex;
+            std.needsUpdate = true;
+          });
         }));
       } else if (visual.map) {
         console.warn(`[AssetEngine] 贴图集缺 key: ${assetId}.${visual.map}（状态 ${stateName}）`);
       }
-      applyVisualToMaterial(std, visual);
-      mesh.material = std;
+      cloned.forEach((std) => {
+        applyVisualToMaterial(std, visual);
+      });
+      mesh.material = Array.isArray(mesh.material) || cloned.length > 1 ? cloned : cloned[0]!;
     });
     await Promise.all(pending);
   }

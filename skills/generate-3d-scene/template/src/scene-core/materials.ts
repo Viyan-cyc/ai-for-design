@@ -73,7 +73,7 @@ export interface VisualOverride {
   visible?: boolean;
 }
 
-/** 把 VisualOverride 应用到实例材质（编辑器视觉层专用） */
+/** 把 VisualOverride 应用到实例材质（编辑器视觉层专用；多材质数组按序克隆替换，不塌缩） */
 export const applyVisualOverride = (root: THREE.Object3D, o: VisualOverride | null | undefined): void => {
   if (!o) {
     return;
@@ -92,38 +92,40 @@ export const applyVisualOverride = (root: THREE.Object3D, o: VisualOverride | nu
     if (!mesh.isMesh) {
       return;
     }
-    const base = Array.isArray(mesh.material) ? mesh.material[0] : mesh.material;
-    const std = (base ?? new THREE.MeshStandardMaterial()).clone() as THREE.MeshStandardMaterial;
-    if (o.color !== undefined) {
-      std.color = new THREE.Color(o.color);
-    }
-    if (o.metalness !== undefined) {
-      std.metalness = o.metalness;
-    }
-    if (o.roughness !== undefined) {
-      std.roughness = o.roughness;
-    }
-    if (o.opacity !== undefined) {
-      std.transparent = o.opacity < 1;
-      std.opacity = o.opacity;
-    }
-    if (o.emissive !== undefined) {
-      std.emissive = new THREE.Color(o.emissive);
-      std.emissiveIntensity = o.emissiveIntensity ?? 1;
-    }
-    if (o.wireframe !== undefined) {
-      std.wireframe = o.wireframe;
-    }
-    if (o.flatShading !== undefined) {
-      std.flatShading = o.flatShading;
-      std.needsUpdate = true;
-    }
-    if (o.side !== undefined) {
-      std.side = o.side === 'FrontSide' ? THREE.FrontSide
-        : o.side === 'BackSide' ? THREE.BackSide
-          : THREE.DoubleSide;
-    }
-    mesh.material = std;
+    const base = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+    mesh.material = base.map((m) => {
+      const std = (m ?? new THREE.MeshStandardMaterial()).clone() as THREE.MeshStandardMaterial;
+      if (o.color !== undefined) {
+        std.color = new THREE.Color(o.color);
+      }
+      if (o.metalness !== undefined) {
+        std.metalness = o.metalness;
+      }
+      if (o.roughness !== undefined) {
+        std.roughness = o.roughness;
+      }
+      if (o.opacity !== undefined) {
+        std.transparent = o.opacity < 1;
+        std.opacity = o.opacity;
+      }
+      if (o.emissive !== undefined) {
+        std.emissive = new THREE.Color(o.emissive);
+        std.emissiveIntensity = o.emissiveIntensity ?? 1;
+      }
+      if (o.wireframe !== undefined) {
+        std.wireframe = o.wireframe;
+      }
+      if (o.flatShading !== undefined) {
+        std.flatShading = o.flatShading;
+        std.needsUpdate = true;
+      }
+      if (o.side !== undefined) {
+        std.side = o.side === 'FrontSide' ? THREE.FrontSide
+          : o.side === 'BackSide' ? THREE.BackSide
+            : THREE.DoubleSide;
+      }
+      return std;
+    });
   });
 };
 
@@ -213,17 +215,21 @@ export const applyState = async (
     if (!mesh.isMesh) {
       return;
     }
-    const base = Array.isArray(mesh.material) ? mesh.material[0] : mesh.material;
-    const std = (base ?? new THREE.MeshStandardMaterial()).clone() as THREE.MeshStandardMaterial;
+    const base = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+    const cloned = base.map((m) => (m ?? new THREE.MeshStandardMaterial()).clone() as THREE.MeshStandardMaterial);
     if (visual.mapUrl) {
       pending.push(loadTexture(visual.mapUrl).then((tex) => {
-        std.map = tex;
-        std.needsUpdate = true;
+        cloned.forEach((std) => {
+          std.map = tex;
+          std.needsUpdate = true;
+        });
       }));
     }
     // visual.map（资产贴图集 key）由 AssetEngine.applyState 消费（预载贴图集在资产侧）
-    applyVisualToMaterial(std, visual);
-    mesh.material = std;
+    cloned.forEach((std) => {
+      applyVisualToMaterial(std, visual);
+    });
+    mesh.material = Array.isArray(mesh.material) || cloned.length > 1 ? cloned : cloned[0]!;
   });
   await Promise.all(pending);
 };

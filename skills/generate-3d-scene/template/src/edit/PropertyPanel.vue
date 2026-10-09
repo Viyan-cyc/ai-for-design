@@ -475,10 +475,19 @@ const applyLight = (): void => {
   });
 };
 
-let lightCounter = 0;
+/** 新灯 id：扫描已有 id 取该类型首个空闲序号（撞名会把旧灯静默替换掉） */
+const nextLightId = (type: LightConfig['type']): string => {
+  const used = new Set(props.bridge.handle.serialize().lights.map((l) => l.id));
+  for (let i = 1; ; i += 1) {
+    const id = `${type}_${String(i).padStart(3, '0')}`;
+    if (!used.has(id)) {
+      return id;
+    }
+  }
+};
+
 const addLight = (type: LightConfig['type']): void => {
-  lightCounter += 1;
-  const id = `${type}_${String(lightCounter).padStart(3, '0')}`;
+  const id = nextLightId(type);
   const pos = (x: number, y: number, z: number): [number, number, number] => [x, y, z];
   const preset: LightConfig = {
     AmbientLight: { id, type, intensity: 0.4 },

@@ -94,18 +94,44 @@ export const setupCards = (deps: CardSystemDeps): CardSystem => {
     return out;
   };
 
-  /** 单张卡片挂载（创建锚点/DOM/Vue 实例） */
+  /** 单张卡片挂载（创建锚点/DOM/Vue 实例）；已挂载则同步 props/显隐/锚点偏移（params 更新通道） */
   const mountCard = (nodeId: string, card: CardSpec, params: Record<string, unknown>): void => {
     const key = `${nodeId}/card`;
-    if (anchors.has(key)) {
+    const props = { ...params, id: nodeId };
+    const anchor = anchors.get(key);
+    if (anchor) {
+      // 已挂载：原地同步（props/trigger/offset 变化不重挂 DOM，生产推 params 直达卡片 UI）
+      const state = states.get(key);
+      if (state) {
+        state.props = props;
+        state.component = card.type;
+      }
+      const app = apps.get(key);
+      if (app) {
+        // provide/inject 之外的轻量通道：重挂组件拿新 props（Vue 无 props 热更新 API）
+        app.unmount();
+        const el = anchor.element;
+        el.textContent = '';
+        const comp = components[card.type];
+        if (comp) {
+          const next = createApp(comp, props);
+          next.mount(el);
+          apps.set(key, next);
+        } else {
+          console.warn(`[cards] 未注册的卡片组件: ${card.type}（node=${nodeId}）`);
+          el.textContent = nodeId;
+        }
+      }
+      const target = resolveObject(nodeId);
+      if (target) {
+        anchor.position.set(...(card.offset ?? DEFAULT_CARD_OFFSET));
+      }
       return;
     }
     const el = document.createElement('div');
     el.dataset.cardId = key;
     el.style.pointerEvents = 'auto';
     const comp = components[card.type];
-    // props 自动注入：本节点 params（生产数据源）+ id（卡片定位/业务主键）
-    const props = { ...params, id: nodeId };
     if (comp) {
       const app = createApp(comp, props);
       app.mount(el);
@@ -133,6 +159,7 @@ export const setupCards = (deps: CardSystemDeps): CardSystem => {
       anchor.removeFromParent();
       anchor.element.remove();
       anchors.delete(key);
+      clickToggled.delete(key.slice(0, -'/card'.length));
     }
     const app = apps.get(key);
     if (app) {
@@ -177,7 +204,7 @@ export const setupCards = (deps: CardSystemDeps): CardSystem => {
     }
   };
 
-  /** 全量同步：引擎节点表 → 卡片挂载/卸载（v3 生命周期随节点） */
+  /** 全量同步：引擎节点表 → 卡片挂载/卸载/原地同步（v3 生命周期随节点） */
   const syncWithNodes = (): void => {
     const present = new Set<string>();
     for (const { id, card, params } of collectCardNodes()) {
@@ -190,6 +217,14 @@ export const setupCards = (deps: CardSystemDeps): CardSystem => {
       }
     });
     attachAnchors();
+    // trigger 变化重算显隐（always→click 且未点开时收起；click→always 常显）
+    for (const [key, state] of states) {
+      const nodeId = key.slice(0, -'/card'.length);
+      const node = resolveNode(nodeId);
+      if (node?.card) {
+        state.visible = node.card.trigger === 'click' ? clickToggled.has(nodeId) : true;
+      }
+    }
   };
 
   return {
