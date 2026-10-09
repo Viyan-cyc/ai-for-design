@@ -253,12 +253,19 @@ generate-3d-scene/
 - 理由：语料是短描述文本、领域窄、库小起步——词法方案零依赖零下载，先满足"本地即可用"；内网 embedding API 后续接入时只换 `embed()` 实现（接口已抽象），索引格式不变
 - 索引验证：import-assets 内置冒烟样例（中文查询命中期望资产 top-3），失败即入库 FAIL
 
-**validate-model 规格门禁默认值**（model-spec.md 的机器执行面，用户可覆盖）：
-```
-原点: 底面中心 y=0（bbox.min.y ≈ 0，容差 0.01）     面数: prop≤2k / 主角≤10k
-子节点: ≤64（扁平化）                                命名: ^[a-z][a-z0-9_]*$（snake_case）
-贴图: 单张≤1024×1024，≤4 张/模型                     单位: 米制（bbox 高度合理性检查）
-```
+**validate-model 规格门禁**（model-spec.md 的机器执行面，用户可 CLI 覆盖）——**分级门禁**（2026-10-09 裁决，批次 2 落地）：
+
+| 门禁类别 | 项目 | art 档（默认：第三方美术资产） | strict 档（AI 生成资产，降级阶梯第 4/5 层） |
+|---|---|---|---|
+| 性能类（硬阻断） | 面数 | 道具≤5k / 主角≤50k | 道具≤2k / 主角≤10k |
+| | 子节点 | ≤64 | ≤64 |
+| | 贴图 | 单张≤2048，≤8 张/模型 | 单张≤1024，≤4 张/模型 |
+| | 几何 | 必须含 POSITION 几何 | 同左 |
+| 约定类 | 命名 | ^[a-z][a-z0-9_]*$（**默认告警**） | 同规则（**阻断**） |
+| | 原点 | 底面中心 y=0（bbox.min.y≈0，容差 0.01）（**默认告警**） | 同规则（**阻断**） |
+| | 高度 | 0.05~200m 合理性（**默认告警**） | 同规则（**阻断**） |
+
+理由（用户 2026-10-09 裁决「分级门禁」）：第三方美术资产（Sketchfab/Collada 导出）系统性违反命名/原点约定，且以不透明实例加载，约定对其使用价值影响小；约定纪律真正保护的是 AI 生成资产（LLM 靠名字定位部件、靠原点摆放）。约定类偏差默认写入库 manifest（`gate.deviations`，可审计）。CLI：`--strict` 切档，逐项阈值可覆盖。
 
 **母版工程 core API**（createScene 唯一入口返回的 sceneHandle；契约以代码现状为准，2026-10-08 评审同步）：
 ```ts
@@ -424,11 +431,11 @@ S9 交付        strip-edit 出二开包 + INTEGRATION_GUIDE 校验 + 验证报�
 - [ ] T.6 冒烟扩展（smoke-r.mjs 增段）：树 DOM 层级断言（分组根 + 嵌套子节点）/ 搜索过滤断言 / eye 落库断言（__visuals.visible 回读）/ lock 拾取跳过断言（raycast 不命中锁定物体）+ 三绿（vue-tsc / build / eslint）
 
 **批次 2：资产管线**
-- [ ] 2.1 manifest schema 校验器（import-assets 内嵌）+ 样例压缩包（example+rack 两个 GLB 从 3d-templete 库转入做种子资产）
-- [ ] 2.2 import-assets.mjs：解压/校验/规格门禁（validate-model）/落库
-- [ ] 2.3 validate-model.mjs 独立可跑（GLB 解析：面数/节点/命名/贴图/bbox）
-- [ ] 2.4 build-search-index.mjs：n-gram TF-IDF 词法向量索引 + 内置检索冒烟样例
-- [ ] 2.5 search-assets.mjs CLI（query → top-k JSON）+ 检索质量验证（中文查询命中种子资产）
+- [x] 2.1 manifest schema 校验器（import-assets 内嵌）+ 样例压缩包（example+rack 两个 GLB 从 3d-templete 库转入做种子资产）
+- [x] 2.2 import-assets.mjs：解压/校验/规格门禁（validate-model）/落库
+- [x] 2.3 validate-model.mjs 独立可跑（GLB 解析：面数/节点/命名/贴图/bbox）
+- [x] 2.4 build-search-index.mjs：n-gram TF-IDF 词法向量索引 + 内置检索冒烟样例
+- [x] 2.5 search-assets.mjs CLI（query → top-k JSON）+ 检索质量验证（中文查询命中种子资产）
 
 **批次 M：材质编辑器 + 材质库（2026-10-09 立项，批次 2 之后、批次 3 之前执行）**
 > 依据 §4.10 契约（参数契约已对照实装 three@0.185.1 校正）。五项裁决见 §4.10.0。edit/ 新增 MaterialLibService.ts；core 侧 materials.ts 扩工厂（工厂不依赖 edit，铁律保持）。
@@ -769,6 +776,112 @@ aoMap/lightMap 需第二 UV：0.185 由 `texture.channel`（0=uv、1=uv1）选�
 - **@types 文档 vs 源码冲突两处**：anisotropyRotation @default 1 实为 0；displacementScale @default 0 实为 1——以源码为准
 - Lambert specularMap 是 SRGB 桶（d.ts 明示 color data，与"高光图=数据图"直觉相反）
 
+#### 4.10.8 批次 M Plan（执行期签名 + 实现设计决策，2026-10-09 执行前定稿）
+
+> Plan 期定稿。产品决策由 §4.10.0 五项裁决锁定，本节不含产品新知，只把契约落到可执行签名 + 记录契约未覆盖的内部实现决策（D1–D9）。
+
+**文件变更**
+
+| 文件 | 动作 | 内容 |
+|---|---|---|
+| `template/src/scene-core/types.ts` | 改 | 新增 `MaterialType`/`MaterialSpec`/`MaterialLibEntry`；`RESERVED_KEYS` 补 `__materialLib`；`SceneData`/`TreeSceneFragment` 增 `__materialLib?` |
+| `template/src/scene-core/materials.ts` | 改 | `VisualOverride` 扩 `materialType`/`libraryRef`（内联材质字段扩到 MaterialSpec 全集）；新增 `createMaterialFromSpec`/`applyMaterialTextures`/`migrateMaterialSpec`；`applyVisualOverride` 遇 `libraryRef` 跳过材质（只处理 visible/shadow） |
+| `template/src/scene-core/engine/SceneEngine.ts` | 改 | 新增 `materialLib` 存储（对称 `visuals`）：`setMaterialLibEntry`/`getMaterialLibEntry`/`getAllMaterialLib`/`removeMaterialLibEntry`；`applyFragment` 消费 `frag.__materialLib` |
+| `template/src/scene-core/createScene.ts` | 改 | `serialize()` 追加 `__materialLib`（有则写，无则删） |
+| `template/src/scene-core/index.ts` | 改 | 导出 `createMaterialFromSpec`/`migrateMaterialSpec` + `MaterialSpec`/`MaterialType`/`MaterialLibEntry` |
+| `template/src/edit/MaterialLibService.ts` | 新 | 库 CRUD + 实例注册表 + 引用追踪 + 热更广播 + 4 种子材质 + syncAll |
+| `template/src/edit/PropertyPanel.vue` | 改 | 材质分区改造（库下拉/类型/分组折叠/全量参数/贴图槽/上传接线）；`materialLib` 新 prop |
+| `template/src/edit/edit-main.ts` | 改 | 装配 MaterialLibService（种子注入 + 订阅 bridge 变更 syncAll）→ EditApp |
+| `template/src/edit/EditApp.vue` | 改 | 透传 `materialLib` 给 PropertyPanel |
+| `template/vite.config.ts` | 改 | dev middleware `POST /__gts3d/upload-texture` |
+| `template/scripts/smoke-r.mjs` | 改 | 增 S7–S13 材质断言（`--edit` 模式） |
+| `template/docs/INTEGRATION_GUIDE.md` | 改 | 补 libraryMaterials 转录段（spec 样例） |
+
+**签名（精确）**
+
+```ts
+// types.ts
+type MaterialType = 'MeshLambertMaterial' | 'MeshStandardMaterial' | 'MeshPhysicalMaterial';
+interface MaterialSpec {
+  type: MaterialType;                       // 归一：缺省 Standard
+  // 通用（三类型共有）
+  color?: string; opacity?: number; transparent?: boolean; alphaTest?: number;
+  side?: 'FrontSide'|'BackSide'|'DoubleSide'; flatShading?: boolean; wireframe?: boolean;
+  fog?: boolean; vertexColors?: boolean; emissive?: string; emissiveIntensity?: number;
+  // 共有贴图槽（URL 字符串）+ 伴随参数
+  map?: string; emissiveMap?: string;
+  normalMap?: string; normalScale?: [number,number]; normalMapType?: 'TangentSpaceNormalMap'|'ObjectSpaceNormalMap';
+  bumpMap?: string; bumpScale?: number;
+  displacementMap?: string; displacementScale?: number; displacementBias?: number;
+  alphaMap?: string; aoMap?: string; aoMapIntensity?: number;
+  lightMap?: string; lightMapIntensity?: number; envMap?: string; envMapIntensity?: number;
+  // Lambert 特有
+  specularMap?: string; combine?: string; reflectivity?: number; refractionRatio?: number;
+  // Standard 特有
+  roughness?: number; roughnessMap?: string; metalness?: number; metalnessMap?: string;
+  // Physical 特有（继承 Standard）
+  clearcoat?: number; clearcoatRoughness?: number; clearcoatNormalMap?: string; clearcoatNormalScale?: [number,number];
+  clearcoatMap?: string; clearcoatRoughnessMap?: string;
+  transmission?: number; transmissionMap?: string; thickness?: number; thicknessMap?: string;
+  attenuationColor?: string; attenuationDistance?: number|null; dispersion?: number;
+  specularIntensity?: number; specularIntensityMap?: string; specularColor?: string; specularColorMap?: string;
+  sheen?: number; sheenColor?: string; sheenColorMap?: string; sheenRoughness?: number; sheenRoughnessMap?: string;
+  iridescence?: number; iridescenceIOR?: number; iridescenceThicknessRange?: [number,number];
+  iridescenceMap?: string; iridescenceThicknessMap?: string;
+  anisotropy?: number; anisotropyRotation?: number; anisotropyMap?: string;
+  ior?: number;
+}
+interface MaterialLibEntry { name: string; spec: MaterialSpec; }   // __materialLib[mat_id]
+
+// materials.ts
+interface VisualOverride extends Partial<Omit<MaterialSpec,'type'>> {
+  materialType?: MaterialType;   // inline 类型；与 libraryRef 互斥
+  libraryRef?: string;           // 引用库条目；与 inline 调参字段互斥
+  castShadow?: boolean; receiveShadow?: boolean; visible?: boolean;
+}
+const createMaterialFromSpec: (spec: MaterialSpec) => THREE.MeshLambertMaterial|THREE.MeshStandardMaterial|THREE.MeshPhysicalMaterial;
+const applyMaterialTextures: (mat: THREE.Material, spec: MaterialSpec) => Promise<void>;   // 贴图槽异步换（含 colorSpace 三分桶 + channel）
+const migrateMaterialSpec: (spec: MaterialSpec, nextType: MaterialType) => MaterialSpec;   // 类型切换参数迁移
+
+// SceneEngine.ts
+setMaterialLibEntry(id: string, entry: MaterialLibEntry): void;
+getMaterialLibEntry(id: string): MaterialLibEntry | null;
+getAllMaterialLib(): Record<string, MaterialLibEntry>;
+removeMaterialLibEntry(id: string): void;
+
+// edit/MaterialLibService.ts
+class MaterialLibService {
+  constructor(handle: SceneHandle, bridge: Bridge);
+  listEntries(): Array<{ id: string; name: string; spec: MaterialSpec }>;
+  getEntry(id: string): MaterialLibEntry | null;
+  createEntry(name: string, spec: MaterialSpec): string;   // 生成 mat_id
+  updateEntry(id: string, spec: MaterialSpec, label: string): void;   // 热更
+  renameEntry(id: string, name: string): void;
+  removeEntry(id: string): void;
+  saveAs(nodeId: string, name: string): string;   // inline → 新条目 + 引用
+  link(nodeId: string, matId: string): void;      // __visuals[nodeId] = { libraryRef }
+  disconnect(nodeId: string): void;               // 库 spec 拷贝为 inline
+  getInstance(matId: string): THREE.Material | null;
+  seeds(): void;                                  // 注入 glass/carpaint/brushed_metal/velvet
+  syncAll(): void;                                // 引用物体重挂共享实例
+  dispose(): void;
+}
+```
+
+**实现设计决策（§4.10 契约未覆盖处；内部实现层，非产品决策）**
+
+- **D1 `__materialLib` 真相源落 SceneEngine**（对称 `__visuals`）：库数据随 scene-data 文档流动，`handle.update({__materialLib})` 写、`serialize()` 读、`structuredClone(serialize())` 快照天然覆盖→ undo/redo 零改造。CRUD 语义由 edit 侧 `MaterialLibService` 提供（写穿 `handle.update`），符合"库 CRUD 在 edit、工厂不依赖 edit"。
+- **D2 运行时实例注册表落 `MaterialLibService`**（`mat_id → THREE.Material` 单例）：契约明确"实例注册表在 edit"。
+- **D3 共享实例重挂 `syncAll()`**：遍历 `__visuals[id].libraryRef` 命中的物体，`mesh.material = instances.get(ref)`；订阅 `bridge.onState` 在每次 commit/undo/redo/rebuild 后调用（幂等零成本）。覆盖 undo 全量重建后新实例的重挂。
+- **D4 core `applyVisualOverride` 遇 `libraryRef` 跳过材质**：共享实例归 `MaterialLibService` 独占，core 只处理 visible/castShadow/receiveShadow，避免 core 克隆覆盖共享实例。core 不感知库语义（只看 `libraryRef` 字段是否存在），铁律不破。
+- **D5 工厂切两段**：`createMaterialFromSpec` 同步建材质 + 设全部标量/枚举/Vector2/颜色（`attenuationDistance` null↔Infinity 还原）；贴图槽由 `applyMaterialTextures` 异步加载（三分桶 colorSpace + `texture.channel`）。热更标量走同步热改，贴图走异步换。
+- **D6 `createMaterialFromSpec` 是唯一材质实例化入口**：`materials.ts` 内 `stateMaterials` 路径（`applyState`/`applyVisualToMaterial`）保留不动（业务状态视觉与库材质两个问题）；两表并存不合并（§4.10.1）。
+- **D7 PropertyPanel 参数走数据驱动**：按类型定义参数描述符数组（key/label/range/step/group），`v-for` 渲染，避免逐参数堆模板；分区改造限于 `PropertyPanel.vue` 单文件（不新增 .vue）。
+- **D8 上传 middleware 内联 vite 插件**：`vite.config.ts` 新增本地插件对象（`configureServer` 挂 `POST /__gts3d/upload-texture`），`apply:'serve'` 保证不进 build；写 `public/assets/textures/`，返回 `{ url: 'assets/textures/<name>' }`。
+- **D9 种子材质注入时机**：`edit-main` boot 装配 `MaterialLibService` 后即 `seeds()`（写穿 `__materialLib`），未被引用不进交付转录（strip-edit 3.2 只转被引用条目）。
+
+**批次 M 验收（Done Contract）**：M.1–M.7 逐条完成；四道门禁全绿（`vue-tsc` / `vite build`（edit-main 独立 chunk，隔离保持）/ `eslint` 0 errors / headless 冒烟 S7–S13 PASS）。
+
 ### 4.11 场景树契约（2026-10-09 立项待评审，批次 T 执行依据）
 
 > 用户需求：场景树仿 Spline——子节点可展开、可搜索、节点可显示隐藏、可锁定解锁（用户提供了 Spline 场景面板 DOM 结构作参照：场景列表区 + 搜索框 + 类型过滤 + 树区，树节点带 chevron/类型图标/名称/锁定/显隐按钮）。
@@ -825,6 +938,8 @@ aoMap/lightMap 需第二 UV：0.185 由 `texture.channel`（0=uv、1=uv1）选�
 - **用户验收反馈第五轮（2026-10-08）**：两项：① 阻尼关了以后旋转和平移确实没有阻尼效果了，但缩放还有；② 阴影有点断裂，每个灯是否开启阴影也想要有个开关决定显示与否，如果开启了，阴影参数也开出来调。全部修复，见 Plan-Execution Diff #13
 - **命名纪律修正（2026-10-08）**：用户质询 shadowCameraExtent 非原生参数（自造折叠语法糖，违反命名纪律），裁决方案 1 拆为原生四字段 shadowCameraLeft/Right/Top/Bottom。已全链路替换并四项冒烟 PASS，见 Plan-Execution Diff #14
 - **命名纪律全量迁移 + 面板 Tab 拆分（2026-10-08）**：用户指令「1. 其他地方还有无类似的问题，有的话请修改 2. 物体自己的面板跟场景灯光这种公共的面板拆开吧」。全量审计出 4 处数据层遗留缩写（LightConfig.type 六值/CameraConfig.type 两值/ControlsConfig.type/SceneObjectNode.primitive 六值）+ 1 处布尔折叠（MaterialOverride.doubleSide），用户裁决全修 + 拆分选方案 A（Tab 双页签）。已全部实现，见 Plan-Execution Diff #15
+
+- **批次 2 完成（2026-10-09）**：2.1–2.5 全部落地。skill 新增 scripts/{validate-model,import-assets,build-search-index,search-assets}.mjs（零依赖）；assets/ 库落种子（models/example.glb+rack.glb、manifests/seed-package.json、search-index.json）；samples/{seed-manifest.json,seed-package.zip} 样例包。**门禁分级裁决**（用户选「分级门禁」）：性能类硬阻断、约定类（命名/原点/高度）默认告警 + `--strict` 升阻断——因两个种子（Damaged Helmet 15452 面 / Sketchfab rack）系统性违反命名+原点约定，且 example 性能也超 §4.2 原默认。证据：种子默认档 PASS（约定告警）、`--strict` FAIL；导入全链跑通（校验→门禁→落库→索引→冒烟 PASS）；8 项负面测试全部按期望退出码（坏 GLB strict 门禁 / 非模型文件 exit2 / 缺失文件 / states 缺 key / 非法 id / 跨包重复 id / art 告警放行 / 合规 strict 通过）；中文查询命中种子（机柜/服务器→rack、头盔→example）。零依赖自研 ZIP 读写往返字节一致。**下一动作：批次 M（材质编辑器 + 材质库，§4.10）**。
 
 ### 批次 1：skill 骨架 + 母版工程（2026-09-30 完成，冒烟通过）
 - [x] 1.1 建 skill 目录树
@@ -904,6 +1019,33 @@ aoMap/lightMap 需第二 UV：0.185 由 `texture.channel`（0=uv、1=uv1）选�
 - 修复轮两项 P1 均正确落地且无回归；新增两项边界发现（6 号英文 oneLiner 截断、7 号读盘无缓存）均为 P3/P4 级，当前零触发、不影响交付，挂账批次 5 收尾时顺手处理或不处理
 - 8 号（depth 上限静默降级）与 10 号（require 混用）已知悉并接受，理由如上
 - 批次 C 复检关闭。P2/P3/P4 汇总挂账清单：EventDispatcher 断言风格、require_('fs') 统一、oneLiner 英文句点截断、barrel 递归缓存
+
+### 评审记录 4（2026-10-09，批次 2 代码评审，mandatory three-axis，同日修复闭环）
+
+**评审范围**：批次 2 全部产物——四脚本（validate-model / import-assets / build-search-index / search-assets）+ samples/ + assets/ 种子库。评审方式：8 组探针实测（含 2 个安全探针：zip-slip 双层、检索词元来源追溯）+ 源码逐段重读 + Spec §4.2/§4.9.4 契约交叉验证。
+
+#### Review Matrix
+
+| # | 轴 | 检查项 | 结论 | 证据 |
+|---|---|---|---|---|
+| 1 | Axis-1 | 批次 2 目标/验收可验证 | PASS | 2.1–2.5 证据齐（全链 PASS + 8 负面测试按期望退出码） |
+| 2 | Axis-1 | 分级门禁裁决（2026-10-09）落实 | PASS | art/strict 阈值与阻断语义正确，§4.2 已同步 |
+| 3 | Axis-2 | §4.2 检索条目八字段 | PASS | id/name/score/format/category/tags/modelPath/description 齐 |
+| 4 | Axis-2 | manifest schema 合并 §4.9.4 双形态 | PASS | textures/states 校验 + states.map 命中检查有效（N5 探针） |
+| 5 | Axis-2 | §4.2 检索语料五字段契约 | **FAIL→已修** | `PROJECT_FIELDS` 投影丢 `search_text`——语料实为四字段，契约要求含 search_text。种子恰被 description「Damaged Helmet」覆盖故冒烟未暴露；「helmet」查询词元来源追溯时发现。修复：PROJECT_FIELDS 补 search_text。复验：74→76 词元、docs 含字段、冒烟 9/9、检索保持命中 |
+| 6 | Axis-3 | zip-slip 防护 | PASS | 双层实测拦截：条目名 `../escaped.txt`（staging 越界）+ manifest file_path `../outside.glb`（isRelPath） |
+| 7 | Axis-3 | ZIP/GLB 解析健壮性 | PASS | EOCD 回扫/坏 sig/截断/非模型文件（exit2）均正确抛错 |
+| 8 | Axis-3 | §4.9.4 双形态入库判定「白模 UV 完好」 | **PARTIAL→已修** | validate-model 产出 uvMissing 但 import-assets 未消费。修复：textures 存在且 uvMissing → 门禁 FAIL。复验：缺 UV 多状态包 exit=1、普通资产缺 UV 放行 exit=0（阻断范围正确限定多状态资产） |
+| 9 | Axis-3 | CLI 文案笔误 | **已修** | 「curl 检索仍可用」→「继续入库，检索仍可用」 |
+
+#### Overall Verdict: **PASS（三处修复复验后）**
+
+- P2（语料缺 search_text）：契约违约，已修 + 复验（76 词元 / 冒烟 9/9 / helmet·机柜检索保持）
+- P3（uvMissing 未消费）：双形态入库判定闭环，已修 + 复验（exit 码双向验证）
+- P3（curl 笔误）：已修
+- 全量回归：种子重导入 + 索引重建 + 冒烟 PASS
+- **评审方法沉淀**：「词元来源追溯探针」暴露了冒烟盲区——种子资产 search_text 与 description 语义重叠，只跑种子的冒烟无法证明语料字段完整；评审需构造「字段值只存在于单字段」的探针查询（如「helmet」只查 vocab 归属）
+
 
 
 
@@ -990,6 +1132,15 @@ aoMap/lightMap 需第二 UV：0.185 由 `texture.channel`（0=uv、1=uv1）选�
      - **P3 快赢**：tree.ts 冠层半径双重乘 node.scale（干冠比例随 scale 失真）——删重复乘法；clickToggled 卸载时不清（id 复用带脏态）——unmountCard 清理；ortho→persp 往返丢 fov/near——CameraEngine 记忆 lastPerspFov/Near。**P3 未修（记录在案）**：两入口重喂名单硬编码双份（examples/cars/trees）；applyState 贴图 promise 落到已替换材质的静默丢失；recreateNode 双发 onNodeCreated（attachObject 已发，显式再发——现在 recreateNode 已重写不再双发，此项已顺带消除）；registerAssetStates 先于首次加载静默 no-op
      - **复审方法沉淀**：后台 agent 全量读 24 文件 + 顺调用链交叉验证（含清单外 callee：CameraEngine/ControlsEngine/RenderLoop/LightEngine/RaycastEngine/RendererEngine/SelectionService/SaveService）；结论——创建/建树/undo 骨架健康，问题集中在「原地更新」路径（系统性盲区：单人写 create 路径时 update 路径无人对照契约）
      - **复验证据**：vue-tsc 绿 / build 绿 / eslint 0 errors / SMOKE PASS 双模式（主模式 + ?edit=1）——S6 新断言直验 P0：transform-only 片段喂 car_01 后 params（assetId/name/status/speed）与 card（type/trigger/offset）完整保留；S1-S5 全部保持
+
+  18. **批次 2 执行记录（2026-10-09，2.1–2.5 全部完成）**：
+      - **门禁分级（用户裁决）**：§4.2 validate-model 默认值改两档（art 默认 / strict）——性能类（面数/贴图/几何/节点）硬阻断，art 档阈值放宽（主角 50k / 道具 5k、贴图 2048·8 张）；约定类（命名/原点/高度）art 档默认告警、strict 档阻断。§4.2 表格已同步。推理：美术资产以不透明实例加载，约定纪律真正保护 AI 生成资产（降级阶梯第 4/5 层 → strict）。偏差写库 manifest（`gate.deviations`）。
+      - **manifest schema 扩展**：§4.2 上传 schema 合并 §4.9.4 双形态——data[] 条目新增可选 `id`（默认由 file_name 派生，须 `^[a-z][a-z0-9_]*$`）、`textures`（key→包内相对路径）、`states`（StateVisual）；校验：states.map 必须命中 textures key、file_path/thumbnail/textures 引用文件必须齐全。白模 UV 缺失由 validate-model 的 `uvMissing` 字段支持（供双形态入库判定）。
+      - **库布局（§4.1 树补充）**：新增 `assets/textures/<id>/`（多状态贴图集落点）；新增 `samples/`（样例包 + 可读 manifest 模板）。modelPath 统一 `assets/models/<id>.glb`（gltf 多文件落 `assets/models/<id>/`）。
+      - **零依赖实现**：自研 ZIP 读（stored+deflate，EOCD/中央目录/本地头解析 + zip-slip 防护）与写（deflate 优先回退 stored，`zlib.crc32`）——往返字节一致；GLB 解析（JSON/BIN chunk）+ PNG/JPEG/WebP 尺寸头解析；skill 根无 node_modules（Node≥22）。
+      - **报告落库**：validate-model 报告（含 limits/violations/warnings）随条目存入 `manifests/*.json`，供批次 3.1 build.mjs 读预算估算（R1-3）。
+      - **索引格式**：`assets/search-index.json` = `{version,builtAt,profile:'ngram-tfidf-v1',docCount,docs[],vocab[],idf[],vectors[]}`；docs 字段 = §4.2 检索条目字段；切分 = CJK unigram+bigram / 拉丁整词，TF-IDF + L2 归一化余弦。
+      - **负面测试证据**（临时夹具，已清理）：8 项全部按期望退出码——坏 GLB + `--strict`（门禁阻断）/ 非模型文件（exit2）/ 引用缺失文件 / states.map 缺 key / 非法 id / 跨包重复 id / art 档约定告警放行 / 合规包 strict 通过。
 
 ## 8. Archive Record (Recommended at closure)
 - 待任务收口后填写

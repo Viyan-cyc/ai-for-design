@@ -1,0 +1,25 @@
+{
+  "meta": { "type": "file", "source_id": 0, "group_id": 0, "version": "1" },
+  "data": [
+    {
+      "id": "example",
+      "name": "示例模型",
+      "file_name": "example.glb",
+      "file_path": "data/example.glb",
+      "description": "引擎自带示例 GLB（Damaged Helmet），验证资源加载链路。",
+      "tags": ["example", "glb", "demo", "示例", "头盔"],
+      "search_text": "示例 演示 demo 头盔 helmet",
+      "category": "demo"
+    },
+    {
+      "id": "rack",
+      "name": "机柜",
+      "file_name": "rack.glb",
+      "file_path": "data/rack.glb",
+      "description": "标准服务器机柜模型，机房 / 数据中心场景用。",
+      "tags": ["rack", "机柜", "server", "cabinet", "机房", "设备", "服务器"],
+      "search_text": "机柜 服务器 机房 数据中心 rack server cabinet 设备",
+      "category": "equipment"
+    }
+  ]
+}

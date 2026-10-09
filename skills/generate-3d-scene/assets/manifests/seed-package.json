@@ -1,0 +1,163 @@
+{
+  "package": "seed-package",
+  "importedAt": "2026-10-09T12:13:16.562Z",
+  "meta": {
+    "type": "file",
+    "source_id": 0,
+    "group_id": 0,
+    "version": "1"
+  },
+  "entries": [
+    {
+      "id": "example",
+      "name": "示例模型",
+      "file": "example.glb",
+      "format": "glb",
+      "modelPath": "assets/models/example.glb",
+      "category": "demo",
+      "tags": [
+        "example",
+        "glb",
+        "demo",
+        "示例",
+        "头盔"
+      ],
+      "description": "引擎自带示例 GLB（Damaged Helmet），验证资源加载链路。",
+      "search_text": "示例 演示 demo 头盔 helmet",
+      "polycount": 15452,
+      "gate": {
+        "tier": "art",
+        "conventionsOk": false,
+        "deviations": [
+          "[约定·告警] 原点不符: bbox.min.y=-0.9010（应为 0，容差 0.01）",
+          "[约定·告警] 命名违规（应 ^[a-z][a-z0-9_]*$）: node_damagedHelmet_-6514",
+          "网格名违规（默认不参与门禁，--check-mesh-names 启用）: mesh_helmet_LP_13930damagedHelmet"
+        ]
+      },
+      "report": {
+        "assetId": "example",
+        "format": "glb",
+        "tier": "art",
+        "triangles": 15452,
+        "nodeCount": 1,
+        "textureCount": 5,
+        "maxTextureSize": 2048,
+        "bbox": {
+          "min": [
+            -0.9474585652351379,
+            -0.9009741463205366,
+            -1.1871552888746546
+          ],
+          "max": [
+            0.9424954056739807,
+            0.9009952370548191,
+            0.8128453411628411
+          ],
+          "height": 1.8019693833753556
+        },
+        "originOk": false,
+        "namingOk": false,
+        "namingViolations": [
+          "node_damagedHelmet_-6514"
+        ],
+        "heightOk": true,
+        "conventionsOk": false,
+        "passed": true,
+        "violations": [],
+        "warnings": [
+          "[约定·告警] 原点不符: bbox.min.y=-0.9010（应为 0，容差 0.01）",
+          "[约定·告警] 命名违规（应 ^[a-z][a-z0-9_]*$）: node_damagedHelmet_-6514",
+          "网格名违规（默认不参与门禁，--check-mesh-names 启用）: mesh_helmet_LP_13930damagedHelmet"
+        ],
+        "uvMissing": false,
+        "limits": {
+          "maxTriangles": 50000,
+          "maxNodes": 64,
+          "maxTextureSize": 2048,
+          "maxTextures": 8,
+          "originTolerance": 0.01,
+          "heightMin": 0.05,
+          "heightMax": 200
+        }
+      }
+    },
+    {
+      "id": "rack",
+      "name": "机柜",
+      "file": "rack.glb",
+      "format": "glb",
+      "modelPath": "assets/models/rack.glb",
+      "category": "equipment",
+      "tags": [
+        "rack",
+        "机柜",
+        "server",
+        "cabinet",
+        "机房",
+        "设备",
+        "服务器"
+      ],
+      "description": "标准服务器机柜模型，机房 / 数据中心场景用。",
+      "search_text": "机柜 服务器 机房 数据中心 rack server cabinet 设备",
+      "polycount": 744,
+      "gate": {
+        "tier": "art",
+        "conventionsOk": false,
+        "deviations": [
+          "[约定·告警] 原点不符: bbox.min.y=-1.0000（应为 0，容差 0.01）",
+          "[约定·告警] 命名违规（应 ^[a-z][a-z0-9_]*$）: Sketchfab_model, Collada visual scene group, Server_lp, defaultMaterial",
+          "网格名违规（默认不参与门禁，--check-mesh-names 启用）: defaultMaterial"
+        ]
+      },
+      "report": {
+        "assetId": "rack",
+        "format": "glb",
+        "tier": "art",
+        "triangles": 744,
+        "nodeCount": 4,
+        "textureCount": 4,
+        "maxTextureSize": 1024,
+        "bbox": {
+          "min": [
+            -0.3235290050506592,
+            -1.0000000141419445,
+            -0.3235300322386879
+          ],
+          "max": [
+            0.3235290050506592,
+            1.0000000141419445,
+            0.3235300322386879
+          ],
+          "height": 2.000000028283889
+        },
+        "originOk": false,
+        "namingOk": false,
+        "namingViolations": [
+          "Sketchfab_model",
+          "Collada visual scene group",
+          "Server_lp",
+          "defaultMaterial"
+        ],
+        "heightOk": true,
+        "conventionsOk": false,
+        "passed": true,
+        "violations": [],
+        "warnings": [
+          "[约定·告警] 原点不符: bbox.min.y=-1.0000（应为 0，容差 0.01）",
+          "[约定·告警] 命名违规（应 ^[a-z][a-z0-9_]*$）: Sketchfab_model, Collada visual scene group, Server_lp, defaultMaterial",
+          "网格名违规（默认不参与门禁，--check-mesh-names 启用）: defaultMaterial"
+        ],
+        "uvMissing": false,
+        "limits": {
+          "maxTriangles": 50000,
+          "maxNodes": 64,
+          "maxTextureSize": 2048,
+          "maxTextures": 8,
+          "originTolerance": 0.01,
+          "heightMin": 0.05,
+          "heightMax": 200
+        }
+      }
+    }
+  ]
+}
