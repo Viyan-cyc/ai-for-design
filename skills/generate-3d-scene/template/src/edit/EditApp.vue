@@ -10,6 +10,7 @@ import { onMounted, ref } from 'vue';
 import type { Bridge } from './Bridge';
 import type { LightHelperService } from './LightHelperService';
 import type { SaveService } from './SaveService';
+import type { MaterialLibService } from './MaterialLibService';
 import Toolbar from './Toolbar.vue';
 import OutlineTree from './OutlineTree.vue';
 import PropertyPanel from './PropertyPanel.vue';
@@ -19,6 +20,7 @@ const props = defineProps<{
   bridge: Bridge;
   save: SaveService;
   lightHelpers: LightHelperService;
+  materialLib: MaterialLibService;
 
   /** edit-main 创建的 3D 视口容器（canvas + CSS2D 层），铺满视口层 */
   viewportEl: HTMLElement;
@@ -49,6 +51,7 @@ onMounted(() => {
       <PropertyPanel
         :bridge="props.bridge"
         :light-helpers="props.lightHelpers"
+        :material-lib="props.materialLib"
       />
     </aside>
   </div>

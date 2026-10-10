@@ -169,7 +169,11 @@ export const setupCards = (deps: CardSystemDeps): CardSystem => {
     states.delete(key);
   };
 
-  /** 显隐应用到 DOM（notify 与 refresh 统一走这里） */
+  /**
+   * 显隐应用到锚点（notify 与 refresh 统一走这里）。
+   * 走 CSS2DObject.visible 而非 element.style.display——CSS2DRenderer 每帧
+   * 重写 element.style.display（按视锥判定），DOM 样式通道活不过一帧。
+   */
   const applyVisibility = (): void => {
     for (const [key, state] of states) {
       const anchor = anchors.get(key);
@@ -177,7 +181,7 @@ export const setupCards = (deps: CardSystemDeps): CardSystem => {
         const nodeId = key.slice(0, -'/card'.length);
         // 锚点物体不存在（删除物体后级联遗漏/数据孤儿）时隐藏卡片
         const orphan = !resolveObject(nodeId);
-        anchor.element.style.display = state.visible && !orphan ? '' : 'none';
+        anchor.visible = state.visible && !orphan;
       }
     }
   };

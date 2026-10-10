@@ -8,12 +8,13 @@
 import { createApp } from 'vue';
 import { createScene, ExampleCard } from '@/scene-core';
 import { registerExampleHandler, registerTreeHandler } from '@/scene-core/handlers';
-import type { SceneData, SceneNode } from '@/scene-core/types';
+import type { SceneData } from '@/scene-core/types';
 import { Bridge } from './Bridge';
 import { SelectionService } from './SelectionService';
 import { LayoutGizmo } from './LayoutGizmo';
 import { LightHelperService } from './LightHelperService';
 import { SaveService } from './SaveService';
+import { MaterialLibService } from './MaterialLibService';
 import EditApp from './EditApp.vue';
 
 const boot = async (): Promise<void> => {
@@ -62,6 +63,8 @@ const boot = async (): Promise<void> => {
 
   // 编辑服务
   const bridge = new Bridge(handle);
+  const materialLib = new MaterialLibService(handle, bridge);
+  materialLib.seeds(); // 注入 4 种子材质（写穿 __materialLib）
   const selection = new SelectionService(handle, bridge);
   const gizmo = new LayoutGizmo(
     handle,
@@ -107,22 +110,8 @@ const boot = async (): Promise<void> => {
     if (ctrl && ev.key.toLowerCase() === 'd') {
       ev.preventDefault();
       const anchorId = bridge.anchorId;
-      if (!anchorId) {
-        return;
-      }
-      const node = handle.internals.sceneEngine.getNode(anchorId) as SceneNode | null;
-      const type = handle.internals.sceneEngine.getNodeType(anchorId);
-      if (node && type) {
-        const basePos = node.position ?? [0, 0, 0];
-        bridge.commit('复制', () => {
-          handle.update({
-            [type]: [{
-              ...node,
-              id: `${node.id}_copy_${Date.now() % 10000}`,
-              position: [basePos[0] + 1, basePos[1], basePos[2]],
-            }],
-          });
-        });
+      if (anchorId) {
+        bridge.duplicateObject(anchorId);
       }
       return;
     }
@@ -150,13 +139,16 @@ const boot = async (): Promise<void> => {
     bridge,
     save,
     lightHelpers,
+    materialLib,
     viewportEl: viewport,
   });
   app.mount(root);
 
-  // dev-only：编辑器调试口（冒烟脚本/控制台直接读引擎态）
+  // dev-only：编辑器调试口（冒烟脚本/控制台直接读引擎态 + 编辑服务）
   if (import.meta.env.DEV) {
-    (window as unknown as Record<string, unknown>).__gts3d = handle;
+    const dbg = window as unknown as Record<string, unknown>;
+    dbg.__gts3d = handle;
+    dbg.__gts3dEdit = { bridge, materialLib, save, selection, gizmo, lightHelpers };
   }
 };
 

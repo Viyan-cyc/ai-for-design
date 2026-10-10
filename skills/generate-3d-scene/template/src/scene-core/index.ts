@@ -5,7 +5,11 @@
  */
 export { createScene, type SceneHandle } from './createScene';
 export * from './types';
-export { stateMaterials, applyState, type StateVisual, type VisualOverride } from './materials';
+export { stateMaterials, applyState, type StateVisual, type VisualOverride, NON_MATERIAL_VISUAL_KEYS } from './materials';
+export {
+  createMaterialFromSpec, applyMaterialTextures, applyMaterialScalars, migrateMaterialSpec,
+  clearMaterialTextureCache,
+} from './materials';
 export { PRIMITIVE_KINDS, type PrimitiveKind } from './primitives';
 export { handlerUtils } from './handlers/registry';
 export { registerExampleHandler } from './handlers/example/example';

@@ -15,7 +15,7 @@ defineProps<{ handle: SceneHandle }>();
   <div class="app-root">
     <div class="app-root__hint">
       二开态运行中 — 改 src/App.vue 与 handlers/，scene-data.json 驱动场景。
-      <a href="/?edit=1">打开编辑态</a>
+      <a href="/?edit=1" style="color: #8fd3ff; margin-left: 8px">打开编辑态</a>
     </div>
   </div>
 </template>
@@ -37,10 +37,5 @@ defineProps<{ handle: SceneHandle }>();
   color: #9fb3c8;
   font-size: 12px;
   pointer-events: auto;
-}
-
-.app-root__hint a {
-  color: #8fd3ff;
-  margin-left: 8px;
 }
 </style>

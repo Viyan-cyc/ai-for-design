@@ -17,13 +17,13 @@ import { readFileSync } from 'node:fs';
 import { dirname, resolve, isAbsolute } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-/* ── 规格阈值（§4.2 默认值 + 2026-10-09 分级门禁裁决）──────────────────────────
+/* ── 规格阈值（默认值 + 分级门禁裁决）──────────────────────────
  *
  * 两档：
  * - art（默认）：第三方美术资产档。性能类阈值放宽（真实资产普遍 10k+ 面 / 2048 贴图）；
  *   命名/原点/高度属"约定类"，默认**告警不阻断**（Sketchfab/Collada 导出系统性违规，
  *   且美术资产以不透明实例加载，内部命名/原点对其使用价值影响很小）。
- * - strict：AI 生成资产档（降级阶梯第 4/5 层）。§4.2 紧阈值；约定类升为**阻断**。
+ * - strict：AI 生成资产档（降级阶梯第 4/5 层）。紧阈值；约定类升为**阻断**。
  *
  * 用户可经 CLI 逐项覆盖（覆盖项优先级最高，profile --strict 之后仍可微调）。
  */
@@ -247,7 +247,7 @@ export const imageDimensions = (buf) => {
 /* ── 场景图统计 ──────────────────────────────────────────────────────────── */
 
 /** 从默认 scene 出发可达的节点索引集（去重，含环保护）。 */
-const reachableNodes = (json) => {
+export const reachableNodes = (json) => {
   const nodes = json.nodes ?? [];
   const sceneIndex = json.scene ?? 0;
   const roots = json.scenes?.[sceneIndex]?.nodes ?? nodes.map((_, i) => i);
@@ -267,7 +267,7 @@ const reachableNodes = (json) => {
 };
 
 /** 单 primitive 面数（仅三角形图元计入）。 */
-const primitiveTriangles = (prim, accessors) => {
+export const primitiveTriangles = (prim, accessors) => {
   const mode = prim.mode ?? 4;
   const accessorIndex = prim.indices ?? prim.attributes?.POSITION;
   if (accessorIndex === undefined) {
@@ -514,7 +514,7 @@ const USAGE = `用法: node validate-model.mjs <model.glb|gltf> [选项]
 门禁分两档（2026-10-09 裁决）：
   默认 art 档   —— 第三方美术资产：性能类（面数/贴图/节点/几何）阻断，阈值放宽；
                    命名/原点/高度属"约定类"，默认告警不阻断。
-  --strict 档   —— AI 生成资产（降级阶梯第 4/5 层）：§4.2 紧阈值；约定类升为阻断。
+  --strict 档   —— AI 生成资产（降级阶梯第 4/5 层）：紧阈值；约定类升为阻断。
 
 选项:
   --strict                 切到 strict 档（紧阈值 + 约定类阻断）

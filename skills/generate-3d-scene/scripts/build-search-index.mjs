@@ -1,7 +1,7 @@
 /**
  * build-search-index.mjs — 资产检索索引构建（n-gram TF-IDF 词法向量）
  *
- * 语料（§4.2）：每个资产 = name + category + tags + description + search_text 拼接。
+ * 语料：每个资产 = name + category + tags + description + search_text 拼接。
  * 方案：字符 n-gram 哈希向量 + TF-IDF 加权 + 余弦相似度。零依赖、零下载、本地即可用；
  * 内网 embedding API 后续接入时只换 tokenize/embed 实现，索引格式不变（接口已抽象）。
  *
@@ -66,7 +66,7 @@ export const tokenize = (text) => {
   return tokens;
 };
 
-/** 资产语料文本（§4.2 五字段拼接）。 */
+/** 资产语料文本（五字段拼接）。 */
 export const corpusText = (doc) => [doc.name ?? '', doc.category ?? '', ...(doc.tags ?? []), doc.description ?? '', doc.search_text ?? ''].join(' ');
 
 const l2normalize = (vec) => {
@@ -191,7 +191,7 @@ export const loadDocs = (libDir) => {
   return [...byId.values()];
 };
 
-// search_text 保留：§4.2 语料五字段契约（建语料在投影后，故字段须随 docs 走）
+// search_text 保留：语料五字段契约（建语料在投影后，故字段须随 docs 走）
 const PROJECT_FIELDS = ['id', 'name', 'category', 'tags', 'format', 'modelPath', 'description', 'search_text'];
 const projectDoc = (doc) => Object.fromEntries(PROJECT_FIELDS.map((k) => [k, doc[k]]));
 

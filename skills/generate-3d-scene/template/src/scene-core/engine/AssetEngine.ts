@@ -153,7 +153,7 @@ export class AssetEngine {
   private stateVisuals = new Map<string, Record<string, StateVisual>>();
 
   /**
-   * applyState（v3 §4.9.4）：按状态换视觉。
+   * applyState（v3）：按状态换视觉。
    * - map 键：查登记的贴图集换 map（材质克隆后换引用）
    * - model 键：几何级变体兜底（swapper 由 handler 提供）
    * - 其余键：材质参数

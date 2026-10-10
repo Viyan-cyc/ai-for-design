@@ -1,7 +1,7 @@
 /**
  * scene-core/types — 公共类型定义（scene-data.json v3 schema 的 TS 形态 + Handle API）
  *
- * v3 核心原则（Spec §4.9）：数据只有业务属性，视觉全部在代码。
+ * v3 核心原则：数据只有业务属性，视觉全部在代码。
  * - key:Array 单一结构贯穿内外：scene-data.json = 引擎内部存储 = 编辑器序列化产物
  *   = 生产更新片段 = undo 快照，零格式转换。
  * - 保留 key：version / meta / scene / camera / lights / controls / renderer / remove / __visuals。
@@ -207,7 +207,8 @@ export type TypedSceneNode = SceneNode & { type: string };
 
 /** 保留 key：不作为 type 分组解析 */
 export const RESERVED_KEYS = new Set([
-  'version', 'meta', 'scene', 'camera', 'lights', 'controls', 'renderer', 'remove', '__visuals',
+  'version', 'meta', 'scene', 'camera', 'lights', 'controls', 'renderer', 'remove',
+  '__visuals', '__materialLib',
 ]);
 
 /**
@@ -226,6 +227,9 @@ export interface SceneData {
 
   /** 编辑器私有视觉层（调参产物；不进交付数据——strip-edit 剥离 + 转录清单） */
   __visuals?: Record<string, VisualOverride>;
+
+  /** 编辑器私有材质库（mat_id → 条目；交付剥离，未被引用不转录） */
+  __materialLib?: Record<string, MaterialLibEntry>;
 
   /** type 分组：key=业务类型名，value=节点数组（单个实例也包一层数组） */
   [type: string]: unknown;
@@ -251,8 +255,114 @@ export interface TreeSceneFragment {
   /** 编辑器私有视觉层写入（生产数据永远不要发这个 key） */
   __visuals?: Record<string, VisualOverride>;
 
+  /** 编辑器私有材质库写入（生产数据永远不要发这个 key） */
+  __materialLib?: Record<string, MaterialLibEntry>;
+
   /** type 分组片段：key=类型名，value=节点数组（节点字段全部可选，缺的不动） */
   [type: string]: unknown;
+}
+
+// ══════════════════════════════════════════════════════════════
+// 材质规格（编辑器私有区：材质库 __materialLib 与内联调参共用；交付时剥离）
+// ══════════════════════════════════════════════════════════════
+
+/** three.js 材质类名（命名纪律：一律用原生类名） */
+export type MaterialType = 'MeshLambertMaterial' | 'MeshStandardMaterial' | 'MeshPhysicalMaterial';
+
+/** 面渲染方向（three.js 原生枚举名） */
+export type MaterialSide = 'FrontSide' | 'BackSide' | 'DoubleSide';
+
+/**
+ * 材质规格（全字段可选，type 缺省 Standard）。
+ * - Color → #rrggbb 字符串；Vector2 → 二元数组；枚举 → 字符串；贴图槽 → 相对 URL 字符串
+ * - attenuationDistance：null = Infinity（JSON.stringify(Infinity) 产 null，加载还原）
+ * - 默认值与取值范围以实装 three@0.185.1 为准，非文档/记忆
+ */
+export interface MaterialSpec {
+  type: MaterialType;
+
+  // 通用（三类型共有）
+  color?: string;
+  opacity?: number;
+  transparent?: boolean;
+  alphaTest?: number;
+  side?: MaterialSide;
+  flatShading?: boolean;
+  wireframe?: boolean;
+  fog?: boolean;
+  vertexColors?: boolean;
+  emissive?: string;
+  emissiveIntensity?: number;
+
+  // 共有贴图槽 + 伴随参数
+  map?: string;
+  emissiveMap?: string;
+  normalMap?: string;
+  normalScale?: [number, number];
+  normalMapType?: 'TangentSpaceNormalMap' | 'ObjectSpaceNormalMap';
+  bumpMap?: string;
+  bumpScale?: number;
+  displacementMap?: string;
+  displacementScale?: number;
+  displacementBias?: number;
+  alphaMap?: string;
+  aoMap?: string;
+  aoMapIntensity?: number;
+  lightMap?: string;
+  lightMapIntensity?: number;
+  envMap?: string;
+  envMapIntensity?: number;
+
+  // Lambert 特有
+  specularMap?: string;
+  combine?: 'MultiplyOperation' | 'MixOperation' | 'AddOperation';
+  reflectivity?: number;
+  refractionRatio?: number;
+
+  // Standard 特有
+  roughness?: number;
+  roughnessMap?: string;
+  metalness?: number;
+  metalnessMap?: string;
+
+  // Physical 特有（继承 Standard 全部）
+  clearcoat?: number;
+  clearcoatRoughness?: number;
+  clearcoatNormalMap?: string;
+  clearcoatNormalScale?: [number, number];
+  clearcoatMap?: string;
+  clearcoatRoughnessMap?: string;
+  transmission?: number;
+  transmissionMap?: string;
+  thickness?: number;
+  thicknessMap?: string;
+  attenuationColor?: string;
+  attenuationDistance?: number | null;
+  dispersion?: number;
+  specularIntensity?: number;
+  specularIntensityMap?: string;
+  specularColor?: string;
+  specularColorMap?: string;
+  sheen?: number;
+  sheenColor?: string;
+  sheenColorMap?: string;
+  sheenRoughness?: number;
+  sheenRoughnessMap?: string;
+  iridescence?: number;
+  iridescenceIOR?: number;
+  iridescenceThicknessRange?: [number, number];
+  iridescenceMap?: string;
+  iridescenceThicknessMap?: string;
+  anisotropy?: number;
+  anisotropyRotation?: number;
+  anisotropyMap?: string;
+  ior?: number;
+}
+
+/** 材质库条目（__materialLib[mat_id]；name 显示名，spec 材质规格） */
+export interface MaterialLibEntry {
+  name: string;
+  spec: MaterialSpec;
 }
 
 // ══════════════════════════════════════════════════════════════

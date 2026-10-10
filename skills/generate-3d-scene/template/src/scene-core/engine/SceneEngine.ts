@@ -9,9 +9,9 @@
  * 不负责：渲染（RenderLoop）、加载（AssetEngine）、交互（RaycastEngine）
  */
 import * as THREE from 'three';
-import type { SceneData, SceneNode, TreeSceneFragment, UpdateStats, Vec3 } from '../types';
+import type { SceneData, SceneNode, TreeSceneFragment, UpdateStats, Vec3, MaterialLibEntry } from '../types';
 import { RESERVED_KEYS } from '../types';
-import { applyVisualOverride, type VisualOverride } from '../materials';
+import { applyVisualOverride, NON_MATERIAL_VISUAL_KEYS, type VisualOverride } from '../materials';
 
 /** 引擎内部节点记录（索引项） */
 interface NodeEntry {
@@ -67,6 +67,9 @@ export class SceneEngine {
 
   /** 编辑器私有视觉层（id → override；serialize 进 __visuals，交付剥离） */
   private visuals = new Map<string, VisualOverride>();
+
+  /** 编辑器私有材质库（mat_id → 条目；serialize 进 __materialLib，交付剥离） */
+  private materialLib = new Map<string, MaterialLibEntry>();
 
   /** 节点生命周期钩子（编辑器视觉层重挂/级联通知用） */
   onNodeCreated: ((id: string) => void) | null = null;
@@ -159,7 +162,7 @@ export class SceneEngine {
 
   // ---- 生命周期 ----
 
-  /** 应用编辑器视觉层（单物体） */
+  /** 应用编辑器视觉层（单物体；增量合入） */
   applyVisual(id: string, visual: VisualOverride | null): void {
     const obj = this.entries.get(id)?.obj;
     if (!obj) {
@@ -174,7 +177,22 @@ export class SceneEngine {
       }
       return;
     }
-    this.visuals.set(id, { ...(this.visuals.get(id) ?? {}), ...visual });
+    const merged = { ...(this.visuals.get(id) ?? {}), ...visual };
+    // 纯开关增量（不含任何材质字段）不重放材质——避免材质已编辑物体的显隐/锁定
+    // 操作反复克隆材质（旧 clone 不释放）+ 贴图异步重赋
+    const hasMaterialField = visual.materialType !== undefined
+      || Object.entries(visual).some(([k, v]) => v !== undefined && !NON_MATERIAL_VISUAL_KEYS.has(k));
+    this.visuals.set(id, merged);
+    applyVisualOverride(obj, merged, hasMaterialField ? 'full' : 'switches');
+  }
+
+  /** 覆盖式写入视觉层（整条替换，不合并）——材料库链接/断开需清理互斥字段时用 */
+  replaceVisual(id: string, visual: VisualOverride): void {
+    const obj = this.entries.get(id)?.obj;
+    if (!obj) {
+      return;
+    }
+    this.visuals.set(id, { ...visual });
     applyVisualOverride(obj, this.visuals.get(id));
   }
 
@@ -190,6 +208,32 @@ export class SceneEngine {
       out[id] = v;
     });
     return out;
+  }
+
+  // ---- 材质库（编辑器私有；对称 __visuals） ----
+
+  /** 写入/覆盖库条目（整条替换，拷贝隔离） */
+  setMaterialLibEntry(id: string, entry: MaterialLibEntry): void {
+    this.materialLib.set(id, { name: entry.name, spec: { ...entry.spec } });
+  }
+
+  /** 读库条目 */
+  getMaterialLibEntry(id: string): MaterialLibEntry | null {
+    return this.materialLib.get(id) ?? null;
+  }
+
+  /** 全部库条目（serialize 进 __materialLib） */
+  getAllMaterialLib(): Record<string, MaterialLibEntry> {
+    const out: Record<string, MaterialLibEntry> = {};
+    this.materialLib.forEach((v, id) => {
+      out[id] = v;
+    });
+    return out;
+  }
+
+  /** 删除库条目 */
+  removeMaterialLibEntry(id: string): void {
+    this.materialLib.delete(id);
   }
 
   /** 单节点创建（工厂分发 + 挂树 + 视觉层重挂） */
@@ -307,10 +351,13 @@ export class SceneEngine {
         pending.set(incoming.id, { type, node: incoming });
       }
     }
+    // 访问中集合：parentId 环（a↔b 等脏数据）不再递归，跳过外层重访
+    const visiting = new Set<string>();
     const visit = (item: { type: string; node: SceneNode }): void => {
       const incoming = item.node;
       const parentId = incoming.parentId ?? null;
-      if (parentId && pending.has(parentId) && !this.entries.has(parentId)) {
+      if (parentId && pending.has(parentId) && !this.entries.has(parentId) && !visiting.has(parentId)) {
+        visiting.add(parentId);
         visit(pending.get(parentId)!);
       }
       if (this.entries.get(incoming.id)?.type === item.type) {
@@ -324,6 +371,7 @@ export class SceneEngine {
       }
     };
     for (const item of pending.values()) {
+      visiting.clear();
       visit(item);
     }
 
@@ -331,6 +379,14 @@ export class SceneEngine {
     if (frag.__visuals) {
       for (const [id, visual] of Object.entries(frag.__visuals)) {
         this.applyVisual(id, visual);
+      }
+    }
+
+    // 4. 编辑器材质库（提供即整表替换：条目与节点无生命周期耦合，undo 快照为全集）
+    if (frag.__materialLib !== undefined) {
+      this.materialLib.clear();
+      for (const [id, entry] of Object.entries(frag.__materialLib)) {
+        this.setMaterialLibEntry(id, entry);
       }
     }
 
@@ -425,5 +481,6 @@ export class SceneEngine {
     this.scene.clear();
     this.entries.clear();
     this.visuals.clear();
+    this.materialLib.clear();
   }
 }

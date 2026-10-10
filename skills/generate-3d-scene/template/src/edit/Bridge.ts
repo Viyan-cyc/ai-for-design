@@ -13,7 +13,8 @@
  */
 import * as THREE from 'three';
 import type { SceneHandle } from '@/scene-core/createScene';
-import type { SceneData } from '@/scene-core/types';
+import type { SceneData, TreeSceneFragment } from '@/scene-core/types';
+import { RESERVED_KEYS } from '@/scene-core/types';
 
 /** 编辑器快照（撤销栈元素：全量 serialize，v3 零转换） */
 interface Snapshot {
@@ -50,12 +51,23 @@ export class Bridge {
 
   private listeners = new Set<StateListener>();
 
+  /** 复制序号（副本 id 后缀）；构造时扫存量 id 取 max，防重启后撞前会话副本被 upsert 覆盖 */
+  private copySeq = 0;
+
   snapping = false;
 
   gizmoMode: EditorState['gizmoMode'] = 'translate';
 
   constructor(handle: SceneHandle) {
     this.handle = handle;
+    // 存量副本 id（<id>_copy_NNN）取 max，续号——避免重启后 duplicateObject 生成
+    // 已存在 id（幂等 upsert 会覆盖前会话副本，transform 等编辑被清）
+    for (const id of this.handle.internals.sceneEngine.getAllIds()) {
+      const m = /^(.*)_copy_(\d+)$/.exec(id);
+      if (m && m[1] && m[2]) {
+        this.copySeq = Math.max(this.copySeq, parseInt(m[2], 10));
+      }
+    }
   }
 
   // ---- 状态订阅 ----
@@ -85,12 +97,13 @@ export class Bridge {
 
   // ---- 选中 ----
 
-  /** 点选（无修饰键=重置为单选；Shift=切换累计；基准=最后选中的） */
+  /** 点选（无修饰键=重置为单选；Shift=切换累计；基准=最后选中的；再点已选中者保持选中——取消走点空白/ESC） */
   select(id: string, additive: boolean): void {
     if (!additive) {
-      this.selection = this.selection.length === 1 && this.selection[0] === id
-        ? []
-        : [id];
+      if (this.selection.length === 1 && this.selection[0] === id) {
+        return;
+      }
+      this.selection = [id];
     } else {
       this.selection = this.selection.includes(id)
         ? this.selection.filter((s) => s !== id)
@@ -179,8 +192,7 @@ export class Bridge {
   private rebuild(data: SceneData): void {
     const alive = new Set<string>();
     for (const [key, val] of Object.entries(data)) {
-      if (!['version', 'meta', 'scene', 'camera', 'lights', 'controls', 'renderer', 'remove', '__visuals'].includes(key)
-        && Array.isArray(val)) {
+      if (!RESERVED_KEYS.has(key) && Array.isArray(val)) {
         (val as Array<{ id: string }>).forEach((n) => alive.add(n.id));
       }
     }
@@ -190,21 +202,60 @@ export class Bridge {
     this.handle.update({ remove: current.length > 0 ? current : undefined });
     const { remove: _drop, ...frag } = data;
     void _drop;
+    // 材质库整表替换语义：快照缺 key 时显式补空表，保证 undo 能清空库
+    if (frag.__materialLib === undefined) {
+      frag.__materialLib = {};
+    }
     this.handle.update(frag);
     this.emit();
   }
 
-  // ---- 删除（v3：引擎级联子树 + 内联卡片；快照经 undo 恢复） ----
+  // ---- 删除/复制（v3：引擎级联子树 + 内联卡片；快照经 undo 恢复） ----
 
-  /** 删除物体（引擎 removeObject 级联：子节点与内联卡片一起消失） */
+  /**
+   * 删除物体（引擎 removeObject 级联：子节点与内联卡片一起消失）。
+   * 锁定物体挡删（锁定语义=防误改，删除最破坏性）；父级联仍带走锁定子（否则留孤儿链）。
+   */
   removeObjects(ids: string[]): void {
-    if (ids.length === 0) {
+    const se = this.handle.internals.sceneEngine;
+    const del = ids.filter((id) => se.getVisual(id)?.locked !== true);
+    if (del.length === 0) {
       return;
     }
     this.commit('删除', () => {
-      this.handle.update({ remove: ids });
+      this.handle.update({ remove: del });
     });
-    this.clearSelection();
+    this.selection = ids.filter((id) => se.getVisual(id)?.locked === true);
+    this.emit();
+  }
+
+  /**
+   * 复制基准物体（单源：工具条与 Ctrl+D 共用；副本带视觉层、清 locked）。
+   * 只复制单节点（不递归子树）；libraryRef 一并保留——共享实例本就是库的用途。
+   */
+  duplicateObject(anchorId: string): string | null {
+    const se = this.handle.internals.sceneEngine;
+    const node = se.getNode(anchorId);
+    const type = se.getNodeType(anchorId);
+    if (!node || !type) {
+      return null;
+    }
+    this.copySeq += 1;
+    const newId = `${node.id}_copy_${String(this.copySeq).padStart(3, '0')}`;
+    const basePos = node.position ?? [0, 0, 0];
+    const vis = se.getVisual(anchorId);
+    this.commit('复制', () => {
+      const frag: TreeSceneFragment = {
+        [type]: [{ ...node, id: newId, position: [basePos[0] + 1, basePos[1], basePos[2]] }],
+      };
+      if (vis) {
+        const { locked: _drop, ...visCopy } = vis;
+        void _drop;
+        frag.__visuals = { [newId]: visCopy };
+      }
+      this.handle.update(frag);
+    });
+    return newId;
   }
 
   // ---- Gizmo/吸附 ----

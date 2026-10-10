@@ -1,8 +1,8 @@
 /**
- * search-assets.mjs — 资产检索 CLI（§4.4 降级阶梯第 1 层：检索命中直接用）
+ * search-assets.mjs — 资产检索 CLI（降级阶梯第 1 层：检索命中直接用）
  *
  * 读 build-search-index.mjs 产出的 assets/search-index.json，query → top-k 资产。
- * 输出字段（§4.2 检索结果条目）：id / name / score / format / category / tags / modelPath / description。
+ * 输出字段（检索结果条目）：id / name / score / format / category / tags / modelPath / description。
  *
  * CLI：node search-assets.mjs <query> [--top N] [--lib <dir>] [--json]
  *   退出码：0 有结果 / 3 无结果（空命中）/ 2 错误（索引缺失等）

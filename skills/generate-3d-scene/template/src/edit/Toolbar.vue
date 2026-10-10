@@ -40,31 +40,6 @@ const closeAdd = (): void => {
 
 let counter = 0;
 
-const duplicateSelected = (): void => {
-  const anchorId = props.bridge.anchorId;
-  if (!anchorId) {
-    return;
-  }
-  const sceneEngine = props.bridge.handle.internals.sceneEngine;
-  const node = sceneEngine.getNode(anchorId);
-  const type = sceneEngine.getNodeType(anchorId);
-  if (!node || !type) {
-    return;
-  }
-  counter += 1;
-  const newId = `${node.id}_copy_${String(counter).padStart(3, '0')}`;
-  const basePos = node.position ?? [0, 0, 0];
-  props.bridge.commit('复制', () => {
-    props.bridge.handle.update({
-      [type]: [{
-        ...node,
-        id: newId,
-        position: [basePos[0] + 1, basePos[1], basePos[2]],
-      }],
-    });
-  });
-};
-
 const addPrimitive = (kind: string): void => {
   counter += 1;
   const id = `${kind}_${String(counter).padStart(3, '0')}`;
@@ -355,7 +330,7 @@ const deleteSelected = (): void => {
       :disabled="state.selection.length === 0"
       class="tb-btn"
       title="复制 (Ctrl+D)"
-      @click="duplicateSelected"
+      @click="props.bridge.duplicateObject(props.bridge.anchorId ?? '')"
     >
       <svg
         viewBox="0 0 16 16"

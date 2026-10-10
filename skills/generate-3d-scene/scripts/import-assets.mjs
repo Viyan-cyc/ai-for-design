@@ -1,7 +1,7 @@
 /**
  * import-assets.mjs — 资产入库管线（解压 / manifest 校验 / 规格门禁 / 落库 / 建索引）
  *
- * 零依赖：自解析 ZIP（stored + deflate），内嵌 manifest schema 校验器（§4.2），
+ * 零依赖：自解析 ZIP（stored + deflate），内嵌 manifest schema 校验器，
  * 复用 validate-model.mjs 做规格门禁、build-search-index.mjs 重建索引并跑检索冒烟。
  *
  * 流程：
@@ -132,7 +132,7 @@ export const writeZip = (entries, outPath) => {
   writeFileSync(outPath, Buffer.concat([...chunks, centralBuf, eocd]));
 };
 
-/* ── manifest schema 校验（§4.2，内嵌）────────────────────────────────────── */
+/* ── manifest schema 校验（内嵌）────────────────────────────────────── */
 
 const isRelPath = (p) => typeof p === 'string' && p.length > 0 && !posix.isAbsolute(p) && !/(^|\/)\.\.(\/|$)/.test(p) && !p.includes('\\');
 const basenameOf = (p) => p.split('/').pop();
@@ -147,7 +147,7 @@ const deriveId = (entry) => {
 };
 
 /**
- * 校验 manifest 结构（§4.2 schema + §4.9.4 双形态扩展）。
+ * 校验 manifest 结构（schema + 双形态扩展）。
  * @returns {{errors: string[], warnings: string[]}}
  */
 export const validateManifest = (obj) => {
@@ -203,7 +203,7 @@ export const validateManifest = (obj) => {
     }
     ids.add(id);
 
-    // §4.9.4 双形态：textures / states
+    // 双形态：textures / states
     if (e.textures !== undefined) {
       if (typeof e.textures !== 'object' || Array.isArray(e.textures)) {
         errors.push(`${at}.textures 须为对象（key → 包内相对路径）`);
@@ -280,7 +280,7 @@ const copyTree = (src, dest) => {
 
 /* ── 落库 ─────────────────────────────────────────────────────────────────── */
 
-/** 计算 modelPath / 贴图落点用的库内相对路径（统一以 assets/ 前缀，与 §4.2 示例一致）。 */
+/** 计算 modelPath / 贴图落点用的库内相对路径（统一以 assets/ 前缀）。 */
 const libRel = (...parts) => posix.join('assets', ...parts);
 
 /** 读库内已有资产 id → 所属包（跨包唯一性检查用）。 */
@@ -354,7 +354,7 @@ export const importPackage = (staging, { libDir = DEFAULT_LIB, packageName, stri
 
     // 规格门禁（从 staging 读，gltf 外部引用相对自洽）
     const report = validateModelFile(srcModel, { assetId: id, strict, profile });
-    // §4.9.4 双形态入库判定：多状态资产（白模+贴图集）要求 UV 完好，缺 UV 即 FAIL
+    // 双形态入库判定：多状态资产（白模+贴图集）要求 UV 完好，缺 UV 即 FAIL
     if (e.textures && report.uvMissing) {
       const err = new Error(`规格门禁 FAIL（id=${id}）: 多状态资产（textures+states）要求白模 UV 完好，但 POSITION 网格缺 TEXCOORD_0`);
       err.details = { gateReports: [{ id, passed: false, violations: [err.message], warnings: [] }] };

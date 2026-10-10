@@ -26,6 +26,10 @@ export class SelectionService {
 
   private downY = 0;
 
+  /** 锁定物体跳过视口拾取（__visuals.locked；树中仍可选中看属性，Spline 同款） */
+  private isUnlocked = (id: string): boolean =>
+    this.handle.internals.sceneEngine.getVisual(id)?.locked !== true;
+
   constructor(
     private handle: SceneHandle,
     private bridge: Bridge,
@@ -56,7 +60,7 @@ export class SelectionService {
     if (moved > 3) {
       return;
     }
-    const hit = this.handle.pick(ev.clientX, ev.clientY);
+    const hit = this.handle.pick(ev.clientX, ev.clientY, this.isUnlocked);
     if (hit) {
       this.bridge.select(hit.id, this.lastShift);
     } else if (!this.lastShift) {

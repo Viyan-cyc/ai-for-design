@@ -37,8 +37,8 @@ export interface SceneHandle {
    */
   serialize(): SceneData;
 
-  /** 射线拾取（屏幕坐标 → 命中物体） */
-  pick(clientX: number, clientY: number): PickResult | null;
+  /** 射线拾取（屏幕坐标 → 命中物体）；filter 为调用方附加的过滤谓词（core 不解释语义） */
+  pick(clientX: number, clientY: number, filter?: (id: string) => boolean): PickResult | null;
 
   /** Debug HUD 开关（fps/calls/triangles） */
   setDebug(enabled: boolean): void;
@@ -142,6 +142,18 @@ export const createScene = async (
 
   // 全量建树 + 卡片同步
   sceneEngine.buildTree(toGroups(data));
+  // 编辑器私有区回灌：数据里带则喂回引擎（重新载入编辑过的场景时，视觉层与材质库都保留；
+  // 漏灌 __visuals 会导致 serialize 视觉层为空 → 下次保存把视觉编辑永久剥掉）
+  if (data.__visuals) {
+    for (const [id, visual] of Object.entries(data.__visuals)) {
+      sceneEngine.applyVisual(id, visual);
+    }
+  }
+  if (data.__materialLib) {
+    for (const [id, entry] of Object.entries(data.__materialLib)) {
+      sceneEngine.setMaterialLibEntry(id, entry);
+    }
+  }
   cardSystem.refresh();
 
   // 渲染循环（卡片投影回调在 start 前注册）
@@ -167,10 +179,12 @@ export const createScene = async (
   };
 
   // click → 卡片触发（编辑态的选中逻辑由 edit/SelectionService 另行监听）
+  // 锁定物体不弹卡片（与编辑态拾取同语义；生产态无私有区恒通过）
   canvas.addEventListener('click', (ev: MouseEvent) => {
     const hit = raycastEngine.pick(
       ev.clientX, ev.clientY, canvas, cameraEngine.camera,
-      sceneEngine.scene.children, (id) => sceneEngine.isPickable(id),
+      sceneEngine.scene.children,
+      (id) => sceneEngine.isPickable(id) && sceneEngine.getVisual(id)?.locked !== true,
       (obj) => sceneEngine.resolveId(obj),
     );
     if (hit) {
@@ -214,6 +228,12 @@ export const createScene = async (
       groups.__visuals = visuals;
     } else {
       delete groups.__visuals;
+    }
+    const matLib = sceneEngine.getAllMaterialLib();
+    if (Object.keys(matLib).length > 0) {
+      groups.__materialLib = matLib;
+    } else {
+      delete groups.__materialLib;
     }
     return groups;
   };
@@ -288,10 +308,11 @@ export const createScene = async (
 
     serialize,
 
-    pick(clientX: number, clientY: number): PickResult | null {
+    pick(clientX: number, clientY: number, filter?: (id: string) => boolean): PickResult | null {
       return raycastEngine.pick(
         clientX, clientY, canvas, cameraEngine.camera,
-        sceneEngine.scene.children, (id) => sceneEngine.isPickable(id),
+        sceneEngine.scene.children,
+        (id) => sceneEngine.isPickable(id) && (filter ? filter(id) : true),
         (obj) => sceneEngine.resolveId(obj),
       );
     },

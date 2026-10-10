@@ -99,6 +99,11 @@ export class LayoutGizmo {
       return;
     }
     const anchorId = this.bridge.anchorId as string;
+    // 锁定物体不挂手柄（Spline 同款：视口点选/Gizmo 跳过，树中仍可选中看属性）
+    if (this.bridge.handle.internals.sceneEngine.getVisual(anchorId)?.locked === true) {
+      this.detach();
+      return;
+    }
     const obj = this.bridge.handle.internals.sceneEngine.getObject(anchorId);
     if (obj && this.controls.object !== obj) {
       // 幂等：已在同一物体上时不再 attach（重挂会打断进行中的拖拽）

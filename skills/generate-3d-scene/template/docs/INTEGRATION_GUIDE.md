@@ -135,6 +135,7 @@ export const stateMaterials = {
 - 视觉规格键：`mapUrl`（换贴图）/ `color / metalness / roughness / emissive / opacity / wireframe / flatShading / side`（材质参数）/ `model`（几何级变体，换 GLB 实例）；
 - **换颜色/加状态 = 改这一个文件**，数据与 handler 都不动；
 - 多状态资产的贴图集/变体走 AssetEngine `registerAssetStates`（manifest.states），`applyState` 的 `map`/`model` 键消费。
+- **材质工厂（编辑器与库共用）**：`materials.ts` 导出 `createMaterialFromSpec(spec)`（按 three.js 原生类型名实例化 Lambert/Standard/Physical，含贴图色彩空间三分桶）；编辑器的"材质库"（`__materialLib`）与内联调参都经它落到运行时。跨物体复用同名的材质走 §6.1 的 `libraryMaterials`。
 
 ### 3.4 写 2D 卡片（数据面板/告警标牌）
 
@@ -184,15 +185,44 @@ socket.on('car/status', (msg) => {
 - **编辑态**（`src/edit/`，`?edit=1`）：布局调参工具，产物就是 scene-data.json。物理隔离：`edit/` 只 import `scene-core`，反向禁止（build 铁律，机器保证）。
 - 若交付物不需要编辑器：删掉 `src/edit/` 目录 + index.html 里的分流 script 即可，其余零改动。
 
-## 6. 编辑器视觉层与交付转录（__visuals）
+## 6. 编辑器视觉层与交付转录（__visuals + __materialLib）
 
-编辑态里调的**材质参数/显隐/阴影开关**存进数据文档的 `__visuals` 字段（编辑器私有视觉层），用于撤销/重做与"所见即所得"。这是**编辑器调参产物**，交付时由 strip-edit 处理：
+编辑态里调的**材质参数/显隐/阴影开关**存进数据文档的 `__visuals` 字段（编辑器私有视觉层），**调好的可复用材质**存进 `__materialLib`（编辑器私有材质库）。两者都用于撤销/重做与"所见即所得"，都是**编辑器调参产物**，交付时由 strip-edit 处理：
 
-1. 从 scene-data.json 剥离 `__visuals`（数据层回归纯净：只有业务属性）；
-2. 生成转录清单——LLM/工程师把每条视觉覆盖折叠进代码：
-   - 材质参数 → `materials.ts`（加进 `stateMaterials` 或 PRIMITIVE_DEFAULT_COLOR 调整）；
-   - 显隐/阴影开关 → handler 默认值代码；
-3. 转录后 `__visuals` 为空，数据与代码各归其位。
+1. 从 scene-data.json 剥离 `__visuals` 与 `__materialLib`（数据层回归纯净：只有业务属性）；
+2. 生成转录清单——LLM/工程师把调参折叠进代码：
+   - `__visuals` 里的材质参数 → `materials.ts`（加进 `stateMaterials` 或调 `PRIMITIVE_DEFAULT_COLOR`）；
+   - `__visuals` 里的显隐/阴影开关 → handler 默认值代码；
+   - `__materialLib` 里**被引用的**材质 → `materials.ts` 新增 `libraryMaterials` 段（未被引用的种子材质不转录）；
+   - `__visuals[obj].libraryRef` 引用关系 → handler 里接线（`obj.material = libraryMaterials.<name>`）；
+3. 转录后两个私有区为空，数据与代码各归其位。
+
+> **内联材质是「补丁」不是「整替」**：`__visuals[obj]` 里的材质字段只覆盖你**显式调过**的参数，其余继承物体原材质——同类型调参在运行时是「克隆原材质 + 打补丁」，GLB 内嵌贴图、图元默认色都保留；只有**换类型**（Lambert↔Standard↔Physical）才重建，且兼容贴图槽（map/normalMap…）会带过去。转录时同理：把显式字段写进代码（handler 里 `material.xxx = …`），未动的字段继续吃物体原材质。
+
+### 6.1 材质库转录（libraryMaterials）
+
+编辑器的"材质库"给物体复用同一材质（同 mat_id 物体共享一个材质实例，改库即全部引用者实时变化）。交付转录格式：
+
+```ts
+// materials.ts —— 与 stateMaterials 并存不合并
+// stateMaterials 管"业务类型→状态→视觉"换装；libraryMaterials 管"名字→材质"跨物体复用（两个问题两个表）
+export const libraryMaterials = {
+  glass: { type: 'MeshPhysicalMaterial', transmission: 1, ior: 1.5, roughness: 0.05, thickness: 0.5 },
+  carpaint: { type: 'MeshPhysicalMaterial', clearcoat: 1, clearcoatRoughness: 0.1, metalness: 0.7, roughness: 0.35 },
+  // …（mat_id.name 转 snake_case 作键）
+} as const;
+```
+
+转录清单里的"引用表"（nodeId → mat_id）指导 handler 接线：
+
+```ts
+// handler 里（示例）
+const mat = libraryMaterials.glass;
+createMaterialFromSpec 免——直接复用：
+obj.traverse((o) => { if (o.isMesh) o.material = mat; });
+```
+
+> `libraryMaterials.<name>` 只是一个 `MaterialSpec` 字面量；运行时用 `createMaterialFromSpec(spec)` 实例化（见 `@/scene-core` 导出），或直接在 handler 里构造。共享实例语义由业务方决定（想复用一个实例就复用一个实例）。
 
 生产侧若确需运行时改视觉，走 `handle.update({ __visuals: { ... } })` 是**合法但 discouraged** 的通道（undo 依赖它）；正规通道仍是改 materials.ts。
 
@@ -206,4 +236,4 @@ socket.on('car/status', (msg) => {
 
 **Q: 帧率低？** `setDebug(true)` 看 tris（总面数）与 calls（draw call）。优先减面数、合并同种物体（>1000 同类用 InstancedMesh，写个 handler 即可）。
 
-**Q: 想改某个物体的颜色？** 不是改数据——`params` 不收视觉字段。单个状态视觉进 `materials.ts`；编辑器临时调的进 `__visuals`（交付时转录，见 §6）。
+**Q: 想改某个物体的颜色？** 不是改数据——`params` 不收视觉字段。单个状态视觉进 `materials.ts`；多个物体复用同一材质 → 编辑器材质库（转 `libraryMaterials`，见 §6.1）；编辑器临时调的进 `__visuals`（交付时转录，见 §6）。
