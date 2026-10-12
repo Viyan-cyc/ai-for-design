@@ -12,6 +12,12 @@
  *   S27 vec2 参数（iridescenceThicknessRange 数组 → Vector2 非 NaN）
  *   S28 视觉层回灌（boot 喂回 __visuals → serialize 往返不丢）
  *   S29 锁定挡卡片（锁定物 click 不弹卡片；解锁恢复）
+ *   S30 改名入库转引用（saveAs = 建条目 + link；spec 取自内联视觉）
+ *   S31 复制材质脱离引用（disconnect → 内联独立副本，不受库热更影响）
+ *   S32 删除有引用条目后 inline 保留（removeEntry → 引用者转内联，外观不变）
+ *   S33 内置材质删除不复活（removeEntry(seed) 后重调 seeds() 不补回）
+ *   S34 浮动面板并存不重叠 + 无全屏遮罩（材质素材 + 编辑材质球同开，MU2）
+ *   S35 材质一材质一行（内置材质也是行、同列，非换行 chips，MU2）
  *   S13 兼测中文文件名上传（encodeURIComponent 双端）
  *
  * 用法：node scripts/smoke-r.mjs <url> [--edit]
@@ -83,7 +89,7 @@ const main = async () => {
           pending.delete(id);
           rej(new Error(`RPC 超时: ${method}`));
         }
-      }, 20000);
+      }, 40000);
       ws.send(JSON.stringify({ id, method, params }));
     });
     const evaluate = async (expression) => {
@@ -640,6 +646,540 @@ const main = async () => {
     })()`);
     console.log('S29 锁定挡卡片:', JSON.stringify(s29));
 
+    // ── S30：改名入库转引用（saveAs：内联视觉 → 新库条目 + link 该物体）──
+    const s30 = await evaluate(`(() => {
+      const h = window.__gts3d;
+      const lib = window.__gts3dEdit.materialLib;
+      const se = h.internals.sceneEngine;
+      h.update({ Box: [{ id: 'smoke_ren_box' }] });
+      h.update({ __visuals: { smoke_ren_box: { materialType: 'MeshStandardMaterial', color: '#aa1122' } } });
+      const newId = lib.saveAs('smoke_ren_box', '红漆');
+      const entry = lib.getEntry(newId);
+      const linked = se.getVisual('smoke_ren_box').libraryRef === newId;
+      const nameOk = !!entry && entry.name === '红漆';
+      const specOk = !!entry && entry.spec.color === '#aa1122';
+      const inList = lib.listEntries().some((e) => e.id === newId);
+      h.update({ remove: ['smoke_ren_box'] });
+      return { newId, linked, nameOk, specOk, inList, ok: linked && nameOk && specOk && inList };
+    })()`);
+    console.log('S30 改名入库:', JSON.stringify(s30));
+
+    // ── S31：复制材质脱离引用（disconnect → 内联独立副本，不受库热更影响）──
+    const s31 = await evaluate(`(() => {
+      const h = window.__gts3d;
+      const lib = window.__gts3dEdit.materialLib;
+      const se = h.internals.sceneEngine;
+      h.update({ Box: [{ id: 'smoke_cp_box' }] });
+      lib.link('smoke_cp_box', 'glass');
+      const beforeRef = se.getVisual('smoke_cp_box').libraryRef;
+      lib.disconnect('smoke_cp_box');
+      const afterRef = se.getVisual('smoke_cp_box').libraryRef;
+      const v = se.getVisual('smoke_cp_box') || {};
+      const inlineOk = !afterRef && v.materialType === 'MeshPhysicalMaterial';
+      const matBefore = se.getObject('smoke_cp_box').material;
+      const g = lib.getEntry('glass');
+      lib.updateEntry('glass', { ...g.spec, ior: 1.9 });
+      const independent = se.getObject('smoke_cp_box').material === matBefore;
+      h.update({ remove: ['smoke_cp_box'] });
+      return { beforeRef, afterRef, inlineOk, independent,
+        ok: beforeRef === 'glass' && !afterRef && inlineOk && independent };
+    })()`);
+    console.log('S31 复制材质:', JSON.stringify(s31));
+
+    // ── S32：删除有引用条目后 inline 保留（removeEntry → 引用者转内联，外观不变）──
+    const s32 = await evaluate(`(() => {
+      const h = window.__gts3d;
+      const lib = window.__gts3dEdit.materialLib;
+      const se = h.internals.sceneEngine;
+      const id = lib.createEntry('临时材质', { type: 'MeshStandardMaterial', color: '#22cc44' });
+      h.update({ Box: [{ id: 'smoke_del_a' }, { id: 'smoke_del_b' }] });
+      lib.link('smoke_del_a', id);
+      lib.link('smoke_del_b', id);
+      const refCount = lib.referencingNodes(id).length;
+      lib.removeEntry(id);
+      const entryGone = lib.getEntry(id) === null;
+      const aInline = !se.getVisual('smoke_del_a').libraryRef;
+      const colorKept = se.getObject('smoke_del_a').material.color.getHexString() === '22cc44';
+      h.update({ remove: ['smoke_del_a', 'smoke_del_b'] });
+      return { refCount, entryGone, aInline, colorKept,
+        ok: refCount === 2 && entryGone && aInline && colorKept };
+    })()`);
+    console.log('S32 删库留外观:', JSON.stringify(s32));
+
+    // ── S33：内置材质删除不复活（removeEntry(seed) 后重调 seeds() 不补回）──
+    const s33 = await evaluate(`(() => {
+      const lib = window.__gts3dEdit.materialLib;
+      const hadSeed = lib.getEntry('velvet') !== null;
+      lib.removeEntry('velvet');
+      const gone = lib.getEntry('velvet') === null;
+      lib.seeds();
+      const stillGone = lib.getEntry('velvet') === null;
+      const othersThere = lib.getEntry('glass') !== null;
+      return { hadSeed, gone, stillGone, othersThere,
+        ok: hadSeed && gone && stillGone && othersThere };
+    })()`);
+    console.log('S33 种子不复活:', JSON.stringify(s33));
+
+    // ── S34：浮动面板并存不重叠 + 无全屏遮罩（MU2）──
+    const s34 = await evaluate(`(async () => {
+      const b = window.__gts3dEdit.bridge;
+      const q = (s) => document.querySelector(s);
+      const qa = (s) => [...document.querySelectorAll(s)];
+      const click = (el) => { if (el) { el.click(); } };
+      b.select('car_01', false);
+      await new Promise((r) => setTimeout(r, 200));
+      click(q('.ms__palette-btn'));
+      await new Promise((r) => setTimeout(r, 250));
+      click(qa('.mpal__tools button').find((x) => x.textContent.includes('新建')));
+      await new Promise((r) => setTimeout(r, 300));
+      const panels = qa('.fpanel');
+      const noMask = qa('.ed-overlay').length === 0;
+      const rects = panels.map((p) => p.getBoundingClientRect());
+      let overlap = false;
+      for (let i = 0; i < rects.length; i += 1) {
+        for (let j = i + 1; j < rects.length; j += 1) {
+          const a = rects[i]; const c = rects[j];
+          if (a.left < c.right && c.left < a.right && a.top < c.bottom && c.top < a.bottom) { overlap = true; }
+        }
+      }
+      const draggable = !!q('.fpanel__head');
+      qa('.fpanel__close').forEach((x) => x.click());
+      return { bothOpen: panels.length === 2, noMask, overlap, draggable,
+        ok: panels.length === 2 && noMask === true && overlap === false && draggable };
+    })()`);
+    console.log('S34 浮动面板并存:', JSON.stringify(s34));
+
+    // ── S35：材质一材质一行（内置材质也是行、同列，非换行 chips，MU2）──
+    const s35 = await evaluate(`(async () => {
+      const b = window.__gts3dEdit.bridge;
+      const q = (s) => document.querySelector(s);
+      const qa = (s) => [...document.querySelectorAll(s)];
+      const click = (el) => { if (el) { el.click(); } };
+      b.select('car_01', false);
+      await new Promise((r) => setTimeout(r, 150));
+      click(q('.ms__palette-btn'));
+      await new Promise((r) => setTimeout(r, 250));
+      const rows = qa('.mpal__row');
+      const names = rows.map((r) => (r.querySelector('.mpal__name') || {}).textContent);
+      const lefts = rows.map((r) => Math.round(r.getBoundingClientRect().left));
+      const sameColumn = lefts.length > 0 && lefts.every((l) => l === lefts[0]);
+      click(q('.fpanel__close'));
+      return { rowCount: rows.length, hasGlass: names.includes('玻璃'), hasCarpaint: names.includes('车漆'),
+        noChips: qa('.mpal__chip').length === 0, sameColumn,
+        ok: names.includes('玻璃') && names.includes('车漆')
+          && qa('.mpal__chip').length === 0 && sameColumn && rows.length >= 3 };
+    })()`);
+    console.log('S35 一材质一行:', JSON.stringify(s35));
+
+    // ── S36：浅色主题（编辑器令牌 + 页面背景均为浅色，MU3）──
+    const s36 = await evaluate(`(() => {
+      const q = (s) => document.querySelector(s);
+      const lum = (c) => { const m = /rgba?\\((\\d+),\\s*(\\d+),\\s*(\\d+)/.exec(c); return m ? (0.299*m[1] + 0.587*m[2] + 0.114*m[3]) : null; };
+      const panel = q('.ed-panel');
+      const panelLum = panel ? lum(getComputedStyle(panel).backgroundColor) : null;
+      const bodyLum = lum(getComputedStyle(document.body).backgroundColor);
+      const swatch = q('.ms__swatch');
+      const swatchBg = swatch ? getComputedStyle(swatch.parentElement).backgroundColor : null;
+      const card = q('.example-card');
+      const cardLum = card ? lum(getComputedStyle(card).backgroundColor) : null;
+      const light = (v) => v !== null && v > 180;
+      return { panelLum: Math.round(panelLum || 0), bodyLum: Math.round(bodyLum || 0), cardLum: cardLum === null ? null : Math.round(cardLum), swatchBg,
+        ok: light(panelLum) && light(bodyLum) && (cardLum === null || light(cardLum)) };
+    })()`);
+    console.log('S36 浅色主题:', JSON.stringify(s36));
+
+    // ── S37：浮动面板避让固定面板（左右固定栏 × 浮动面板零交集，MU3）──
+    const s37 = await evaluate(`(async () => {
+      const b = window.__gts3dEdit.bridge;
+      const q = (s) => document.querySelector(s);
+      const qa = (s) => [...document.querySelectorAll(s)];
+      const click = (el) => { if (el) { el.click(); } };
+      b.select('car_01', false);
+      await new Promise((r) => setTimeout(r, 200));
+      click(q('.ms__palette-btn'));
+      await new Promise((r) => setTimeout(r, 250));
+      click(qa('.mpal__tools button').find((x) => x.textContent.includes('新建')));
+      await new Promise((r) => setTimeout(r, 300));
+      const rects = [...qa('.fpanel')].map((p) => p.getBoundingClientRect());
+      const fixed = [...qa('.ed-panel')].map((p) => p.getBoundingClientRect());
+      let overlap = false;
+      for (const a of rects) {
+        for (const c of fixed) {
+          if (a.left < c.right && c.left < a.right && a.top < c.bottom && c.top < a.bottom) { overlap = true; }
+        }
+      }
+      const count = rects.length;
+      qa('.fpanel__close').forEach((x) => x.click());
+      return { count, overlap, ok: count === 2 && overlap === false };
+    })()`);
+    console.log('S37 避让固定面板:', JSON.stringify(s37));
+
+    // ── S38：材质分区收拢 + 点条目开编辑面板（inline 入口，MU3）──
+    const s38 = await evaluate(`(async () => {
+      const b = window.__gts3dEdit.bridge;
+      const q = (s) => document.querySelector(s);
+      const qa = (s) => [...document.querySelectorAll(s)];
+      const click = (el) => { if (el) { el.click(); } };
+      b.select('car_01', false);
+      await new Promise((r) => setTimeout(r, 200));
+      const sec = qa('.ed-sec').find((el) => (el.querySelector('.ed-sec__t')?.textContent || '').trim().startsWith('材质'));
+      const hasInlineParams = !!sec.querySelector('.mp');
+      const hasInlineTypeSelect = !!sec.querySelector('select');
+      click(q('.ms__entry'));
+      await new Promise((r) => setTimeout(r, 300));
+      const modal = qa('.fpanel').find((p) => (p.querySelector('.fpanel__title')?.textContent || '') === '编辑材质');
+      const modalParams = modal ? !!modal.querySelector('.mp') : false;
+      const modalNameHidden = modal ? !modal.querySelector('.emod__name') : true;
+      // inline 调参落视觉层（先轮询等 GLB mesh 就绪——boot 异步加载窗口）
+      let meshReady = null;
+      for (let i = 0; i < 20 && !meshReady; i++) {
+        window.__gts3d.internals.sceneEngine.getObject('car_01')?.traverse((c) => { if (!meshReady && c.isMesh) meshReady = c; });
+        if (!meshReady) { await new Promise((r) => setTimeout(r, 300)); }
+      }
+      if (modal) {
+        const se = window.__gts3d.internals.sceneEngine;
+        window.__gts3d.internals.sceneEngine.replaceVisual('car_01', { materialType: 'MeshStandardMaterial', color: '#3366aa', roughness: 0.4 });
+        await new Promise((r) => setTimeout(r, 100));
+      }
+      click(modal && modal.querySelector('.fpanel__close'));
+      await new Promise((r) => setTimeout(r, 100));
+      let carMesh = null; window.__gts3d.internals.sceneEngine.getObject('car_01')?.traverse((c) => { if (!carMesh && c.isMesh) carMesh = c; }); const matColor = carMesh && carMesh.material && carMesh.material.color ? carMesh.material.color.getHexString() : 'NO_MAT';
+      return { hasInlineParams, hasInlineTypeSelect, modalOpened: !!modal, modalParams, modalNameHidden, matColor,
+        ok: !hasInlineParams && !hasInlineTypeSelect && !!modal && modalParams && modalNameHidden && matColor === '3366aa' };
+    })()`);
+    console.log('S38 材质分区收拢:', JSON.stringify(s38));
+
+    // ── S39：条目 ⊞ 直达素材库 + 面板排队（先开贴右栏不动，后开往左排；不叠右栏，MU4）──
+    const s39 = await evaluate(`(async () => {
+      const b = window.__gts3dEdit.bridge;
+      const q = (s) => document.querySelector(s);
+      const qa = (s) => [...document.querySelectorAll(s)];
+      const click = (el) => { if (el) { el.click(); } };
+      const rect = (el) => el ? el.getBoundingClientRect() : null;
+      b.select('car_01', false);
+      await new Promise((r) => setTimeout(r, 200));
+      // ① 条目 ⊞ → 直达素材库
+      const browseBtn = q('.ms__entry .ms__browse');
+      click(browseBtn);
+      await new Promise((r) => setTimeout(r, 250));
+      const paletteByBrowse = qa('.fpanel').find((p) => (p.querySelector('.fpanel__title')?.textContent || '') === '材质素材');
+      // ② palette 开着 → 点条目开编辑面板 → 应紧贴素材面板左侧
+      click(q('.ms__entry'));
+      await new Promise((r) => setTimeout(r, 250));
+      const ps = [...qa('.fpanel')].map((p) => rect(p));
+      const pRect = rect(paletteByBrowse);
+      // 编辑面板 = 两面板中 left 较小者（锚在素材面板左侧）
+      const otherRect = ps.length === 2 ? (ps[0].left === pRect.left ? ps[1] : ps[0]) : null;
+      // 排队：先开者（素材）贴右栏不动，后开者往左一格紧邻——右缘 ≈ 先开者左缘 ± GAP 容差；同顶
+      const leftOne = otherRect && pRect && otherRect.left < pRect.left ? otherRect : (otherRect ? pRect : null);
+      const rightOne = leftOne && otherRect && leftOne === otherRect ? pRect : otherRect;
+      const anchored = leftOne && rightOne
+        && Math.abs(leftOne.right - rightOne.left) <= 14 && leftOne.right <= rightOne.left
+        && Math.abs(leftOne.top - rightOne.top) < 2;
+      const noOverlap = leftOne && rightOne && !(rightOne.left < leftOne.right && leftOne.left < rightOne.right);
+      // ③ palette 关 → 编辑面板重开 → 退回右栏避让位（不叠右栏）
+      click(paletteByBrowse && paletteByBrowse.querySelector('.fpanel__close'));
+      click(q('.ms__entry'));
+      await new Promise((r) => setTimeout(r, 250));
+      const alone = qa('.fpanel');
+      const aloneEdit = alone.find((p) => (p.querySelector('.fpanel__title')?.textContent || '').startsWith('编辑材质'));
+      const aRect = rect(aloneEdit);
+      const rightPanel = rect(q('.ed-panel--right'));
+      const retreated = aRect && rightPanel && aRect.right <= rightPanel.left;
+      click(aloneEdit && aloneEdit.querySelector('.fpanel__close'));
+      return { hasBrowse: !!browseBtn, paletteByBrowse: !!paletteByBrowse, anchored, noOverlap, retreated,
+        ok: !!browseBtn && !!paletteByBrowse && anchored && noOverlap && retreated };
+    })()`);
+    console.log('S39 直达与锚定:', JSON.stringify(s39));
+
+    // ── S40：person 子网格清单 + 树展开（M2）──
+    const s40 = await evaluate(`(async () => {
+      const h = window.__gts3d;
+      const se = h.internals.sceneEngine;
+      // 等 person_01 的 GLB mesh 就绪（异步加载窗口）
+      let meshReady = null;
+      for (let i = 0; i < 30 && !meshReady; i++) {
+        se.getObject('person_01')?.traverse((c) => { if (!meshReady && c.isMesh) meshReady = c; });
+        if (!meshReady) { await new Promise((r) => setTimeout(r, 300)); }
+      }
+      const list = se.listSubMeshes('person_01');
+      const hasHair = list.some((m) => m.name === 'Ch23_Hair');
+      const multi = list.filter((m) => m.materialType.includes('Standard') || m.materialType.includes('Lambert')).length >= 1;
+      // 树展开子网格层
+      const b = window.__gts3dEdit.bridge;
+      b.select('person_01', false);
+      await new Promise((r) => setTimeout(r, 300));
+      const expandBtn = [...document.querySelectorAll('[data-tree-node="person_01"]')].pop()?.querySelector('.outline__chev');
+      expandBtn?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      await new Promise((r) => setTimeout(r, 250));
+      const meshRows = [...document.querySelectorAll('[data-tree-mesh]')];
+      // v-else-if 修复验证：person_01 的 node 行只应出现 1 次（此前每 mesh 行重复渲染一个）
+      const personNodeRows = document.querySelectorAll('[data-tree-node="person_01"]').length;
+      const hairRow = meshRows.some((el) => el.getAttribute('data-tree-mesh').endsWith('Ch23_Hair'));
+      // F2：容器组头（slotKey 空、文字 Armature）存在
+      const groupHead = meshRows.find((el) => el.getAttribute('data-tree-mesh') === '');
+      const hasGroupHead = !!(groupHead && groupHead.textContent.includes('Armature'));
+      // F1（二次裁决）：树点 Ch23_Hair mesh 行 → 选中父物体 + 槽位聚焦滚动（不弹编辑面板）
+      const hairEl = meshRows.find((el) => el.getAttribute('data-tree-mesh').endsWith('Ch23_Hair'));
+      hairEl?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      await new Promise((r) => setTimeout(r, 300));
+      const editTitles = [...document.querySelectorAll('.fpanel__title')].map((t) => t.textContent);
+      const noSlotPopup = !editTitles.some((t) => t && t.includes('Hair'));
+      const personSelected = b.selectedIds.includes('person_01');
+      const slotEditOpened = noSlotPopup && personSelected;
+      // F3：person_01 scale 落库（starter 0.0056）
+      const nodeScale = se.getNode('person_01').scale;
+      const f3Scale = nodeScale === 0.0056;
+      [...document.querySelectorAll('.fpanel__close')].forEach((x) => x.click());
+      return { meshCount: list.length, hasHair, multi, treeMeshRows: meshRows.length, personNodeRows, hairRow, hasGroupHead, slotEditOpened, f3Scale,
+        ok: meshReady && list.length >= 5 && hasHair && meshRows.length >= 5 && hairRow && hasGroupHead && slotEditOpened && f3Scale && personNodeRows === 1 };
+    })()`);
+    console.log('S40 子网格清单:', JSON.stringify(s40));
+
+    // ── S41：单槽换材质不影其他（applySlotLink → Ch23_Hair 换库材质，Body 不变，M2）──
+    const s41 = await evaluate(`(async () => {
+      const h = window.__gts3d;
+      const se = h.internals.sceneEngine;
+      const lib = window.__gts3dEdit.materialLib;
+      const obj = se.getObject('person_01');
+      const matOf = (name) => { let m = null; obj.traverse((c) => { const mesh = c; if (!m && mesh.isMesh && c.name === name) { m = Array.isArray(mesh.material) ? mesh.material[0] : mesh.material; } }); return m; };
+      const bodyBefore = matOf('Ch23_Body');
+      const hairKey = se.listSubMeshes('person_01').find((m) => m.name === 'Ch23_Hair')?.key;
+      if (!hairKey) { return { ok: false, why: 'no hairKey' }; }
+      lib.applySlotLink('person_01', hairKey, 'glass');
+      await new Promise((r) => setTimeout(r, 300));
+      const hairAfter = matOf('Ch23_Hair');
+      const bodyAfter = matOf('Ch23_Body');
+      const hairGlass = hairAfter && hairAfter.type === 'MeshPhysicalMaterial';
+      const bodyKept = bodyBefore === bodyAfter || (bodyAfter && bodyAfter.type === bodyBefore?.type && bodyAfter.uuid !== hairAfter?.uuid);
+      const slotVis = se.getVisual('person_01')?.slots?.[hairKey];
+      const serialized = h.serialize().__visuals?.person_01?.slots?.[hairKey];
+      return { hairGlass, bodyKept, slotRef: slotVis?.libraryRef === 'glass', serRef: serialized?.libraryRef === 'glass',
+        ok: hairGlass && bodyKept && slotVis?.libraryRef === 'glass' && serialized?.libraryRef === 'glass' };
+    })()`);
+    console.log('S41 单槽换材质:', JSON.stringify(s41));
+
+    // ── S42：单槽隐藏（slots[key].visible → 只该 mesh 隐藏，M2）──
+    const s42 = await evaluate(`(async () => {
+      const h = window.__gts3d;
+      const se = h.internals.sceneEngine;
+      const hairKey = se.listSubMeshes('person_01').find((m) => m.name === 'Ch23_Hair')?.key;
+      if (!hairKey) { return { ok: false, why: 'no hairKey' }; }
+      h.update({ __visuals: { person_01: { slots: { [hairKey]: { visible: false } } } } });
+      await new Promise((r) => setTimeout(r, 200));
+      let hairObj = null; let bodyObj = null;
+      se.getObject('person_01').traverse((c) => { if (c.name === 'Ch23_Hair') { hairObj = c; } if (c.name === 'Ch23_Body') { bodyObj = c; } });
+      const hairHidden = hairObj && hairObj.visible === false;
+      const bodyVisible = bodyObj && bodyObj.visible !== false;
+      h.update({ __visuals: { person_01: { slots: { [hairKey]: { visible: true } } } } });
+      await new Promise((r) => setTimeout(r, 150));
+      const hairBack = hairObj && hairObj.visible !== false;
+      return { hairHidden, bodyVisible, hairBack,
+        ok: hairHidden && bodyVisible && hairBack };
+    })()`);
+    console.log('S42 单槽隐藏:', JSON.stringify(s42));
+
+    // ── S43：槽位覆盖 serialize 往返 + undo 恢复（M2）──
+    const s43 = await evaluate(`(async () => {
+      const h = window.__gts3d;
+      const se = h.internals.sceneEngine;
+      const b = window.__gts3dEdit.bridge;
+      const pantsKey = se.listSubMeshes('person_01').find((m) => m.name === 'Ch23_Pants')?.key;
+      if (!pantsKey) { return { ok: false, why: 'no pantsKey' }; }
+      b.commit('槽位调参', () => {
+        const cur = se.getVisual('person_01');
+        const slots = { ...(cur?.slots ?? {}) };
+        slots[pantsKey] = { ...(slots[pantsKey] ?? {}), materialType: 'MeshStandardMaterial', color: '#aa2233', roughness: 0.5 };
+        h.update({ __visuals: { person_01: { ...(cur ?? {}), slots } } });
+      });
+      const ser = h.serialize().__visuals?.person_01?.slots?.[pantsKey];
+      const roundTrip = ser?.color === '#aa2233';
+      let pantsMat = null;
+      se.getObject('person_01').traverse((c) => { const mesh = c; if (!pantsMat && mesh.isMesh && c.name === 'Ch23_Pants') { pantsMat = Array.isArray(mesh.material) ? mesh.material[0] : mesh.material; } });
+      const colorApplied = pantsMat && pantsMat.color && pantsMat.color.getHexString() === 'aa2233';
+      b.undo();
+      const afterUndo = se.getVisual('person_01')?.slots?.[pantsKey];
+      const undoClean = !afterUndo || (!afterUndo.color && !afterUndo.libraryRef);
+      return { roundTrip, colorApplied, undoClean,
+        ok: roundTrip && colorApplied && undoClean };
+    })()`);
+    console.log('S43 槽位往返undo:', JSON.stringify(s43));
+
+    // ── S44：视口拾取定位子网格（resolveSubMesh 槽位 key 对齐，M2）──
+    const s44 = await evaluate(`(async () => {
+      const h = window.__gts3d;
+      const se = h.internals.sceneEngine;
+      // 直测契约：遍历 person 内部 mesh，resolveSubMesh(每个 mesh) 都应返回该 mesh 的槽位 key
+      const list = se.listSubMeshes('person_01');
+      let checked = 0; let allMatch = true; let firstKey = null;
+      const obj = se.getObject('person_01');
+      const meshByKey = new Map();
+      obj.traverse((c) => {
+        const mesh = c;
+        if (mesh.isMesh && c.name) { meshByKey.set(c.name, c); }
+      });
+      for (const m of list) {
+        const meshObj = meshByKey.get(m.name);
+        if (!meshObj) { continue; }
+        const resolved = se.resolveSubMesh(meshObj);
+        checked += 1;
+        if (!firstKey && resolved) { firstKey = resolved.slotKey; }
+        const match = resolved && resolved.id === 'person_01' && resolved.slotKey === m.key;
+        if (!match) { allMatch = false; }
+      }
+      return { checked, allMatch, firstKey,
+        ok: checked >= 5 && allMatch === true };
+    })()`);
+    console.log('S44 拾取定位槽位:', JSON.stringify(s44));
+
+
+    // ── S45：子网格选中态（点 Ch23_Hair → 属性面板显示该 mesh 局部变换/自身包围盒/材质，F6）──
+    const s45 = await evaluate(`(async () => {
+      const b = window.__gts3dEdit.bridge;
+      const se = window.__gts3d.internals.sceneEngine;
+      // 展开树
+      b.select('person_01', false);
+      await new Promise((r) => setTimeout(r, 300));
+      // 展开（若已展开则跳过——chev 再点会收起）
+      let hairEl0 = [...document.querySelectorAll('[data-tree-mesh]')].find((el) => el.getAttribute('data-tree-mesh').endsWith('Ch23_Hair'));
+      if (!hairEl0) {
+        const chev = [...document.querySelectorAll('[data-tree-node="person_01"]')].pop()?.querySelector('.outline__chev');
+        chev?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+        await new Promise((r) => setTimeout(r, 400));
+      }
+      const hairEl = [...document.querySelectorAll('[data-tree-mesh]')].find((el) => el.getAttribute('data-tree-mesh').endsWith('Ch23_Hair'));
+      if (!hairEl) { return { ok: false, why: 'no hair row' }; }
+      // 物体级基线：变换区数值
+      hairEl.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      await new Promise((r) => setTimeout(r, 300));
+      const slot = b.getState().selectedSlot;
+      const slotSet = !!slot && slot.nodeId === 'person_01' && slot.slotKey.endsWith('Ch23_Hair');
+      // 属性面板：可编辑变换输入（M3 起可编辑，不再 .pp__ro）+ 标题提示
+      const roInputs = [...document.querySelectorAll('.pp .ed-row input[type="number"]')].filter((i) => !i.disabled);
+      const slotHint = [...document.querySelectorAll('.pp__hint')].some((el) => (el.textContent || '').includes('模型内部'));
+      // 输入框值与引擎 getSubMeshInfo 局部 transform 对照
+      const info = se.getSubMeshInfo('person_01', slot?.slotKey ?? '');
+      const posMatch = info && roInputs.length >= 9 && Math.abs(Number(roInputs[0].value) - info.position[0]) < 1e-6;
+      // 包围盒变化：mesh 自身（远小于整模型 1m）
+      const personBox = document.querySelector('.pp__bbox')?.textContent || '';
+      const bboxShown = personBox.includes('×');
+      // SelectionService 槽位高亮：BoxHelper 只包该 mesh（helper key slot:）
+      const sel = window.__gts3dEdit.selection;
+      // 切回物体级：slot 清空
+      b.select('person_01', false);
+      await new Promise((r) => setTimeout(r, 200));
+      const slotCleared = b.getState().selectedSlot === null;
+      return { slotSet, roCount: roInputs.length, slotHint, posMatch, bboxShown, slotCleared,
+        ok: slotSet && roInputs.length >= 9 && slotHint && posMatch === true && bboxShown && slotCleared };
+    })()`);
+    console.log('S45 子网格选中态:', JSON.stringify(s45));
+
+    // ── S46：子网格局部变换（M3：Gizmo 吸附 mesh / 拖拽写 slots / serialize 往返 / undo / 面板编辑）──
+    const s46 = await evaluate(`(async () => {
+      const b = window.__gts3dEdit.bridge;
+      const se = window.__gts3d.internals.sceneEngine;
+      let mc = 0;
+      for (let i = 0; i < 30; i++) { mc = 0; se.getObject('person_01')?.traverse((c) => { if (c.isMesh) { mc += 1; } }); if (mc > 0) { break; } await new Promise((r) => setTimeout(r, 300)); }
+      // 选 person + 展开树 + 点 Hair
+      b.select('person_01', false);
+      await new Promise((r) => setTimeout(r, 300));
+      let hairEl = [...document.querySelectorAll('[data-tree-mesh]')].find((el) => el.getAttribute('data-tree-mesh').endsWith('Ch23_Hair'));
+      if (!hairEl) {
+        const chev = [...document.querySelectorAll('[data-tree-node="person_01"]')].pop()?.querySelector('.outline__chev');
+        chev?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+        await new Promise((r) => setTimeout(r, 400));
+        hairEl = [...document.querySelectorAll('[data-tree-mesh]')].find((el) => el.getAttribute('data-tree-mesh').endsWith('Ch23_Hair'));
+      }
+      if (!hairEl) { return { ok: false, why: 'no hair row' }; }
+      hairEl.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      await new Promise((r) => setTimeout(r, 400));
+      // ① Gizmo 吸附：attach 的对象名 = Ch23_Hair（非 person_01）
+      const gizmo = window.__gts3dEdit.gizmo;
+      const gizmoAttached = gizmo && gizmo.controls && gizmo.controls.object && gizmo.controls.object.name === 'Ch23_Hair';
+      // ② 直接写 slots transform（引擎级通道——Gizmo 拖拽最终走同一条）
+      const slotKey = 'Armature/Ch23_Hair';
+      b.commit('子网格变换', () => {
+        const cur = se.getVisual('person_01');
+        const slots = { ...(cur?.slots ?? {}) };
+        slots[slotKey] = { ...(slots[slotKey] ?? {}), position: [0.5, 0, 0] };
+        window.__gts3d.update({ __visuals: { person_01: { ...(cur ?? {}), slots } } });
+      });
+      await new Promise((r) => setTimeout(r, 250));
+      let hairMesh = null;
+      se.getObject('person_01').traverse((c) => { if (c.name === 'Ch23_Hair') { hairMesh = c; } });
+      const meshMoved = hairMesh && Math.abs(hairMesh.position.x - 0.5) < 1e-6;
+      const slotVis = se.getVisual('person_01')?.slots?.[slotKey];
+      const slotLanded = slotVis && slotVis.position && Math.abs(slotVis.position[0] - 0.5) < 1e-6;
+      // ③ serialize 往返
+      const ser = window.__gts3d.serialize().__visuals?.person_01?.slots?.[slotKey];
+      const serRoundTrip = ser && ser.position && Math.abs(ser.position[0] - 0.5) < 1e-6;
+      // ④ 面板输入通道：draft → slots（改 x=0.3）
+      const pxInput = [...document.querySelectorAll('.pp .ed-row input[type="number"]')][0];
+      if (pxInput) {
+        const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
+        setter.call(pxInput, '0.3');
+        pxInput.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+      await new Promise((r) => setTimeout(r, 300));
+      const slotAfterPanel = se.getVisual('person_01')?.slots?.[slotKey];
+      const panelEdit = slotAfterPanel && slotAfterPanel.position && Math.abs(slotAfterPanel.position[0] - 0.3) < 1e-6;
+      // ⑤ undo 恢复（面板那次 commit 可撤）。undo 触发整树重建（GLB 异步重载）——
+      // 旧 hairMesh 引用已脱离场景，必须重新查找并轮询等构建器重挂视觉层
+      b.undo();
+      await new Promise((r) => setTimeout(r, 250));
+      const slotAfterUndo = se.getVisual('person_01')?.slots?.[slotKey];
+      let meshAfterUndo = false;
+      for (let i = 0; i < 40; i++) {
+        let m = null;
+        se.getObject('person_01')?.traverse((c) => { if (c.name === 'Ch23_Hair') { m = c; } });
+        if (m && Math.abs(m.position.x - 0.5) < 1e-6) { meshAfterUndo = true; break; }
+        await new Promise((r) => setTimeout(r, 300));
+      }
+      b.undo();
+      await new Promise((r) => setTimeout(r, 200));
+      const slotGone = !se.getVisual('person_01')?.slots?.[slotKey]?.position;
+      return { gizmoAttached, meshMoved, slotLanded, serRoundTrip, panelEdit, meshAfterUndo, slotGone,
+        ok: gizmoAttached === true && meshMoved === true && slotLanded === true && serRoundTrip === true && panelEdit === true && meshAfterUndo === true && slotGone === true };
+    })()`);
+    console.log('S46 子网格局部变换:', JSON.stringify(s46));
+
+    // ── S47：boot 回灌窗口 GLB 节点视觉层存活（构建器重挂职责，R 修复轮）──
+    // 场景：给 car_01 写视觉层（内联材质色）→ 模拟 undo 重建（引擎 remove + 整份快照重喂，
+    // GLB 异步重新加载）→ 加载完成后视觉层必须已被构建器重挂（异步窗口丢视觉即 FAIL）
+    const s47 = await evaluate(`(async () => {
+      const b = window.__gts3dEdit.bridge;
+      const se = window.__gts3d.internals.sceneEngine;
+      // 轮询等 car_01 GLB 就绪
+      let mc = 0;
+      for (let i = 0; i < 30; i++) { mc = 0; se.getObject('car_01')?.traverse((c) => { if (c.isMesh) mc += 1; }); if (mc > 0) break; await new Promise((r) => setTimeout(r, 300)); }
+      if (mc === 0) { return { ok: false, why: 'car_01 not loaded' }; }
+      // 写物体内联材质（replaceVisual 真实路径，清互斥）
+      b.commit('测试内联材质', () => {
+        se.replaceVisual('car_01', { color: '#ff7700' });
+      });
+      // 快照（含视觉层）→ remove car_01 → 重喂快照（异步重建窗口：先建节点后到数据）
+      const snap = window.__gts3d.serialize();
+      b.commit('重建', () => {
+        window.__gts3d.update({ remove: ['car_01'] });
+        const { remove: _drop, ...frag } = snap;
+        void _drop;
+        window.__gts3d.update(frag);
+      });
+      // 轮询等重建后的 GLB 重新加载完成
+      let mesh = null;
+      for (let i = 0; i < 40; i++) {
+        mesh = null;
+        se.getObject('car_01')?.traverse((c) => { if (!mesh && c.isMesh) mesh = c; });
+        if (mesh && mesh.material && mesh.material.color && mesh.material.color.getHexString() === 'ff7700') break;
+        await new Promise((r) => setTimeout(r, 300));
+      }
+      const colorKept = !!mesh && !!mesh.material?.color && mesh.material.color.getHexString() === 'ff7700';
+      const visualKept = se.getVisual('car_01')?.color === '#ff7700';
+      return { colorKept, visualKept,
+        ok: colorKept === true && visualKept === true };
+    })()`);
+    console.log('S47 回灌窗口视觉存活:', JSON.stringify(s47));
+
     const pass = s1.ok === true && s3.idemOk === true && s3.rmOk === true
       && s2.count >= 2 && s2.titled === true
       && s4.ok === true && s5.hasCars === true && s5.hasTrees === true
@@ -665,7 +1205,11 @@ const main = async () => {
       && s26.ok === true
       && s27.ok === true
       && s28.ok === true
-      && s29.ok === true;
+      && s29.ok === true
+      && s30.ok === true && s31.ok === true && s32.ok === true && s33.ok === true
+      && s34.ok === true && s35.ok === true
+      && s36.ok === true && s37.ok === true && s38.ok === true && s39.ok === true
+      && s40.ok === true && s41.ok === true && s42.ok === true && s43.ok === true && s44.ok === true && s45.ok === true && s46.ok === true && s47.ok === true;
     console.log(pass ? 'SMOKE PASS' : 'SMOKE FAIL');
     process.exitCode = pass ? 0 : 1;
   } finally {

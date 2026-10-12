@@ -291,7 +291,7 @@ rmSync(join(F('stripped'), 'src', 'edit'), { recursive: true, force: true });
   check('init: 首次 build 门禁 PASS', r.ok && /\[init\/PASS\]/.test(r.out), `status=${r.status}`);
   check('init: 占位替换 name=kebab', pkg.name === 'factory-monitor', `name=${pkg.name}`);
   check('init: 编辑态工程（含 src/edit）', existsSync(join(out, 'src/edit')));
-  check('init: 只注入被引用资产（example.glb）', refModels.length === 1 && refModels[0] === 'example.glb', `[${refModels.join(',')}]`);
+  check('init: 只注入被引用资产（starter 引用 example+person）', refModels.length === 2 && refModels.includes('example.glb') && refModels.includes('person.glb'), `[${refModels.join(',')}]`);
   check('init: .gitignore 已写', existsSync(join(out, '.gitignore')));
   check('init: 母版残留未拷入（无 dist/node_modules）', !existsSync(join(out, 'dist')) && !existsSync(join(out, 'node_modules')));
 }
@@ -308,7 +308,7 @@ rmSync(join(F('stripped'), 'src', 'edit'), { recursive: true, force: true });
     'init: --with-components 写 file: 依赖 + tgz 落 vendor',
     r.ok && /file:\.\/vendor\/.+\.tgz/.test(pkg.dependencies?.['@a3d/a3d-components'] ?? '') && existsSync(join(out, 'vendor')),
   );
-  check('init: --assets all 注入全部模型（example+rack）', models.length === 2, `[${models.join(',')}]`);
+  check('init: --assets all 注入全部模型（example+person+rack）', models.length === 3, `[${models.join(',')}]`);
 }
 
 /* ── 端到端（--with-build）：小写盘符 spawn + 首次 npm run build ───────────── */

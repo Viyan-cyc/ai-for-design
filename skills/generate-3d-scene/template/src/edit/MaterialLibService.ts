@@ -13,7 +13,7 @@
  */
 import * as THREE from 'three';
 import type { SceneHandle, MaterialLibEntry, MaterialSpec, VisualOverride } from '@/scene-core';
-import { createMaterialFromSpec, applyMaterialScalars, applyMaterialTextures, NON_MATERIAL_VISUAL_KEYS } from '@/scene-core';
+import { createMaterialFromSpec, applyMaterialScalars, applyMaterialTextures, NON_MATERIAL_VISUAL_KEYS, findBySlotKey } from '@/scene-core';
 import type { Bridge } from './Bridge';
 
 /** 内置种子材质（key 即 mat_id，转录时键名直接用） */
@@ -137,20 +137,14 @@ export class MaterialLibService {
 
   // ---- 种子 ----
 
-  /** 注入 4 种子材质（仅缺的补；boot 时调用，不进撤销栈） */
+  /** 注入 4 种内置材质——仅工程首次（材质库为空）时；用户删除后不再复活 */
   seeds(): void {
-    const lib = { ...this.handle.internals.sceneEngine.getAllMaterialLib() };
-    let changed = false;
-    for (const [id, entry] of Object.entries(SEED_MATERIALS)) {
-      if (!(id in lib)) {
-        lib[id] = entry;
-        changed = true;
-      }
+    const lib = this.handle.internals.sceneEngine.getAllMaterialLib();
+    if (Object.keys(lib).length > 0) {
+      return;
     }
-    if (changed) {
-      this.handle.update({ __materialLib: lib });
-      this.syncAll();
-    }
+    this.handle.update({ __materialLib: { ...SEED_MATERIALS } });
+    this.syncAll();
   }
 
   // ---- 库 CRUD（全部经 bridge.commit，undo 可恢复） ----
@@ -191,26 +185,25 @@ export class MaterialLibService {
 
   /** 删除条目；引用者自动断开为 inline（保留外观） */
   removeEntry(id: string): void {
-    if (!this.getEntry(id)) {
+    const entry = this.getEntry(id);
+    if (!entry) {
       return;
     }
     this.bridge.commit('删除材质', () => {
+      const refs = this.referencingNodes(id);
       const lib = { ...this.handle.internals.sceneEngine.getAllMaterialLib() };
-      const entry = lib[id];
-      if (!entry) {
-        return;
-      }
       delete lib[id];
-      const visuals: Record<string, VisualOverride> = {};
-      for (const nid of this.referencingNodes(id)) {
+      this.handle.update({ __materialLib: lib });
+      // 引用者整条替换为内联——replaceVisual 覆盖式写入（合并语义会残留旧 libraryRef，
+      // 令 D4 跳过材质处理、内联字段失效）
+      for (const nid of refs) {
         const cur = this.handle.internals.sceneEngine.getVisual(nid);
-        visuals[nid] = { ...keepNonMaterial(cur), ...specToInline(entry.spec) };
+        this.handle.internals.sceneEngine.replaceVisual(nid, { ...keepNonMaterial(cur), ...specToInline(entry.spec) });
       }
-      this.handle.update({ __materialLib: lib, __visuals: visuals });
     });
   }
 
-  // ---- 链接 / 断开 / 另存为 ----
+  // ---- 链接 / 断开 / 另存为 / 槽位 ----
 
   link(nodeId: string, matId: string): void {
     if (!this.getEntry(matId)) {
@@ -220,6 +213,26 @@ export class MaterialLibService {
       const cur = this.handle.internals.sceneEngine.getVisual(nodeId);
       this.handle.internals.sceneEngine.replaceVisual(nodeId, { ...keepNonMaterial(cur), libraryRef: matId });
     });
+  }
+
+  /** 槽位级链接：把子网格槽位指向库条目（物体级与其它槽位不动；共享实例语义同物体级） */
+  applySlotLink(nodeId: string, slotKey: string, matId: string): void {
+    if (!this.getEntry(matId)) {
+      return;
+    }
+    this.bridge.commit('槽位链接材质', () => {
+      const se = this.handle.internals.sceneEngine;
+      const cur = se.getVisual(nodeId);
+      const slots = { ...(cur?.slots ?? {}) };
+      slots[slotKey] = { ...(slots[slotKey] ?? {}), libraryRef: matId };
+      // merge 写入（applyVisual 合并语义对 slots 整块替换无残留问题——slots 不与物体级互斥）
+      this.handle.update({ __visuals: { [nodeId]: { ...(cur ?? {}), slots } } });
+    });
+  }
+
+  /** 读槽位视觉（编辑面板槽位模式显示用） */
+  getSlotVisual(nodeId: string, slotKey: string): VisualOverride | null {
+    return this.handle.internals.sceneEngine.getVisual(nodeId)?.slots?.[slotKey] ?? null;
   }
 
   disconnect(nodeId: string): void {
@@ -244,20 +257,39 @@ export class MaterialLibService {
 
   // ---- 运行时同步 ----
 
-  /** 重挂全部引用物体的共享实例（幂等；bridge 变更后自动调用） */
+  /** 重挂全部引用物体的共享实例（幂等；bridge 变更后自动调用）——物体级 + 槽位级 */
   syncAll(): void {
     const lib = this.handle.internals.sceneEngine.getAllMaterialLib();
     this.reconcileInstances(lib);
     const se = this.handle.internals.sceneEngine;
     for (const id of se.getAllIds()) {
-      const ref = se.getVisual(id)?.libraryRef;
-      if (!ref) {
+      const vis = se.getVisual(id);
+      if (!vis) {
         continue;
       }
-      const inst = this.instances.get(ref);
-      const obj = se.getObject(id);
-      if (inst && obj) {
-        this.assignMaterial(obj, inst);
+      // 物体级引用：整树重挂共享实例
+      if (vis.libraryRef) {
+        const inst = this.instances.get(vis.libraryRef);
+        const obj = se.getObject(id);
+        if (inst && obj) {
+          this.assignMaterial(obj, inst);
+        }
+      }
+      // 槽位级引用：该子网格单独挂共享实例
+      if (vis.slots) {
+        const obj = se.getObject(id);
+        if (obj) {
+          for (const [slotKey, slot] of Object.entries(vis.slots)) {
+            const inst = slot?.libraryRef ? this.instances.get(slot.libraryRef) : null;
+            if (!inst) {
+              continue;
+            }
+            const target = findBySlotKey(obj, slotKey);
+            if (target) {
+              (target as THREE.Mesh).material = inst;
+            }
+          }
+        }
       }
     }
   }

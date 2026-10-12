@@ -11,7 +11,7 @@
 import { computed, onMounted, ref } from 'vue';
 import type { Bridge } from './Bridge';
 import type { VisualOverride } from '@/scene-core';
-import { RESERVED_KEYS, type SceneNode } from '@/scene-core/types';
+import { RESERVED_KEYS, type SceneNode, type MeshSpecEntry } from '@/scene-core/types';
 
 const props = defineProps<{ bridge: Bridge }>();
 
@@ -30,9 +30,9 @@ interface GroupView {
   roots: FNode[];
 }
 
-/** 渲染行（单接口避免模板判别联合收窄问题；group 行只读 key/count/collapsed） */
+/** 渲染行（单接口避免模板判别联合收窄问题；group 行只读 key/count/collapsed；mesh 行只读 id/slotKey/name） */
 interface Row {
-  kind: 'group' | 'node';
+  kind: 'group' | 'node' | 'mesh';
   key: string;
   id: string;
   type: string;
@@ -42,6 +42,12 @@ interface Row {
   hasChildren: boolean;
   collapsed: boolean;
   inheritedHidden: boolean;
+
+  /** mesh 行（GLB 子网格）：所属节点 id + 槽位 key + 显示名 */
+  slotKey: string;
+  slotName: string;
+  slotVisible: boolean;
+  meshExpanded: boolean;
 }
 
 const query = ref('');
@@ -63,6 +69,7 @@ const refresh = (): void => {
   }
   rawGroups.value = groups;
   visuals.value = (data.__visuals ?? {}) as Record<string, VisualOverride>;
+  meshCache = new Map();
 };
 
 onMounted(() => {
@@ -187,6 +194,10 @@ const rows = computed<Row[]>(() => {
       hasChildren: false,
       collapsed: groupCollapsed,
       inheritedHidden: false,
+      slotKey: '',
+      slotName: '',
+      slotVisible: true,
+      meshExpanded: false,
     });
     if (groupCollapsed) {
       continue;
@@ -206,7 +217,58 @@ const rows = computed<Row[]>(() => {
         hasChildren,
         collapsed: nodeCollapsed,
         inheritedHidden,
+        slotKey: '',
+        slotName: '',
+        slotVisible: true,
+        meshExpanded: false,
       });
+      // GLB 子网格层：节点展开时列出内部 mesh（只读展示 + eye；搜索态不展开）。
+      // 有多级容器时按首段容器分组（组头行 + mesh 行再缩进一级）；无容器直接平铺
+      const subMeshes = !isSearch && !nodeCollapsed ? subMeshesOf(n.id) : [];
+      const meshExpanded = !isSearch && expandedMesh.value.has(n.id);
+      if (subMeshes.length > 0 && meshExpanded) {
+        const slotVisuals = visuals.value[n.id]?.slots ?? {};
+        let lastContainer = null;
+        for (const m of subMeshes) {
+          const sep = m.key.lastIndexOf('/');
+          const container = sep > 0 ? m.key.slice(0, sep) : '';
+          if (container && container !== lastContainer) {
+            lastContainer = container;
+            out.push({
+              kind: 'mesh',
+              key: '',
+              id: n.id,
+              type: n.type,
+              parentId: n.id,
+              depth: depth + 1,
+              count: 0,
+              hasChildren: false,
+              collapsed: false,
+              inheritedHidden: inheritedHidden || selfHidden,
+              slotKey: '',
+              slotName: container.split('/').pop() ?? container,
+              slotVisible: true,
+              meshExpanded: false,
+            });
+          }
+          out.push({
+            kind: 'mesh',
+            key: '',
+            id: n.id,
+            type: n.type,
+            parentId: n.id,
+            depth: depth + (container ? 2 : 1),
+            count: 0,
+            hasChildren: false,
+            collapsed: false,
+            inheritedHidden: inheritedHidden || selfHidden,
+            slotKey: m.key,
+            slotName: m.name,
+            slotVisible: slotVisuals[m.key]?.visible !== false,
+            meshExpanded: false,
+          });
+        }
+      }
       if (hasChildren && !nodeCollapsed) {
         for (const c of n.children) {
           walk(c, depth + 1, inheritedHidden || selfHidden);
@@ -253,6 +315,64 @@ const eyeTitle = (id: string, inherited: boolean): string => {
     return '父节点已隐藏';
   }
   return isVisible(id) ? '隐藏' : '显示';
+};
+
+/** 子网格展开集（GLB 节点 id）；子网格清单缓存（refresh 时清） */
+const expandedMesh = ref<Set<string>>(new Set());
+let meshCache = new Map<string, MeshSpecEntry[]>();
+
+/**
+ * 节点的 GLB 子网格清单。**空结果不缓存**——GLB 异步加载完成前 listSubMeshes
+ * 返回 []，若缓存空清单则加载完成后永不出现展开钮（加载完成不发 bridge state，
+ * refresh 不会清缓存）；不缓存让下次查询自然重试（查表是 O(1) Map 读，代价可忽略）。
+ */
+const subMeshesOf = (id: string): MeshSpecEntry[] => {
+  const cached = meshCache.get(id);
+  if (cached) {
+    return cached;
+  }
+  const list = props.bridge.handle.internals.sceneEngine.listSubMeshes(id);
+  if (list.length > 0) {
+    meshCache.set(id, list);
+  }
+  return list;
+};
+
+/** 节点是否含子网格（控制展开钮显示；不入 meshCache——只查空态可缓存） */
+const hasSubMeshes = (id: string): boolean => subMeshesOf(id).length > 0;
+
+const toggleMeshExpand = (id: string): void => {
+  const next = new Set(expandedMesh.value);
+  if (next.has(id)) {
+    next.delete(id);
+  } else {
+    next.add(id);
+  }
+  expandedMesh.value = next;
+};
+
+/** 子网格 eye：写 slots[key].visible（merge 物体级其余槽位；undo/serialize 现成） */
+const toggleSlotVisible = (nodeId: string, slotKey: string): void => {
+  const se = props.bridge.handle.internals.sceneEngine;
+  const cur = se.getVisual(nodeId);
+  const slots = { ...(cur?.slots ?? {}) };
+  const slotCur = slots[slotKey] ?? {};
+  slots[slotKey] = { ...slotCur, visible: !(slotCur.visible !== false) };
+  props.bridge.commit('子网格显隐', () => {
+    props.bridge.handle.update({ __visuals: { [nodeId]: { ...(cur ?? {}), slots } } });
+  });
+};
+
+/** 树点子网格：选中父物体 + 记录槽位态（属性面板显示该 mesh 信息）；window 事件留给 MaterialSection 聚焦滚动 */
+const onSelectSlot = (nodeId: string, slotKey: string): void => {
+  props.bridge.selectSlot(nodeId, slotKey);
+  window.dispatchEvent(new CustomEvent('gts3d-select-slot', { detail: { nodeId, slotKey } }));
+};
+
+/** mesh 行选中态：bridge.selectedSlot 匹配该槽位 */
+const isSlotActive = (slotKey: string): boolean => {
+  const s = props.bridge.selectedSlot;
+  return !!s && s.slotKey === slotKey;
 };
 
 const onSelect = (id: string, ev: MouseEvent): void => {
@@ -374,7 +494,7 @@ const LOCK_OFF = 'M5 7V5.5a3 3 0 0 1 5.8-.9M3.5 7h9a.5.5 0 0 1 .5.5v4a.5.5 0 0 1
         </li>
 
         <li
-          v-else
+          v-else-if="row.kind === 'node'"
           :data-tree-node="row.id"
           :data-tree-parent="row.parentId"
           :data-tree-depth="row.depth"
@@ -385,10 +505,10 @@ const LOCK_OFF = 'M5 7V5.5a3 3 0 0 1 5.8-.9M3.5 7h9a.5.5 0 0 1 .5.5v4a.5.5 0 0 1
           @dblclick.stop="onDblClick(row.id)"
         >
           <span
-            v-if="row.hasChildren"
+            v-if="row.hasChildren || hasSubMeshes(row.id)"
             class="outline__chev"
             :class="{ 'outline__chev--closed': row.collapsed }"
-            @click.stop="toggleNode(row.id)"
+            @click.stop="hasSubMeshes(row.id) && !row.hasChildren ? toggleMeshExpand(row.id) : toggleNode(row.id)"
           >
             <svg viewBox="0 0 16 16"><path
               d="M6 4l4 4-4 4"
@@ -484,6 +604,61 @@ const LOCK_OFF = 'M5 7V5.5a3 3 0 0 1 5.8-.9M3.5 7h9a.5.5 0 0 1 .5.5v4a.5.5 0 0 1
             /></svg>
           </button>
         </li>
+
+        <!-- GLB 子网格行（浅色只读 + eye 单独隐藏 + 点选联动；不上 Gizmo/不可删） -->
+        <!-- GLB 子网格行：slotKey 空 = 容器组头（只读不可点编辑）；非空 = mesh（eye + 点选联动） -->
+        <li
+          v-if="row.kind === 'mesh'"
+          :data-tree-mesh="row.slotKey"
+          :data-tree-mesh-node="row.id"
+          :style="{ paddingLeft: `${8 + row.depth * 14}px` }"
+          class="outline__item outline__item--mesh"
+          :class="{ 'outline__item--meshgroup': !row.slotKey, 'outline__item--active': row.slotKey && isSlotActive(row.slotKey) }"
+          :title="row.slotKey ? `模型内部节点 · ${row.slotKey}` : '模型内部容器'"
+          @click.stop="row.slotKey && onSelectSlot(row.id, row.slotKey)"
+        >
+          <span class="outline__chev outline__chev--empty" />
+          <svg
+            class="outline__icon"
+            viewBox="0 0 16 16"
+          ><path
+            d="M4 3l8 5-8 5V3z"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.1"
+            stroke-linejoin="round"
+          /></svg>
+          <span class="outline__id">{{ row.slotName }}</span>
+          <button
+            v-if="row.slotKey"
+            :data-tree-slot-eye="row.slotKey"
+            :class="{ 'outline__act--off': !row.slotVisible }"
+            class="outline__act"
+            :title="row.slotVisible ? '隐藏子网格' : '显示子网格'"
+            type="button"
+            @click.stop="toggleSlotVisible(row.id, row.slotKey)"
+          >
+            <svg
+              v-if="row.slotVisible"
+              viewBox="0 0 16 16"
+            ><path
+              :d="EYE_ON"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.1"
+            /></svg>
+            <svg
+              v-else
+              viewBox="0 0 16 16"
+            ><path
+              :d="EYE_OFF"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.1"
+              stroke-linecap="round"
+            /></svg>
+          </button>
+        </li>
       </template>
     </ul>
   </div>
@@ -564,7 +739,7 @@ const LOCK_OFF = 'M5 7V5.5a3 3 0 0 1 5.8-.9M3.5 7h9a.5.5 0 0 1 .5.5v4a.5.5 0 0 1
   color: var(--ed-dim);
   font-weight: 400;
   font-size: 10px;
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(0, 0, 0, 0.05);
   border-radius: 8px;
   padding: 0 6px;
 }
@@ -579,11 +754,31 @@ const LOCK_OFF = 'M5 7V5.5a3 3 0 0 1 5.8-.9M3.5 7h9a.5.5 0 0 1 .5.5v4a.5.5 0 0 1
 }
 
 .outline__item:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(0, 0, 0, 0.045);
 }
 
 .outline__item--active {
   background: var(--ed-accent-soft);
+}
+
+/* GLB 子网格行：浅色只读（模型内部节点，不可删/不可拖出） */
+.outline__item--mesh .outline__id {
+  color: var(--ed-dim);
+  font-size: 11px;
+}
+
+.outline__item--mesh .outline__icon {
+  color: var(--ed-dim);
+}
+
+/* 容器组头（Armature 等）：更弱化，不可点编辑 */
+.outline__item--meshgroup {
+  cursor: default;
+}
+
+.outline__item--meshgroup .outline__id {
+  font-weight: 600;
+  color: var(--ed-dim);
 }
 
 .outline__item--active .outline__id {
@@ -659,7 +854,7 @@ const LOCK_OFF = 'M5 7V5.5a3 3 0 0 1 5.8-.9M3.5 7h9a.5.5 0 0 1 .5.5v4a.5.5 0 0 1
 }
 
 .outline__act:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.07);
   color: var(--ed-text);
 }
 

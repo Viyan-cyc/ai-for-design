@@ -114,6 +114,8 @@ export const createScene = async (
   const environmentEngine = new EnvironmentEngine();
   const assetEngine = new AssetEngine();
   const raycastEngine = new RaycastEngine();
+  // 子网格槽位层：SceneEngine 查资产报告（逐 mesh 清单）用
+  sceneEngine.assetReportProvider = (assetId) => assetEngine.getReport(assetId);
 
   void environmentEngine.apply(
     rendererEngine.renderer, sceneEngine.scene,

@@ -10,6 +10,7 @@
 import type * as THREE from 'three';
 import { TransformControls } from 'three/examples/jsm/controls/TransformControls.js';
 import type { SceneHandle } from '@/scene-core/createScene';
+import { findBySlotKey } from '@/scene-core';
 import type { Bridge } from './Bridge';
 
 const SNAP = {
@@ -29,6 +30,9 @@ export class LayoutGizmo {
     rotation: THREE.Euler;
     scale: THREE.Vector3;
   } | null = null;
+
+  /** 槽位吸附目标（selectedSlot 有值时非 null；attach 的 mesh 与其场景节点不同体） */
+  private slotTarget: { nodeId: string; slotKey: string; mesh: THREE.Object3D } | null = null;
 
   constructor(
     handle: SceneHandle,
@@ -95,14 +99,33 @@ export class LayoutGizmo {
   syncSelection(): void {
     const ids = this.bridge.selectedIds;
     if (ids.length === 0) {
+      this.slotTarget = null;
       this.detach();
       return;
     }
     const anchorId = this.bridge.anchorId as string;
     // 锁定物体不挂手柄（Spline 同款：视口点选/Gizmo 跳过，树中仍可选中看属性）
     if (this.bridge.handle.internals.sceneEngine.getVisual(anchorId)?.locked === true) {
+      this.slotTarget = null;
       this.detach();
       return;
+    }
+    // 槽位选中态：Gizmo 吸附到子网格本身（位置=mesh 世界原点），拖拽走槽位局部 transform 通道
+    const slot = this.bridge.selectedSlot;
+    if (slot && slot.nodeId === anchorId) {
+      const entryObj = this.bridge.handle.internals.sceneEngine.getObject(anchorId);
+      const mesh = entryObj ? findBySlotKey(entryObj, slot.slotKey) : null;
+      if (mesh) {
+        this.slotTarget = { nodeId: anchorId, slotKey: slot.slotKey, mesh };
+        if (this.controls.object !== mesh) {
+          this.controls.attach(mesh);
+        }
+        return;
+      }
+      // 槽 key 失效（模型重导出改名）：退回物体级
+      this.slotTarget = null;
+    } else {
+      this.slotTarget = null;
     }
     const obj = this.bridge.handle.internals.sceneEngine.getObject(anchorId);
     if (obj && this.controls.object !== obj) {
@@ -145,10 +168,6 @@ export class LayoutGizmo {
     if (!obj || !this.startTransform) {
       return;
     }
-    const id = obj.name;
-    if (!id) {
-      return;
-    }
     const start = this.startTransform;
     const moved = !obj.position.equals(start.position)
       || !obj.rotation.equals(start.rotation)
@@ -156,14 +175,33 @@ export class LayoutGizmo {
     if (!moved) {
       return;
     }
-    // XYZ 均匀缩放柄在物体投影正中心按下时 pointStart≈0，上游 d=pointEnd/pointStart 会爆炸，
-    // 病态结果直接回滚到拖拽前状态（不进撤销栈）
+    // v3 均匀缩放柄病态增量回滚（不进撤销栈）
     const insane = [obj.scale.x, obj.scale.y, obj.scale.z]
       .some((v) => !Number.isFinite(v) || Math.abs(v) > 1e4 || Math.abs(v) < 1e-6);
     if (insane) {
       obj.position.copy(start.position);
       obj.rotation.copy(start.rotation);
       obj.scale.copy(start.scale);
+      return;
+    }
+    // 槽位吸附态：mesh 局部 transform 直接写 slots[key]（与物体级通道分开）
+    if (this.slotTarget && this.slotTarget.mesh === obj) {
+      const { nodeId, slotKey } = this.slotTarget;
+      this.bridge.commit('子网格变换', () => {
+        const cur = this.bridge.handle.internals.sceneEngine.getVisual(nodeId);
+        const slots = { ...(cur?.slots ?? {}) };
+        slots[slotKey] = {
+          ...(slots[slotKey] ?? {}),
+          position: [obj.position.x, obj.position.y, obj.position.z],
+          rotation: [obj.rotation.x, obj.rotation.y, obj.rotation.z],
+          scale: [obj.scale.x, obj.scale.y, obj.scale.z],
+        };
+        this.bridge.handle.update({ __visuals: { [nodeId]: { ...(cur ?? {}), slots } } });
+      });
+      return;
+    }
+    const id = obj.name;
+    if (!id) {
       return;
     }
     // v3：按所属分组回写（type = 分组 key；经 update 幂等 upsert 进撤销栈）

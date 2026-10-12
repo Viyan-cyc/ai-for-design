@@ -66,12 +66,12 @@ const speedText = computed(() =>
   min-width: 132px;
   padding: 8px 11px;
   border-radius: 8px;
-  background: rgba(20, 30, 40, 0.88);
-  color: #fff;
+  background: rgba(255, 255, 255, 0.92);
+  color: #1d1f23;
   font-size: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(0, 0, 0, 0.08);
   backdrop-filter: blur(6px);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
 }
 
 .example-card--alarm {
@@ -97,18 +97,18 @@ const speedText = computed(() =>
   padding: 1px 7px;
   border-radius: 999px;
   background: rgba(112, 200, 120, 0.22);
-  color: #7fd48a;
+  color: #2e9e4f;
   font-size: 10px;
 }
 
 .example-card--alarm .example-card__badge {
   background: rgba(229, 72, 77, 0.24);
-  color: #ff8a8e;
+  color: #d9383d;
 }
 
 .example-card--maintenance .example-card__badge {
   background: rgba(216, 169, 33, 0.22);
-  color: #e8c04a;
+  color: #b58a1a;
 }
 
 .example-card__row {
@@ -119,7 +119,7 @@ const speedText = computed(() =>
 }
 
 .example-card__key {
-  color: rgba(255, 255, 255, 0.55);
+  color: #6b7280;
   font-size: 11px;
 }
 

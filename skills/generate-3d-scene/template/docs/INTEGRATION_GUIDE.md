@@ -226,6 +226,25 @@ obj.traverse((o) => { if (o.isMesh) o.material = mat; });
 
 生产侧若确需运行时改视觉，走 `handle.update({ __visuals: { ... } })` 是**合法但 discouraged** 的通道（undo 依赖它）；正规通道仍是改 materials.ts。
 
+### 6.2 槽位覆盖转录（GLB 子网格，`__visuals[id].slots`）
+
+多材质 GLB（如 person：身体/头发/裤子各自带材质）在编辑器里可对**单个子网格**换材质/调参/隐藏——这些编辑存为槽位覆盖，交付时随 `__visuals` 一起剥离，转录清单的"①′ 槽位覆盖表"列出（nodeId / slot / 字段 / 值）。转录进 handler：
+
+```ts
+// 槽位 = GLB 内部 mesh 名称路径（如 'Ch23_Hair'）；getObjectByName 用末段名定位
+const hair = obj.getObjectByName('Ch23_Hair');
+if (hair) {
+  hair.material = createMaterialFromSpec({ type: 'MeshPhysicalMaterial', transmission: 1, roughness: 0.2 });
+  // 局部 transform 转录（编辑器拖 Gizmo 产生）：position/rotation/scale 同规则
+  hair.position.set(0.1, 0, 0);
+}
+```
+
+- 槽位 key 与 GLB 重导出绑定：模型改名后 key 失效（编辑器会 warn 并忽略）；转录以**当下清单为准**。
+- 运行时通道：`handle.update({ __visuals: { <id>: { slots: { '<key>': { color: '#fff' } } } } })`（合法但 discouraged，同 6.1 末段）。
+- 槽位引用材质库（槽位 libraryRef）：转录为 `mesh.material = libraryMaterials.<名>`（同 6.1 引用表，槽位表会标出）。
+- 槽位局部 transform（position/rotation/scale）：只对**静止骨骼**有效；骨骼动画播放时局部偏移被骨骼矩阵覆盖（skinning 数学使然，编辑器为静止态编辑）。
+
 ## 7. 常见问题
 
 **Q: 物体没出现？** console 找 `[SceneEngine] 未注册的物体类型`（分组 handler 没注册——注册后记得重喂该分组）或 `[registry] 资产加载失败`（路径/文件名不对）。
@@ -237,3 +256,5 @@ obj.traverse((o) => { if (o.isMesh) o.material = mat; });
 **Q: 帧率低？** `setDebug(true)` 看 tris（总面数）与 calls（draw call）。优先减面数、合并同种物体（>1000 同类用 InstancedMesh，写个 handler 即可）。
 
 **Q: 想改某个物体的颜色？** 不是改数据——`params` 不收视觉字段。单个状态视觉进 `materials.ts`；多个物体复用同一材质 → 编辑器材质库（转 `libraryMaterials`，见 §6.1）；编辑器临时调的进 `__visuals`（交付时转录，见 §6）。
+
+**Q: 人物模型巨大（scale=1 时一百多米高）？** mixamo 等骨骼资产以**厘米**为单位（骨骼位置 ×100），导入后世界尺寸放大百倍。修法：在该节点 `scale` 设 `0.01` 级归一化（validate-model 报告的 `高=…m` 警告即提示；如 person 高 179.275m → `scale: 0.0056` ≈ 1 人高）。资产本身不改——引擎不做隐式缩放（防误伤 1:1 单位的机械模型）。

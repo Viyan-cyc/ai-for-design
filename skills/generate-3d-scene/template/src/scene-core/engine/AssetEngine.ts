@@ -8,7 +8,8 @@
  */
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import type { ModelSpecReport, Vec3 } from '../types';
+import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
+import type { MeshSpecEntry, ModelSpecReport, Vec3 } from '../types';
 import type { StateVisual } from '../materials';
 import { applyVisualToMaterial, loadTexture } from '../materials';
 
@@ -84,6 +85,43 @@ const checkNaming = (root: THREE.Object3D): string[] => {
   return violations;
 };
 
+/**
+ * 逐 mesh 清单：名称路径作槽位 key（父链到根，"/" 连接；未命名节点 #索引兜底）。
+ * 同一资产的多实例结构一致 → key 稳定；骨骼/空节点非 mesh 不进清单。
+ */
+const collectMeshes = (root: THREE.Object3D): MeshSpecEntry[] => {
+  const out: MeshSpecEntry[] = [];
+  let autoIndex = 0;
+  const keyOf = (node: THREE.Object3D): string => {
+    const parts: string[] = [];
+    let cur: THREE.Object3D | null = node;
+    while (cur && cur !== root) {
+      parts.unshift(cur.name || `#${autoIndex}`);
+      if (!cur.name) {
+        autoIndex += 1;
+      }
+      cur = cur.parent;
+    }
+    return parts.join('/');
+  };
+  root.traverse((child) => {
+    const mesh = child as THREE.Mesh;
+    if (!mesh.isMesh || !mesh.geometry) {
+      return;
+    }
+    const geo = mesh.geometry;
+    const tris = geo.index ? geo.index.count / 3 : (geo.attributes.position?.count ?? 0) / 3;
+    const mat = Array.isArray(mesh.material) ? mesh.material[0] : mesh.material;
+    out.push({
+      key: keyOf(child),
+      name: child.name || `#${autoIndex++}`,
+      triangles: Math.round(tris),
+      materialType: mat ? mat.type : 'unknown',
+    });
+  });
+  return out;
+};
+
 export class AssetEngine {
   private cache = new Map<string, CacheEntry>();
 
@@ -91,6 +129,14 @@ export class AssetEngine {
   private loading = new Map<string, Promise<unknown>>();
 
   private loader = new GLTFLoader();
+
+  /** Draco 解码器（本地 wasm，随 three 分发；无 CDN 依赖——内网纪律） */
+  private draco = new DRACOLoader();
+
+  constructor() {
+    this.draco.setDecoderPath('assets/draco/');
+    this.loader.setDRACOLoader(this.draco);
+  }
 
   /**
    * 获取资产实例（命中缓存即 clone，未命中先加载）。
@@ -241,6 +287,7 @@ export class AssetEngine {
       namingViolations,
       passed: violations.length === 0,
       violations,
+      meshes: collectMeshes(root),
     };
   }
 

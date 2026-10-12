@@ -27,6 +27,9 @@ export interface EditorState {
   /** 选中物体 id 列表（有序，末位=基准） */
   selection: string[];
 
+  /** 选中的子网格槽位（GLB 内部 mesh；null = 无——属性面板据此显示子网格信息） */
+  selectedSlot: { nodeId: string; slotKey: string } | null;
+
   /** 撤销栈深度（UI 显示用） */
   undoDepth: number;
   redoDepth: number;
@@ -58,6 +61,9 @@ export class Bridge {
 
   gizmoMode: EditorState['gizmoMode'] = 'translate';
 
+  /** 选中的子网格槽位（树点 mesh 行设置；切物体/清空选中时清除） */
+  private slot: { nodeId: string; slotKey: string } | null = null;
+
   constructor(handle: SceneHandle) {
     this.handle = handle;
     // 存量副本 id（<id>_copy_NNN）取 max，续号——避免重启后 duplicateObject 生成
@@ -83,6 +89,7 @@ export class Bridge {
   getState(): EditorState {
     return {
       selection: [...this.selection],
+      selectedSlot: this.slot ? { ...this.slot } : null,
       undoDepth: this.undoStack.length,
       redoDepth: this.redoStack.length,
       snapping: this.snapping,
@@ -99,8 +106,10 @@ export class Bridge {
 
   /** 点选（无修饰键=重置为单选；Shift=切换累计；基准=最后选中的；再点已选中者保持选中——取消走点空白/ESC） */
   select(id: string, additive: boolean): void {
+    this.slot = null;
     if (!additive) {
       if (this.selection.length === 1 && this.selection[0] === id) {
+        this.emit();
         return;
       }
       this.selection = [id];
@@ -112,9 +121,30 @@ export class Bridge {
     this.emit();
   }
 
+  /** 选中子网格槽位（树点 mesh 行；选中父物体 + 记录槽位——属性面板据此显示该 mesh 信息） */
+  selectSlot(nodeId: string, slotKey: string): void {
+    this.selection = [nodeId];
+    this.slot = { nodeId, slotKey };
+    this.emit();
+  }
+
+  /** 清子网格槽位态（点空白/ESC；物体选中保留） */
+  clearSelectedSlot(): void {
+    if (this.slot) {
+      this.slot = null;
+      this.emit();
+    }
+  }
+
+  /** 当前选中槽位（面板读） */
+  get selectedSlot(): { nodeId: string; slotKey: string } | null {
+    return this.slot;
+  }
+
   /** 点空白/ESC 清空 */
   clearSelection(): void {
     this.selection = [];
+    this.slot = null;
     this.emit();
   }
 

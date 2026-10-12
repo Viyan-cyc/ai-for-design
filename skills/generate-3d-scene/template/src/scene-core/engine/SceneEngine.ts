@@ -9,9 +9,9 @@
  * 不负责：渲染（RenderLoop）、加载（AssetEngine）、交互（RaycastEngine）
  */
 import * as THREE from 'three';
-import type { SceneData, SceneNode, TreeSceneFragment, UpdateStats, Vec3, MaterialLibEntry } from '../types';
+import type { MeshSpecEntry, ModelSpecReport, SceneData, SceneNode, TreeSceneFragment, UpdateStats, Vec3, MaterialLibEntry } from '../types';
 import { RESERVED_KEYS } from '../types';
-import { applyVisualOverride, NON_MATERIAL_VISUAL_KEYS, type VisualOverride } from '../materials';
+import { applyVisualOverride, findBySlotKey, NON_MATERIAL_VISUAL_KEYS, type VisualOverride } from '../materials';
 
 /** 引擎内部节点记录（索引项） */
 interface NodeEntry {
@@ -160,6 +160,100 @@ export class SceneEngine {
     return null;
   }
 
+  /**
+   * 子网格清单（GLB 节点）：逐 mesh { key, name, triangles, materialType }。
+   * 资产报告缺失（未走 AssetEngine 加载）返回空数组。
+   */
+  listSubMeshes(nodeId: string): MeshSpecEntry[] {
+    const entry = this.entries.get(nodeId);
+    if (!entry) {
+      return [];
+    }
+    const assetId = entry.node.params?.assetId;
+    if (typeof assetId !== 'string' || !this.assetReportProvider) {
+      return [];
+    }
+    const report = this.assetReportProvider(assetId);
+    return report?.meshes ?? [];
+  }
+
+  /**
+   * 拾取定位子网格：视口点中的 mesh → { 场景节点 id, 槽位 key }；非 GLB 内部命中返回 null。
+   * 槽位 key 与 buildReport.collectMeshes 对齐：从**场景节点自身**起算的名称路径
+   * （工厂的 Group 外壳与 GLB 根名如 'Scene' 不计入——与 listSubMeshes 的 key 可互查）。
+   */
+  resolveSubMesh(object: THREE.Object3D): { id: string; slotKey: string } | null {
+    const entryObj = this.entries.get(this.resolveId(object) ?? '')?.obj;
+    if (!entryObj) {
+      return null;
+    }
+    // 从命中 mesh 沿父链到场景节点，收集名称路径
+    const parts: string[] = [];
+    let cur: THREE.Object3D | null = object;
+    while (cur && cur !== entryObj) {
+      parts.unshift(cur.name || `#${parts.length}`);
+      cur = cur.parent;
+    }
+    if (parts.length === 0 || cur !== entryObj) {
+      return null;
+    }
+    // 视觉层槽位 key 是「GLB 内部根（如 Armature）起算」——若链上首段是 GLB 根壳
+    // （工厂 Group 里的 gltf.scene，名字通常 'Scene'），剥掉它对齐 buildReport 口径
+    const id = this.resolveId(object) ?? '';
+    let slotKey = parts.join('/');
+    if (parts.length > 1) {
+      const inner = entryObj.children.find((c) => c.name === parts[0]);
+      // parts[0] 是 gltf.scene（容器，无 mesh）时：从 report 的 key 形态对齐——
+      // buildReport 从 gltf.scene 起算但**不包含它**，故剥掉首段容器
+      if (inner && !(inner as THREE.Mesh).isMesh) {
+        slotKey = parts.slice(1).join('/');
+      }
+    }
+    if (!slotKey) {
+      return null;
+    }
+    return { id, slotKey };
+  }
+
+  /** 资产报告提供者（createScene 装配时注入 AssetEngine.getReport） */
+  assetReportProvider: ((assetId: string) => ModelSpecReport | null) | null = null;
+
+  /**
+   * 子网格信息（编辑器选中槽位时面板显示）：按槽位 key 定位 mesh，
+   * 返回局部 transform（相对模型节点）+ 该 mesh 自己的世界包围盒 + 材质概要。
+   * 未命中返回 null（模型重导出改名等场景）。
+   */
+  getSubMeshInfo(nodeId: string, slotKey: string): {
+    position: Vec3;
+    rotation: Vec3;
+    scale: Vec3;
+    bboxMin: Vec3;
+    bboxMax: Vec3;
+    materialType: string;
+    color: string | null;
+  } | null {
+    const entry = this.entries.get(nodeId);
+    if (!entry) {
+      return null;
+    }
+    const target = findBySlotKey(entry.obj, slotKey) as THREE.Mesh | null;
+    if (!target || !target.isMesh) {
+      return null;
+    }
+    const box = new THREE.Box3().setFromObject(target);
+    const mat = Array.isArray(target.material) ? target.material[0] : target.material;
+    const std = mat as THREE.MeshStandardMaterial | undefined;
+    return {
+      position: [target.position.x, target.position.y, target.position.z],
+      rotation: [target.rotation.x, target.rotation.y, target.rotation.z],
+      scale: [target.scale.x, target.scale.y, target.scale.z],
+      bboxMin: [box.min.x, box.min.y, box.min.z],
+      bboxMax: [box.max.x, box.max.y, box.max.z],
+      materialType: mat ? mat.type : 'unknown',
+      color: std?.color ? `#${std.color.getHexString()}` : null,
+    };
+  }
+
   // ---- 生命周期 ----
 
   /** 应用编辑器视觉层（单物体；增量合入） */
@@ -179,8 +273,10 @@ export class SceneEngine {
     }
     const merged = { ...(this.visuals.get(id) ?? {}), ...visual };
     // 纯开关增量（不含任何材质字段）不重放材质——避免材质已编辑物体的显隐/锁定
-    // 操作反复克隆材质（旧 clone 不释放）+ 贴图异步重赋
+    // 操作反复克隆材质（旧 clone 不释放）+ 贴图异步重赋。
+    // slots 增量（槽位换材质/隐藏）必须走 full——槽位命中在 applyVisualOverride 内部定位
     const hasMaterialField = visual.materialType !== undefined
+      || visual.slots !== undefined
       || Object.entries(visual).some(([k, v]) => v !== undefined && !NON_MATERIAL_VISUAL_KEYS.has(k));
     this.visuals.set(id, merged);
     applyVisualOverride(obj, merged, hasMaterialField ? 'full' : 'switches');

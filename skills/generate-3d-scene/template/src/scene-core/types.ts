@@ -409,6 +409,19 @@ export interface CardState {
   anchor: { x: number; y: number; z: number };
 }
 
+/** 逐 mesh 清单条目（子网格槽位层用） */
+export interface MeshSpecEntry {
+
+  /** 槽位 key = GLB 内部名称路径（未命名节点 #索引兜底；同资产实例间结构一致，key 稳定） */
+  key: string;
+
+  /** mesh 显示名（GLB 节点名） */
+  name: string;
+
+  triangles: number;
+  materialType: string;
+}
+
 /** 规格校验报告（AssetEngine 加载时预检 + validate-model.mjs 复用的结构） */
 export interface ModelSpecReport {
   assetId: string;
@@ -422,4 +435,7 @@ export interface ModelSpecReport {
   namingViolations: string[];
   passed: boolean;
   violations: string[];
+
+  /** 逐 mesh 清单（槽位层 UI/拾取定位用） */
+  meshes: MeshSpecEntry[];
 }

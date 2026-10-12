@@ -66,7 +66,7 @@ const rewriteApp = (code) => code
  * - locked：编辑器交互态（Spline 同款锁定），不影响渲染，转录无意义
  * materialType/castShadow/receiveShadow/visible 属个体视觉差异，保留在 ① 表转录。
  */
-const VISUAL_META_KEYS = new Set(['libraryRef', 'locked']);
+const VISUAL_META_KEYS = new Set(['libraryRef', 'locked', 'slots']);
 
 /**
  * 从私有区生成转录清单 markdown。
@@ -94,7 +94,7 @@ export const buildTranscription = (visuals, materialLib, liveNodeIds) => {
   }
   const libUsed = [...new Set(refs.map((r) => r.matId))];
 
-  // ① 物体视觉 override（排除 libraryRef）
+  // ① 物体视觉 override（排除 libraryRef/slots）
   lines.push('## ① 物体视觉 override（→ 转录进该 type 的 stateMaterials 条目 / handler 默认值）');
   lines.push('');
   const visualRows = [];
@@ -116,6 +116,34 @@ export const buildTranscription = (visuals, materialLib, liveNodeIds) => {
     lines.push('_（无）_');
   }
   lines.push('');
+
+  // ①′ 槽位覆盖（GLB 子网格）：nodeId | slot | 字段 | 值
+  const slotRows = [];
+  for (const [nodeId, v] of Object.entries(vis)) {
+    for (const [slotKey, slot] of Object.entries(v?.slots ?? {})) {
+      for (const [k, val] of Object.entries(slot ?? {})) {
+        if (k === 'libraryRef') {
+          slotRows.push(`| \`${nodeId}\` | \`${slotKey}\` | libraryRef | \`${val}\`（→ ② 对应条目） |`);
+        } else {
+          slotRows.push(`| \`${nodeId}\` | \`${slotKey}\` | \`${k}\` | \`${JSON.stringify(val)}\` |`);
+        }
+      }
+    }
+  }
+  if (slotRows.length) {
+    lines.push('## ①′ 槽位覆盖（GLB 子网格）（→ 转录进 handler：getObjectByName 定位 mesh 后赋值）');
+    lines.push('');
+    lines.push('| nodeId | slot（mesh 名称路径） | 字段 | 值 |');
+    lines.push('|---|---|---|---|');
+    lines.push(...slotRows);
+    lines.push('');
+    lines.push('```ts');
+    lines.push('// 槽位转录样例（handler 装配处）');
+    lines.push("const mesh = obj.getObjectByName('<slot 末段名>');");
+    lines.push("mesh.material = libraryMaterials.<名>;  // 或 clone 后按字段调参");
+    lines.push('```');
+    lines.push('');
+  }
 
   // ② 材质库条目（仅被引用者）
   lines.push('## ② 材质库条目（仅列出被引用的）（→ 转录进 materials.ts 的 `libraryMaterials`）');

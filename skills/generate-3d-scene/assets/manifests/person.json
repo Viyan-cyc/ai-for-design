@@ -1,0 +1,29 @@
+{
+  "package": "person",
+  "importedAt": "2026-10-10",
+  "meta": { "type": "file", "source_id": 0, "group_id": 0, "version": "1" },
+  "entries": [
+    {
+      "id": "person",
+      "name": "人物模型",
+      "file": "person.glb",
+      "format": "glb",
+      "modelPath": "assets/models/person.glb",
+      "category": "character",
+      "tags": ["person", "人物", "角色", "mixamo", "多材质"],
+      "description": "Mixamo 多部件人物（身体/头发/裤子/鞋等多材质子网格），槽位层验收素材。",
+      "search_text": "人物 角色 person mixamo 身体 头发 裤子 鞋 衬衫 多部件",
+      "polycount": 52546,
+      "gate": {
+        "tier": "art",
+        "conventionsOk": false,
+        "deviations": [
+          "面数 52546 > 50000（人工放行：验收素材非投递资产；场景预算由 build.mjs 运行时把关）",
+          "节点数 144 > 64（含 mixamo 骨架链；渲染 mesh 8 个）",
+          "[约定·告警] 原点不符: bbox.min.y=0.0418",
+          "[约定·告警] 命名违规: mixamo/Ch23 风格命名（第三方资产惯例）"
+        ]
+      }
+    }
+  ]
+}

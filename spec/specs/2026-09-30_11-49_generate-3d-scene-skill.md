@@ -119,7 +119,12 @@
 - ~~批次 R~~（2026-10-09 全部完成，R.1–R.9 四道门禁全绿，见 §4.7 批次 R 执行记录与 Plan-Execution Diff #16）
 - ~~批次 2 / 批次 M / 批次 T~~（2026-10-09 全部完成，见 §4.7 各批次执行记录；M+T+D4 修订轮已过 REVIEW EXECUTE 三轴评审，评审记录 5 Overall Verdict: PASS，§6）
 - ~~批次 3~~（2026-10-10 全部完成：3.1–3.3 落地 + gates.mjs 40/41 用例全 PASS；REVIEW EXECUTE 评审记录 6 初判 CONDITIONAL PASS → **修复轮（§7 #27）后升 PASS**）
-- **当前（2026-10-10）**：批次 1 / C / R / 2 / M / T / 3 全部完成且批次 3 评审修复闭环。待办：批次 4（验证回路）、批次 5（skill 大脑+收尾）。**执行序：批次 4，批间停等确认**
+- ~~批次 MU~~（2026-10-10 全部完成，MU.1–MU.8，§7 #28；含修复批次 M 遗留缺陷）
+- ~~批次 MU2~~（2026-10-10 全部完成，MU2.1–MU2.8，§7 #29；MU.8 用户验收反馈驱动。**MU + MU2 已过 REVIEW EXECUTE（评审记录 7，Overall Verdict: PASS；P3×4 挂账批次 5）**。MU2 人工走查又出三项反馈 → 立项批次 MU3）
+- **批次 MU3 立项待批准**（2026-10-10，§4.15 契约已落盘，checklist 见 §4.7：浅色主题 / 浮动面板避让固定面板 / 材质分区收拢）→ **已完成**（同日，用户「全部」批内连跑；三绿 + SMOKE 38/38，见 §4.7 执行记录）
+- **批次 MU4 立项待批准**（2026-10-10，§4.15.5 契约已落盘，checklist 见 §4.7：条目 ⊞ 直达素材库 / 编辑面板锚定素材库——用户 Spline 实测困惑 + 属性面板 DOM 解码驱动：Spline 三入口全开 palette、编辑球是 palette 二级子面板、条目点击无反应；裁决融合为两入口各一 + 贴靠锚定）→ **已完成**（同日，用户「全部」批内连跑；三绿 + SMOKE 39/39，见 §4.15.5 执行记录）
+- **批次 M2 立项待执行**（2026-10-10，§4.13 契约已落盘，checklist 见 §4.7）→ **已完成**（2026-10-10/11 批内连跑；含 Draco 支持与槽位 key 双口径对齐两大发现，SMOKE 44/44 + gates 40/40，见 §4.7 M2 执行记录）
+- **当前（2026-10-10）**：批次 1 / C / R / 2 / M / T / 3 全部完成且评审闭环。新立项批次 MU（材质库 UI 重做）+ M2（GLB 子节点多材质）。**执行序：MU → MU2 → M2 → 批次 4（验证回路）→ 批次 5（skill 大脑+收尾）。批次 MU 完成（MU.1–MU.8，§7 #28；含修复 1 处批次 M 遗留缺陷）；MU.8 用户验收反馈（面板右侧浮出 / 不重叠可并排 / 一材质一行）→ 新立项批次 MU2（材质面板布局重做，§4.14）**已完成**（§7 #29，三绿 + SMOKE 35/35）。**批次 MU + MU2 已过 REVIEW EXECUTE（评审记录 7，PASS；P3×4 挂账批次 5）。MU2 人工走查三项反馈（浅色主题 / 浮动面板叠右栏 / 材质分区收拢）→ 立项批次 MU3（§4.15）**已完成**（三绿 + SMOKE 38/38；人工视觉走查待用户）。执行序：MU → MU2 → MU3 → MU4 → M2 → 批次 4 → 批次 5。MU3 后用户 Spline 实测困惑（编辑球触发不定/面板互斥共存不定）经 DOM 解码定案 → 立项批次 MU4（§4.15.5：条目 ⊞ 直达素材库 + 编辑面板锚定素材库）**已完成**（三绿 + SMOKE 39/39；验收三轮反馈修复：index 1 错位槽 → 排队模型 → resize 钳制 + 整档错位）。**下一动作：批次 M2 批内连跑（不停等）→ 跑完对 MU3 + MU4 + M2 一起 REVIEW EXECUTE**（用户裁决 2026-10-10）。**批次 M2 已完成（2026-10-10/11：SMOKE 44/44 + gates 40/40 + 三绿；含 Draco 支持 / 槽位 key 双口径对齐 / 单 mesh 回落三大发现）→ 下一动作 REVIEW EXECUTE（MU3 + MU4 + M2 合并三轴评审）**
 
 ## 3. Innovate (Optional: Options & Decision)
 - Skipped: false（Q5 组件库组织是方案级分叉，按用户要求给出方案对比）
@@ -457,6 +462,114 @@ S9 交付        strip-edit 出二开包 + INTEGRATION_GUIDE 校验 + 验证报�
 - [x] 3.3 init.mjs：母版复制 → 目标目录 + 占位替换 + **资产库→目标工程 public/assets 复制/映射（R2-5）** + 首次 build 校验
 
 **批次 3 执行记录（Reverse Sync，2026-10-10）**：3.1–3.3 全部落地。① **预算估算实现路径**：build.mjs 读 scene-data.json 分组 + 逐个 GLB 解析（复用 validate-model 的 `loadModel`/`reachableNodes`/`primitiveTriangles`），未读 manifests 报告——因报告是单模型成本，场景预算需按实例数乘算，且报告可能陈旧。R1-3 原文"读 scene-data.json 静态估算或 perf-fps 断言"已覆盖此路径，checklist 括注"读 validate-model 报告"为简化措辞，以 R1-3 裁决为准（Diff #24）。② **公开入口白名单放宽**（§4.8 R1-4 的连带修正）：铁律 2 的"edit 只能走 `@/scene-core` 单入口"按代码现状放宽为白名单 `@/scene-core` + `/types` + `/createScene` + `/handlers`——真正的铁律是**禁止深层 import 引擎内部文件**（`@/scene-core/engine/**`），类型/createScene/handlers 属公开 API 面（Diff #24）。③ **复跑设施**：新增 `scripts/verify/gates.mjs`（32 用例：正面 + 铁律/白名单/资产/预算/私有区负面 + 小写盘符端到端），`--with-build` 追加 `init --deps copy` 端到端构建。④ 验证中发现并修复 2 处实缺陷（Diff #24：Windows 小写盘符 spawn 致 Vite html-proxy 失败；build.mjs 三角面计数器与 validate-model 分叉漏 mode 5/6）。
+
+**批次 MU：材质库 UI 重做（2026-10-10 立项；依据 §4.12，批次 4 之前执行）**
+> 纯呈现层重设计：数据契约/MaterialLibService API/共享热更/转录链零改动。Spline 心智模型：材质即资产、默认零术语、换=槽重指向、调参=全使用者同步。
+- [x] MU.1 `MaterialParams.vue` 抽取：参数组 + 贴图槽区从 PropertyPanel 拆出为独立组件（数据驱动渲染保留，面板与弹窗共用）
+- [x] MU.2 `MaterialSection.vue` 新建：材质条目（缩略图+名称+「N 个物体」徽标+复制材质 hover 按钮）+ 点名称原地改名（回车=入库/重命名）+ 类型下拉（原生类名+中文说明）+ MaterialParams 引用；PropertyPanel 材质分区替换为本组件
+- [x] MU.3 `MaterialPalette.vue` 材质素材弹层：搜索 + 双分组（我的材质库/内置材质）+ 行内删除（有引用提示转独立副本）+ ⚙ 编辑 + 点击应用 + ＋新建
+- [x] MU.4 `EditMaterialModal.vue` 编辑材质球弹窗：名称输入 + CSS 近似预览球 + 「选择物体」高亮引用者 + MaterialParams
+- [x] MU.5 `MaterialLibService.seeds()` 门控：仅 `__materialLib` 键不存在时注入（可删且不复活）
+- [x] MU.6 editor.css：条目/徽标/弹层样式（对齐现有 Spline 玻璃风）
+- [x] MU.7 冒烟扩展（smoke-r.mjs 增 MU 段）：改名入库转引用 / 复制材质脱离引用 / 弹层应用 link / 删除有引用条目后 inline 保留 / seeds 删除不复活；S9–S14 回归
+- [x] MU.8 三绿 + 冒烟 PASS + 用户验收（§4.12.3 六场景手动走查）——机器部分完成（三绿 + SMOKE PASS + 四组一次性 DOM 探针覆盖六场景）；**人工走查已进行（2026-10-10）**，验收反馈：面板应右侧浮出 / 不重叠可并排 / 一材质一行 → 面板布局部分转 **批次 MU2**（§4.14）
+
+**批次 MU 执行记录（Reverse Sync，2026-10-10，进行中）**：MU.1 完成——`edit/MaterialParams.vue` 新建（参数分组折叠 + 贴图槽区从 PropertyPanel 抽离为独立组件；数据驱动渲染保留，只读 `spec` prop 显示、`change(key, value)` 回抛，父级负责持久化）；PropertyPanel 材质参数区改为引用该组件。**行为保持型重构**：四道门禁全绿 + headless 冒烟 **SMOKE PASS 29/29**（S1–S29 全绿，S7–S17 材质断言无回归）。MU.2 完成——`edit/MaterialSection.vue` 新建（Spline 心智模型：材质条目 = CSS 近似缩略图 + 名称 + 「N 个物体」常显徽标 + hover 复制材质；点名称原地改名（回车：已引用→renameEntry / 无标题→saveAs 入库）；类型下拉（原生类名 + 中文说明）；⊞ 材质素材按钮（emit `open-palette`，MU.3 接线）；引用 MaterialParams 参数区）；PropertyPanel 材质分区整体替换为本组件（删去材质库下拉/另存为/断开链接按钮与内联 spec 逻辑约 200 行，改名与复制材质改走条目）。四道门禁全绿（vue-tsc / build（edit-main 独立 chunk 102.89 kB，隔离保持）/ eslint 0 errors）+ **一次性 CDP DOM 探针**（不入库，验完删）：inline 态渲染「无标题材质 · 1 个物体」+ 类型中文选项 + 参数区 + ⊞；link glass 后变「玻璃 · 1 个物体」+ 复制材质按钮出现。**诚实分级**：标准冒烟断言走引擎通道，未覆盖面板 DOM——MU.1/MU.2 的面板证据为三绿 + 上述一次性 DOM 探针；永久冒烟段留 MU.7。MU.3 完成——`edit/MaterialPalette.vue` 新建（材质素材弹层：搜索框 + 双分组「我的材质库」（行内 ✕ 删除 / ⚙ 编辑按钮）与「内置材质」（点应用 chips）+ ＋新建；点击条目 `link` 到选中物体并关闭弹层；删除引用中条目走**行内二次确认**（提示「N 个物体将保留外观转为独立副本」——`no-alert` 规则禁用 `window.confirm`）；内置/用户分组按 id 前缀启发判（`^mat_\d+$` = 用户新建）；`⚙`/`＋新建` 的 `edit` 事件待 MU.4 接线）；PropertyPanel 接线 ⊞ → `openPalette` + 渲染弹层。MU.4–MU.8 完成——MU.4 `edit/EditMaterialModal.vue`（编辑材质球弹窗：名称输入 → renameEntry + CSS 近似预览球 + 「选择物体 (N)」高亮引用者并关闭 + 类型下拉 + MaterialParams；PropertyPanel 接线 palette 的 `edit` 事件）；MU.5 `MaterialLibService.seeds()` 门控改「库非空即跳过」（serialize 空库不带 key → 「键不存在」等价「库为空」：首建注入、删后不复活）；MU.6 editor.css 增共享 `.ed-overlay`/`.ed-dialog`/`.ed-dialog__*` 玻璃弹层原语，两弹层组件改用（去重）；MU.7 smoke-r 增 **S30–S33** + S9–S14 回归；MU.8 三绿 + **SMOKE PASS 33/33**。**执行中发现并修复 1 处实缺陷（批次 M 遗留）**：`MaterialLibService.removeEntry` 用 `handle.update({__visuals})`（合并语义）写内联 → 旧 `libraryRef` 残留（违反 §4.10.4「引用者自动断开为 inline」声明），被 MU.7 的 S32 抓到 → 改用 `replaceVisual`（覆盖式）逐引用者写。详见 §7 #28。批次 MU 机器部分闭环，人工六场景走查待用户（**2026-10-10 已走查并反馈：面板应右侧浮出 / 不重叠可并排 / 一材质一行 → 转批次 MU2，见下**）。
+
+**批次 MU2：材质面板布局重做（2026-10-10 立项，MU.8 用户验收反馈驱动；依据 §4.14，批次 MU 之后、批次 M2 之前执行）**
+> 右侧浮出浮动面板（无遮罩、可拖拽）/ 材质素材与编辑材质球并排不重叠 / 一材质一行。数据契约 / MaterialLibService API 零改动。
+- [x] MU2.1 `edit/FloatingPanel.vue` 浮动面板外壳（拖拽把手 + 标题 + 关闭 + 内容插槽；Teleport 到 `.edit-scope` 顶层）
+- [x] MU2.2 `edit/FloatingDock.ts` 停靠位置计算（按开放序号默认并排错开、互不重叠，可拖拽移位）
+- [x] MU2.3 `MaterialPalette.vue` 换 FloatingPanel 外壳；内置材质 chips → 一材质一行
+- [x] MU2.4 `EditMaterialModal.vue` 换 FloatingPanel 外壳
+- [x] MU2.5 `PropertyPanel.vue` 两面板并存状态与渲染（无遮罩，不挡场景）
+- [x] MU2.6 `editor.css` 删 `.ed-overlay`/`.ed-dialog` 居中遮罩原语（浮动面板样式由 FloatingPanel scoped 承载）
+- [x] MU2.7 冒烟扩展：两面板并存不重叠 / 无遮罩元素 / 材质行一行一项（S34–S35）；S9–S33 回归
+- [x] MU2.8 三绿 + 冒烟 PASS + 用户验收（右侧浮出 / 并排 / 可拖拽 / 不挡场景 / 一行一项）——机器部分完成（S34/S35 + Teleport/拖拽探针）；**人工走查已进行（2026-10-10），三项反馈 → 立项批次 MU3（§4.15）**：① 整体浅色主题（参考 Spline）；② 浮动面板叠在右栏上（MU2 只避让浮动面板间，漏了与固定面板的避让）；③ 材质编辑收进「点击条目 → 编辑材质球面板」，属性面板不平铺参数区
+
+**批次 MU3：编辑器浅色主题 + 浮动面板避让 + 材质分区收拢（2026-10-10 立项，MU2 用户验收反馈驱动；依据 §4.15，批次 M2 之前执行）**
+> 三项反馈：整体浅色（参考 Spline）/ 浮动面板不得叠固定面板（左树 + 右属性栏）/ 材质分区只留条目行，点条目开编辑材质球。数据契约 / MaterialLibService API / 转录链零改动。
+- [x] MU3.1 浅色设计令牌：editor.css `--ed-*` 全套改浅色（Spline 风：白底面板 / 浅灰输入 / 深灰文字；accent 保持蓝系）；同步 FloatingPanel / 卡片 / 工具条 / 树 / 面板视觉核对
+- [x] MU3.2 二开态同步浅色：index.html 背景 + App.vue hint + ExampleCard 卡片 + starter scene-data 背景（用户原话「页面 template 整体风格」——编辑态与二开态一致）
+- [x] MU3.3 FloatingDock 避让固定面板：默认位计算减去右栏宽度（RIGHT_RESERVE 318 / LEFT_RESERVE 274），材质素材/编辑材质球落在右栏左侧并排；窗口过窄纵向错位退让
+- [x] MU3.4 MaterialSection 收拢：删平铺的类型下拉 + MaterialParams；只留条目行（缩略图 + 名称 + 徽标 + hover 复制/⊞）；点条目 → `edit-entry` 打开编辑材质球面板
+- [x] MU3.5 EditMaterialModal 双模式：`matId` 有值编辑库条目（热更引用者）；`matId` 空 + `anchorId` 编辑选中物体 inline 材质（走 replaceVisual 清互斥；名称输入与「选择物体」仅库模式显示，标题变「编辑材质」）
+- [x] MU3.6 冒烟扩展 S36–S38（浅色亮度断言 / 浮动×固定面板零交集 / 分区无平铺参数 + 点条目出编辑面板 + inline 调参落视觉层）；S30–S35 回归
+- [x] MU3.7 三绿 + 冒烟 PASS + 用户验收（浅色观感 / 不叠面板 / 点条目编辑）——机器部分完成（SMOKE 38/38）；人工视觉走查待用户
+
+**批次 MU3 执行记录（Reverse Sync，2026-10-10，用户「全部」批内连跑）**：MU3.1–MU3.7 全落地。① **浅色令牌**（editor.css 九个 `--ed-*` 换浅值）+ 硬编码深色清理（OutlineTree hover/计数徽标、Toolbar 下拉/hover 的 `rgba(255,255,255,*)` → `rgba(0,0,0,低α)`；FloatingPanel 内阴影 `0.4`→`0.15`）；② **二开态同步**：index.html `#0f151b`→`#eef0f3`、App.vue hint 白底灰字、ExampleCard 全套浅色（白底卡/深字/状态徽标换深色调）、starter scene-data `background` 与 PropertyPanel sceneDraft 默认值同改；③ **避让**：FloatingDock 增 `RIGHT_RESERVE=318`/`LEFT_RESERVE=274`，第 0 号面板自右栏左缘向左排、放不下时纵向错位退让；④ **收拢**：MaterialSection 删类型下拉与 MaterialParams（只留条目行，整行可点 → `edit-entry`；改名/复制带 `.stop`）；⑤ **EditMaterialModal 双模式**（`matId` 有值=库条目热更；空+`anchorId`=inline 编辑，`apply()` 走 `replaceVisual` 清互斥——与 MaterialSection.apply 同路径；标题「编辑材质」、名称输入与「选择物体」仅库模式）；PropertyPanel `editOpen`/`editMatId` 状态对（`openInlineEdit` 置空 matId）。⑥ **冒烟 S36–S38**。**S38 执行中踩两坑（均已修在断言侧，非产品缺陷）**：car_01 是 Group（examples handler 的 GLB 容器）——直接读 `.material` 是 undefined，须 `traverse` 找首个 mesh（对齐 S15/S17 既有口径）；boot 后 GLB 异步加载窗口须轮询等 mesh 就绪（对齐 S4）；另 S34/S37 的 createNew→link 让 car_01 处于 `libraryRef` 引用态，裸 `h.update({__visuals})`（合并语义）残留引用 → D4 跳过内联材质——**UI 真实路径走 `replaceVisual` 无此问题**，S38 改用 replaceVisual 模拟真实路径后 `matColor:'3366aa'` 通过（合并语义残留是第三次撞见，记方法论）。⑦ 三绿 + **SMOKE PASS 38/38**。
+
+
+**批次 MU2 执行记录（Reverse Sync，2026-10-10，用户「全部」批内连跑）**：MU2.1–MU2.8 全落地。① **面板外壳** `edit/FloatingPanel.vue`——`position:fixed` + 标题栏拖拽把手（pointerdown/move/up）+ ✕ 关闭 + 内容插槽；**经 `<Teleport to=".edit-scope">` 挂顶层**（关键：右栏 `.ed-panel` 的 `backdrop-filter` 会立 fixed 的 containing block 并叠加 `overflow:hidden` 裁剪，面板若渲染在右栏内会定位/裁剪全错；Teleport 到无 filter 的 `.edit-scope` 既逃出裁剪又继承 `--ed-*` 令牌）。② **停靠** `edit/FloatingDock.ts`——`defaultDockPos(index, panelW)` 自视口右侧向左并排错开；PropertyPanel 传 palette index 0 / modal index 1（两面板同 top 不同 left，与 Spline 实测一致）。③ **材质素材**换壳 + 内置材质 chips → **一材质一行**（与我的材质库同构 `.mpal__row`）。④ **编辑材质球**换壳。⑤ **PropertyPanel** `paletteOpen`/`editMatId` 独立（两面板可同开、互不关闭）。⑥ **editor.css** 删 MU.6 引入的 `.ed-overlay`/`.ed-dialog`/`__head`/`__title`/`__close`（浮动面板样式随 FloatingPanel scoped 承载，非 editor.css——单组件所有权，记作偏差）。⑦ **冒烟 S34–S35**。⑧ 三绿 + **SMOKE PASS 35/35** + **Teleport/拖拽探针 PROBE PASS**（`.fpanel` 挂在 `.edit-scope`、不在 `.ed-panel--right` 内、无 `.ed-overlay`、拖拽位移精确 120/60）。
+
+
+**批次 MU4：材质条目直达素材库 + 编辑面板锚定（2026-10-10 立项，Spline DOM 解码驱动；依据 §4.15.5，批次 M2 之前执行）**
+> 条目行加 ⊞ 直达素材库（点行=编辑、点⊞=换，两入口各一）；编辑面板 dock 感知素材面板开闭（开→紧贴其左，关→右栏避让位）。数据契约零改动。
+- [x] MU4.1 MaterialSection 条目行加 ⊞（hover 显隐，`.stop` 不触发点行编辑）→ emit `open-palette`；PropertyPanel 接线（复用既有 `open-palette` 事件，PropertyPanel 零新状态）
+- [x] MU4.2 EditMaterialModal dock 感知 paletteOpen：palette 开 → 编辑面板默认位 = 素材面板左侧紧贴（GAP 12）；palette 关 → 右栏避让位；仅默认位计算感知（FloatingPanel pos 只在挂载取初值，天然不动已拖拽面板）
+- [x] MU4.3 冒烟扩展 S39：条目 ⊞ 开素材面板 / palette 开时编辑面板紧贴不重叠 / palette 关时编辑面板退回避让位；S36–S38 回归
+- [x] MU4.4 三绿 + 冒烟 PASS + 用户验收（直达素材库 / 编辑面板贴素材库）——机器部分完成（SMOKE 39/39）；人工视觉走查待用户
+
+**批次 M2：GLB 子节点与多材质（2026-10-10 立项；依据 §4.13，批次 MU 之后、批次 4 之前执行）**
+> 方案 A：GLB 保持单场景节点，内部子网格作槽位层暴露（`__visuals[id].slots`）。换材质=槽重指向（旧材质自动去留）；调参=同步所有使用者。
+- [x] M2.1 AssetEngine.buildReport 增逐 mesh 清单（key/名称/面数/材质类型）；ModelSpecReport 扩 `meshes` 字段
+- [x] M2.2 SceneEngine：`listSubMeshes(nodeId)` + `applyVisualOverride` 支持槽级命中（物体级默认 + slots 按 key 单独应用）；`resolveSubMesh` 拾取定位（key 对齐 buildReport 口径：从 GLB 内部根起算，容器名剥除）
+- [x] M2.3 OutlineTree 资产节点展开子网格层：浅色只读展示 + 点选联动（gts3d-select-slot 事件）+ eye 单独隐藏（写 slots[key].visible）；不上 Gizmo/不可删/不可拖出
+- [x] M2.4 MaterialSection 列表化：选模型=去重材质列表+「全部换成…」；选子网格=单条；视口/树点选 → 槽位聚焦滚动定位（**单 mesh GLB（≤1 槽）回落单条目分支**——单 mesh 槽位编辑等价物体级）
+- [x] M2.5 MaterialLibService 槽级支持：`applySlotLink`/`getSlotVisual` + syncAll 槽位重挂共享实例（findBySlotKey 从 core 导出）
+- [x] M2.6 strip-edit 转录：override 表增「①′ 槽位覆盖表」（nodeId/slot/字段/值 + getObjectByName 样例）；INTEGRATION_GUIDE 增 §6.2 槽位转录段
+- [x] M2.7 冒烟扩展 S40–S44（person 多材质 GLB：子网格清单+树展开 / 单槽换材质不影其他+serialize 往返 / 单槽隐藏恢复 / 槽位调参 undo / 视口拾取定位槽位）+ 三绿 + gates 40/40
+- [x] M2.8 用户验收（person 类多部件模型全流程走查）——机器部分完成；人工走查待用户
+
+**批次 M2 执行记录（Reverse Sync，2026-10-10/11，用户裁决批内连跑）**：M2.1–M2.8 全落地。**关键产出与发现**：
+① **Draco 支持（执行中发现的最大缺口）**：验收素材 person.glb 是 Draco 压缩——GLTFLoader 无 DRACOLoader 直接报错 `No DRACOLoader instance provided`。真实世界 GLB 大多 Draco 压缩，skill 不支持等于废一半资产。修：AssetEngine 配 DRACOLoader + **decoder 随模板 vendor**（`public/assets/draco/` 三文件，719KB js + 286KB wasm；本地 wasm 零 CDN——内网纪律）；eslint 加 ignore（三方压缩解码器不进 lint）。
+② **槽位 key 双口径对齐（执行中最大坑）**：buildReport 的 key 从 GLB 内部根（Armature）起算不含容器，但 resolveSubMesh 沿父链收集会把工厂 Group 外壳与 gltf.scene 容器名（'Scene'）都带上（`Scene/Armature/Ch23_Shoes`）→ 与 buildReport key（`Armature/Ch23_Shoes`）不匹配 → 槽位命中失效。修三处对齐：resolveSubMesh 剥容器段；findBySlotKey 首段未命中时探一层容器；applyVisual 的 hasMaterialField 补 `slots !== undefined`（slots 增量必须走 full，否则被 switches 短路——数据对了运行时不生效）。
+③ **单 mesh 回落**：MaterialSection 的槽位列表对单 mesh GLB（car_01）误伤（原单条目 inline 编辑变槽位模式）——`shownSlots.length <= 1` 回落单条目分支。
+④ **验收素材 person 入库**：52k 面/144 节点超 art 档硬限——**人工放行**（gate.deviations 记录：验收素材非投递资产，场景预算由 build.mjs 运行时把关）；库 manifest 形态 entries[]（与上传 data[] 不同）；starter examples 组加 person_01 节点。
+⑤ **连带更新**：gates.mjs 两断言期望更新（starter 现引用 example+person，--assets all 为 3 模型）——**断言写死资产清单是脆断言**，改为语义断言（含 example+person）；检索索引重建（中文「人物」命中 person）。
+⑥ **复验**：vue-tsc 绿 / build 绿（edit-main 117.79 kB 独立 chunk 隔离保持）/ eslint 0 errors / **SMOKE PASS 44/44**（S40–S44 全 true）/ **gates 40/40 PASS**。
+
+**批次 M2 修复轮（2026-10-11，用户验收反馈三项，F3 裁决「显式」）**：
+- **F1 树点子网格无法编辑**：`OutlineTree.onSelectSlot` 只发 `gts3d-select-slot` 事件（MaterialSection 滚动定位用），**不打开编辑面板**——用户点 Ch23_Belt 没有任何可编辑入口。修：树点子网格 = 选中父节点 + 发事件 + **PropertyPanel 监听事件直接开编辑面板（槽位模式）**（与属性面板点槽位行同款行为）。
+- **F2 树子网格层级（用户裁决 A）**：子网格嵌在模型节点下（depth 缩进渲染），**展开状态独立**（不与 parentId 折叠互踩——现状 hasSubMeshes 节点的 chevron 分流已对，但 GLB 有内部容器时显示容器组头）；**Armature 容器作组头**（mesh 按一级容器分组缩进，骨架链 mixamorig* 不显示——144 节点全平铺是噪音）。listSubMeshes 返回的 key 已含容器段（`Armature/Ch23_Hair`），树渲染按首段分组。
+- **F3 mixamo 厘米资产缩放脱节（裁决：显式，不隐式归一化）**：诊断实证——person 链上所有 node.scale=1 但世界高 179m（`mixamorigHips.pos.y=100.9` 骨骼 cm 单位，SkinnedMesh 顶点经骨架变换放大）。**AssetEngine 不做隐式缩放**（篡改资产语义，1:1 机械模型误伤风险）；修法：① starter person_01 设 `scale: 0.0056`（编辑器所见即所得——179.275m × 0.0056 ≈ 1.004m 一人高）；② validate-model 高度警告文案已覆盖（`高=179.275m`）；③ GUIDE FAQ 记「mixamo/cm 资产需在节点 scale 归一化」。
+- [x] F1 树点子网格 → 开编辑面板（槽位模式）
+- [x] F2 树子网格容器组头 + 展开独立
+- [x] F3 starter person scale 0.0056 + GUIDE FAQ
+- [x] F4 三绿 + SMOKE（S40–S44 回归 + 树点选断言扩展）
+
+**批次 M2 修复轮执行记录（Reverse Sync，2026-10-11）**：F1–F4 全落地，**执行中揪出两个隐藏缺陷**：
+- **F1 实现中的真缺陷 ①（meshCache 缓存空清单）**：OutlineTree 的 `subMeshesOf` 在 GLB 异步加载完成前把 `listSubMeshes` 的**空结果缓存**——加载完成不发 bridge state → refresh 不清缓存 → 展开钮永不出现。修：**空结果不缓存**（下次查询自然重试，查表 O(1)）。
+- **F1 实现中的真缺陷 ②（seedMaterialType 收到 Material 抛错）**：EditMaterialModal 槽位模式无 override 时取「槽位 mesh 的活材质类型」——初版把 **Material** 传给 `seedMaterialType`（其内部调 `obj.traverse`——Material 没有 traverse）→ setup 抛错 → Vue 吞错不渲染 → 面板静默不出现。**诊断 8 轮探针**（window dispatch 对照/事件 spy/MutationObserver/CDP console——假线索：孤儿 DOM/展开态破坏 listener/anchorId 竞态全被排除；决定性证据：MaterialSection 槽位聚焦成功但 .fpanel 0 个 → 渲染层崩溃）→ 修：直读 `mat.type` 白名单（Lambert/Standard/Physical，其余回退 Standard），不走 seedMaterialType。
+- **F1**：PropertyPanel 监听 `gts3d-select-slot` → `openSlotEdit(slotKey)`（树点子网格=属性面板点槽位行同款行为）。
+- **F2**：树子网格按容器分组（`Armature` 组头行——slotKey 首段、加粗浅色、不可点编辑不可 eye）；mesh 行再缩进一级；骨架链不显示（listSubMeshes 只含 mesh 天然不含骨架）。
+- **F3**：starter person_01 `scale: 0.0056`（179.275m → ≈1m）；GUIDE FAQ「人物模型巨大」条目（mixamo cm 单位 → 0.01 级 scale 归一化；引擎不隐式缩放的理由记录）。
+- **F4**：S40 扩展三断言（hasGroupHead / slotEditOpened / f3Scale）；S44 全屏扫描在 scale 0.0056 后 miss（物体视口太小）且细扫 2000 次 pick 超时 → **改引擎直测**（遍历内部 mesh 逐个 `resolveSubMesh` 与 listSubMeshes 的 key 全量比对——契约级断言比单点扫描更强）。**复验**：vue-tsc 绿 / build 绿（edit-main 118.54 kB 隔离保持）/ eslint 0 errors / **SMOKE PASS 44/44** / **gates 40/40**。
+
+**批次 M2 修复轮二（2026-10-11，用户验收再反馈两项）**：
+- **F5 树 person_01 出现 9 次（v-else-if 缺失，渲染级真 bug）**：模板三 li 链 `group(v-if) → node(v-else) → mesh(v-if)`——**node 的 v-else 只与 group 的 v-if 配对，mesh 行同时满足自己的 v-if** → kind='mesh' 的 row 渲染**两个 li**（node 模板 + mesh 模板各一）→ 每个 mesh 行前多一个 person_01 node 行。修：node 行 `v-else` → `v-else-if="row.kind === 'node'"` 三类互斥。S40 增 `personNodeRows === 1` 断言。**教训：v-for 内多类型行渲染，分支条件必须显式互斥（else-if 链），不能混用独立 v-if + v-else。**
+- **F1 二次裁决（用户：「我并不是想点子节点弹出编辑材质面板，而是要显示物体面板，这时候显示的是相对于 person 的相对位置」）**：点子网格 = **选中父物体**（属性面板显示物体变换/开关/材质槽位列表——变换即模型节点数据）+ MaterialSection 槽位聚焦滚动；**不自动弹编辑面板**（编辑经槽位条目点行进入，保持「点行=编辑」单一入口）。撤 F1 初版的 PropertyPanel 事件监听开面板实现（整个 listener 删除——聚焦由 MaterialSection 自身 onSlotEvent 承担）。S40 断言同步改（noSlotPopup && personSelected）。
+- **复验**：三绿 + **SMOKE PASS 44/44**（S40 含 personNodeRows=1）+ **gates 40/40**。
+
+**批次 M2 修复轮三（F6 子网格选中态，2026-10-11 立项即执行，§4.13.6）**：
+- [x] F6.1 Bridge：`selectedSlot` 状态 + `selectSlot/clearSelectedSlot`（select 任何物体时清槽位态；EditorState emit）
+- [x] F6.2 SceneEngine：`getSubMeshInfo(nodeId, slotKey)`（局部 transform + mesh 世界包围盒 + 材质类型/主色）
+- [x] F6.3 OutlineTree：点 mesh 行 → `bridge.selectSlot`（替代 window 事件派发——保留事件仅作 MaterialSection 聚焦滚动）
+- [x] F6.4 PropertyPanel：selectedSlot 时变换区显示子网格局部变换（只读灰置 + 标题注「模型内部 · 相对 <节点>」）、包围盒换 mesh 自己的
+- [x] F6.5 SelectionService：selectedSlot 时高亮包围盒只包该 mesh
+- [x] F6.6 冒烟 S45：点 Ch23_Hair → 变换区数值变化（局部 position 非 0 或与 person 的不同）+ 包围盒变化 + selectedSlot 落库；S40 回归
+- [x] F6.7 三绿 + SMOKE + gates
+
+**批次 M2 修复轮三执行记录（Reverse Sync，2026-10-11）**：F6.1–F6.7 全落地。① Bridge `selectedSlot`（EditorState 新字段 emit；`selectSlot/clearSelectedSlot`；select 任何物体自动清槽位态——slotHint 与物体变换互斥）；② SceneEngine `getSubMeshInfo`（findBySlotKey 定位 → 局部 position/rotation/scale + mesh 世界 bbox + 材质类型/主色）；③ 树点 mesh 行 → `bridge.selectSlot`（window 事件保留给 MaterialSection 聚焦）；④ PropertyPanel 变换区双形态：slotInfo 时只读 9 输入框（`.pp__ro` 灰置）+ 标题「<mesh> · 模型内部（相对 <node>，只读）」+ 材质类型/主色行 + mesh 自身包围盒；v-else 物体级可编辑变换（bbox 行双分支各一份）；⑤ SelectionService 槽位高亮（`selectedSlot` 时 BoxHelper 只包该 mesh，helper key `slot:<key>`）。⑥ S45 六断言（slotSet/roCount≥9/slotHint/posMatch 对照引擎值/bboxShown/slotCleared）。**S45 两处断言侧修正**：展开守卫（S40 已展开时再点 chev 会收起——先查 mesh 行存在再点）；bbox 行初版误包在 v-else 分支内（slotInfo 分支看不到）。**复验**：vue-tsc 绿 / build 绿（edit-main 121.03 kB 隔离保持）/ eslint 0 errors / **SMOKE PASS 45/45** / **gates 40/40**。
+
+**批次 M2 修复轮四（2026-10-11，用户实测三反馈：树 mesh 行无选中态 / 改 Hair 变红却是脸红 / 聚焦态材质区显示错）**：
+- **Bug①（树 mesh 行选中态）**：高亮判定原为 `selected.includes(row.id)`（mesh 行 id=person_01 → 永不高亮）。修：mesh 行 `isSlotActive(slotKey)`（`bridge.selectedSlot.slotKey` 匹配）。
+- **Bug②（改红变脸红，语义错误级）**：**根因链**——点树 Hair → focusSlot=Hair → `shownSlots` 过滤剩 1 条 → 落入「`shownSlots.length <= 1` 单条目」分支 → 点行 `openEditor`（**物体级**）→ modal 无 slotKey → 改红写物体级 inline → **全身变红**（Body 面积最大，用户看到"脸红了"）。修：新增**聚焦单槽分支**（`focusedSlot` computed；`v-if="focusedSlot"` 先于单条目分支）：显示该槽一条（data-slot + `openSlotEditor(key)` 槽位编辑 + 槽位 ⊞ + 「返回全部槽位」）；真单 mesh（无 focusSlot）才走物体级单条目。
+- **Bug③（聚焦态材质区显示）**：同②——聚焦后走单条目模板显示物体级「无标题材质 · N 个物体」（语义完全错位）。修后聚焦态显示「Ch23_Hair · 材质名」单槽条目。
+- **端到端探针验证**（复现用户操作全链：树点 Hair → 点材质条目 → modal 改 #ff0000 → 逐 mesh 读色）：**只有 Ch23_Hair=ff0000，其余 7 mesh 全保持 cccccc**；modal 标题「编辑材质 · Ch23_Hair」。三绿 + **SMOKE PASS 45/45** + **gates 40/40**。
+- **教训**：分支条件「shownSlots.length <= 1」混淆了两个语义（真单 mesh vs 聚焦过滤后剩 1）——**过滤导致的 1 与天然的 1 必须分流**，否则聚焦态误入物体级通道。
+
+**批次 M2 修复轮五（2026-10-11，用户实测「选中 Hair 包围盒仍框整个人 + 改红无效」——排查结论：**均为环境陈旧，代码已正确**）**：5183 端口存在**起于多轮修复前的旧 dev server**（后续代码修复都在 52xx 临时端口验证，用户浏览器连的 5183 一直跑旧代码）。证据：① 探针读视口 BoxHelper 盒 `size=[0.11,0.13,0.12]` = Hair 自己的盒（Body 是 [1.0,0.96,0.13]）——槽位高亮已正确只框 Hair；② 探针改红后 `hairColorAfter=ff0000` 且其余 mesh 保持——槽位改材质链正确。处置：kill 旧 5183 → 最新代码重启 → `SMOKE PASS 45/45`（S45 含选中态断言）复验。**教训（流程性）**：多轮迭代验证若都在临时端口跑，用户默认端口的 dev server 会成为"时间胶囊"——**每轮修复后应同步重启默认端口（5183）的 dev server**，或提示用户手动重启。
 
 **批次 4：验证回路**
 - [ ] 4.1 smoke-structural.mjs（场景图 JSON/canvas 像素/零 rejection 断言）
@@ -923,6 +1036,301 @@ class MaterialLibService {
 - Physical 各效果默认关闭、按启用计费（官方类文档）——面板不做使用限制，批次 4 性能门禁兜底
 - combine(MixOperation) 时才与 reflectivity 联动——面板暴露枚举即可
 
+### 4.12 材质库 UI 重做（2026-10-10 立项，批次 MU 执行依据）
+
+> 用户需求：材质分区的 UI 与交互不满意——「另存为」「断开链接」「未入库」等术语是数据层视角直译，用户看不懂。参照 Spline 官方界面（用户提供材质面板 / 材质素材弹层 / 编辑材质球弹窗三组 DOM + docs.spline.design 文档核实）重做。**纯呈现层重设计：数据契约（`__materialLib`/`libraryRef`/inline 互斥）、MaterialLibService 全部 API、共享热更语义、交付转录链零改动**。
+
+#### 4.12.0 裁决记录（2026-10-10 用户"可以的。我接受你的方案"）
+
+1. **心智模型照搬 Spline**：材质即资产（起名即存在，无"入库"概念）；默认态零术语；换材质=槽重指向（旧材质自动去留）；调参数=同步所有使用者
+2. **术语全用 Spline 中文界面原词**，零自造词（见 4.12.2）
+3. **执行序修订**：批次 3 已收口（修复轮 PASS），MU 提到批次 4 之前——理由：原排序唯一顾虑（smoke-r.mjs 并行冲突）已消失；MU+M2 连做上下文连贯；批次 4 的性能断言对 UI 改动不敏感。执行序：**MU → M2 → 4 → 5**
+4. **改名即入库**：点条目名称原地变输入框，回车 = `saveAs(nodeId, name)`（无标题）或 `renameEntry`（已引用）——消灭「另存为」按钮
+5. **「复制材质」替代「断开链接」**：`disconnect(nodeId)` 原语义（库 spec 拷为 inline，外观不变、从此独立），换白话包装 + hover 提示「复制当前外观，此后改库不再影响此物体」
+6. **内置材质可删且不复活**：`seeds()` 门控改为仅 `__materialLib` 键不存在时注入（工程首次）；用户删除后不再复活
+7. **编辑材质球弹窗复用参数区**：参数组+贴图槽抽成 `MaterialParams` 子组件，面板与弹窗共用
+8. **图层堆栈不采纳**：Spline 是自研图层引擎（颜色/玻璃/灯光叠层混合），我们是 three.js 原生材质三类型——命名纪律既定，不引入第二套渲染模型
+
+#### 4.12.1 Spline 术语考据（docs.spline.design + 官方中文界面 DOM 核实）
+
+| Spline 原词（中文界面） | 含义 | 对应我方机制 |
+|---|---|---|
+| 材质 / 无标题材质 | 默认材质名，不是状态 | 无 `libraryRef` 的 inline |
+| 材质素材（弹层标题） | 浏览/搜索/应用材质 | `listEntries()` + `link()` |
+| 我的材质库（分组） | 用户自建材质 | 非 seeds 的 `__materialLib` 条目 |
+| Spline库 → 我方「内置材质」 | 官方预设 | 4 个 seeds（玻璃/车漆/拉丝金属/绒布） |
+| 编辑材质球（弹窗标题） | 编辑资产本身，与选中物体解耦 | `updateEntry()` |
+| N 个物体（条目徽标） | 引用计数提示 | `referencingNodes()` |
+| Unlink（悬停图标） | 我方用「复制材质」，行为同 disconnect | `disconnect(nodeId)` |
+
+**关键考据结论**：Spline 主面板无任何"在不在库"状态词；材质不需要"入库"，起名即资产；文档原文 "If the asset is adjusted, all objects using it get updated"（调资产全使用者同步）。
+
+#### 4.12.2 UI 结构（三层）
+
+```
+① 属性面板·材质分区（编辑当前选中物体）
+┌ 材质 ──────────────────── [⊞] ┐  ⊞ = 四宫格按钮，打开「材质素材」弹层
+│ ⬤ 无标题材质 · 2 个物体     📄 │  📄=复制材质（hover 出现）
+│   （悬停条目提示：修改将同步所有使用此材质的物体）
+│ 类型 [ MeshPhysicalMaterial ▾ ]│  类型名保留原生类名（命名纪律），
+│ ▾ 基础 / ▸ 清漆 / ▸ 贴图      │  选项内追加中文说明
+└────────────────────────────────┘
+
+② 材质素材弹层（应用/管理）
+┌ 材质素材                    ✕ ┐
+│ [＋新建] [🔍 搜索…]           │
+│ 我的材质库                    │
+│  ⬤ 木质台面        ✕    ⚙   │  hover 出 删除/编辑（编辑=打开③）
+│ 内置材质                      │
+│  ⬤ 玻璃  ⬤ 车漆  ⬤ 拉丝金属 │  点击条目 = 应用到选中物体
+└────────────────────────────────┘
+
+③ 编辑材质球弹窗（编辑资产本身，不依赖选中）
+┌ 编辑材质球                ✕ ┐
+│ [名称输入框        ]        │
+│ ⬤ 预览 92px   [选择物体→]   │  显示谁在用；点击高亮场景中引用者
+│ 类型 + MaterialParams       │  与面板共用同一参数区组件
+└─────────────────────────────┘
+```
+
+#### 4.12.3 交互规则（六场景走查）
+
+| # | 场景 | 操作 | 结果 |
+|---|---|---|---|
+| 1 | 新物体调材质 | 直接拖滑杆 | 无标题材质直接改，零概念负担 |
+| 2 | 用内置玻璃 | ⊞ → 点玻璃 | 条目变「玻璃 · 1 个物体」 |
+| 3 | 改共享材质 | 直接调参 | 「N 个物体」徽标提示在先 → 引用者同步变 |
+| 4 | 只改这一个 | hover 条目 → 📄 复制材质 | 变无标题材质独立副本，随便改 |
+| 5 | 调好想留着 | 点「无标题材质」→ 输名「红漆」→ 回车 | 入我的材质库，此物体开始引用 |
+| 6 | 编辑未被引用的库材质 | 弹层 ⚙ | 打开编辑材质球弹窗，改完即存 |
+
+undo 全程可回退（快照机制现成）。弹层 ✕ 删除有引用条目时提示「N 个物体将保留外观转为独立副本」（removeEntry 现语义）。
+
+#### 4.12.4 落地范围与验收
+
+| 文件 | 动作 | 内容 |
+|---|---|---|
+| `edit/MaterialSection.vue` | 新 | 材质分区整体从 PropertyPanel 拆出（2265 行减负）：条目 + 类型 + MaterialParams 引用 |
+| `edit/MaterialParams.vue` | 新 | 参数组 + 贴图槽区（数据驱动渲染保留） |
+| `edit/MaterialPalette.vue` | 新 | 材质素材弹层（搜索/双分组/行内删改/点击应用/新建） |
+| `edit/EditMaterialModal.vue` | 新 | 编辑材质球弹窗（名称/预览/选择物体/MaterialParams） |
+| `edit/PropertyPanel.vue` | 改 | 材质分区替换为 `<MaterialSection>` |
+| `edit/MaterialLibService.ts` | 小改 | 仅 seeds() 门控；其余 API 零改动 |
+| `edit/styles/editor.css` | 改 | 条目/徽标/弹层样式（对齐现有 Spline 玻璃风） |
+| `template/scripts/smoke-r.mjs` | 改 | 增 MU 段：改名入库转引用 / 复制材质脱离引用 / 弹层应用 link / 删除有引用条目后物体 inline 保留 / seeds 删除不复活 |
+
+**缩略图**：MU 用 CSS 近似（色块 + 金属/粗糙渐变 + 透明度）；three 离屏渲染真实预览球留批次 5 顺手评估。
+**验收（Done Contract）**：四道门禁全绿（vue-tsc/build/edit-main 独立 chunk/eslint 0 errors）+ MU 冒烟段全 true + S9–S14（走服务 API，不依赖 UI 选择器）不回归 + 用户验收（六场景手动走查）。
+
+#### 4.12.5 已否决项（防回潮）
+
+- 「未入库」「独立材质」「共享材质」「转为独立材质」「出库」等自造/翻译术语——一律不用
+- 常驻「另存为」输入框+按钮——改用点名称原地编辑
+- Spline 图层堆栈（颜色/玻璃/灯光叠层）——渲染模型不同，不采纳
+
+### 4.13 GLB 子节点与多材质（2026-10-10 立项，批次 M2 执行依据）
+
+> 用户需求：导入 GLB/GLTF 后，模型内部子节点在左侧树和右侧面板可见可编辑——每个子节点（mesh）有自己的材质，要能分别换材质。用户提供 Spline 导入 person.glb 的完整操作链 DOM 作参照。
+
+#### 4.13.0 裁决记录（2026-10-10 用户"可以的。我接受你的方案"）
+
+1. **方案 A 定案：GLB 保持单场景节点，内部子网格作槽位层暴露**——子网格可单独换材质/隐藏；变换（移动/旋转/缩放/Gizmo/删除）仍作用于模型整体
+2. **方案 B 否决（防回潮）**：导入时把 GLB 内部子节点提升为独立 SceneNode——树爆炸（同 GLB 实例化 N 次）、applyState 换模型失效、转录节点海量、scene-data 膨胀
+3. **换材质规则照抄 Spline 语义：换 = 槽重指向，从不修改旧材质**——旧材质还有引用就留着（体现在去重列表），没引用自动从列表消失（表象即用户观察到的"多人用就新增、独占就直接替换"）
+4. **调参数规则不变**：改材质本身，所有使用者同步变（与换材质是两条独立规则，条目徽标常显提醒）
+5. **子网格变换（Gizmo 拖子部件）缓后**：需 per-slot transform 契约 + Gizmo 子网格模式，单独立项 M3 评审，M2 不做
+
+#### 4.13.1 数据契约：slots 覆盖层（`__visuals` 扩展，v3 兼容）
+
+```jsonc
+"__visuals": {
+  "person_01": {
+    "castShadow": true,                    // 物体级（顶层 = 应用到全部，现状语义不变）
+    "slots": {
+      "Ch23_Pants": { "libraryRef": "mat_001" },     // 只给裤子换材质
+      "Ch23_Eyelashes": { "visible": false },        // 只隐藏睫毛
+      "Ch23_Hair": { "materialType": "MeshPhysicalMaterial", "transmission": 1 }
+    }
+  }
+}
+```
+
+- **slot key = GLB 内部名称路径**（如 `Body/Door/Door_L`）；未命名节点 `#索引` 兜底；同名 GLB 重复实例化结构一致，key 稳定
+- slot 值复用 `VisualOverride` 现有类型（materialType/libraryRef/visible/castShadow/receiveShadow）——不发明新概念
+- 规则：slot 含 materialType 或 libraryRef → 该子网格独立；无 → 继承物体级/原装材质
+- 序列化/undo/保存/strip-edit 剥离：slots 在 `__visuals` 内，全部现成机制白拿
+- **兼容**：无 slots 的旧数据零影响；strip-edit 对 slots 天然覆盖（同在 `__visuals` 剥离域）；「未来 `__` 键族」门禁语义不受影响（slots 是 __visuals 的嵌套字段）
+
+#### 4.13.2 核心层改动
+
+| 位置 | 改动 |
+|---|---|
+| `AssetEngine.buildReport` | 增 `meshes: Array<{ key; name; triangles; materialType }>` 逐网格清单 |
+| `SceneEngine` | 新增 `listSubMeshes(nodeId)`；`applyVisualOverride` 从 traverse 一刀切改为「物体级默认 + slots 按 key 命中单独应用」 |
+| 拾取 | pick 已返回具体 hit.object（RaycastEngine 现状），新增 `resolveSubMesh(obj): { id; slotKey } | null` 沿父链收集 slot key |
+| `MaterialLibService` | `assignMaterial`/`syncAll` 支持按 slot key 替换单网格材质（共享实例语义不变） |
+
+#### 4.13.3 UI（接 MU 组件扩展）
+
+**左树**（OutlineTree）：
+
+```
+▾ persons
+   ▾ person_01            ← 场景节点（可整体选/移动/删，现状不变）
+       ·  Armature        ← 内部子节点（浅色/小图标区分）
+       ·  Ch23_Body       ← 点选 → 右面板只显示它的材质
+       ·  Ch23_Hair       ← eye 可单独隐藏（写 slots[key].visible）
+```
+
+内部子节点只读展示 + 点选 + eye；不能删、不能拖出、不上 Gizmo（浅色样式 + tooltip 声明"模型内部节点"）。
+
+#### 4.13.7 子网格局部变换编辑 M3（2026-10-11 立项即执行；用户验收反馈「子节点要能换位置」+「Gizmo 应在头发上而非 person 圆心」）
+
+> 解除 §4.13.0 裁决 5 的"缓后"。skinned 网格局部 transform 与骨骼动画叠加的已知边界保留记录（动画播放时子网格偏移被骨骼覆盖，静止编辑态可用）。
+
+- **数据层**：`VisualOverride.slots[key]` 扩 `position?: Vec3 / rotation?: Vec3 / scale?: Vec3`（局部变换覆盖层，序列化/undo/剥离全走 slots 现成机制）；`applyVisualOverride` 槽位命中时应用局部 transform（SkinnedMesh 也设 mesh.position 等——骨骼顶点随 mesh 原点平移，静止态有效）。
+- **Gizmo 槽位吸附**：`LayoutGizmo.syncSelection` 检查 `bridge.selectedSlot`——有槽位时 Gizmo attach 到该 mesh（世界位置=mesh.getWorldPosition）；拖拽结束把 world delta 转局部 delta 写 `slots[key].position`（以 mesh 当前局部 position 为基线，不改父链）。G/R/S 三模式同规则（rotation/scale 直接写 mesh 局部值）。
+- **属性面板**：selectedSlot 时变换区从只读变为**可编辑**（draft 读写 `slots[key]` 局部值，经 slots 通道 commit）；Gizmo 拖拽回填输入框（复用物体级 onState 回填模式）。
+- **转录**：strip-edit ①′ 表 position/rotation/scale 行；GUIDE §6.2 补 `getObjectByName('Ch23_Hair').position.set(0.1, 0, 0)` 样例。
+- **树/眼**：不变（树行高亮、BoxHelper 槽位框选维持 F6 现状）。
+- **已知边界（记录）**：骨骼动画播放时局部偏移被骨骼矩阵覆盖（skinning 数学使然）；编辑器为静止态编辑，可接受。undo 槽级 transform 快照走 slots 现成机制零成本。
+- **Checklist（批次 M3，立即执行）**：
+- [x] M3.1 slots 扩局部 transform 字段 + applyVisualOverride 应用 + 类型
+- [x] M3.2 Gizmo 槽位吸附（syncSelection 按 selectedSlot attach mesh；拖拽写 slots[key].position 局部 delta）
+- [x] M3.3 PropertyPanel selectedSlot 时变换区可编辑（draft 双向：面板→slots、Gizmo→面板回填）
+- [x] M3.4 strip-edit 转录 slots transform 行 + GUIDE §6.2 样例
+- [x] M3.5 冒烟 S46：选中 Hair → Gizmo 位置=Hair 世界位置（非 person 原点）；拖 Gizmo → slots.Armature/Ch23_Hair.position 落库 + serialize 往返 + mesh 实际平移 + undo 恢复；面板输入局部值生效；S40–S45 回归
+- [x] M3.6 三绿 + SMOKE + gates
+
+> 点选子网格后属性面板须反馈**该子网格**的信息，而非仍显示模型整体。
+
+- **数据通道**：`Bridge` 增 `selectedSlot: {nodeId, slotKey} | null`（进 EditorState emit）+ `selectSlot(nodeId, slotKey)` / `clearSelectedSlot()`（点空白/ESC/切物体时清）；`SceneEngine` 增 `getSubMeshInfo(nodeId, slotKey)`——按 findBySlotKey 定位 mesh，返回**局部 transform（position/rotation/scale，相对模型节点）、世界包围盒（该 mesh 自己的）、材质类型与主色**。
+- **属性面板反馈**（selectedSlot 非空时）：
+  - 变换区：显示子网格**局部变换（只读）**——子网格变换编辑属 M3（缓后），面板给数值参考 + 灰置输入；标题注「Ch23_Hair · 模型内部（相对 person_01）」
+  - 包围盒 hint：该 mesh 自己的世界包围盒尺寸
+  - 材质区：聚焦该槽位（现状 focusSlot 机制）
+- **视口反馈**：SelectionService 的高亮包围盒在 selectedSlot 时换为**只包该 mesh**（BoxHelper 单 mesh）；Gizmo 仍不吸附（M3 缓后）。
+- **入口**：树点 mesh 行 → `bridge.selectSlot`（替代现在的纯 select + window 事件）；属性面板点槽位行（聚焦编辑）不改。
+
+**右面板**（MaterialSection 列表化）：
+
+- 选**模型节点**：材质区 = **去重材质列表**（材质去重即 Spline 语义——3 部件 3 种材质显示 3 条）+「全部换成…」按钮（带确认「将替换 N 个材质槽」）
+- 选**子网格**：材质区只显示它的 1 条，换/调照常
+- **视口拾取联动**：点视口某部位 → 选中模型 + 对应材质条目高亮滚动定位（不联动则用户找不到 mesh 名，体验闭环关键）
+
+#### 4.13.4 交付转录
+
+TRANSCRIPTION 物体视觉 override 表增 slot 列；LLM 转录产物按 mesh 定位：`obj.getObjectByName('Ch23_Hair').material = libraryMaterials.mat_001`。材质预算（≤32）按现有去重语义算，slot 引用共享库实例不恶化预算。
+
+#### 4.13.5 风险与边界
+
+1. **GLB 重导出 mesh 改名 → slot key 失效**：降级 = 找不到 key 时 console warn + 忽略，不 crash；validate-model 命名规范门禁在入库侧兜底
+2. **骨骼/Armature 类空节点**：树内展示但无材质槽（非 mesh），仅结构可见
+3. **多 GLB 实例共享 slots**：slots 挂 `__visuals[节点id]`（每实例独立），不互相污染
+4. **子网格变换（M3 缓后）**：见 4.13.0 裁决 5
+
+### 4.14 材质面板布局重做（2026-10-10 立项，批次 MU2 执行依据）
+
+> **来源**：MU.8 用户验收（§4.12.3 六场景走查）反馈。用户提供 Spline 官方界面 DOM 作参照：材质面板是**右侧浮出的浮动面板**（`FloatingPalette`——带拖拽把手、按 top/left 定位、**无全屏遮罩**、不挡场景操作）；材质素材与「编辑材质球」**可同时存在、并排、互不重叠**；材质列表（我的材质库 / Spline库）**一材质一行**。MU 落地的是「居中 + 全屏遮罩对话框」（`.ed-overlay`/`.ed-dialog`，MU.6 引入）——两面板一开即**叠**在一起、遮罩还挡场景。本批**重做面板布局模型**。**数据契约 / MaterialLibService API / 交付转录链零改动**（延续 MU 的纯呈现层定位）。
+
+#### 4.14.0 需求确认（用户验收反馈，2026-10-10）
+1. 材质素材 + 编辑材质球 → **右侧浮出**（浮动面板，非居中遮罩弹窗）
+2. 两面板**可同时存在、并排、互不重叠**
+3. 材质列表**一材质一行**（含内置材质；现为 chips 换行堆叠）
+
+#### 4.14.1 布局模型（浮动面板层，替代 `.ed-overlay`/`.ed-dialog`）
+- **独立浮动面板**：面板浮在场景之上但**不拦截场景交互**（无全屏遮罩；可边看场景边调材质）
+- **可拖拽移位**：标题栏作拖拽把手，任意摆放（Spline 实测——同两个面板在两次截图里分别处于「同列上下」`479/273`+`479/414` 与「同行左右」`479/273`+`223/273`，即**用户自由拖动**）
+- **默认并排错开**：面板默认**并排摆放、互不重叠**（同级错开；打开第二个面板不挤掉第一个，关一个其余重排）
+- **不锁死轴向**：默认横向错开，用户可拖任意位置（位置会话内有效，不持久化）
+- 关闭：标题栏 ✕（**无遮罩点击关闭**）
+
+#### 4.14.2 面板内容（内容不变，仅外壳与列表排布变）
+- 材质素材：标题「材质素材」+ [＋新建][搜索] + **两分组列表（我的材质库 / 内置材质，均一材质一行：缩略图 + 名称 + 行内操作）**
+- 编辑材质球：标题「编辑材质球」+ 名称输入 + 预览球 + 选择物体 (N) + 类型 + MaterialParams（内容与 MU.4 一致）
+
+#### 4.14.3 落地范围与验收
+
+| 文件 | 动作 | 内容 |
+|---|---|---|
+| `edit/FloatingPanel.vue` | 新 | 浮动面板外壳：拖拽把手 + 标题 + 关闭 + 内容插槽（位置由停靠层给） |
+| `edit/FloatingDock.ts` | 新 | 停靠槽位计算：多面板纵向错位、不重叠、开/关重排（可为独立模块或 composable） |
+| `edit/MaterialPalette.vue` | 改 | 换 FloatingPanel 外壳；内置材质 chips → **一材质一行** |
+| `edit/EditMaterialModal.vue` | 改 | 换 FloatingPanel 外壳 |
+| `edit/PropertyPanel.vue` | 改 | 两面板并存的状态与渲染（`paletteOpen` 与 `editMatId` 可同时成立） |
+| `edit/styles/editor.css` | 改 | 删 `.ed-overlay`/`.ed-dialog` 居中遮罩原语；加浮动面板 / 停靠样式 |
+| `template/scripts/smoke-r.mjs` | 改 | 冒烟：两面板并存不重叠 / 无遮罩元素 / 材质行一行一项 |
+
+**验收（Done Contract）**：四道门禁全绿（vue-tsc / build（edit-main 独立 chunk 隔离保持）/ eslint 0 errors / 冒烟 PASS）+ 用户验收（右侧浮出、两面板并排、可拖拽、不挡场景、一材质一行）。
+
+#### 4.14.4 已否决 / 边界
+- ~~全屏遮罩对话框（MU.6 的 `.ed-overlay`/`.ed-dialog` 居中方案）~~——本批作废并**清除该原语**
+- 数据契约零改动（延续 MU；`MaterialParams` / `MaterialLibService` / 转录链不碰）
+- 面板拖拽位置**不持久化**（会话内有效，刷新复位）——超出本批
+
+### 4.15 编辑器浅色主题 + 浮动面板避让 + 材质分区收拢（2026-10-10 立项，批次 MU3 执行依据）
+
+> **来源**：MU2 用户验收（2026-10-10）三项反馈。**数据契约 / MaterialLibService API / 交付转录链零改动**（延续 MU/MU2 的纯呈现层定位）。
+
+#### 4.15.0 需求确认（用户验收反馈，2026-10-10）
+1. **整体浅色主题**（用户原话「页面 template 整体风格都是浅色的，参考 spline」）——现状全套深色（`--ed-panel: rgba(23,27,32,.94)` / `index.html #0f151b` / ExampleCard 深底）；范围 = 编辑态 + 二开态（「整体」）
+2. **浮动面板不得叠固定面板**——MU2 的 `defaultDockPos(0,300)` 算出 `x=vw−316`，而右栏占 `[vw−306, vw−14]` → 材质素材几乎完全压在物体/场景面板上（几何实测成立）。MU2 只做了「浮动面板之间」避让，**漏了与左树/右栏固定面板的避让**
+3. **材质分区收拢**——属性面板的材质分区**只留条目行**（缩略图+名称+徽标+hover 复制+⊞）；类型下拉与全量参数区**不平铺**；**点条目行 → 打开「编辑材质球」浮动面板**（Spline 实测：属性面板 AssetItem 点击 → MaterialAssetModal；用户贴的 `.ms__entry` DOM 即该条目）
+
+#### 4.15.1 浅色令牌（editor.css，全套替换）
+
+| 令牌 | 深色（现值） | 浅色（新值，Spline 风） |
+|---|---|---|
+| `--ed-panel` | `rgba(23,27,32,0.94)` | `rgba(255,255,255,0.92)` |
+| `--ed-input` | `#2a313a` | `#f0f1f3` |
+| `--ed-input-hover` | `#343d48` | `#e4e6ea` |
+| `--ed-border` | `rgba(255,255,255,0.09)` | `rgba(0,0,0,0.08)` |
+| `--ed-text` | `#e7eaee` | `#1d1f23` |
+| `--ed-dim` | `#97a1ac` | `#6b7280` |
+| `--ed-accent` | `#3d7eff`（保持） | `#3d7eff` |
+| `--ed-accent-soft` | `rgba(61,126,255,0.18)` | `rgba(61,126,255,0.12)` |
+| `--ed-shadow` | `0 8px 28px rgba(0,0,0,0.4)` | `0 8px 28px rgba(0,0,0,0.12)` |
+
+同步核对：FloatingPanel/工具条/树/页签/徽标/弹层 hover 语义在新令牌下成立；**逐组件过一遍硬编码色**（非 var() 的 rgba/十六进制残留）。
+
+#### 4.15.2 浮动面板避让固定面板（FloatingDock）
+- `defaultDockPos` 增**固定面板避让**：右侧预留 `RIGHT_RESERVE = 292(右栏宽)+14(margin)+12(gap) ≈ 318px`；`x = min(vw − RIGHT_RESERVE − panelW − index*(panelW+GAP), …)` 且不小于左树右缘（248+14+12）
+- 窗口过窄时（左右固定面板 + 一个浮动面板放不下）：允许纵向向下错位（仍不叠右栏）——**退而求其次不遮挡，而非硬挤**
+- 冒烟断言从「浮动面板两两不重叠」升级为「浮动面板 × 全部固定面板 + 浮动面板两两」零交集
+
+#### 4.15.3 材质分区收拢（MaterialSection / EditMaterialModal）
+- **MaterialSection**：删类型下拉与 `<MaterialParams>` 平铺区；只留条目行（缩略图 + 名称 + 「N 个物体」徽标 + hover 复制材质 + ⊞）；条目行**整体可点** → `emit('edit-entry')`（无库引用时编辑选中物体的 inline 材质；有引用时编辑库条目）
+- **EditMaterialModal**：增「inline 材质编辑」入口语义——`matId` 为空时编辑 `__visuals[anchorId]` 的内联 spec（调参仍写视觉层）；有 `matId` 时编辑库条目（现状）。名称输入对 inline 态隐藏（无标题材质无库名）
+- MaterialParams 组件本体不动（仍是参数区唯一实现，只是**从属性面板搬家到编辑面板**）
+
+#### 4.15.4 已否决 / 边界
+- ~~属性面板平铺全量材质参数（MU.2 形态）~~——本批收拢，参数区只存在于「编辑材质球」面板
+- 深色主题：**不保留双主题开关**（用户明示整体浅色；二开交付物同浅色）
+- 数据契约零改动：inline 互斥 / libraryRef / 转录链不碰
+
+#### 4.15.5 材质条目直达素材库 + 编辑面板锚定（2026-10-10 立项，批次 MU4 执行依据）
+
+> **来源**：用户在 Spline 实测的困惑（「有时弹编辑球有时不弹」「两面板有时互斥有时共存」）+ 其提供的属性面板完整 DOM 解码。**Spline 真实交互解码**：材质分区是 **AssetItem 列表**（多材质 GLB 每槽一条）；条目分两态——`untitledasset`（无标题，icons 仅 1 个 ⊞）与 `appliedasset`（已应用库材质，icons = ⊞ + Unlink）；**面板头 ⊞ / 条目 ⊞ / ＋ 三入口都开「材质素材」palette**（条目 ⊞ 带 `data-palette-id="material-<uuid>"` 锚定该材质）；**「编辑材质球」是 palette 的二级子面板**（palette 里点材质球打开，贴着 palette；palette 关则编辑球关——用户感知的"互斥"实为父子关系）；条目本体点击不开任何面板（可发现性差）。
+
+**裁决（2026-10-10，融合 Spline 验证过的细节 + 保留 MU3 的一跳直达）**：
+
+1. **属性面板材质条目行加 ⊞ 按钮**（对齐 Spline「想换材质直达素材库」）：点行 = 编辑当前材质（MU3 既有）；**点 ⊞ = 打开材质素材面板**（browse/换材质，一跳直达，不经编辑面板中转）。行内 ⊞ 与改名/复制同 hover 显隐。
+2. **面板排队模型**（2026-10-10 用户验收二次反馈定案，取代初版「编辑面板锚定素材库」）：**哪个面板先出现就贴右属性栏左缘，后出现的往左排队一格，不重叠；关闭面板其余不重排；不定死任何面板的专属位置**。即面板 dock 槽位按「开启时刻序」动态分配（首个=槽 0 贴右栏，后开=已有最大槽 +1）。
+3. **窗口自适应**（2026-10-10 用户验收三次反馈定案）：面板**必须始终在视口内**（resize 钳制：右/顶/底不出界，左留抓手；面板高于视口时保标题栏可拖）；窗口横向容不下并排时**纵向下移一整档**（同列完整错位）；矮窗两档放不下时允许部分重叠（可拖走）——**宽窗零重叠、任何窗口零出界**两级断言。
+3. **不抄 Spline 的部分**（防回潮）：~~条目本体点击无反应~~（可发现性差，保留 MU3 点行=编辑）；~~三入口全开 palette~~（入口冗余，我们 ⊞=素材库、点行=编辑 两入口各一）；~~palette→编辑球父子强制~~（我们的编辑面板独立于素材面板存在，点行即可开）。
+
+**Checklist（批次 MU4，M2 之前执行）**：
+- [x] MU4.1 MaterialSection 条目行加 ⊞（hover 显隐，`.stop` 不触发点行编辑）→ emit `open-palette`；PropertyPanel 接线（复用既有 `open-palette` 事件，PropertyPanel 零新状态）
+- [ ] MU4.2 EditMaterialModal dock 感知 paletteOpen：palette 开 → 编辑面板默认位 = 素材面板 rect 左侧紧贴（GAP 12）；palette 关 → 右栏左缘避让位（现 MU3.3 逻辑）；开启顺序变化时重算（palette 后开/关闭时编辑面板是否跟随，取「不动已拖拽面板」：仅默认位计算时感知）
+- [ ] MU4.3 冒烟扩展：条目 ⊞ 开素材面板 / 编辑面板与素材面板并排紧贴不重叠（palette 开时）/ 素材面板关闭时编辑面板退回避让位；S36–S38 回归
+- [x] MU4.4 三绿 + 冒烟 PASS + 用户验收（直达素材库 / 编辑面板贴素材库）——机器部分完成（SMOKE 39/39）；人工视觉走查待用户
+
+**批次 MU4 执行记录（Reverse Sync，2026-10-10，用户「全部」批内连跑）**：MU4.1–MU4.4 全落地。① **条目 ⊞**（MaterialSection `.ms__browse`，hover 显隐同复制按钮，`.stop` 防触发点行编辑）→ 复用既有 `open-palette` 事件（PropertyPanel 零新状态）；② **锚定**（PropertyPanel `modalPos` 改 computed：`paletteOpen` 真 → `{x: palettePos.x − PANEL_W − 12, y: palettePos.y}` 紧贴素材面板左侧同顶；假 → `defaultDockPos(1, PANEL_W)` 避让位；FloatingPanel 的 pos 仅挂载时取初值，「不动已拖拽面板」天然满足）；③ **S39** 三段断言（⊞ 直达 / 紧贴不重叠 / 退避）。**S39 初版断言两处口径错（实装正确，诊断 rect 证实：编辑面板 right 618 vs 素材面板 left 628，间隔 10 = GAP 12 − 边框 2）**：期望值写死 left−12 未计边框；排序取反。修为容差断言（`|editRect.right − pRect.left| ≤ 14 且 ≤`）+ left 较小者 = 编辑面板。④ 三绿 + **SMOKE PASS 39/39**。
+**验收反馈修复（同日，用户实测「没有素材面板时编辑面板离得很远」）**：palette 关时编辑面板用 `defaultDockPos(1, 300)` 落在 **index 1 错位槽**（为"第二个面板"预留 index 0 的位置）——横向与右栏隔了整整一个面板宽的空位。根因是 MU4.2 的"关→避让位"语义被实现成"index 1 槽位"而非"贴右栏左缘"。修法：palette 关 → `modalPos = {x: palettePos.x, y: palettePos.y}`（**与素材面板同位，即贴右栏左缘**）。复验：三绿 + **SMOKE PASS 39/39**（S39 `retreated` 断言仍过——只验"不叠右栏"，未验"贴近"，修后更近了）。
+**验收反馈二次修复（同日，用户实测「材质编辑和材质素材又重叠了」+ 交互定案「哪个面板先出现就贴物体面板，后出现的往左排，不定死位置」）**：首次修复后 palette 关时编辑面板用 palette 同位——但 **palette 后开时也取 index 0** → 两者同位重叠。静态"专属位"模型被否决，改为**排队模型**：PropertyPanel 增 `paletteSlot`/`editSlot` ref + `watch([paletteOpen, editOpen])`——面板开启时取「另一面板已占的最大槽 + 1」分槽（首个=0 贴右栏），`palettePos`/`modalPos` 改 computed 按 slot 取 `defaultDockPos`；面板关闭其余不重排（FloatingPanel pos 仅挂载取初值，天然满足）。**双序探针验证**（一次性，验完删）：先编辑后素材（编辑 628 不动 / 素材 316 左排）、先素材后编辑（素材 628 不动 / 编辑 316 左排）、单开任一贴右栏——`okAlone + okJoin` 全 true。**S39 断言同步改排队语义**（排序/相邻判断不再假定"编辑在左"）。复验：三绿 + **SMOKE PASS 39/39**。§4.15.5 契约的「编辑面板 dock 感知 paletteOpen」表述由本修复**修订为「面板排队模型」**（先到贴右栏、后到左排、关闭不重排）。
+**验收反馈三次修复（同日，用户实测「窗口小一点，卡片又叠在一起了」——自适应缺失）**：排队位置只在**挂载时**按当时的视口宽算，resize 后不重算（fixed 坐标失效）；且矮窗纵向两档放不下时旧 fallback 拉回顶部致叠。修两层：① **FloatingPanel 增 resize 钳制**——`onMounted`/`window.resize` 时 `clamp()`（右不出界 / 左留 60px 抓手 / 顶不出头 / 纵向优先完整可见，面板高于视口才退化保标题栏；用面板真实 offsetHeight）；② **FloatingDock 重排算法**——横向 `perRow = ⌊(右栏左缘−左树右缘)/(面板宽+GAP)⌋` 放不下时**纵向下移一整档**（ROW_H 430 + GAP，同列完整错位非 40px 小步），去掉矮窗拉回（交 clamp 兜底）。**窄窗探针验证**（900×600 开两面板 → CDP 缩到 700×500，一次性验完删）：编辑面板钳在视口内（bottom=视口高）、素材完全可见、宽窗不重叠断言保持。**断言分级原则（记方法论）**：宽窗（横向容得下两面板）必须不重叠；窄/矮窗物理放不下时允许纵向部分重叠（可拖走），但**任何窗口都必须在视口内**。复验：三绿 + **SMOKE PASS 39/39**。
+
+
 ## 5. Execute Log
 - Plan Approved：2026-09-30（用户指令"plan approved"）。状态 [ACTIVE]，进入 Execute。
 - **Spec 评审（review_spec）2026-10-08 完成**：GO with conditions。P1 四项 / P2 七项 / P3 七项，详见 §4.8 评审记录 1。
@@ -952,7 +1360,18 @@ class MaterialLibService {
 - **REVIEW EXECUTE 完成（2026-10-10，评审记录 5 §6）**：批次 M + 批次 T + D4 修订轮三轴评审。Overall Verdict: **PASS**——14 检查项：12 PASS + 1 已修（loadMaterialSpec 丢字段，review 中发现并当场修复复验）+ 1 PARTIAL（三项已知边界：GLB 异步窗口种子回退 / 滑杆 clone GC churn / saveAs 空规格条目，均低频低损不阻塞，批次 5 顺手评估）。四道门禁全量复跑 SMOKE PASS S1–S21。**下一动作：批次 3（构建门禁 + 双模式交付），批间停等确认**。
 - **REVIEW EXECUTE 完成（2026-10-10，评审记录 6 §6）**：批次 3 三轴评审。Overall Verdict: **CONDITIONAL PASS**——15 检查项：9 PASS + 1 PARTIAL + 5 FAIL（P0 strip-edit `--out`==源自毁源工程【实测复现：rmSync 先清空源再 ERR_FS_CP_EINVAL crash】/ P1×3【铁律 2 相对路径旁路、裸模块前缀未锚定放行 vue-router 类、未来 `__` 键泄漏——第 5 项主评与评审 agent 双源确认】/ S29 模板侧真缺陷【R10 落地的 applyVisibility 走 element.style 通道被 three CSS2DRenderer 每帧覆写（0.185 源码 :232），onCardState 状态机正确但 DOM 从不跟随；修复方向 anchor.visible 通道】）+ P2×6/P3×4 记录在案。**修复门：P0+P1×3+S29 修完并复验（gates 全量 + --edit SMOKE S29 true + 新负面用例落 gates）批次 3 才算 PASS**。评审方法沉淀：双通道显隐（业务态 vs 渲染器管理态）是 CSS2D 卡片系统结构性陷阱。
 - **批次 3 修复轮完成（2026-10-10，用户裁决「可以的，修复吧」）**：P0 + P1×3 + S29 + P2×5 全部修复，详见 §7 #27。复验全绿：**gates 40/40（--with-build 41/41）** + vue-tsc/build（edit-main 100.63 kB 独立 chunk 隔离保持）/eslint 0 errors/**SMOKE PASS 29/29（S29 全 true）**；gates 扩容 31→40 用例（白名单边界/相对路径旁路/NaN 校验/未来键/P0 守卫/族剥离）。评审记录 6 修复门达成，Overall Verdict 升 **PASS**。P3×4 记录在案（批次 5 顺手）。**下一动作：批次 4（验证回路），批间停等确认**。
+- **批次 MU + 批次 M2 立项（2026-10-10，材质 UI/交互重设计）**：用户对材质分区不满意（「另存为」「断开链接」「未入库」术语看不懂），经 Spline 官方文档（docs.spline.design materials-shading 六页）+ 三组官方界面 DOM（材质面板/材质素材弹层/编辑材质球弹窗）+ person.glb 完整操作链核实后定案：**批次 MU**（§4.12，材质库 UI 重做——Spline 心智模型：材质即资产/默认零术语/换=槽重指向/调参=全使用者同步；「复制材质」替代「断开链接」；改名即入库；内置材质可删不复活）+ **批次 M2**（§4.13，GLB 子节点与多材质——方案 A 单场景节点+slots 槽位层；方案 B 内部子节点提升为场景节点已否决）。**执行序修订：MU → M2 → 4 → 5**（原"4 在 MU 前"唯一顾虑 smoke-r.mjs 并行冲突随批次 3 收口消失；MU+M2 连做上下文连贯）。数据契约零改动（MU）/最小扩展（M2 仅 slots 嵌套层）。**下一动作：批次 MU，批间停等确认**。
 - **批次 3 完成（2026-10-10）**：3.1–3.3 全部落地，`scripts/verify/gates.mjs` 复跑设施 32/32 PASS（含 `--with-build` 端到端：小写盘符目标目录 + `--deps copy` + 首次 `npm run build` PASS）。新产三点：① build.mjs 结构扫描 + 三条铁律 + import 白名单 + 场景预算静态估算（calls≤400/三角面≤1M/材质≤32，可 CLI 覆盖）；② strip-edit.mjs 剔除 edit 世界 + 剥离 `__visuals`/`__materialLib` + 生成 TRANSCRIPTION.md 三类表（物体视觉 override / 被引用材质库条目 / 库引用表）+ 对产物跑 `--stripped` 自检；③ init.mjs 母版复制 + 占位替换 + 资产按引用|全部注入 + 可选组件库 file: 依赖 + 首次门禁（+ `--deps copy|install` 时跑 npm run build）。**验证中发现并修复 2 处实缺陷**（均属"只在特定环境暴露"类，见 §7 #24）：Windows 下 spawn 子进程 cwd 含手打小写盘符时 Vite html-proxy 键错配致构建失败（修：spawn 前 `realpathSync.native` 规范盘符/大小写，回退盘符大写）；build.mjs 自带三角面计数器与 validate-model 分叉（漏 mode 5/6 条带扇面）→ 改为共用 validate-model 的 `reachableNodes`/`primitiveTriangles`（build.mjs 的反面副作用是 validate-model 补两个 export，语义未变）。**待办提请**：三个脚本 + validate-model 的头部注释含 `Spec §4.x`/`R1-3` 类文档指引，与"代码注释不写指向文档的指引"的既定规则相抵（§7 #24 记录在案，未擅自改动已收口批次 2 文件，待裁决）。**下一动作：批次 4（验证回路），批间停等确认**。
+- **批次 MU 完成（2026-10-10，用户「开始批次 MU」→ 单步 MU.1–MU.3 →「全部」跑完 MU.4–MU.8）**：八项全落地（MU.1 MaterialParams 抽取 / MU.2 MaterialSection / MU.3 MaterialPalette / MU.4 EditMaterialModal / MU.5 seeds 门控 / MU.6 editor.css 共享弹层原语 / MU.7 smoke S30–S33 / MU.8 门禁）。三绿全绿（edit-main 独立 chunk 109.00 kB，隔离保持）+ **SMOKE PASS 33/33**；全程四组一次性 CDP DOM 探针（MU.2 分区 / MU.3 弹层 / MU.4 弹窗）各自 PROBE PASS（不入库、验完删除）。**执行中修复 1 处批次 M 遗留实缺陷**：`MaterialLibService.removeEntry` 合并写内联致 `libraryRef` 残留（违约 §4.10.4），改用 `replaceVisual` 覆盖式。见 §7 #28。**执行序 MU → M2 → 4 → 5，下一动作批次 M2（GLB 子节点与多材质，§4.13），批间停等确认**。
+- **批次 MU2 立项（2026-10-10，MU.8 用户验收反馈驱动）**：用户对照 Spline 官方界面指出——材质面板应**右侧浮出**（浮动面板：无全屏遮罩、可拖拽、不挡场景）、材质素材与编辑材质球**并排不重叠**、材质列表**一材质一行**；MU 落地的「居中+全屏遮罩对话框」（.ed-overlay/.ed-dialog）不符。契约落 §4.14，checklist 落 §4.7 批次 MU2（MU2.1–MU2.8）。**执行序修订：MU → MU2 → M2 → 4 → 5，下一动作批次 MU2，待批准**。
+- **批次 MU2 完成（2026-10-10，用户「全部」批内连跑）**：MU2.1–MU2.8 全落地（FloatingPanel 浮动外壳 + FloatingDock 停靠 + 两面板换壳 + 内置一材质一行 + editor.css 删居中遮罩原语 + 冒烟 S34–S35）。三绿 + **SMOKE PASS 35/35** + Teleport/拖拽探针 PROBE PASS。关键实现：`<Teleport to=".edit-scope">` 规避右栏 backdrop-filter 的 containing-block 陷阱。见 §7 #29。**REVIEW EXECUTE 完成（2026-10-10，评审记录 7 §6）**：批次 MU + MU2 三轴评审，Overall Verdict: **PASS**（12 检查项：10 PASS + 1 偏差已记档（样式落位 FloatingPanel scoped 而非 editor.css）+ 1 PARTIAL（浮动面板边界缺口，P3×4 挂账批次 5：dock 位置不随 resize 重算 / 拖拽无边界钳制 / 删除确认态点行仍应用 / 无选中点条目仍关面板））；四道门禁 + 冒烟全量复跑 SMOKE 35/35。**下一动作批次 M2（GLB 子节点与多材质，§4.13），批间停等确认**。
+- **批次 MU3 立项（2026-10-10，MU2 用户验收三项反馈驱动）**：① 整体浅色主题（参考 Spline，现状全套深色；范围含二开态 index.html/App.vue/ExampleCard）；② 浮动面板叠在右栏固定面板上（几何实测：defaultDockPos 算出的 x 与右栏区间重叠——MU2 只避让浮动面板间，漏了固定面板）；③ 材质分区收拢（属性面板只留条目行，点条目开「编辑材质球」——Spline 的 AssetItem→MaterialAssetModal 模式；用户贴 .ms__entry DOM 确认）。契约落 §4.15（浅色令牌表 / 避让算法 / 收拢交互），checklist 落 §4.7 批次 MU3（MU3.1–MU3.7）。**执行序修订：MU → MU2 → MU3 → M2 → 4 → 5，下一动作批次 MU3，待批准**。
+- **批次 MU3 完成（2026-10-10，用户「全部」批内连跑）**：MU3.1–MU3.7 全落地（浅色令牌 + 二开态同步 / FloatingDock 避让固定面板 / MaterialSection 收拢 + 点条目开编辑 / EditMaterialModal 双模式 / 冒烟 S36–S38）。三绿 + **SMOKE PASS 38/38**。S38 踩两断言坑（Group 须 traverse 取 mesh、GLB 异步窗口须轮询；合并语义残留第三次撞见——UI 真实路径 replaceVisual 无此问题）。人工视觉走查待用户。**下一动作批次 M2（GLB 子节点与多材质，§4.13），批间停等确认**。
+- **批次 MU4 立项（2026-10-10，用户 Spline 实测困惑 + 属性面板完整 DOM 解码驱动）**：用户实测「点材质有时弹编辑球有时不弹」「两面板有时互斥有时共存」+「编辑面板离属性面板很远」。DOM 解码定案 Spline 真实交互：材质分区是 AssetItem 列表（多材质 GLB 每槽一条，untitledasset/appliedasset 两态）；面板头 ⊞/条目 ⊞/＋ 三入口全开 palette（条目 ⊞ 带 uuid 锚定）；编辑球是 palette 二级子面板（贴着 palette，palette 关则关——「互斥」实为父子）；条目本体点击无反应。**裁决（融合）**：① 条目行加 ⊞ 直达素材库（点行=编辑、点⊞=换，两入口各一）；② 编辑面板 dock 感知 paletteOpen（palette 开→紧贴其左，关→右栏避让位）；**不抄**：三入口冗余、条目点击无反应、palette→编辑球父子强制。契约落 §4.15.5，checklist 落 §4.7 批次 MU4（MU4.1–MU4.4）。**执行序修订：MU → MU2 → MU3 → MU4 → M2 → 4 → 5，下一动作批次 MU4，待批准**。
+- **批次 MU4 完成（2026-10-10，用户「全部」批内连跑）**：MU4.1–MU4.4 全落地（条目 ⊞ 直达素材库 + 编辑面板 dock 感知 paletteOpen 紧贴/退避 + 冒烟 S39）。三绿 + **SMOKE PASS 39/39**。S39 初版断言两处口径错（边框未计/排序取反，实装正确经 rect 诊断证实）。人工视觉走查待用户。**下一动作批次 M2（GLB 子节点与多材质，§4.13），批间停等确认**。
+- **批次 M2 完成（2026-10-10/11，用户裁决批内连跑）**：M2.1–M2.8 全落地（ModelSpecReport.meshes / listSubMeshes+resolveSubMesh+槽级 applyVisualOverride / OutlineTree 子网格层 / MaterialSection 列表化+槽位聚焦 / applySlotLink+syncAll 槽位重挂 / strip-edit ①′ 槽位表+GUIDE §6.2 / S40–S44 / gates 40/40）。**执行中发现并修复三大缺口**：① **Draco 支持**（person.glb Draco 压缩暴露 GLTFLoader 裸奔——真实世界 GLB 主流压缩格式；修：DRACOLoader + decoder 随模板 vendor `public/assets/draco/` 零 CDN）；② **槽位 key 双口径**（buildReport 从 GLB 内部根起算 vs resolveSubMesh 含容器名——三处对齐修复 + applyVisual 的 slots 增量必须走 full）；③ **单 mesh 回落**（槽位列表误伤单 mesh GLB 的 inline 编辑路径）。验收素材 person 入库（art 档超限人工放行，deviations 记录）。三绿 + **SMOKE PASS 44/44** + **gates 40/40**。**下一动作 REVIEW EXECUTE（MU3 + MU4 + M2 合并三轴评审，用户裁决攒评）**。
+- **REVIEW EXECUTE 完成（2026-10-12，评审记录 8 §6）**：批次 MU3 + MU4 + M2 + 修复轮 1–5 + **M3（评审时发现代码已落码但未回写 spec，一并纳入）** 三轴评审。Overall Verdict: **CONDITIONAL PASS**——12 检查项：9 PASS + 2 FAIL（同一 P1：M3 undo 后 slots transform 运行时丢失——examples 工厂 GLB 异步加载后不重挂视觉层，数据层正确但活 mesh 位置未恢复；`asset` 工厂有 applyVisualIfAny 而 examples 只调 applyStatusVisual）+ 1 排除断言侧（S46 RPC 超时为长会话累积态问题，探针独立跑通）。复跑：三绿 + gates 40/40 + SMOKE 45/45（S46 未完成判定，探针分段覆盖六段 true / meshAfterUndo false = P1）。**M3 执行记录已补写（Reverse Sync 欠账清偿）**。
+- **M3 P1 修复轮完成（2026-10-12 同日，用户裁决超出修法 a/b——「改彻底：不打补丁，收敛为唯一实现」，Plan Approved 批内连跑 R1–R5）**：`makeAssetNodeFactory` 唯一异步 GLB 构建器落地（registry.ts：过期守卫身份比对 + 阴影默认 + 视觉层重挂 + onLoaded 业务回调集中一处；example.ts 瘦身纯业务化 −40 行删 makeAssetNode/loadTokens；二开范式升级）；顺带治好 `asset` 工厂孤儿泄漏（原无过期守卫）。smoke RPC 超时 20s→40s + **新增 S47 回灌窗口视觉存活断言** + S46 断言侧修正（undo 后旧 mesh 引用失联，改重新 traverse + 轮询）。修复中两轮探针定位：第一轮证 undo 后 mesh 是新实例且位置 0（数据层正确）；第二轮证单次 undo 后 meshXAfterWait=0.5 即时生效（构建器重挂工作，产品链路本已正确——S46 FAIL 实为断言旧引用缺陷）。复验：三绿（edit-main 124.53 kB 隔离保持）/ **SMOKE PASS 47/47** / **gates 40/40**。**评审记录 8 升 PASS（修复闭环）**。**下一动作：批次 4（验证回路，§4.7：smoke-structural/smoke-visual/perf-fps/ensure-env 四脚本），批间停等确认**。
 
 ### 批次 1：skill 骨架 + 母版工程（2026-09-30 完成，冒烟通过）
 - [x] 1.1 建 skill 目录树
@@ -1308,6 +1727,123 @@ class MaterialLibService {
       - **P3（记录在案，批次 5 顺手）**：`__lib:count` 哨兵算术改直白计数；TRANSCRIPTION 值内 `|`/反引号转义；`--deps install` 失败 exit 码语义统一；gates spawn 超时 + fx-stripped-ok 前置断言。
       - **gates.mjs 扩容 31→40 用例 + 端到端 41**：新增 9 用例——白名单边界（vue-router/three-stdlib 阻断 + vue/three 子路径放行）、铁律 2 相对路径深层阻断 + 公开入口放行、`--max-calls` 非数字/负数拒绝、铁律 3 未来 `__` 键拦截、strip-edit `--out`==源拒绝且源完好、`--out`=源父目录拒绝且源完好、转录清单双下划线族整体剥离。
       - **复验证据（全绿）**：`gates.mjs` **40/40 PASS**（快模式）/**41/41 PASS**（`--with-build` 含小写盘符端到端 npm run build）；模板四道门禁——vue-tsc 绿 / build 绿（edit-main 独立 chunk 100.63 kB gzip 26.98，隔离保持）/ eslint 0 errors / headless Edge 冒烟 **SMOKE PASS 29/29**（S29 shownUnlocked/blockedWhenLocked/shownAgain 全 true）；冒烟产物清理（textures 仅 example.jpg）。**main 模式（非 --edit）SMOKE ERROR 为既有行为**：冒烟断言集 S9+ 依赖 `__gts3dEdit`（edit-only DEV 口），全量断言素来只在 `--edit` 下跑（批次 R 起的既定形态，非本轮回归）。
+
+  28. **批次 MU 执行记录（2026-10-10，进行中）**：
+      - **MU.1 · MaterialParams.vue 抽取**：参数分组（基础 / Standard 或 Lambert / Physical 进阶六组，折叠）+ 贴图槽区从 PropertyPanel 抽为独立组件。数据驱动渲染保留（`ParamD` 描述符表 + `v-for`）；只读 `spec` prop 显示、输入经 `change(key, value)` 回抛，父级（属性面板 / 编辑材质球弹窗）负责持久化（内联→写 `__visuals`；库引用→改库热更）。PropertyPanel 删去 MAT_DEFAULTS / 参数表 / matGroups / textureSlots / 取值辅助 / 事件包装 / 贴图上传（约 200 行），材质参数区改为 `<MaterialParams :spec="matSpec" @change="onParamChange" />`（onParamChange：写草稿 + `applyMaterial`）；材质库下拉 / 另存为 / 断开链接 / 类型下拉**保持不变**（MU.2 才替换为 MaterialSection）。
+      - **样式**：参数 / 贴图相关样式（`.pp__grp*` / `.pp__tex*` / `.pp__num` / `.pp__range` / `.pp__hex` / `.pp__hint*` + `.ed-row` 内输入 flex 规则）随组件迁入其 **scoped 块**（子组件不吃父组件 scoped 规则，必须自带）；PropertyPanel 保留其余分区仍在用的原语副本（`.pp__num` / `.pp__range` / `.pp__check` / `.pp__hex` / `.pp__hint` / `.pp__matbtns`）。
+      - **验证（行为保持型重构）**：vue-tsc 绿 / build 绿（edit-main 独立 chunk 100.93 kB，隔离保持）/ eslint 0 errors（227 warnings 均既有基线类）/ headless Edge 冒烟 **SMOKE PASS 29/29**（S1–S29 全绿，S7–S17 材质断言无回归）。
+      - **诚实分级**：冒烟断言走引擎通道（`__gts3d`），**未直接断言面板 DOM**——MU.1 证据为三绿 + 应用正常 boot（edit-main 加载无 console 异常）+ 引擎级材质无回归；面板 DOM 结构与行为验收留 MU.8 六场景走查。
+      - **MU.2 · MaterialSection.vue 新建**：Spline 心智模型的「材质」分区——材质条目（`.ms__swatch` CSS 近似缩略图（色块 + 高光渐变按 roughness/metalness 调 + 透射降透明）+ 名称 + 「N 个物体」常显徽标 + hover 出现的复制材质按钮）+ 点名称原地改名（回车：已引用→`renameEntry` / 无标题→`saveAs` 入库 + `nextTick` 自动聚焦；ESC 取消）+ 类型下拉（原生类名 + `TYPE_LABELS` 中文说明）+ ⊞ 材质素材按钮（`emit('open-palette')`，无监听者时静默——MU.3 接线）+ 引用 MaterialParams。`refresh()` 在 anchorId 变化 / `bridge.onState` 时重读引擎态（对标既有 onState 回填模式）。PropertyPanel 材质分区整体替换（删去材质库下拉/另存为/断开链接/loadMaterialSpec/applyMaterial 等约 200 行 + 对应 import 与死样式）。
+      - **验证（MU.2）**：vue-tsc 绿 / build 绿（edit-main 独立 chunk 102.89 kB，隔离保持）/ eslint 0 errors（229 warnings 均既有基线类）/ headless 冒烟 **SMOKE PASS 29/29**；**一次性 CDP DOM 探针**（不入库、验完删除）：inline 态 `.ms__entry`/`.ms__badge`=「1 个物体」/`.ms__name`=「无标题材质」/类型三选项带中文/`.mp` 参数区在/⊞ 在/无复制按钮；`link('car_01','glass')` 后 `.ms__name`=「玻璃」、复制材质按钮出现 → PROBE PASS。
+      - **已知边界（记录不阻塞）**：改名→`saveAs` 对「无内联视觉的默认材质物体」会入库存一个仅含 type 的空规格条目（§6 评审记录 5 PARTIAL ③ 语义；MU 不改 MaterialLibService 契约，用户先调参再改名的常规路径不受影响，MU.8 走查复核）。
+      - **MU.3 · MaterialPalette.vue 新建**：材质素材弹层（fixed 覆盖层，脱离面板 overflow）——标题「材质素材」+ ✕ 关闭 + 遮罩点击关闭；工具行 [＋新建][搜索]；「我的材质库」行（缩略图 + 名称 + ✕ 删除 / ⚙ 编辑，hover 出）+「内置材质」chips（点应用）；点击条目 `link` 到选中物体并关闭弹层；删除引用中条目走**行内二次确认**（`no-alert` 禁 `window.confirm`）；内置/用户分组按 id 前缀启发判（`^mat_\d+$` = 用户新建）；`⚙`/`＋新建` 的 `edit` 事件已 emit（待 MU.4 接线）。PropertyPanel 接线 ⊞ → `paletteOpen` + 渲染 `<MaterialPalette v-if>`。
+      - **验证（MU.3）**：vue-tsc 绿 / build 绿（edit-main 独立 chunk 106.32 kB，隔离保持）/ eslint 0 errors（MaterialPalette 单文件 lint 零问题）/ headless 冒烟 **SMOKE PASS 29/29**；**一次性 CDP DOM 探针**（不入库、验完删除）：弹层打开（标题「材质素材」+ 4 内置 chips + 搜索 + ＋新建）→ 搜索「玻」剩 1 → 点「玻璃」应用成功（弹层关闭 + 分区名变「玻璃」）→ ＋新建入「我的材质库」并 link 选中物体 → 引用中条目点 ✕ 出行内确认「1 个物体将保留外观转为独立副本」→ PROBE PASS。
+      - **MU.4 · EditMaterialModal.vue 新建**：编辑材质球弹窗（编辑库资产本身，与选中解耦）——名称输入（change/回车 → `renameEntry`）+ CSS 近似预览球（92px）+ 「选择物体 (N)」按钮（引用者逐个累加选中 + 关闭看结果；N=0 禁用显示「无引用物体」）+ 类型下拉（原生类名 + 中文说明 + `migrateMaterialSpec`）+ MaterialParams（改参 → `updateEntry` 热更）。PropertyPanel 接线 palette 的 `edit` 事件 → `editMatId` + 渲染 `<EditMaterialModal v-if>`。
+      - **MU.5 · seeds() 门控**：`MaterialLibService.seeds()` 从「仅缺的补」改为「库非空即跳过，仅空库注入」——因 `serialize()` 空库不写 `__materialLib` 键，「键不存在」在实现上等价「库为空」；效果：首建工程注入 4 种子、用户删除后（库非空）不再复活。
+      - **MU.6 · editor.css 共享弹层原语**：新增 `.ed-overlay`（+ `--top` 叠层修饰）/`.ed-dialog`/`.ed-dialog__head`/`__title`/`__close`（Spline 玻璃风：`--ed-panel` + blur + `--ed-shadow`），MaterialPalette 与 EditMaterialModal 改用（各删去重复的 mask/dialog/head 样式块）。
+      - **MU.7 · smoke-r 增 S30–S33**：S30 改名入库转引用（saveAs → 新条目 + link + spec 取自内联）；S31 复制材质脱离引用（disconnect → 内联且不受库热更影响）；S32 删库留外观（removeEntry → 引用者转内联 + 外观保留）；S33 种子删除不复活（removeEntry(seed) 后重调 `seeds()` 不补回）。S9–S14 回归保持。
+      - **MU.8 · 门禁 + 冒烟**：vue-tsc 绿 / build 绿（edit-main 独立 chunk 109.00 kB，隔离保持）/ eslint 0 errors（228 warnings 均既有基线类）/ headless 冒烟 **SMOKE PASS 33/33**；**一次性 CDP DOM 探针**（MU.4 弹窗，不入库、验完删除）：⊞→＋新建→弹窗开（标题「编辑材质球」+ 预览球 + 名称「新材质」+「选择物体 (1)」）→改名提交入 `我的红漆`→点「选择物体」选中 car_01 并关窗 → PROBE PASS。
+      - **执行中发现并修复 1 处实缺陷（批次 M 遗留，MU.7 的 S32 抓到）**：`MaterialLibService.removeEntry` 原用 `handle.update({ __visuals: {...} })` 写内联，而 `SceneEngine.applyVisual` 是**合并**语义（`{...existing, ...visual}`）→ 旧 `libraryRef` 被保留、未被清掉；D4 又「遇 libraryRef 跳过材质」→ 内联字段失效、物体挂到已释放/孤儿实例——**违反 §4.10.4 声明的「删除条目；引用者自动断开为 inline（保留外观）」**，也让 MU 删除确认文案「N 个物体将保留外观转为独立副本」名不副实。修复：改为 `this.handle.internals.sceneEngine.replaceVisual(nid, {...keepNonMaterial(cur), ...specToInline(entry.spec)})` 逐引用者**覆盖式**写入（libraryRef 不再残留）；lib 表的删除仍走 `handle.update({__materialLib})`，整体在同一 `bridge.commit` 内（undo 单步可回）。复验：S32 `aInline:true` + `colorKept:true`，SMOKE PASS 33/33。
+      - **实现细节记录（不阻塞）**：CSS 近似缩略图（swatch 样式计算）与「类型名 + 中文说明」表在 MaterialSection / MaterialPalette / EditMaterialModal 内各自内联——未抽共享模块（恪守 MU 的文件清单，避免 Plan 外新增文件）；3 处若日后漂移再抽 `edit/materialDisplay.ts`。MU.5 门控实现措辞与契约「键不存在」的差异见上（serialize 空库不写 key → 等价「库为空」）。
+
+  29. **批次 MU2 执行记录（2026-10-10，材质面板布局重做）**：
+      - **背景**：MU.8 用户验收（§4.12.3 六场景走查）反馈——Spline 的材质面板是右侧浮出的浮动面板（无遮罩 / 可拖拽；材质素材与编辑材质球并排不重叠；材质列表一材质一行）；MU 落地的「居中 + 全屏遮罩对话框」（`.ed-overlay`/`.ed-dialog`）不符。经用户裁定成新批次 MU2（§4.14）。
+      - **契约修订记录**：初稿 §4.14.1 写「右侧停靠纵向排列」；用户两张 Spline 实测截图（同两面板分别处于「同列上下」`479/273`+`479/414` 与「同行左右」`479/273`+`223/273`，`left`/`top` 一并给出）证明是**自由拖拽** → 契约改为「独立浮动 + 可拖拽 + 默认并排错开 + 不锁轴向」。
+      - **MU2.1 FloatingPanel.vue**：`position:fixed` + 标题栏拖拽把手（pointerdown 记偏移 / window pointermove 更新 / pointerup 解绑，onBeforeUnmount 兜底）+ ✕ 关闭 + 内容插槽；**`<Teleport to=".edit-scope">`**——右栏 `.ed-panel` 的 `backdrop-filter: blur()` 按规范会对 fixed 后代立 containing block，叠 `overflow:hidden` 会把面板定位/裁剪都囚在右栏内；Teleport 到顶层（无 filter）既逃裁剪又继承 `--ed-*`。
+      - **MU2.2 FloatingDock.ts**：`defaultDockPos(index, panelW)` → `x = 视口右缘 - MARGIN - panelW - index*(panelW+GAP)`、`y = 视口高*0.16`；PropertyPanel 给 palette(index 0)/modal(index 1) 传 x/y（两面板同 y 不同 x = 左右并排）。
+      - **MU2.3 / MU2.4**：MaterialPalette / EditMaterialModal 换 FloatingPanel 外壳；**内置材质 chips → `.mpal__row` 一材质一行**（与我的材质库同构）；移除 `.mpal__chips`/`.mpal__chip` 样式。
+      - **MU2.5**：PropertyPanel 的 `paletteOpen`/`editMatId` 保持独立——两面板可同开、互不关闭（此前 palette 是「应用即关」，仍保留 applyToObject→close，但开编辑球不再关 palette）。
+      - **MU2.6**：editor.css 删 `.ed-overlay`/`.ed-dialog`/`__head`/`__title`/`__close`（MU.6 引入的居中遮罩原语作废）。**偏差**：浮动面板样式写在 `FloatingPanel.vue` 的 scoped 块（单组件所有权、自包含）而非 editor.css——与 §4.14.3 表「editor.css 加浮动面板样式」措辞略异。
+      - **MU2.7 冒烟 S34/S35**：S34 两面板同开（⊞ 后 ＋新建触发编辑球）+ 无 `.ed-overlay` + 两 `.fpanel` rect 不重叠 + 拖拽把手存在；S35 一材质一行（玻璃/车漆为行、无 `.mpal__chip`、各行同 `left` 同列）。
+      - **复验证据**：vue-tsc 绿 / build 绿（edit-main 独立 chunk 109.86 kB，隔离保持）/ eslint 0 errors（231 warnings 均既有基线类）/ headless 冒烟 **SMOKE PASS 35/35**；**一次性 Teleport/拖拽探针**（不入库、验完删）：`.fpanel` 的 `closest('.edit-scope')`=true、`closest('.ed-panel--right')`=false、`.ed-overlay` 计数 0、拖拽位移精确 (120, 60) → PROBE PASS。
+
+### 评审记录 7（2026-10-10，批次 MU + 批次 MU2 代码评审（REVIEW EXECUTE），mandatory three-axis）
+
+**评审范围**：批次 MU（MU.1–MU.8：MaterialParams/MaterialSection/MaterialPalette/EditMaterialModal + seeds 门控 + editor.css + smoke S30–S33 + removeEntry 修复）与批次 MU2（MU2.1–MU2.8：FloatingPanel/FloatingDock + 两面板换壳 + 一材质一行 + editor.css 删遮罩原语 + smoke S34–S35）。评审方式：Spec §4.12/§4.14 契约逐项对照代码 × 行为级推演（改名双触发守卫 / undo 快照时机 / 浅拷贝共享引用 / onState 回填时序）× 四道门禁 + 冒烟全量复跑。
+
+#### Review Matrix
+
+| # | 轴 | 检查项 | 结论 | 证据 |
+|---|---|---|---|---|
+| 1 | Axis-1 | 批次 MU 目标/验收（Done Contract + 六场景） | PASS | §4.7 MU 八项全 [x]；机器证据齐（本轮复跑三绿 + SMOKE 35/35）；六场景机器探针覆盖 + 用户走查已进行（反馈驱动 MU2，见 MU.8 注记） |
+| 2 | Axis-1 | 批次 MU2 目标/验收（§4.14 三需求：右侧浮出/并排不重叠/一材质一行） | PASS | MU2 八项全 [x]；S34（bothOpen+noMask+不重叠+拖拽把手）/ S35（行+同列+无 chips）+ Teleport 探针（挂 .edit-scope、不在右栏、位移精确）；MU2.8 人工视觉走查待用户（诚实记录） |
+| 3 | Axis-1 | §4.12 术语纪律（零自造词） | PASS | 「无标题材质/材质素材/我的材质库/内置材质/编辑材质球/复制材质/N 个物体」全部落码，无「未入库/断开链接/另存为」残留（PropertyPanel 删净，grep 零命中） |
+| 4 | Axis-2 | §4.12.4 / §4.14.3 文件清单 | PASS | 9 文件全在清单内、零 Plan 外新文件；FloatingDock.ts 契约允许（「可为独立模块或 composable」） |
+| 5 | Axis-2 | 数据契约零改动声明 | PASS（含已记偏差） | `__materialLib`/`libraryRef`/inline 互斥契约未动；MaterialLibService 仅 seeds() 门控（契约内）+ removeEntry 修复（P 级缺陷修复，§7 #28 已记）；strip-edit/build.mjs 零触及（grep 核实：`^__` 族剥离与材质预算计数不受 MU/MU2 影响） |
+| 6 | Axis-2 | §4.14.3「editor.css 加浮动面板样式」 | **偏差（已记档）** | 实际写在 FloatingPanel.vue scoped 块（单组件所有权）——§7 #29 已记为诚实偏差，语义等价 |
+| 7 | Axis-3 | removeEntry 修复正确性（undo 时机） | PASS | commit 先拍快照（旧 lib + 旧 libraryRef）再 apply（lib 表 update + 引用者 replaceVisual 覆盖式）；refs 在 lib 删除**前**采集（referencingNodes 读 visuals 不读 lib，顺序安全）；undo→rebuild→applyVisual(merge) 走快照全量重放无残留；S32 + S25（undo 复用）双向验证 |
+| 8 | Axis-3 | 改名双触发（enter+blur） | PASS | commitRename 首行 `renaming.value = false` 幂等闸——enter 后 blur 再入直接 early-return |
+| 9 | Axis-3 | onState 回填 vs 用户输入竞态 | PASS | MaterialSection/EditMaterialModal 的 refresh 与既有 PropertyPanel 模式一致（评审记录 5 #12 已验）；updateEntry 后 onState→refresh 回填的是刚写入的 spec（值等价，无视觉跳变）；vec2 经 vecVal 每次产新数组，无共享引用改写 |
+| 10 | Axis-3 | seeds 门控语义 | PASS | 「库非空即跳过」≡ 契约「键不存在」（serialize 空库不写 key）；S33 验证删后不复活 + S11 验证首建注入（starter 无 __materialLib） |
+| 11 | Axis-3 | 浮动面板交互健壮性 | PARTIAL（P3） | 拖拽/关闭/Teleport 均验证；边界缺口三项（见下 P3 清单），均低频低损不阻塞 |
+| 12 | Axis-3 | 冒烟设施质量 | PASS | S30–S35 断言走引擎通道 + 面板 DOM 双轨（S34/S35 是首批面板 DOM 永久断言）；探针一次性脚本均删净（textures 目录仅 example.jpg、temp 无残留、端口释放） |
+
+#### Overall Verdict: **PASS**
+
+- 三轴无 FAIL；Axis-2 唯一偏差（样式落位）已记档且语义等价；无轴 3 高风险未解项。
+- **P3 挂账（批次 5 顺手，不阻塞）**：① `defaultDockPos` 在 PropertyPanel setup 时一次计算——窗口先缩小再开面板，默认位可能出右缘（面板可拖回，且 v-if 重开不复位）；② FloatingPanel 拖拽无边界钳制（可拖出视口/负坐标）；③ 材质素材删除确认态下点行背景仍会触发应用并关面板（确认按钮有 `.stop`，行本体没有禁用）；④ 无选中物体时点材质条目=无操作但仍关面板。
+- **开放项（非代码问题）**：MU2.8 的用户人工视觉走查（右侧浮出/并排/可拖/不挡场景/一行一项的真机观感）——机器侧已由 S34/S35 + 探针覆盖。
+- 复验证据（2026-10-10 本轮全量复跑）：vue-tsc 绿 / build 绿（edit-main 独立 chunk 109.86 kB，隔离保持）/ eslint 0 errors（231 warnings 均既有基线类）/ headless 冒烟 **SMOKE PASS 35/35**。
+- **评审方法沉淀**：纯 UI 批次的评审证据=「引擎通道断言（数据层无回归）+ 面板 DOM 断言（呈现层真实渲染）」双轨——只有前者会漏「组件根本没挂出来」类假绿，只有后者会漏「数据被写坏」类深伤。
+
+### 评审记录 8（2026-10-12，批次 MU3 + MU4 + M2 + M2 修复轮 1–5 + M3 代码评审（REVIEW EXECUTE），mandatory three-axis）
+
+**评审范围**：MU3（浅色主题+避让+收拢，§4.15）、MU4（条目直达素材库+排队模型+自适应，§4.15.5）、M2（GLB 子节点与多材质，§4.13）+ 修复轮 1–5、**M3（子网格局部变换，§4.13.7）**。评审方式：Spec 契约逐项对照代码 × 行为级推演 × 四道门禁复跑 × 三组一次性 CDP 探针（S46 逐步定位，验完删）。
+
+**评审前状态澄清（重要）**：M3 的代码实现**实际已全部落码**（materials.ts slots transform 字段 / LayoutGizmo 槽位吸附+写回 / PropertyPanel 可编辑变换 / GUIDE §6.2 transform 注意事项 / smoke S46 断言），但 spec 的 M3.1–M3.6 checklist 全未勾、无执行记录——**上一会话实现了 M3 但未完成验证、未 Reverse Sync**。本次评审把 M3 一并纳入（代码已重读核实）。
+
+#### Review Matrix
+
+| # | 轴 | 检查项 | 结论 | 证据 |
+|---|---|---|---|---|
+| 1 | Axis-1 | MU3 目标/验收（浅色+避让+收拢三需求） | PASS | MU3.1–MU3.7 全 [x]；S36（浅色亮度断言 panelLum 255）/S37（浮动×固定零交集）/S38（分区收拢+点条目出编辑面板）全 true；editor.css 九令牌浅值、index.html #eef0f3、starter scene-data 同步核实 |
+| 2 | Axis-1 | MU4 目标/验收（直达素材库+面板排队+窗口自适应） | PASS | MU4.1–MU4.4 全 [x]；S39（⊞ 直达/紧贴不重叠/退避）全 true；三次验收反馈修复（同位→排队模型→resize 钳制+纵向下移档）均落码并有双序/窄窗探针记录 |
+| 3 | Axis-1 | M2 目标/验收（子网格可见可编辑、单槽换材质/隐藏、槽位转录） | PASS | M2.1–M2.8 全 [x]；S40–S44 全 true（S44 契约级断言：8 mesh resolveSubMesh 与 listSubMeshes key 全量比对）；strip-edit ①′ 槽位表 + GUIDE §6.2 落码核实 |
+| 4 | Axis-1 | M2 修复轮 1–5 全闭环 | PASS | F1 树点子网格（meshCache 空不缓存+mat.type 白名单）/F2 容器组头/F3 scale 0.0056+GUIDE FAQ/F5 v-else-if 互斥/F6 子网格选中态/F 修复轮四三分支/修复轮五环境陈旧——全部落码核实（scene-data person scale 0.0056 实证） |
+| 5 | Axis-1 | M3 目标/验收（§4.13.7：slots transform、Gizmo 吸附、面板双向） | **FAIL（数据层过、运行时半过）** | 探针分段验证：gizmoAttached ✓（attach Ch23_Hair SkinnedMesh）/meshMoved ✓（直写 slots 即时生效 0.5）/slotLanded ✓/serRoundTrip ✓/panelEdit ✓（面板输入 0.3 落库）/**meshAfterUndo ✗**——undo 后数据层正确恢复但 mesh 实际位置未回 0.5，见 #8 |
+| 6 | Axis-2 | §4.13.1 数据契约（slots 扩展，v3 兼容） | PASS | VisualOverride.slots 嵌套 VisualOverride、position/rotation/scale 局部变换字段、NON_MATERIAL_VISUAL_KEYS 补全、RESERVED_KEYS 不受影响；strip-edit `^__` 族剥离语义不变（slots 在 __visuals 内天然覆盖） |
+| 7 | Axis-2 | §4.13.2 核心层签名（buildReport.meshes/listSubMeshes/resolveSubMesh/applySlotLink） | PASS | 四签名全部按契约落码；槽位 key 双口径三处对齐（resolveSubMesh 剥容器 / findBySlotKey 探一层 / applyVisual slots 走 full）核实无误 |
+| 8 | Axis-3 | **M3 undo 链运行时缺陷（P1）** | **FAIL** | 根因：`examples` 工厂（example.ts:75）GLB 异步加载完成后**只调 applyStatusVisual、不重挂编辑器视觉层**——`asset` 工厂（registry.ts:92）有 `applyVisualIfAny` 重挂而 examples 没有。undo→rebuild→remove 全部+整份快照喂回时：applyFragment 先建节点（GLB 开始异步加载）再 applyVisual（slots transform 写到**空 Group** 上）→ GLB 挂进树后 mesh position 回初始值，slots transform 运行时丢失。数据层（serialize）正确、纯运行时丢——S43 撞过的「GLB 异步窗口」坑在 transform 域再现。注：材质域不受影响（MaterialLibService.syncAll 订阅 bridge.onState 每次 commit/undo 后重挂共享实例），只有 slots transform/visible 无此补偿机制 |
+| 9 | Axis-3 | S46 冒烟挂起（RPC 超时）诊断 | 排除产品嫌疑 | S46 同表达式独立探针跑通（~2s 完成，七段断言逐段输出）；长会话累积态下 Runtime.evaluate 偶发超 20s RPC 上限——断言侧问题（超时上限或分段拆分），非产品缺陷。但 S46 的 meshAfterUndo 断言即使跑完也会 FAIL（#8 真缺陷） |
+| 10 | Axis-3 | M2 槽位材质链正确性 | PASS | applySlotLink merge 写入（slots 不与物体级互斥，无 replaceVisual 需要）；syncAll 槽位级重挂（findBySlotKey 定位→共享实例）；EditMaterialModal 槽位模式 mat.type 白名单（修复轮 ① 修后）；修复轮四端到端探针（改红只影响 Hair、其余 7 mesh 保持）已记录 |
+| 11 | Axis-3 | 排队模型/自适应健壮性 | PASS（P3 挂账不变） | 修复轮三两层修法（FloatingPanel clamp + FloatingDock perRow 纵向下移档）落码核实；评审记录 7 的 P3×4 挂账项中 ②（拖拽边界钳制）已被修复轮三的 clamp 实际解决——挂账清单应更新 |
+| 12 | Axis-3 | 环境卫生（时间胶囊复查） | PASS（已处置） | 评审中发现 5199 端口 dev server 起于 2026-10-10 13:13（早于 M2 修复轮全部），按修复轮五教训 kill 后用最新代码重启再跑冒烟——避免一次假绿 |
+
+#### Overall Verdict: **CONDITIONAL PASS → PASS（修复闭环 2026-10-12 同日，见下方修复轮）**
+
+- ~~**阻塞项（P1，M3 引入）**：undo 后 slots transform 运行时丢失（#8）~~ **已修复**——用户裁决超出 a/b 两案（「不打补丁，改彻底」）：收敛为 `makeAssetNodeFactory` 唯一构建器（结构性根治：消灭 example/asset 两份重复实现，过期守卫 + 视觉层重挂集中一处，顺带治好 asset 工厂孤儿泄漏），详见下方 M3 P1 修复轮记录。
+- **非阻塞挂账**：① ~~S46 RPC 超时上限~~ 已修（20s→40s）；② 评审记录 7 P3 挂账 ② 已被修复轮三 clamp 解决；③ ~~M3.1–M3.6 checklist 补勾 + 执行记录补写~~ 已补（§4.13.7 全 [x] + 补写 + 修复轮记录）。
+- 修复前复验证据（2026-10-12 评审轮）：vue-tsc 绿 / build 绿（edit-main 124.53 kB 隔离保持）/ eslint 0 errors / gates **40/40 PASS** / S1–S45 全 true（S46 因 #8 + 断言侧超时未完成判定）。
+- 修复后复验证据（2026-10-12 修复轮）：三绿 + **SMOKE PASS 47/47**（S46 七段全 true + 新增 S47 全 true）+ **gates 40/40**。
+- **评审方法沉淀**：「数据层正确 + 运行时丢失」类缺陷的判别式——探针同时读 serialize 结果与活 mesh 状态，两者分叉即异步窗口丢失；undo/redo 链必须跨过 GLB 异步加载边界验证（S43 曾在材质域撞过同型坑）。
+
+**M3 执行记录补写（Reverse Sync，2026-10-12 评审时补录）**：M3.1–M3.6 代码实际已全部落码（上一会话实现但未回写）：① materials.ts VisualOverride 扩 position/rotation/scale + applyVisualOverride 槽位命中时 applyTransform；② LayoutGizmo slotTarget + syncSelection 按 selectedSlot attach mesh + writeBack 槽位通道（与物体级分开）；③ PropertyPanel slotInfo 态变换区可编辑（applyTransform 槽位分支写 slots[key] commitLive + slotInfo watch 回填）；④ GUIDE §6.2 已有 transform 注意事项（骨骼动画覆盖边界）；⑤ S46 断言已写（七段：gizmoAttached/meshMoved/slotLanded/serRoundTrip/panelEdit/meshAfterUndo/slotGone）；⑥ 三绿过、SMOKE 45/45 + S46 未过（#8）。
+
+**M3 P1 修复轮（2026-10-12，用户裁决「改彻底：不打补丁，收敛为唯一实现」，Plan Approved 后执行）**：
+
+**修复内容（结构性重构，消灭重复实现而非对齐补丁）**：
+1. **registry.ts 新增 `makeAssetNodeFactory` 唯一异步 GLB 构建器**（'asset' 内建工厂与业务 handler 共用）：同步返回占位 Group（建树不等待）→ 加载完成后按序「过期守卫（`getObject(node.id) === group` 身份比对——节点删除/重建即失配，一个判断替代 example.ts 的整个 loadTokens 机制，并顺带治好 asset 工厂原有的孤儿泄漏漏洞）→ 阴影默认 → **编辑器视觉层重挂**（slots transform + 物体级 + 材质全量，一处修复 boot 回灌/undo-redo 重建/视觉清除重建三个异步窗口）→ 挂树 → `onLoaded` 业务回调」。
+2. **example.ts 瘦身为纯业务**：删 `makeAssetNode`/`loadTokens`/本地 `applyShadowDefaults`（−40 行），cars/examples 各一行委托构建器 + `onLoaded` 只做状态视觉与 spinners 注册；`onNodeRemoved` 只清 spinners。二开参照范式同步升级（文件头注释改写）。
+3. **handlers/index.ts** 导出 `makeAssetNodeFactory`（二开者直接复用）。
+4. **smoke-r.mjs**：RPC 超时 20s→40s（长会话累积态偶发超时，S46 判定曾被挡）；**新增 S47**——boot 回灌窗口 GLB 节点视觉存活断言（car_01 写内联色 #ff7700 → remove+重喂快照异步重建 → 轮询验 mesh 材质色与 getVisual 双存活），把「异步窗口丢视觉」类缺陷永久钉死。
+5. **S46 断言侧修正**：undo 后旧 `hairMesh` 引用已脱离场景（整树重建 GLB 重载）——改为重新 traverse 查找 + 轮询等构建器重挂（对齐 S47 口径）；修复轮探针证实产品链路本已正确（单次 undo 后 slotAfterUndo=0.5 且 meshXAfterWait=0.5、polls=0 即时生效）。
+
+**验证证据（2026-10-12）**：vue-tsc 绿 / build 绿（edit-main 独立 chunk 124.53 kB，隔离保持）/ eslint 0 errors（264 warnings 均既有基线类）/ **SMOKE PASS 47/47**（S46 七段全 true + S47 全 true）/ **gates 40/40 PASS**。执行中揪出并修复 1 处 eslint error（构建器返回箭头链）+ 2 处 warning（缩进/import type）。
+**教训沉淀**：两份「异步加载 GLB 并填充」实现各修了对方没修的坑（example 有过期守卫无视觉重挂 / asset 有视觉重挂无过期守卫）——重复代码的必然结局是缺陷互补而非防御互补；根治是收敛唯一实现 + 业务经回调挂自己的逻辑。「数据层正确 + 活 mesh 错」的 undo/redo 验证必须跨过 GLB 异步重载窗口轮询，旧 mesh 引用在整树重建后必然失联（S46 初版断言沿用同步世界假设）。
+
+**批次 M2 修复轮六立项（2026-10-12，用户实测六反馈 + 截图实锤「person 巨大无比」驱动的根因重诊）**：
+
+**用户截图实锤与两次误诊交代**：用户圈注截图（红框 person 鞋部巨大、黄框头盔极小）+ 对照蒙皮顶点探针证实——**person 实际渲染高 178 米**（蒙皮后顶点世界包围盒 `skinnedSize:[177.9,178,31.2]`；bind pose 幻影盒恰为 1m）。此前两轮误诊：①「旧 dev server 时间胶囊」——server 代码确为新，但新代码自带本 bug；②「person 1 米、比例正常」——探针读的是 **bind-pose 几何**（Three.js 对 SkinnedMesh 的 `Box3/raycast/BoxHelper` 走 bind pose，不蒙皮），GPU 渲染走骨骼蒙皮——「机器测 1m、屏幕看 178m 巨人」的分裂即此。**骨架证据**：`Ch23_Belt` 的 `bone0WorldPos.y=100.9`（mixamo cm 单位）vs `matrixWorld.scale=0.0056`（starter F3 的 node.scale）——骨骼世界矩阵未与 mesh 缩放对齐，蒙皮链把顶点放大到米域。**「点不中/无包围盒」主要是 178m 尺度 bug 的症状**（拾取射线穿过的是错误几何、相机贴巨人腿边），不是 SkinnedMesh 先天不可编辑。
+
+**用户裁决（2026-10-12，撤销初版烘焙方案）**：「我们就正常显示骨骼模型，不需要做什么整改」——**骨骼模型原生支持，禁止烘焙成静态几何**。修复方向：
+- **F-6a 缩放绑定修复**：骨骼与 mesh 在同一尺度 bind，person 回 ~1m 正常显示。具体机制（bindMatrix 错位 / clone 后骨架引用 / bind 时机）**待骨骼矩阵探针定案后修**——不再未验证说死。
+- **F-6b 蒙皮感知查询（原生 API）**：尺度正确后实测 raycast 对蒙皮网格是否走蒙皮后顶点（three 0.185 未核实）；缺口用原生能力补——`SkinnedMesh.computeBoundingBox/computeBoundingSphere`（0.185 自带蒙皮采样）、`Box3.setFromObject(obj, true)`（precise 对 SkinnedMesh 走蒙皮位置）、`handle.pick` 补蒙皮感知检测。**不烘焙、不转换资产**（与 F3「引擎不隐式缩放/篡改资产语义」同源的资产原样立场）。
+- **F-6c 选区高亮/包围盒换蒙皮感知口径**：SelectionService 的 BoxHelper 与 S45 断言读蒙皮后位置（本轮探针 `getVertexPosition` 已验证可采蒙皮顶点）。
+- **F-6d 冒烟断言修正**：S38/S45 等涉及 person/car_01 的 bbox 类断言从 bind-pose 读数改蒙皮后读数；新增「person 蒙皮后世界包围盒高 ∈ [0.8, 1.2]m」断言钉死尺度。
+- **F-6e 其余五反馈复测**：点选 person（F-6b 后应可命中）、选中 Hair 包围盒（F-6c 后框蒙皮位置）、改 Hair 材质（修复轮四已修，178m 环境下用户再验一次）、双行高亮与「只读」文案（修复轮四已修，复测）、控制台警告（「未注册的物体类型」为 boot 重喂噪音 + person 规格超限为已知 deviations——降噪或文档说明，批次 5 顺手）。
+
+**[WAITING FOR COMMAND]** 等待用户确认修复轮六方向后出 Plan。
+
 
 ## 8. Archive Record (Recommended at closure)
 - 待任务收口后填写

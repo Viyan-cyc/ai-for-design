@@ -8,6 +8,7 @@
  */
 import * as THREE from 'three';
 import type { SceneHandle } from '@/scene-core/createScene';
+import { findBySlotKey } from '@/scene-core';
 import type { Bridge } from './Bridge';
 
 const SELECT_COLOR = 0x00a2ff;
@@ -85,25 +86,41 @@ export class SelectionService {
     });
     this.highlights.clear();
 
+    // 子网格槽位选中态：包围盒只包该 mesh（EditMaterial 聚焦的视觉反馈）
+    const slot = this.bridge.selectedSlot;
+    if (slot) {
+      const entry = this.handle.internals.sceneEngine.getObject(slot.nodeId);
+      if (entry) {
+        const target = findBySlotKey(entry, slot.slotKey);
+        if (target) {
+          this.addHelper(target, ANCHOR_COLOR, `slot:${slot.slotKey}`);
+          return;
+        }
+      }
+    }
+
     const ids = this.bridge.selectedIds;
     const anchorId = this.bridge.anchorId;
     for (const id of ids) {
       const obj = this.handle.internals.sceneEngine.getObject(id);
       if (obj) {
-        const color = id === anchorId ? ANCHOR_COLOR : SELECT_COLOR;
-        const helper = new THREE.BoxHelper(obj, color);
-        // helper 自身不可被拾取（否则点中边框会命中 helper 干扰 pick）
-        helper.raycast = () => {};
-        const mat = helper.material;
-        mat.depthTest = false;
-        mat.transparent = true;
-        mat.opacity = 0.9;
-        helper.renderOrder = 999;
-        this.scene.add(helper);
-        helper.update();
-        this.highlights.set(id, helper);
+        this.addHelper(obj, id === anchorId ? ANCHOR_COLOR : SELECT_COLOR, id);
       }
     }
+  }
+
+  private addHelper(obj: THREE.Object3D, color: number, key: string): void {
+    const helper = new THREE.BoxHelper(obj, color);
+    // helper 自身不可被拾取（否则点中边框会命中 helper 干扰 pick）
+    helper.raycast = () => {};
+    const mat = helper.material;
+    mat.depthTest = false;
+    mat.transparent = true;
+    mat.opacity = 0.9;
+    helper.renderOrder = 999;
+    this.scene.add(helper);
+    helper.update();
+    this.highlights.set(key, helper);
   }
 
   dispose(): void {

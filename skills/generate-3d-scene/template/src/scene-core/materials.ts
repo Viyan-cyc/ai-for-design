@@ -72,10 +72,21 @@ export interface VisualOverride extends Partial<Omit<MaterialSpec, 'type'>> {
 
   /** 锁定（编辑器私有；视口点选/Gizmo 跳过，树中仍可选中看属性） */
   locked?: boolean;
+
+  /** 局部变换覆盖（槽位层用；物体级不用——物体级 transform 是数据层显式字段） */
+  position?: [number, number, number];
+  rotation?: [number, number, number];
+  scale?: [number, number, number];
+
+  /** 子网格槽位覆盖（GLB 内部 mesh 单独换材质/隐藏；key = 名称路径，物体级字段为默认态） */
+  slots?: Record<string, VisualOverride>;
 }
 
 /** VisualOverride 里不属于材质规格的键（保留物体现有这些字段用；增量纯开关判定也用） */
-export const NON_MATERIAL_VISUAL_KEYS = new Set(['libraryRef', 'materialType', 'castShadow', 'receiveShadow', 'visible', 'locked']);
+export const NON_MATERIAL_VISUAL_KEYS = new Set([
+  'libraryRef', 'materialType', 'castShadow', 'receiveShadow', 'visible', 'locked', 'slots',
+  'position', 'rotation', 'scale',
+]);
 
 /** 抽取 VisualOverride 中的内联材质字段（MaterialSpec 参数面） */
 const extractMaterialFields = (o: VisualOverride): Record<string, unknown> => {
@@ -122,6 +133,32 @@ export const applyVisualOverride = (
       mesh.receiveShadow = o.receiveShadow;
     }
   };
+  const applyTransform = (): void => {
+    if (o.position !== undefined) {
+      root.position.set(o.position[0] ?? 0, o.position[1] ?? 0, o.position[2] ?? 0);
+    }
+    if (o.rotation !== undefined) {
+      root.rotation.set(o.rotation[0] ?? 0, o.rotation[1] ?? 0, o.rotation[2] ?? 0);
+    }
+    if (o.scale !== undefined) {
+      root.scale.set(o.scale[0] ?? 1, o.scale[1] ?? 1, o.scale[2] ?? 1);
+    }
+  };
+  // 槽位层：子网格按 key 单独应用（物体级字段作默认态先应用，槽命中覆盖）
+  if (o.slots && scope === 'full') {
+    for (const [slotKey, slotOverride] of Object.entries(o.slots)) {
+      if (slotOverride === null || slotOverride === undefined) {
+        continue;
+      }
+      const target = findBySlotKey(root, slotKey);
+      if (!target) {
+        console.warn(`[materials] 槽位未命中（模型重导出改名？已忽略）: ${slotKey}`);
+        continue;
+      }
+      applyVisualOverride(target, slotOverride, 'full');
+    }
+  }
+  applyTransform();
   if (scope === 'switches') {
     root.traverse(applyShadow);
     return;
@@ -141,6 +178,46 @@ export const applyVisualOverride = (
     const patched = base.map((b) => applyInlineMaterial(b, spec));
     mesh.material = Array.isArray(mesh.material) || patched.length > 1 ? patched : patched[0]!;
   });
+};
+
+/**
+ * 按槽位 key（名称路径）定位 mesh。key 从 GLB 内部根（如 Armature）起算；
+ * root 是场景节点（可能含工厂 Group 外壳 + gltf.scene 容器如 'Scene'）——
+ * 首段在 root 直接子级找不到时，向内逐层探一层容器再找（对齐 buildReport 口径）。
+ */
+export const findBySlotKey = (root: THREE.Object3D, slotKey: string): THREE.Object3D | null => {
+  const tryFrom = (start: THREE.Object3D): THREE.Object3D | null => {
+    const parts = slotKey.split('/');
+    let cur: THREE.Object3D = start;
+    let autoIndex = 0;
+    for (const part of parts) {
+      const next = cur.children.find((c) => c.name === part)
+        ?? cur.children.find((c) => !c.name && `#${autoIndex}` === part);
+      if (!next) {
+        return null;
+      }
+      if (!next.name) {
+        autoIndex += 1;
+      }
+      cur = next;
+    }
+    return cur;
+  };
+  const direct = tryFrom(root);
+  if (direct) {
+    return direct;
+  }
+  // 首段未命中：探一层容器（gltf.scene 壳；非 mesh 且非空）再试
+  for (const child of root.children) {
+    if ((child as THREE.Mesh).isMesh || child.children.length === 0) {
+      continue;
+    }
+    const found = tryFrom(child);
+    if (found) {
+      return found;
+    }
+  }
+  return null;
 };
 
 /** 内联材质应用到单个 base：同类型 clone+patch，跨类型重建+继承兼容贴图槽 */

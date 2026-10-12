@@ -452,7 +452,7 @@ const deleteSelected = (): void => {
 }
 
 .toolbar__dd-item:hover {
-  background: rgba(255, 255, 255, 0.07);
+  background: rgba(0, 0, 0, 0.05);
 }
 
 .toolbar__dd-icon {
@@ -488,7 +488,7 @@ const deleteSelected = (): void => {
 }
 
 .tb-btn:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.06);
   color: var(--ed-text);
 }
 

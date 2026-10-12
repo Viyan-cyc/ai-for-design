@@ -1,20 +1,20 @@
 /**
- * editor.css — 编辑器设计令牌与共享原语（Spline 风格：中性深灰 + 悬浮面板）
+ * editor.css — 编辑器设计令牌与共享原语（Spline 风格：浅色 + 悬浮面板）
  *
  * 作用域 .edit-scope（EditApp 根节点），不污染二开态页面样式。
  */
 
 .edit-scope {
-  --ed-panel: rgba(23, 27, 32, 0.94);
-  --ed-input: #2a313a;
-  --ed-input-hover: #343d48;
-  --ed-border: rgba(255, 255, 255, 0.09);
-  --ed-text: #e7eaee;
-  --ed-dim: #97a1ac;
+  --ed-panel: rgba(255, 255, 255, 0.92);
+  --ed-input: #f0f1f3;
+  --ed-input-hover: #e4e6ea;
+  --ed-border: rgba(0, 0, 0, 0.08);
+  --ed-text: #1d1f23;
+  --ed-dim: #6b7280;
   --ed-accent: #3d7eff;
-  --ed-accent-soft: rgba(61, 126, 255, 0.18);
+  --ed-accent-soft: rgba(61, 126, 255, 0.12);
   --ed-danger: #e5484d;
-  --ed-shadow: 0 8px 28px rgba(0, 0, 0, 0.4);
+  --ed-shadow: 0 8px 28px rgba(0, 0, 0, 0.12);
   --ed-radius: 10px;
   --ed-radius-s: 6px;
 }
