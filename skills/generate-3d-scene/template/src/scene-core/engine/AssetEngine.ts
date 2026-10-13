@@ -9,6 +9,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
+import { clone as skinnedClone } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import type { MeshSpecEntry, ModelSpecReport, Vec3 } from '../types';
 import type { StateVisual } from '../materials';
 import { applyVisualToMaterial, loadTexture } from '../materials';
@@ -167,7 +168,10 @@ export class AssetEngine {
         this.loading.delete(assetId);
       }
     }
-    const instance = entry.root.clone(true);
+    // SkinnedMesh 必须经 SkeletonUtils.clone：Object3D.clone(true) 只复制 Bone 副本，
+    // 不重绑 skeleton 引用——蒙皮矩阵链会引用缓存根的旧骨骼（世界矩阵不含本实例
+    // 缩放），顶点被放大 1/scale 倍（person 实测 178m）。静态 GLB 两者等价。
+    const instance = skinnedClone(entry.root);
     // 标记共享 clone：geometry/material 与缓存根同源，删除时 SceneEngine 不释放
     // （统一由 AssetEngine.dispose 释放），防误 dispose 共享资源
     instance.traverse((child) => {

@@ -19,6 +19,17 @@ const SNAP = {
   scale: 0.1,
 };
 
+/** 子树内是否含蒙皮网格（isSkinnedMesh） */
+const hasSkinnedMesh = (obj: THREE.Object3D): boolean => {
+  let found = false;
+  obj.traverse((child) => {
+    if ((child as THREE.SkinnedMesh).isSkinnedMesh) {
+      found = true;
+    }
+  });
+  return found;
+};
+
 export class LayoutGizmo {
   private controls: TransformControls;
 
@@ -115,14 +126,18 @@ export class LayoutGizmo {
     if (slot && slot.nodeId === anchorId) {
       const entryObj = this.bridge.handle.internals.sceneEngine.getObject(anchorId);
       const mesh = entryObj ? findBySlotKey(entryObj, slot.slotKey) : null;
-      if (mesh) {
+      // 蒙皮槽位不挂手柄：attached bind mode 下 SkinnedMesh 局部 transform 对蒙皮顶点
+      // 数学零效果（mesh 矩阵在蒙皮链中被抵消），拖了轴顶点也不动——回物体级
+      // （与锁定物体同处理路径：树中仍可点选看属性，只是无手柄）
+      const skinned = mesh ? hasSkinnedMesh(mesh) : false;
+      if (mesh && !skinned) {
         this.slotTarget = { nodeId: anchorId, slotKey: slot.slotKey, mesh };
         if (this.controls.object !== mesh) {
           this.controls.attach(mesh);
         }
         return;
       }
-      // 槽 key 失效（模型重导出改名）：退回物体级
+      // 槽 key 失效或蒙皮网格：退回物体级
       this.slotTarget = null;
     } else {
       this.slotTarget = null;

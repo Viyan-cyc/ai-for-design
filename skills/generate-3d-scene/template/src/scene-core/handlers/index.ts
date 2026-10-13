@@ -7,3 +7,6 @@
 export { registerBuiltinFactories, makeAssetNodeFactory, handlerUtils } from './registry';
 export { registerExampleHandler } from './example/example';
 export { registerTreeHandler } from './procedural/tree';
+export { registerCarHandler } from './procedural/car';
+export { registerWorkerHandler } from './procedural/worker';
+export { registerRackHandler } from './procedural/rack';

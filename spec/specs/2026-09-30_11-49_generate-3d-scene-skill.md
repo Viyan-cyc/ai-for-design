@@ -41,7 +41,7 @@
   - **3dviz-pro-max**（github.com/viettranx/3dviz-pro-max）— 十步工作流（intent→reasoning→grounding→routing→first view→behavior→run-and-inspect→refine→honest reporting）、recipes+知识记录数据结构、**Playwright capture 截图自检回路**、"诚实分级"（proven vs guidance）。方法论核心可移植
   - **open-model-workbench**（github.com/icejyzy0430/open-model-workbench）— GLB/Draco/纹理依赖管线经验、layout-as-JSON 人机协作模式
   - **Spline** — 判定不可参考（闭源无 codegen API、不支持 Vue 导出、与"生成 three.js 源码交付"相悖）
-  - **blender-mcp**（github.com/ahujasid/blender-mcp，~29.7k stars，MIT，活跃）— LLM 经 MCP 驱动 Blender：场景/物体操作、任意 Python 执行（有 safe mode）、**导出 GLB/FBX（export_scene）**、Poly Haven/Sketchfab/Poly Pizza 素材库、Hyper3D Rodin/混元3D 生成。架构=Blender 插件(socket server) + Python MCP 桥。**用户已裁决采用为建模主通道**，LLM 直写 three.js 建模代码降为兜底。风险记录：execute_blender_code 是任意代码执行面（localhost 使用、保存现场）、socket 无鉴权、大资源下载冻结 UI 主线程
+  - **blender-mcp**（github.com/ahujasid/blender-mcp，~29.7k stars，MIT，活跃；**2026-10-12 更新：PyPI 包已改名 `mcp-for-blender`**，接入情报见 §7 Blender 通道前置探索区块）— LLM 经 MCP 驱动 Blender：场景/物体操作、任意 Python 执行（有 safe mode）、**导出 GLB/FBX（export_scene）**、Poly Haven/Sketchfab/Poly Pizza 素材库、Hyper3D Rodin/混元3D 生成。架构=Blender 插件(socket server) + Python MCP 桥。**用户已裁决采用为建模主通道**，LLM 直写 three.js 建模代码降为兜底。风险记录：execute_blender_code 是任意代码执行面（localhost 使用、保存现场）、socket 无鉴权、大资源下载冻结 UI 主线程
 - Existing Assets（现状调研）:
   - 3d-templete（D:\cyc\project\octo\test\3d-templete）：LiveDataConfig JSON 驱动 + handler 注册制 + assetsLibrary（ASSET_CATALOG 2 个 glb + 文本检索 + lowPolyFallback + hunyuan 生成器）——架构思想可参考，代码按用户决策不强制保留
   - 3d-components（@a3d/a3d-components）：14+ 组件（Rack/Wall/HeatMap/Sky/BitmapText/InstancedMesh2 等），docs/components.json 机器可读目录，peerDeps three>=0.150 兼容 0.185.1——是否保留待 Q5
@@ -577,8 +577,23 @@ S9 交付        strip-edit 出二开包 + INTEGRATION_GUIDE 校验 + 验证报�
 - [ ] 4.3 perf-fps.mjs（CDP 60s 采样；**真机 GPU 环境测 p95≥40fps + calls/triangles/programs 运行时断言（R1-3）；软渲染环境只做结构验证不计 fps**）
 - [ ] 4.4 ensure-env.mjs（node/three/Blender 探测 + 多模态档位声明解析——声明载体定为 SKILL.md 会话指令或环境变量 GTS3D_MULTIMODAL，二选一生效）
 
+**批次 PH：Poly Haven 精选资产批量入库（2026-10-12 立项，Research 已完成探针，待用户裁决 Open Questions 后进 Plan）**
+> 目标：批量下载脚本从 Poly Haven API 拉精选模型（面数≤50000 / 贴图 2k 档 / glTF 格式，约 108 个 / 参考量 200MB），打包 seed-package.zip manifest 格式，走 import-assets.mjs 入库；入库后 gates.mjs 复验 + 检索索引重建（import-assets 自带）+ 中文 tags 自补（API 只有英文）。数据源：`.tmp-polyhaven/models.json`（521 模型全量缓存，含 polycount/categories/download_count）。
+- Research 探针实证（4 模型实下载过门禁 + 管线源码核对，详见 §5 #30）：
+  - **链路可行**：files API `gltf["2k"].gltf` 给主文件 + include{}（bin+textures/*.jpg 各带 size/md5），dl.polyhaven.org 直接 fetch 无鉴权；2k jpg 贴图均过 2048 门禁
+  - **不能盲选**：`wine_bottles_01` 贴图 13 张 > 8 上限 → 门禁 FAIL；必须下载前预检（读 gltf json images 数）过滤
+  - **init.mjs 只认单文件** `models/<id>.glb`/`<id>.gltf`——Poly Haven glTF 全是「.gltf+.bin+textures/」多文件目录形态，入库后 `--assets` 注入对 gltf 资产失效（import-assets 本身支持目录形态，落库后检索可用）
+  - **gates.mjs 用例 37 写死 `models.length === 3`**——入库后必 FAIL，需改语义断言（含 example+person+rack 即可）
+  - **id 不合规**：Poly Haven id 如 `ArmChair_01` 首字母大写违反 `^[a-z][a-z0-9_]*$`，manifest 必须显式小写
+  - **体量实测**：抽样 8 资产 2k 档平均 2.78MB → 108 个约 300MB（略超参考量）
+- Open Questions（待裁决）：① gltf 形态：(A) 下载时合并转 GLB【推荐】 / (B) gltf 目录入库留后患 / (C) 改 init.mjs 支持目录形态；② 精选策略：download_count 降序 + 类别多样性配额 + 贴图数预检，或用户指定清单；③ 中文 tags：脚本内置英文→中文映射字典，或生成后人工审；④ category 字段：Poly Haven 原类别透传（仅 warning）或映射到建议集 [demo/equipment/building/vegetation/vehicle]
+- [ ] PH.1 下载脚本（精选过滤 + 下载 + md5 校验 + manifest 生成 + 中文 tags/search_text + zip 打包）——设计待 Plan
+- [ ] PH.2 走 import-assets.mjs 入库 + 索引重建
+- [ ] PH.3 gates.mjs 用例 37 断言改语义化 + 复验
+- [ ] PH.4 中文检索抽查（新资产中文查询 top-3 命中）
+
 **批次 5：skill 大脑 + 收尾**
-- [ ] 5.1 install-blender.mjs（缓存探测/镜像拉取/解压登记/失败降级）
+- [ ] 5.1 install-blender.mjs（缓存探测/镜像拉取/解压登记/失败降级）——**执行依据已就绪（2026-10-12 前置探索实测，见 §7 Blender 通道前置探索区块）**：版本锁 4.5 LTS（Intel Mac 根因）；平台产物矩阵 windows-x64.zip / macos-x64.dmg / macos-arm64.dmg / linux-x64.tar.xz；URL 模板 `release/Blender{maj.min}/blender-{ver}-{platform}`；sha256 校验；镜像样板清华同路径；**探索期本机已就绪**（`~/.gts3d/blender/blender-4.5.9-windows-x64/` 已解压可跑，headless 通道已实测——install-blender 实装时缓存探测一步即命中）
 - [x] 5.4 ~~gen-component-catalog.mjs 跑通 → component-catalog.md 产出~~ → **由批次 C 接管**（sync-components.mjs，2026-10-09 终裁），提前完成- [ ] 5.2 SKILL.md（九步工作流 + 4.4 降级阶梯 + 硬约束：规格门禁/铁律/诚实分级/内网纪律/数据结构 v3 生成纪律）
 - [ ] 5.3 references/ 文档（scene-workflow/asset-pipeline/model-spec/modeling-channels/verification/scene-engineering/component-catalog 生成/eslint-notes）+ **"生产数据→update 片段"翻译模式章节（MQTT/WebSocket 示例，一等公民）**
 - [ ] 5.5 README.md（投放说明/资产库准备/镜像配置/**内网 npm 安装方式**）
@@ -1373,6 +1388,19 @@ TRANSCRIPTION 物体视觉 override 表增 slot 列；LLM 转录产物按 mesh �
 - **REVIEW EXECUTE 完成（2026-10-12，评审记录 8 §6）**：批次 MU3 + MU4 + M2 + 修复轮 1–5 + **M3（评审时发现代码已落码但未回写 spec，一并纳入）** 三轴评审。Overall Verdict: **CONDITIONAL PASS**——12 检查项：9 PASS + 2 FAIL（同一 P1：M3 undo 后 slots transform 运行时丢失——examples 工厂 GLB 异步加载后不重挂视觉层，数据层正确但活 mesh 位置未恢复；`asset` 工厂有 applyVisualIfAny 而 examples 只调 applyStatusVisual）+ 1 排除断言侧（S46 RPC 超时为长会话累积态问题，探针独立跑通）。复跑：三绿 + gates 40/40 + SMOKE 45/45（S46 未完成判定，探针分段覆盖六段 true / meshAfterUndo false = P1）。**M3 执行记录已补写（Reverse Sync 欠账清偿）**。
 - **M3 P1 修复轮完成（2026-10-12 同日，用户裁决超出修法 a/b——「改彻底：不打补丁，收敛为唯一实现」，Plan Approved 批内连跑 R1–R5）**：`makeAssetNodeFactory` 唯一异步 GLB 构建器落地（registry.ts：过期守卫身份比对 + 阴影默认 + 视觉层重挂 + onLoaded 业务回调集中一处；example.ts 瘦身纯业务化 −40 行删 makeAssetNode/loadTokens；二开范式升级）；顺带治好 `asset` 工厂孤儿泄漏（原无过期守卫）。smoke RPC 超时 20s→40s + **新增 S47 回灌窗口视觉存活断言** + S46 断言侧修正（undo 后旧 mesh 引用失联，改重新 traverse + 轮询）。修复中两轮探针定位：第一轮证 undo 后 mesh 是新实例且位置 0（数据层正确）；第二轮证单次 undo 后 meshXAfterWait=0.5 即时生效（构建器重挂工作，产品链路本已正确——S46 FAIL 实为断言旧引用缺陷）。复验：三绿（edit-main 124.53 kB 隔离保持）/ **SMOKE PASS 47/47** / **gates 40/40**。**评审记录 8 升 PASS（修复闭环）**。**下一动作：批次 4（验证回路，§4.7：smoke-structural/smoke-visual/perf-fps/ensure-env 四脚本），批间停等确认**。
 
+  30. **批次 PH 立项（2026-10-12，Poly Haven 精选资产批量入库，Research 完成）**：
+      - **任务**：写批量下载脚本，从 Poly Haven API（api.polyhaven.com，files 端点 `gltf["2k"].gltf`）拉取精选资产（面数≤50000、贴图 2k 档、glTF 格式，约 108 个 / 参考 200MB），下载后打包成 seed-package.zip 的 manifest 格式（meta+data[]），走 import-assets.mjs 入库；入库后跑 gates.mjs 复验、检索索引重建（import-assets 自带）、中文 tags 自补（API 只有英文）。
+      - **数据源**：`.tmp-polyhaven/models.json`（本地全量缓存，521 模型，含 polycount/categories/tags/description/download_count/dimensions/thumbnail_url）；面数≤50k 候选 430 个。
+      - **Research 探针实证**（4 模型实下载 + validate-model 门禁 + 管线源码核对）：
+        - ArmChair_01（5626 面/1 节点/3 贴图）**PASS**；tea_set_01（40296/10/3）**PASS**；CoffeeCart_01（27659/3/6）**PASS**；**wine_bottles_01（28848/4/13 贴图）FAIL——「贴图张数超限: 13 > 8」**→ 不能盲选，需预检过滤
+        - files API 实测：`gltf["2k"].gltf` = {url, size, md5, include{}}（bin + textures/*.jpg，各带 size/md5）；dl.polyhaven.org 直接 fetch 无鉴权；2k jpg 均过 2048 门禁
+        - id 违规：Poly Haven id 如 `ArmChair_01` 违反 `^[a-z][a-z0-9_]*$`，manifest 须显式小写（`armchair_01`）
+        - init.mjs 资产注入只认单文件 `models/<id>.glb|gltf`——gltf 目录形态（import-assets 落库形态）注入时报 missing；import-assets 本身支持目录形态入库
+        - gates.mjs 用例 37 `init: --assets all 注入全部模型（example+person+rack）` 写死 `models.length === 3`，入库后必 FAIL（同款脆断言问题 §5 批次 2 已有先例：starter 断言改语义断言）
+        - 体量：抽样 8 资产 2k 档平均 2.78MB/资产 → 108 个约 300MB（略超参考量 200MB，可接受）
+      - **Open Questions（待用户裁决，裁决后进 Plan）**：① gltf 形态：(A) 下载时合并转 GLB【推荐，零依赖手写 bin 合并】/(B) gltf 目录形态先入库（检索可用，init 注入留后患）/(C) 改 init.mjs 支持目录形态（超本任务边界）；② 精选策略：download_count 降序 + 类别多样性配额 + 贴图数预检，或用户指定清单；③ 中文 tags 生成：脚本内置英文→中文映射字典（类别词+常见名词）或人工审一轮；④ category 字段：Poly Haven 原类别透传（仅 warning 不阻断）或映射到建议集 [demo/equipment/building/vegetation/vehicle]
+      - checklist 落 §4.7 批次 PH（PH.1–PH.4，设计细节待 Plan）。
+
 ### 批次 1：skill 骨架 + 母版工程（2026-09-30 完成，冒烟通过）
 - [x] 1.1 建 skill 目录树
 - [x] 1.2 template 工程 package.json + vite/ts/eslint 配置
@@ -1843,6 +1871,331 @@ TRANSCRIPTION 物体视觉 override 表增 slot 列；LLM 转录产物按 mesh �
 - **F-6e 其余五反馈复测**：点选 person（F-6b 后应可命中）、选中 Hair 包围盒（F-6c 后框蒙皮位置）、改 Hair 材质（修复轮四已修，178m 环境下用户再验一次）、双行高亮与「只读」文案（修复轮四已修，复测）、控制台警告（「未注册的物体类型」为 boot 重喂噪音 + person 规格超限为已知 deviations——降噪或文档说明，批次 5 顺手）。
 
 **[WAITING FOR COMMAND]** 等待用户确认修复轮六方向后出 Plan。
+
+**修复轮六探针定案（2026-10-12，三独立探针 + 数学闭合验证，F-6a 机制落锤）**：
+
+**根因（单一机制，非多因叠加）**：`AssetEngine.getInstance` 用 `entry.root.clone(true)` 克隆 GLB——`Object3D.clone(true)` **复制 Bone 节点副本进新树，但不重建 SkinnedMesh.skeleton 引用**：8 个 SkinnedMesh 的 `skeleton` 仍指向缓存根的**旧骨骼对象**（`bonesAllInTree:false`，旧骨骼 matrixWorld 永不随新树更新、其宿主树 scale 恒 1）。蒙皮数学（`bindMode:'attached'`）每帧执行 `boneMatrix = mesh.matrixWorld⁻¹ × bone.matrixWorld × boneInverse`：
+- `boneInverse`（bind 时烘焙）与 `mesh.matrixWorld` **同时**含 group 的 0.0056——`bindMatrixInverse` 实测 `[178.57143,…,446.43,-160.76,-353.22]`，其中 `178.57143 = 1/0.0056` 精确吻合（bind 发生在 instance 已挂树、matrixWorld 已含 0.0056 之后）；
+- `bone.matrixWorld` 是**旧骨骼**的（scale=1，y≈100.9 cm 域）——0.0056 与 1 的错位相乘 → 蒙皮顶点放大 1/0.0056≈178.57×。
+- **「机器测 1m」真相**：bind-pose 读数（`Box3.setFromObject` coarse、raycast）走未蒙皮几何 × mesh 世界矩阵 → ~1m；GPU 蒙皮走上面断裂的链 → 178m。`Box3.setFromObject(obj,true)`（precise）实测 `[178.08,179.28,31.9]` 与截图吻合。
+- **F-6b 预验**：`rayHitsOnGroup:0`（射线打不中当前巨人）但 `computeBoundingBox/getVertexPosition` 可用且蒙皮感知（`skBBoxWorld` 采样正确）；`SkeletonUtils.clone` 在 three 0.185 可用（exports: clone/retarget/retargetClip）——**正确克隆姿势就是它**（内部做 skeleton 重绑定 + bindMatrix 重建，官方给多实例 SkinnedMesh 的答案）。
+- **受影响面**：仅带骨骼的 GLB（person）；静态 GLB（example/rack）clone(true) 无害。frameObject/getBbox/getSubMeshInfo/BoxHelper 全部走 bind-pose 口径（coarse setFromObject）——F-6c 改点已定位（Bridge.getBbox:307、createScene.frameObject:350、SceneEngine.getSubMeshInfo:243、SelectionService.addHelper:113、RaycastEngine.pick:35）。
+
+**修复轮六 Plan（2026-10-12，探针定案后成稿；待 Plan Approved）**：
+
+**设计原则**：根因在克隆层（clone(true) 断骨架引用），修复也在克隆层收敛——一处修 F-6a，下游蒙皮感知（F-6b/c）做读取口径统一，**不动资产、不烘焙、不改 scene-data**（资产原样立场）。`three/examples/jsm/` 已在 import 白名单，SkeletonUtils 无门禁障碍。
+
+**File Changes（6 文件）**：
+
+1. `src/scene-core/engine/AssetEngine.ts`
+   - import 区新增：`import { clone as skinnedClone } from 'three/examples/jsm/utils/SkeletonUtils.js';`
+   - `getInstance` 内 `entry.root.clone(true)` 改为 `skinnedClone(entry.root)`（SkeletonUtils.clone 对无骨骼树是 Object3D.clone 的超集，静态 GLB 行为不变；对 SkinnedMesh 重绑 skeleton + 重建 bindMatrix——多实例蒙皮官方姿势）
+   - 保留后续 `isClone` 标记 traverse（SkeletonUtils.clone 返回普通 Object3D 树，userData 标记逻辑兼容）
+
+2. `src/scene-core/engine/SceneEngine.ts`
+   - 新增公开方法 `getSkinnedAwareBox(obj: THREE.Object3D): THREE.Box3`：traverse 收集 SkinnedMesh，对每个先 `computeBoundingBox()`（蒙皮采样）再 `applyMatrix4(mesh.matrixWorld)` 并入盒；无 SkinnedMesh 时回退 `new THREE.Box3().setFromObject(obj, true)`（precise 口径）——静态/蒙皮统一一个入口
+   - `getSubMeshInfo`：目标为 SkinnedMesh 时 bbox 改 `mesh.computeBoundingBox()` 后 `applyMatrix4(mesh.matrixWorld)`（槽位盒蒙皮感知）；静态 mesh 不变
+
+3. `src/scene-core/createScene.ts`
+   - `frameObject`：`new THREE.Box3().setFromObject(obj)` → `sceneEngine.getSkinnedAwareBox(obj)`（F 键聚焦对 person 框真实 1m）
+
+4. `src/edit/Bridge.ts`
+   - `getBbox(id)`：改走 `sceneEngine.getSkinnedAwareBox(obj)`（属性面板/对齐分布共用口径）
+
+5. `src/edit/SelectionService.ts`
+   - `addHelper`：目标树含 SkinnedMesh 时，BoxHelper 挂上与每帧 `update()` 前对目标树内 SkinnedMesh 先 `computeBoundingSphere()`（探针已验证可用；BoxHelper 派生自 geometry 包围盒，蒙皮网格须先算蒙皮采样盒）——在现有 `onFrame` 的 `helper.update()` 回调前 traverse 一次，与现有结构一致
+
+6. `scripts/smoke-r.mjs`
+   - **新增 S48（person 蒙皮尺度钉死断言）**：轮询 person mesh 就绪 → `Box3.setFromObject(obj, true)` 蒙皮世界盒高度 ∈ [0.8, 1.2]（当前 178+ 为 FAIL 基线）+ raycaster 对 person 躯干（[-2.5, 1.2, 2] 垂直下探方向）命中 person_01 ≥ 1（F-6b 拾取可中）
+   - **S45 修正**：`bboxShown` 断言从「含 ×」升级「数值 ∈ 合理域」——Ch23_Hair 蒙皮后世界盒三轴均 < 0.25m（防 178m 假绿）
+   - **S38/S40 等现有断言核对**：跑通后逐项核对 person 相关读数，因蒙皮口径改变而变的校正到蒙皮真值（预期 S40 meshCount/树行数不受影响）
+   - pass 链追加 `s48.ok === true`
+
+**Signatures（关键签名）**：
+- `skinnedClone(entry.root): THREE.Object3D`（SkeletonUtils.clone 别名，AssetEngine 内部）
+- `SceneEngine.getSkinnedAwareBox(obj: THREE.Object3D): THREE.Box3`（Bridge.getBbox / frameObject 共用）
+- `getSubMeshInfo` 返回结构不变（bboxMin/bboxMax 改蒙皮口径读数）
+
+**原子 Checklist**：
+- [x] F6-1 AssetEngine：clone(true) → skinnedClone；探针复跑 person 蒙皮世界盒 ~1m（root 修复最先做——下游全部依赖它）
+- [x] F6-2 SceneEngine：getSkinnedAwareBox + getSubMeshInfo 蒙皮口径
+- [x] F6-3 createScene.frameObject + Bridge.getBbox 接蒙皮盒
+- [x] F6-4 SelectionService：BoxHelper 蒙皮感知（computeBoundingSphere 前置）
+- [x] F6-5 smoke-r：S48 新增 + S45 修正 + 现有断言核对
+- [x] F6-6 三绿（vue-tsc/build/eslint 0 errors）+ SMOKE 48/48 + gates 40/40
+- [x] F6-7 GUIDE §6.2/FAQ 补蒙皮条目（骨骼资产多实例由 SkeletonUtils.clone 保证；包围盒/拾取为蒙皮感知口径）+ F-6e 用户复测清单（点选 person/选中 Hair 包围盒/改 Hair 材质/双行高亮复测）
+- [x] F6-8 Reverse Sync：Execute Log + 验证证据 + 教训沉淀（clone(true) 对 SkinnedMesh 是隐形断链——SkeletonUtils.clone 是唯一正确姿势）回写 spec
+
+**修复轮六执行记录（2026-10-12，Batch Override 全量执行）**：
+
+1. **F6-1**：`AssetEngine.getInstance` 的 `entry.root.clone(true)` → `skinnedClone(entry.root)`（SkeletonUtils.clone 别名导入，注释写明断链机制）。**root 修复即时探针验证**：蒙皮世界盒 `[0.996, 0.997, 0.175]`（1 米人 ✓）、`bonesAllInTree: true`（135 骨全部进新树 ✓）。
+2. **F6-2**：SceneEngine 新增 `getSkinnedAwareBox(obj)`（traverse SkinnedMesh → getVertexPosition 采样 × localToWorld 并盒；无蒙皮回退 `setFromObject(obj, true)` precise 口径）；`getSubMeshInfo` 蒙皮分支同口径采样（静态 mesh 走原 setFromObject）。
+3. **F6-3**：`createScene.frameObject` 与 `Bridge.getBbox` 改调 `getSkinnedAwareBox`（F 键聚焦/属性面板/对齐分布统一口径）。
+4. **F6-4**：SelectionService 新增 `refreshSkinnedBounds`（traverse computeBoundingBox+Sphere），挂 `helper.userData.target`，onFrame 里 helper.update() 前调用——选中态每帧跟随真实形状。**关键源码事实（阅读 three 0.185 源码证实）**：`Box3.expandByObject` coarse 路径**优先读 object.boundingBox**（SkinnedMesh 专属属性，非 geometry 盒），SkinnedMesh.raycast 同理先查 object.boundingSphere——所以 computeBoundingBox/Sphere 重算后，BoxHelper 与 raycast **自动**变蒙皮感知，无需替换 helper/raycast 实现。
+5. **F6-5**：S48 新增（骨骼在树 + 蒙皮采样盒高∈[0.8,1.2]m + 宽<5 + 盒中心向下射线命中 + getSkinnedAwareBox 一致性五段）；S45 bbox 断言升级数值域（引擎口径三轴 ∈(0, 0.25)——防 178m bind-pose 假绿）。**执行中揪出 1 处断言时序坑**：初版从 DOM 文本抓数值，长链路下 DOM 刷新抖动致假 FAIL（独立探针显示引擎值 0.10/0.12/0.11 全过、DOM 文本同值但冒烟链路偶发旧帧）——改为引擎真值断言 + DOM 只验 `×` 存在。
+6. **F6-6**：三绿 + **SMOKE PASS 48/48**（S48 一次全绿：height 0.997/pickHits 11/engineHeight 1；S45 修正后绿）+ **gates 40/40 PASS**。eslint 0 errors（266 warnings，新增 2 个均既有基线类：AssetEngine 192 行超长行为旧签名、SceneEngine 其余为既有 continue/assertion 类）。
+7. **F6-7**：GUIDE 新增 §6.3「骨骼模型多实例与蒙皮感知」（SkeletonUtils.clone 机制 + 蒙皮感知口径声明）；FAQ「人物模型巨大」条目补 clone(true) 断链指引。
+8. **F6-8**：本记录即 Reverse Sync。
+
+**执行中追加的根因证据（Plan 之外，探针四/五轮）**：
+- **F-6b 结论修正**：three 0.185 的 `SkinnedMesh.raycast` **天然蒙皮感知**（`_computeIntersections → checkGeometryIntersection → getVertexPosition` 逐顶点蒙皮变换）——**RaycastEngine 无需任何修改**（Plan 原预案「补蒙皮感知检测」取消，超出 Plan 的减法）。此前探针 miss 是**射线打偏**（探针点位恰在两腿空隙），从蒙皮盒中心六方向扫描 10/2/1/1/1/1 全命中。
+- **SkeletonUtils.clone 内部机制**（读源码证实）：`source.clone()`（浅）+ parallelTraverse 建 source↔clone 映射 → 每个 SkinnedMesh `skeleton.clone()`（**boneInverses 按引用共享**——Math4 对象与缓存根同源）+ `bones.map(cloneLookup)` 换新骨引用 → `bind(skeleton, 源 bindMatrix)`。boneInverses 是缓存根坐标系（cm 域）的逆，与新骨 matrixWorld（含 0.0056）相乘恰好落回米域——数学自洽，蒙皮正确。
+- **首帧 cull 球时序**（理论，未实测）：boundingSphere 为 null 时首次 frustum cull 计算后缓存；骨骼 matrixWorld 在挂树后渲染帧才更新，cull 可能先算出错球。选中态 F6-4 的每帧重算已覆盖编辑器场景；渲染剔除错球只影响性能不影响正确性（person 在视锥内会被错误剔除的风险极低，未观察到）。
+
+**验证证据（2026-10-12）**：vue-tsc 绿 / build 绿（edit-main 124.78 kB，隔离保持）/ eslint 0 errors / **SMOKE PASS 48/48**（S48 五段全 true）/ **gates 40/40 PASS**。
+
+**教训沉淀**：
+1. **`Object3D.clone(true)` 对 SkinnedMesh 是隐形断链**——复制 Bone 副本但不重绑 skeleton 引用，蒙皮链指向旧骨骼（世界矩阵不含新实例缩放），顶点放大 1/scale 倍。静态 GLB 无害、骨骼 GLB 必炸——「一个 clone 调用两种资产命运」。多实例蒙皮资产唯一正确姿势是 `SkeletonUtils.clone`（官方语义：Bones are also cloned, and must be descendants；业务侧经 makeAssetNodeFactory 已天然免疫）。
+2. **蒙皮资产的「探针读数」必须区分三种口径**：bind-pose 几何盒（Box3 coarse / raycast 未命中 object.boundingSphere 时）≠ 蒙皮采样盒（getVertexPosition/computeBoundingBox）≠ GPU 渲染真值。「机器测 1m、屏幕看 178m」的分裂=口径 1 vs 3；修复后三口径中 1 仍是 bind-pose（1m）、2/3 是蒙皮真值（1m）——恰好一致是因 person 的 bind pose 本身就是标准站姿。
+3. **断言从 DOM 抓数值 vs 引擎真值**：长链路冒烟中 DOM 文本刷新有抖动（异步渲染节拍），数值断言走引擎 API、DOM 只验结构存在性——S45 假 FAIL 的根因即此。
+4. **修 bug 时「探针打不中」≠「产品拾取坏了」**：先验证探针自己的射线几何（点位是否在目标体内/空隙），再怀疑产品——本案探针四轮有三轮在调试自己的射线打偏。
+
+**F-6e 用户复测清单（待用户在编辑器实测）**：① 视口看 person 应为 ~1 米正常身高（不再 178m 巨人）；② 点选 person 躯干/四肢应可命中并出现选中框（框贴真实身体）；③ 树展开点 Ch23_Hair → 选中框只框头发（蒙皮位置）+ 属性面板包围盒 ~0.10×0.12×0.11；④ 改 Hair 材质（修复轮四已修）正常生效；⑤ 双行高亮与「只读」文案复测。
+
+**Out of Scope**：person 规格超限 deviations（已知，批次 5 降噪）；「未注册的物体类型」boot 警告（批次 5）；骨骼动画播放态编辑（GUIDE 已声明静止态边界）；资产重导出/烘焙（用户明令禁止）。
+
+**风险与回退**：
+- 风险 1：SkeletonUtils.clone 与 isClone 标记/dispose 语义交互——探针确认返回普通树，标记 traverse 兼容；SkeletonUtils 内部重绑新骨骼实例，无跨实例共享 skeleton 泄漏面
+- 风险 2：BoxHelper 每帧 computeBoundingSphere 的性能（135 骨 × 8 mesh）——仅选中态触发；实测超帧率预算则降频（每 3 帧一次）
+- 风险 3：S48 蒙皮盒采样需 GLB 加载 + bind 完成——轮询口径对齐 S47（traverse 找 mesh + 等待）
+- 回退：单 commit revert 即回现状（178m 为已知态，无数据风险）
+
+**Blender 通道前置探索完成（2026-10-12，与修复轮六并行执行；批次 4.4/5.1/5.3 的执行依据，全程实测非转述）**：
+
+- **本机环境**：探测结论零 Blender（PATH/注册表/`~/.gts3d/blender/` 缓存/常见安装路径/winget 全空）→ 按「install-blender 拉取」设计走完整链路。缓存目录 `~/.gts3d/blender/` 已建立。
+- **版本终裁：4.5 LTS（4.5.9）**，根因是 Intel Mac 支持——**Blender 4.6 起停止 Intel Mac 构建**（5.2.2 目录实测 `macos-x64.dmg` HTTP 404，仅 arm64），而 skill 要求 Windows x64 / mac-intel / mac-apple 三平台全覆盖 → 4.5 LTS 是唯一三平台齐活的版本线（4.5.9 实测 `windows-x64.zip` / `macos-x64.dmg` 335MB / `macos-arm64.dmg` 308MB / `linux-x64.tar.xz` 全 200）。三平台统一版本 = bpy 脚本行为一致；放弃 5.x 新特性（headless 建模导出 GLB 用不到）；升级窗口待 Blender 6 LTS。
+- **分发形态实测**：官方直链 `https://download.blender.org/release/Blender{maj.min}/blender-{ver}-{platform}-{ext}`（目录可枚举）；**清华镜像同路径结构可用**（`https://mirrors.tuna.tsinghua.edu.cn/blender/release/Blender4.5/…` 实测 200，本机下载 404MB 约 4 分钟）——内网镜像样板即此路径结构；`.sha256`/`.md5` 校验文件同目录（本机实测 sha256 与官方一致后才解压）；服务器支持 `Accept-Ranges: bytes`（断点续传可做）。Windows 便携版 zip 解压即用（`blender-4.5.9-windows-x64/blender.exe --version` 直接跑通），**自带 Draco 压缩库**（`4.5/scripts/addons_core/io_scene_gltf2/extern_draco.dll`，导出可开 Draco）。
+- **headless 通道端到端实测**（`.tmp-blender-explore/gts3d_model_template.py`，演示物=木桌：桌面+四腿双材质）：`blender --background --python xx.py -- --out xx.glb --report xx.json` 一次跑通——建模（Principled BSDF 材质）→ apply transform（scale/rotation 烘进几何）→ 原点居底（bbox.min.y=0、xz 居中）→ GLB 导出（+Y up）→ JSON 数值自查报告（面数/节点/bbox/命名合规）。产出 30KB / 5 mesh / 508 面 / 高 0.740m。
+- **建模↔校验↔入库↔检索闭环首跑全绿**：bpy 产出 GLB → `validate-model.mjs --strict --check-mesh-names` **PASS** → `import-assets.mjs --strict` 入库成功 → 中文检索「木桌」命中第 1 位（score 0.677）。Spec 设计的「建模产出回注册资产库，库随使用增长」闭环从纸面到实证。
+- **bpy 关键坑（modeling-channels.md 必写）**：`object.name` 与 `mesh_data.name` 是两个名字，glTF 导出用 **mesh_data.name**——只改 object.name 时 GLB 里 mesh 名仍是 `Cube`/`Cylinder.001`（首跑被 `--check-mesh-names` 抓到）；修法=收尾规范里 `obj.data.name = obj.name` 同步（与 buildReport 槽位 key 口径直接相关——mesh 名即槽位显示名）。另：Blender polygon 是 n 边形，三角数按 fan 估算 `len(p.vertices)-2`。
+- **blender-mcp 情报更新（接入方式变化）**：PyPI 包已从 `blender-mcp` 改名 **`mcp-for-blender`**（旧名配置仍兼容）；Claude Code 接入=`claude mcp add blender uvx mcp-for-blender`；addon 安装=`uvx mcp-for-blender install-addon`（自动拷入 Blender addons 目录）或手动 `addon.py` 经 Preferences→Add-ons 安装；要求 Blender≥3.0 + Python≥3.10 + uv；MCP server 由客户端拉起（勿手动终端跑），Blender 端 socket server 开 Blender 即起（N 面板 MCP for Blender 页签）；安全项：socket 无鉴权仅限 localhost、`execute_blender_code` 是任意代码执行面（`BLENDER_MCP_SAFE_MODE=1` 可开脚本校验）、多实例用 `--port 9877` 区分。
+- **探索期残留（2026-10-12 用户裁决「按推荐来」，已清理）**：Blender 原始 zip 已删（解压目录 `~/.gts3d/blender/blender-4.5.9-windows-x64/` 留作通道就绪）；探索资产 table 已出库（模型+manifest 删 + 索引重建 + gates 40/40 复验通过）；`.tmp-blender-explore/` 仅留 `gts3d_model_template.py`（将来改造为 references/modeling-channels.md 素材），产物与打包目录已删。
+
+### 修复轮七：GLB 加载占位可视化 + 加载计数指示（2026-10-12 立项，Research 完成）
+
+**目标**：GLB 异步加载期间的用户感知改进——①占位可视化：加载期间显示按模型 bbox 尺寸的半透明线框盒（代替现在空 Group 完全不可见）；②加载计数指示：工具栏或角落显示 "N/M loaded"。
+
+**Research Findings（2026-10-12）**：
+
+1. **构建器现状**（registry.ts `makeAssetNodeFactory`）：同步返回空 `THREE.Group`（applyTransform 已应用），加载完成后按序「过期守卫 → 阴影默认 → 视觉层重挂 → 挂树 → onLoaded」。占位盒插入点=同步段（建 group 时）与异步完成段（挂 instance 时移除）。
+2. **bbox 来源真相**：`AssetEngine.buildReport` 在首次加载时已算好每资产 `report.bbox {min, max, height}` 并缓存（getReport 即取）——**但占位盒在加载完成前创建，报告尚不存在**。可用事实：starter 资产规范「原点居底、xz 居中」（originTolerance 0.01），同一资产 id 多实例结构一致。占位盒尺寸需另一来源。
+3. **S47 回灌断言语义**（不可破坏的硬约束）：remove+重喂快照 → 重建节点（新 group）→ GLB 异步重载 → 轮询验 mesh 材质色与 getVisual 双存活。占位盒必须：a) 挂在 group 内部（group.add(placeholder)），实例挂载时同帧移除；b) 不干扰 mesh traverse 断言——S47 轮询判据是 `c.isMesh` 计数>0 与材质色，**若占位盒用 Mesh 实现会污染计数**（mc>0 提前真 → 走到材质断言时 mesh 还是占位盒 → 材质色 undefined → 假 FAIL）。**结论：占位盒必须避开 isMesh 判据——用 LineSegments（Box3Helper 同类，`isLineSegments` 非 `isMesh`）实现**。
+4. **S48/S46 同理核查**：S48 判据 `c.isSkinnedMesh`、S46 判据 `c.name === 'Ch23_Hair'` 与 meshCount 类断言（S40）——LineSegments 不命中 isMesh/isSkinnedMesh 判据，name 不冲突。**S40 meshCount 断言需逐一核对**（若按 isMesh 计数，LineSegments 安全；若有 children.length 类断言需查）。
+5. **加载计数数据源**：现状无任何全局加载追踪器。AssetEngine 有 `loading` Map（assetId → promise，防重入）——但口径是「资产种类」非「节点实例」（car_01/car_02 共享一次加载）。N/M 语义定为**节点实例口径**：M=场景中异步 GLB 节点总数（'asset' 工厂 + 业务 handler 经 makeAssetNodeFactory 建的节点），N=已完成数。计数器天然挂 makeAssetNodeFactory：创建时 M+1、完成/过期/失败时 N+1（三态收敛，防计数泄漏导致指示永不消失）。
+6. **指示 UI 落点**：EditApp 三栏 + Toolbar 顶部居中。生产态（main.ts）无 edit 壳——指示属 scene-core 通用能力更合理（Debug HUD 同模式：DOM 浮层挂在 canvas 容器）。备选：a) scene-core 内置轻量 DOM 徽标（默认显示，全零时隐藏）；b) edit 壳 Toolbar 增项（仅编辑态可见）。倾向 a：生产场景首屏 GLB 加载同样需要感知，且 main.ts/edit-main.ts 零改动。
+7. **环境现状**：5183 端口 dev server 运行中（PID 2800，17:22:57 起，vite --port 5183 --strictPort），代码新鲜度已验证含修复轮六（skinnedClone 在位）。冒烟默认 URL 5199 需另起。改码后须重启 5183（时间胶囊教训）。
+8. **场景数据实例**：car_01/car_02/example_01（assetId=example ×3）+ person_01（person）。M 初始=4，全载后 N=M 指示隐藏。
+
+**In Scope**：registry.ts 构建器占位盒 + 计数器；指示 UI（方案待 Plan 定）；smoke S49 断言；GUIDE 如有加载行为描述的同步。
+
+**Out of Scope**：加载进度百分比/字节级进度（GLTFLoader onProgress 不稳定）；生产态骨架屏等视觉设计深化；性能优化。
+
+**Open Questions（阻塞 Plan 的分叉，已收敛倾向）**：
+- Q1 占位盒尺寸来源：加载完成前报告不存在——a) manifest/静态尺寸表（需要数据源）；b) 固定默认尺寸（如 1×1×1）加载完成后不补偿（简单但尺寸可能不符）；c) **首载完成后缓存该资产 bbox，重建/多实例时用缓存值**（二实例起体验正确，首实例仍默认尺寸）。倾向 c+固定默认兜底。
+- Q2 指示 UI 形态：倾向 scene-core 内置 DOM 徽标（Research #6 理由），等用户裁决。
+
+**验证方式**：三绿（vue-tsc/build/eslint 0 errors）+ SMOKE 48→49 段（新增 S49：占位盒存在→加载完成后移除 + 计数器 N=M 收敛 + S47/S46/S48/S40 回归不破坏）+ gates 40/40。
+
+**用户裁决（2026-10-12，Plan 前）**：
+- Q1 定案：**A 案——报告缓存优先，无报告不显示占位盒**（"没有真值就不显示假值"）。不引入默认尺寸魔法数；首实例（报告未生成）无占位盒直接出模型；二实例/undo 重建（报告已缓存）显示真实尺寸盒。
+- Q2 定案：**scene-core 内置 DOM 徽标**（同 Debug HUD 模式，canvas 容器挂载，生产态/编辑态通用，全载后自动隐藏）。
+
+**Plan（File Changes + Signatures + Checklist，2026-10-12）**：
+
+**关键防护设计（Research 补充核实）**：
+- 占位盒实现 `THREE.LineSegments`（EdgesGeometry(BoxGeometry)）——**不命中任何 smoke 的 `isMesh` 判据**（S40 meshCount / S46 name 匹配 / S47 mc 计数+材质色 / S48 isSkinnedMesh 全安全）
+- `placeholder.raycast = () => {}`（照抄 SelectionService.ts:137 BoxHelper 的既有防拾取手法——点中占位盒边框不产生拾取命中）
+- `disposeInstance` 只处理 isMesh，LineSegments 的 geometry 需构建器自行在移除时 dispose（防编辑器反复增删泄漏 EdgesGeometry）
+- 计数三态收敛：完成 / 过期守卫命中 / 加载失败，三者都计 N+1（防指示永不消失）
+- `listSubMeshes` 走 report 不走 traverse——占位盒不影响子网格清单
+
+**File Changes**：
+
+1. `template/src/scene-core/handlers/registry.ts`（改）
+   - `makeAssetNodeFactory` 内：同步段查 `assetEngine.getReport(assetId)`，命中（二实例/重建）→ 建 LineSegments 占位盒挂 group；未命中 → 无占位盒
+   - 异步完成段：过期守卫后、挂 instance 前，移除并 dispose 占位盒
+   - 计数器逻辑（创建 M+1 / 三态 N+1）内聚在构建器，经回调通知 UI
+2. `template/src/scene-core/createScene.ts`（改）
+   - 新增 `createLoadBadge`（同 createDebugHud 模式：DOM 徽标挂 canvas 容器，"N/M loaded" 文案，N=M 或 M=0 时隐藏）
+   - 构建器计数回调 → 徽标更新（经 registerBuiltinFactories 传线）
+3. `template/src/scene-core/handlers/example/example.ts`（不改，零侵入验证）——业务 handler 经 makeAssetNodeFactory 天然获得占位盒+计数，注释按需微调
+4. `template/scripts/smoke-r.mjs`（改）
+   - 新增 S49：① remove car_01 + 重喂快照（报告已缓存路径）→ 重建瞬间（轮询早期帧）group 内存在 LineSegments 占位盒；② 加载完成后占位盒移除且 mesh 存在；③ 计数徽标 DOM 存在且终态 N=M；④ S47/S40 断言原样回归（占位盒不破坏的证明）
+   - pass 链追加 `s49.ok === true`
+5. `template/src/scene-core/engine/AssetEngine.ts`（不改）——`getReport` 现成 API 直接复用
+
+**Signatures**：
+- `const createPlaceholderBox = (size: THREE.Vector3): THREE.LineSegments`（registry.ts 内部；EdgesGeometry(BoxGeometry) + 半透明 LineBasicMaterial + raycast 置空）
+- `makeAssetNodeFactory(sceneEngine, assetEngine, resolveAssetUrl, onLoaded?, onLoadCount?: (loaded: number, total: number) => void)`——新增可选尾参（业务 handler 不传即无计数回调，占位盒仍生效）
+- `const createLoadBadge = (canvas: HTMLCanvasElement): { update(loaded: number, total: number): void; dispose(): void }`（createScene.ts 内部）
+
+**原子 Checklist**：
+- [ ] P1 registry.ts：createPlaceholderBox + makeAssetNodeFactory 占位盒挂/移除/dispose + 计数器三态收敛 + onLoadCount 尾参
+- [ ] P2 createScene.ts：createLoadBadge DOM 徽标 + registerBuiltinFactories 计数接线（内建 'asset' 工厂 + example handler 两路都汇入）
+- [ ] P3 smoke-r.mjs：S49 四段断言 + pass 链
+- [ ] P4 三绿（vue-tsc / build / eslint 0 errors）
+- [ ] P5 复验闭环：重启 5183 dev server（时间胶囊纪律）→ SMOKE 49/49（重点 S47/S40/S46/S48 回归）→ gates 40/40
+- [ ] P6 Reverse Sync：执行记录 + 验证证据 + 教训回写 spec
+
+**风险与回退**：
+- 风险 1：S49 断言「重建瞬间存在占位盒」有时序敏感（GLB 加载快时占位盒一闪而过）——断言设计为轮询早期窗口抓 LineSegments 存在性，抓不到时降级为「不产生破坏」（占位盒存在性属尽力断言，核心断言是移除+计数收敛+回归不破坏）
+- 风险 2：example.ts 经 factory('cars') 复用构建器——计数经 onLoadCount 回调只在 createScene 接线侧传入，业务侧签名零改动（尾参可选）
+- 风险 3：徽标 DOM 与卡片层 z-index/位置冲突——放 canvas 容器右下角，pointer-events:none
+- 回退：占位盒与计数器均在 makeAssetNodeFactory 单点，revert 单文件即回现状
+
+### 修复轮八：蒙皮槽位 Gizmo 禁用 + 材质面板随选中联动（2026-10-12 立项，F-6e 复测反馈驱动）
+
+**背景**：修复轮六 F-6e 用户实测复测反馈两条，Root Cause 均已探针定案（probe-slot-gizmo1/2.mjs，蒙皮顶点级采样）。
+
+**反馈 #1：拖 Gizmo 轴动但头发不动（Ch23_Hair 平移无效）**
+
+Research Findings（探针实锤）：
+1. **attached bind mode（three 0.185 默认）下 SkinnedMesh 局部 transform 对蒙皮顶点数学零效果**——蒙皮公式 `boneVertex = mesh.matrixWorld⁻¹ × bone.matrixWorld × boneInverse × v` 中 mesh 自身位移被前后两项精确抵消。探针：`position.x += 0.5` 后蒙皮采样顶点逐位相同。
+2. **detached 模式 / rebind 均不是干净位移**——x 拖 0.5 变成世界 Y 掉 ~0.97m 且各顶点方向不一致（cm 域骨骼矩阵污染），不可用作产品行为。
+3. GUIDE §6.2 已写「骨骼动画播放时局部偏移被骨骼矩阵覆盖」，但实测证明**静止态同样无效**——文档口径需修正为「SkinnedMesh 槽位局部 transform 对蒙皮顶点无效（静止/动画皆然）」。
+4. S46 断言口径盲区：S46 验证的是「Gizmo attach 到 mesh / slots 数据落地 / serialize 往返 / undo」——**全部数据层/挂载层断言，无「蒙皮顶点移动」断言**（meshMoved 判据是 mesh.position 变化非顶点）。数据层正确 + 渲染无效 = 之前所有门禁绿灯但用户体验断链的实例。
+5. 静态 GLB（非蒙皮）子网格局部 transform 有效（transform 层正常作用），**只有 SkinnedMesh 受限**——禁用必须按 isSkinnedMesh 精确分流，不能一刀切禁所有槽位 transform。
+
+**反馈 #2：材质编辑面板不随选中/条目切换关闭或更新**
+
+Research Findings（代码审读，PropertyPanel.vue:683-727）：
+1. 三个入口 `openEdit(id)` / `openInlineEdit()` / `openSlotEdit(slotKey)` 各自只设自己的 ref：`openInlineEdit` 不清 `editSlotKey`、`openSlotEdit` 不清对方——面板已开时 inline↔slot 切换，`editMatId`/`editSlotKey` 不变或不触发 watch，面板内容陈旧（用户点另一个材质球，面板还显示旧的）。
+2. 选中变化（点场景其他物体）时面板不关：`editOpen` 与选中态无任何联动——inline/slot 模式的编辑目标（anchorId/slotKey）已失效，面板继续显示并继续往旧目标写值。
+3. 库模式（⚙ 编辑材质球本身）与选中解耦是**设计意图**（编辑库资产，引用者热更），不关不更新锚点属正确行为——联动只作用于非库模式。
+
+**用户裁决（2026-10-12）**：
+- 反馈 #1：**A 案——蒙皮槽位禁 Gizmo + 属性面板 transform 置灰 + 提示**（诚实反映数学现实；B 案「烘进 boneInverses」违背「不烘焙」裁决已否决）。
+- 反馈 #2：**非库模式随选中关闭 + 切条目自动更新；库模式保持不关**。
+
+**Plan（File Changes + Signatures + Checklist，2026-10-12）**：
+
+File Changes：
+
+1. `template/src/edit/LayoutGizmo.ts`（改）
+   - `syncSelection` 槽位分支：`findBySlotKey` 命中后加蒙皮判据——mesh（或其子树）含 `isSkinnedMesh` 时不 attach，`slotTarget` 置 null，落到物体级 attach 逻辑（与锁定物体同处理路径：树中仍可点选看属性，只是无手柄）。
+2. `template/src/edit/PropertyPanel.vue`（改）
+   - 槽位态 transform 区（slotInfo 有值的分支）：目标为蒙皮 mesh 时九宫格输入框 disabled + hint 文案「骨骼网格的局部变换对蒙皮顶点无效（three.js 数学），仅静态网格可调」。
+   - 材质面板联动：`openEdit`/`openInlineEdit`/`openSlotEdit` 三入口先统一重置 `editMatId`/`editSlotKey` 再按各自模式赋值（修陈旧内容 bug）；`watch(anchorId)`（或选中变化）时若 `editOpen && !editMatId`（非库模式）自动 `closeEdit()`。
+   - 蒙皮判据：`slotInfo` 需扩展或经 `getSubMeshInfo`/直接 traverse 判 `isSkinnedMesh`（Plan 执行时按现成 API 选最小口径）。
+3. `template/src/edit/EditMaterialModal.vue`（不改——watch(matId/anchorId/slotKey) 已在，入口修好后联动自然成立）
+4. `template/scripts/smoke-r.mjs`（改）
+   - S46 修正：`gizmoAttached` 断言反转——蒙皮槽位（Ch23_Hair）选中时 `gizmo.controls.object` **不应**是 Ch23_Hair（应回物体级 person_01 或 null）；保留 slots 数据层断言（落地/往返/undo 不变——数据层仍写，只是 Gizmo 不挂）。
+   - 新增 S50：① inline 材质面板开着 → 点场景另一物体 → 面板自动关闭；② 面板开着点另一条目 → 内容更新（判据：面板 spec/color 与新目标一致或面板关开状态正确）；③ 库模式面板开着 → 点场景物体 → **不**关闭。
+5. `template/docs/INTEGRATION_GUIDE.md`（改）
+   - §6.2 槽位局部 transform 段落口径修正：静止态**同样无效**（原「骨骼动画播放时被覆盖」改为「SkinnedMesh 的槽位局部 transform 对蒙皮顶点无效（attached 模式数学必然），编辑器已禁用其 Gizmo/输入；静态 GLB 子网格不受影响」）。
+   - 编辑器行为说明：蒙皮子网格树行可点选看属性/换材质/隐藏，transform 不可调。
+
+Signatures：
+- `LayoutGizmo.syncSelection()`：槽位分支加 `const skinned = hasSkinnedMesh(mesh)`（局部 helper，traverse 判 isSkinnedMesh）
+- `PropertyPanel`：`const slotIsSkinned = computed(() => …)`（slotInfo + traverse）；三入口统一重置；`watch(anchorId)` 联动关闭
+- smoke S46 `gizmoAttached` 断言改为 `gizmoNotOnSkinnedSlot`；S50 三段
+
+原子 Checklist：
+- [x] F8-1 LayoutGizmo：蒙皮槽位不 attach（回物体级）
+- [x] F8-2 PropertyPanel：蒙皮槽位 transform 置灰 + 提示文案
+- [x] F8-3 PropertyPanel：三入口统一重置 + 非库模式随选中关闭
+- [x] F8-4 smoke-r：S46 断言修正 + S50 新增（三段）+ pass 链
+- [x] F8-5 GUIDE §6.2 口径修正 + 编辑器行为说明
+- [x] F8-6 三绿 + SMOKE 全绿（重点 S46/S45/S47/S48 回归）+ gates 40/40
+- [x] F8-7 Reverse Sync：执行记录 + 验证证据 + F-6e 复测清单追加（蒙皮槽位 Gizmo 不出现/面板置灰/材质面板联动三复测点）
+
+**修复轮八执行记录（2026-10-12，Plan Approved 后执行）**：
+
+1. **F8-1**：LayoutGizmo `syncSelection` 槽位分支加 `hasSkinnedMesh(mesh)`（traverse 判 isSkinnedMesh 的模块级 helper）——蒙皮槽位 `slotTarget=null` 落回物体级 attach，与锁定物体同处理路径。
+2. **F8-2**：PropertyPanel 新增 `slotIsSkinned` computed（selectedSlot + traverse 按末段名判 isSkinnedMesh）；槽位态九宫格输入框 `:disabled="slotIsSkinned"` + hint「骨骼网格的局部变换对蒙皮顶点无效（three.js 数学），仅静态网格可调」。
+3. **F8-3**：三入口统一重置（`openEdit` 先清 `editSlotKey`，`openInlineEdit`/`openSlotEdit` 先清 `editMatId`——原 bug：面板已开时 inline↔slot 切换 ref 不触发 watch 内容陈旧）；`watch(anchorId)` 非库模式（editMatId===null）自动 `closeEdit()`。
+4. **F8-4**：S46 `gizmoAttached` 断言反转为 `gizmoNotOnSkinnedSlot`（蒙皮槽位上手柄不应在 Ch23_Hair）+ 新增 `roDisabled`（≥9 输入框 disabled）；S46 ④ 面板输入通道改引擎级 commitLive 通道（UI 通道对蒙皮已关，数据层仍开放）；S45 同步修正（`roInputs.length>=9` 改 `roDisabled` + `skinnedHint` 断言）；S50 新增三段（槽位面板随选中关 / Hair→Body 同面板切换 / 库模式契约）。
+5. **F8-5**：GUIDE §6.2 修正——原「骨骼动画播放时局部偏移被骨骼矩阵覆盖（静止态编辑可接受）」为**错误口径**，实测静止态同样无效；改为「SkinnedMesh 槽位局部 transform 对蒙皮顶点无效（attached 模式数学必然，静止/动画皆然），编辑器已禁用其 Gizmo/输入；静态 GLB 子网格不受影响」。
+6. **F8-6**：vue-tsc 绿 / build 绿（edit-main 125.80 kB）/ eslint **0 errors**；**SMOKE PASS 全绿**（S45 八段/S46 八段/S50 三段，含并行会话新增 S51 视觉层 undo）/ **gates 40/40 PASS**。
+7. **F8-7**：本记录即 Reverse Sync。
+
+**执行中的并行会话协调（Plan 之外）**：
+- 执行中发现另一会话并行提交了「代码组合模型」改动（car.ts/rack.ts/worker.ts procedural handler + SceneEngine.listSubMeshes 双数据源 + scene-data codecars/codeworkers/coderacks 三组）且带 5 个 TS 错误。经用户裁决「修错继续」：只做窄化修复（attr undefined 守卫 ×2、车轮循环解构 as Array<[number,number]>）+ 7 个 eslint error 格式修复（块注释→多行注释、行内多空格注释上移），零逻辑改动。并行会话的 smoke 新增 S51 已自然纳入 pass 链。
+- S50 断言三轮迭代修正（均断言设计错误非产品缺陷）：① 初版假设「选中即开面板」错误（面板要经条目点击）→ ② `.emod` 类名错误（正确为 `.fpanel` 外壳，modal 以标题含「编辑材质」判别）→ ③ 聚焦槽位时列表收窄（shownSlots filter）导致找不到 Body 行——加「返回全部槽位」步骤后通过。教训：写 DOM 断言先查组件模板的真实类名与条件渲染，别猜。
+
+**验证证据（2026-10-12）**：vue-tsc 绿 / build 绿（edit-main 125.80 kB）/ eslint 0 errors / SMOKE PASS（S45 roDisabled+skinnedHint+posMatch 全 true；S46 gizmoNotOnSkinnedSlot+roDisabled 全 true 且数据层四断言保留全绿；S50 panelOpenBefore/panelClosedOnSelect/titleUpdated 全 true，titleB='编辑材质 · Ch23_Body' 证明同面板切换）/ gates 40/40。
+
+**F-6e 复测清单追加（修复轮八新增三项，待用户实测）**：⑥ 树点 Ch23_Hair → 视口**不应出现**平移/旋转/缩放手柄（原来会出现但拖了无效）；⑦ 属性面板变换区九宫格应置灰并显示「骨骼网格…」提示；⑧ 编辑材质面板开着 → 点场景其他物体应自动关闭，点另一槽位条目（如 Body）面板内容应切换。
+
+**风险与回退**：
+- 风险 1：S50 DOM 断言链路长（面板开关是 Vue 响应式）——沿用 S45 教训：状态判据走 bridge.getState()/引擎真值，DOM 只验存在性。
+- 风险 2：禁 Gizmo 后 S46 原断言（attach 到 Ch23_Hair）必须同步反转，否则冒烟红——checklist F8-4 与 F8-1 同批执行。
+- 风险 3：蒙皮判据用 traverse 每帧开销——仅选中变化时执行一次（syncSelection 时机），非每帧。
+- 回退：LayoutGizmo/PropertyPanel 两文件各自独立可 revert；数据层 slots 通道不动（静态网格行为零变化）。
+
+### 修复轮九：代码组合模型槽位材质链路（2026-10-12 立项，F-6e 复测反馈 2.0 驱动）
+
+**背景**：用户复测三条反馈（并行会话的「代码组合模型」car/rack/worker 落地后暴露的系统性缺口）。三探针定案（probe-tree-slot/tree-slot2/worker-panel）。
+
+**反馈与根因（全部探针实锤）**：
+
+1. **tree_01 改子节点材质没效果**——三口径死结：`listSubMeshes`（collectInstanceMeshes）报 key `#0/#2/#4/#6`（autoIndex 在 keyOf 与 name 兜底两处交错递增，key 与 name 双双错位如 key=#0/name=#1）；`resolveSubMesh` 对 4 个无名 mesh **全部报 `#0`**（无名节点序号去重逻辑错）；`findBySlotKey` 把 `#0` 解析到第一个无名字节点=树干。**视口点树叶改的其实是树干**（用户感知「没效果」）。根子=tree.ts 的 mesh 全部无名，一切 `#` 索引兜底都是脆弱口径。
+2. **codeworker_01 helmet_dome 材质球默认 #ffffff/#000000**——活材质真值 `#f5c518`（黄）/roughness 0.35 实测在位，但 EditMaterialModal 无 override 分支只取 `seedMaterialType`（类型名），**不读活材质的 color/emissive/roughness 等标量** → 面板显示默认值且首次改色会把真值覆盖掉。这是「代码组合模型」的系统性缺口：GLB 资产走 buildReport 有材质概要，组合模型只有活实例可读——缺一个「读活材质完整 spec」的公共 API。
+3. **helmet_dome 面板开着点 head 面板不切换**——探针：`slotNow.slotKey` 已是 `head`（引擎态切了）但面板标题仍 helmet_dome。根因=PropertyPanel 的 `watch(anchorId)` 只监听物体级选中；**槽位切换（anchorId 不变）无 watch**，`editSlotKey` ref 没有跟随 selectedSlot 更新的通道。S50 只测了「条目点击入口」（EditMaterialModal 自带 watch(props.slotKey)），漏了「树行/视口点选」入口（外部 selectSlot → PropertyPanel 的 editSlotKey 无人同步）。
+
+**用户裁决（2026-10-12）**：走通用方案——公共 API + handler 命名约定，不逐个 handler 打补丁。
+
+**Plan（File Changes + Signatures + Checklist，2026-10-12，待 Plan Approved）**：
+
+**设计**：
+- **公共 API `readMaterialSpec(mesh)`**（materials.ts 导出）：读单个 mesh 活材质的完整 MaterialSpec（type + color/emissive/roughness/metalness/opacity 等标量，贴图槽读有无→mapUrl 不溯源自 GLB 的内嵌贴图无 URL，跳过）。三类资产（GLB/图元/组合模型）统一口径：面板初始值=活材质真值。
+- **handler 命名约定**：handler 建的 mesh **必须 `.name`**（写进 GUIDE §3.2 + tree.ts 示范补名 trunk/foliage_1/2/3）。命名后 `#` 兜底口径自然消失（组合模型全具名）。
+- **`#` 索引口径修复**（防御性，命名约定之外仍需正确）：collectInstanceMeshes 的 autoIndex 改为「按 traverse 序单次分配」——keyOf 与 name 兜底共用同一计数器且每个节点只计一次；resolveSubMesh 同口径。实测四 mesh 应报 #0/#1/#2/#3 互异。
+- **槽位切换联动**：PropertyPanel 加 `watch(() => props.bridge.getState().selectedSlot)`（或 onState 内比对）——非库模式面板开着且 slotKey 变了 → 更新 editSlotKey（面板内容跟随，不关闭——同物体槽位间切换语义）。
+- **EditMaterialModal 无 override 分支**：槽位/inline 模式种子改 `readMaterialSpec(目标mesh)`（含全部标量），替换现 seedMaterialType 仅类型的取值。
+
+File Changes：
+1. `template/src/scene-core/materials.ts`（改）：新增 `readMaterialSpec(mesh: THREE.Mesh): MaterialSpec` 导出
+2. `template/src/scene-core/engine/SceneEngine.ts`（改）：`collectInstanceMeshes` 的 `#` 索引单次分配修复；`resolveSubMesh` 的无名节点序号同口径（读现实现后对齐）
+3. `template/src/scene-core/handlers/procedural/tree.ts`（改）：mesh 补名（trunk/foliage_1/foliage_2/foliage_3）
+4. `template/src/edit/EditMaterialModal.vue`（改）：无 override 种子改 readMaterialSpec（slot 模式定位 mesh 同现有 targetType 查找逻辑）
+5. `template/src/edit/PropertyPanel.vue`（改）：selectedSlot 变化 watch → 非库模式面板 editSlotKey 跟随
+6. `template/scripts/smoke-r.mjs`（改）：S52 新增——① tree_01 槽位清单 4 条全具名（trunk/foliage_*）；② 视口 resolveSubMesh 对 4 个 tree mesh 报互异 key；③ helmet_dome 面板初值=活材质真值（readMaterialSpec 对照，经 EditMaterialModal 无 override 通道或直接 API）；④ helmet 面板开着树点 head → 面板标题切 head；pass 链追加
+7. `template/docs/INTEGRATION_GUIDE.md`（改）：§3.2 handler 编写补「mesh 必须 .name」约定 + 说明（子网格材质编辑依赖名称路径 key）
+
+Signatures：
+- `readMaterialSpec(mesh: THREE.Mesh): MaterialSpec`（materials.ts；只读标量+类型，贴图槽跳过）
+- `collectInstanceMeshes` 内部改造，签名不变
+- PropertyPanel：`watch(() => state.value.selectedSlot, …)` 非库模式联动
+
+原子 Checklist：
+- [x] F9-1 materials.ts：readMaterialSpec 公共 API
+- [x] F9-2 SceneEngine：# 索引口径修复（collectInstanceMeshes + resolveSubMesh 同源计数）
+- [x] F9-3 tree.ts：mesh 补名示范
+- [x] F9-4 EditMaterialModal：无 override 种子改活材质真值
+- [x] F9-5 PropertyPanel：槽位切换面板跟随
+- [x] F9-6 smoke S52 四段 + pass 链
+- [x] F9-7 GUIDE §3.2 命名约定
+- [x] F9-8 三绿 + SMOKE 全绿 + gates 40/40
+- [x] F9-9 Reverse Sync + F-6e 复测清单再追加
+
+**修复轮九执行记录（2026-10-12，Plan Approved 后执行）**：
+
+1. **F9-1**：materials.ts 新增 `readMaterialSpec(mesh)` 导出——按 fieldsForType 白名单读活材质标量/颜色/枚举（Color→hex 字符串、side 数值→枚举名、attenuationDistance Infinity→null；贴图槽跳过——GLB 内嵌贴图无 URL）。index.ts 转出口。
+2. **F9-2**：`#` 索引语义统一为「**父节点的无名子节点中的序号**」（兄弟局部序，与遍历顺序无关）：materials.ts 新增 `unnamedChildIndex` 导出（findBySlotKey 解析端同语义重写——修复前是全局 autoIndex 递增，生成/解析口径漂移）；SceneEngine 的 `collectInstanceMeshes`（keyOf 内联进 traverse 回调，key 与 name 同源不再错位）与 `resolveSubMesh`（修复前 `#${parts.length}` 沿父链恒 0——4 个树 mesh 全报 #0 的根因）三处统一。
+3. **F9-3**：tree.ts mesh 补名 `trunk`/`foliage_1`/`foliage_2`/`foliage_3`。
+4. **F9-4**：EditMaterialModal 无 override 分支重写——槽位模式按末段名定位 mesh、inline 模式取第一个 mesh，`readMaterialSpec` 取全量真值（替换原 seedMaterialType 仅类型的种子；该 import 一并移除）。
+5. **F9-5**：PropertyPanel 新增 `watch(state.selectedSlot)`——非库模式面板开着：跨物体（nodeId≠anchor）→ 关闭；同物体槽位变化 → `editSlotKey` 跟随（面板内容更新不关闭）。
+6. **F9-6**：S52 五段——① 树清单全具名；② 视口 resolveSubMesh 4 mesh 互异 key；③ foliage_1 改色只变第二层树冠（colorsBefore/After 逐位对照，且 undo 清理）；④ readMaterialSpec 直读（页面内 `import('/src/scene-core/materials.ts')`）= #f5c518；⑤ helmet_dome 面板开→树点 head→标题切换。pass 链追加。
+7. **F9-7**：GUIDE §3.2 新增「mesh 必须命名（.name）」约定段（snake_case 具名；无名退化 #N 兜底可用但可读性差）。
+8. **F9-8**：vue-tsc 绿 / build 绿（edit-main 125.79 kB）/ eslint 0 errors（300 warnings）；**SMOKE PASS 全绿**（S52 五段 + S40-S51 全回归）/ **gates 40/40 PASS**。
+9. **F9-9**：本记录即 Reverse Sync。
+
+**执行中的环境噪声（三次冒烟中断，均非产品问题）**：
+- 第一次 S46 卡死 40s：长链路累积态（同 server 已跑 5+ 轮全量冒烟，vite HMR 模块图累积）——S46 独立探针全通（iter 9 即中）证明产品无卡死。
+- 第二次 S42 页面异常：TaskStop 杀 dev server 未杀净 vite 子进程（端口仍占）+ 新 server 启动窗口期，半死页面 `__gts3d` undefined。
+- 解法：`Stop-Process -Id <PID>`（netstat 查端口占持者）杀净 → 重起 server → 全量一次通过。
+- 教训：**TaskStop 停 npm run dev 不级联杀 vite 子进程**——冒烟前查端口 LISTENING 进程启动时间，复跑全量冒烟前重启 server 清 HMR 累积态。
+
+**验证证据（2026-10-12）**：三绿 + SMOKE PASS（S52 五段全 true：treeNamed/resolveDistinct/onlyFoliage1/specTrue #f5c518/panelFollows）+ gates 40/40。探针级：树改 foliage_1 精准命中（colorsAfter 仅 [1] 变 #ff00ff）、helmet 面板初值 #f5c518、面板切换 titleB=编辑材质 · head。
+
+**F-6e 复测清单追加（修复轮九新增四项，待用户实测）**：⑨ 树展开子节点应显示 trunk/foliage_1/2/3（不再是 #1/#3/#5/#7），点 foliage_2 改色只变第二层树冠；⑩ codeworker 点 helmet_dome 编辑材质，面板应显示黄色 #f5c518（非 #ffffff），roughness 0.35；⑪ helmet_dome 面板开着点 head → 面板应切到 head；⑫ 任意物体无 override 时编辑材质面板初值=活材质真值（GLB/图元/组合模型统一）。
+
+**风险与回退**：
+- 风险 1：readMaterialSpec 对 GLB 内嵌贴图材质（person）返回无 mapUrl 的 spec——面板显示与真值有贴图差（color 等标量仍真）。可接受：贴图编辑本来走素材库上传通道。
+- 风险 2：# 索引修复改变现存 scene-data 里已写入的 slots key（codecars 等若已用 # key 存了 override）——实测当前 scene-data 无 slots 残留（探针 listKeys 无命中），无迁移负担；GUIDE 已记「key 与结构绑定，重导出失效」同类语义。
+- 风险 3：S52 ④ 复用 S50 的面板断言套路（.fpanel__title 含「编辑材质」），路径已验证可跑通。
+- 回退：六文件各自独立可 revert；tree.ts 补名会改槽位 key（#N → 具名）——若用户已用旧 key 存数据需同步（当前无此数据）。
 
 
 ## 8. Archive Record (Recommended at closure)

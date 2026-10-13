@@ -115,6 +115,8 @@ sceneEngine.registerFactory('pumps', (node) => {
 
 **注册时序**：createScene 建树时按已注册工厂分发，未注册的分组 warn 跳过。入口模式（main.ts 已示范）：先 `createScene`，再 `registerXxxHandler`，然后把该分组数据重喂一次 `handle.update({ pumps: data.pumps })`（幂等 upsert 补建）。
 
+**mesh 必须命名（`.name`）**：handler 组合模型里每个 mesh 都要设名字（snake_case，如 `trunk`/`foliage_1`/`helmet_dome`）——编辑器的子网格材质编辑（槽位层）以**名称路径**为 key，无名 mesh 会退化成 `#N` 兄弟序兜底（可用但可读性差，且改名即失效）。具名后树行/属性面板/视口点选三处口径一致。无 override 时材质编辑面板读**活材质真值**（`readMaterialSpec`，scene-core 公共 API）作初始值——GLB / 图元 / 组合模型统一口径。
+
 **params 里永远不写渲染参数**：阴影/显隐等默认值在 handler 代码里（`applyShadowDefaults` 模式）；个体差异由编辑态调好后转录进代码（§6）。
 
 ### 3.3 状态视觉：materials.ts（数据无材质，视觉在代码）
@@ -243,7 +245,13 @@ if (hair) {
 - 槽位 key 与 GLB 重导出绑定：模型改名后 key 失效（编辑器会 warn 并忽略）；转录以**当下清单为准**。
 - 运行时通道：`handle.update({ __visuals: { <id>: { slots: { '<key>': { color: '#fff' } } } } })`（合法但 discouraged，同 6.1 末段）。
 - 槽位引用材质库（槽位 libraryRef）：转录为 `mesh.material = libraryMaterials.<名>`（同 6.1 引用表，槽位表会标出）。
-- 槽位局部 transform（position/rotation/scale）：只对**静止骨骼**有效；骨骼动画播放时局部偏移被骨骼矩阵覆盖（skinning 数学使然，编辑器为静止态编辑）。
+- **槽位局部 transform（position/rotation/scale）只对静态 GLB 子网格有效**：SkinnedMesh（骨骼网格）的局部变换对蒙皮顶点**无效**（attached bind mode 下 mesh 矩阵在蒙皮链中被抵消，静止/动画皆然——three.js 数学必然）。编辑器已对蒙皮槽位禁用 Gizmo 并置灰 transform 输入（提示文案）；蒙皮子网格仍可换材质/隐藏/看属性。静态 GLB 的子网格局部 transform 正常可用。
+
+### 6.3 骨骼模型（SkinnedMesh）多实例与蒙皮感知
+
+带骨骼的 GLB（如 person）实例化走 `SkeletonUtils.clone`（引擎内建，`AssetEngine` 负责）——普通 `Object3D.clone(true)` 只复制 Bone 副本不重绑 `skeleton` 引用，蒙皮矩阵链会指向缓存根的旧骨骼（世界矩阵不含本实例缩放），顶点被放大 `1/scale` 倍（实测 0.0056 缩放的 person 渲染成 178 米巨人）。业务 handler 无需关心——经 `makeAssetNodeFactory` 拿到的实例已正确重绑。
+
+编辑器对蒙皮网格的查询/拾取/包围盒均为**蒙皮感知口径**（读蒙皮后顶点，非 bind-pose 几何）：选中框（BoxHelper）、属性面板包围盒、`frameObject` 聚焦、射线拾取均框/打**真实渲染形状**。注意蒙皮盒按需重算（选中态每帧），静止骨骼场景无额外开销。
 
 ## 7. 常见问题
 
@@ -257,4 +265,4 @@ if (hair) {
 
 **Q: 想改某个物体的颜色？** 不是改数据——`params` 不收视觉字段。单个状态视觉进 `materials.ts`；多个物体复用同一材质 → 编辑器材质库（转 `libraryMaterials`，见 §6.1）；编辑器临时调的进 `__visuals`（交付时转录，见 §6）。
 
-**Q: 人物模型巨大（scale=1 时一百多米高）？** mixamo 等骨骼资产以**厘米**为单位（骨骼位置 ×100），导入后世界尺寸放大百倍。修法：在该节点 `scale` 设 `0.01` 级归一化（validate-model 报告的 `高=…m` 警告即提示；如 person 高 179.275m → `scale: 0.0056` ≈ 1 人高）。资产本身不改——引擎不做隐式缩放（防误伤 1:1 单位的机械模型）。
+**Q: 人物模型巨大（scale=1 时一百多米高）？** mixamo 等骨骼资产以**厘米**为单位（骨骼位置 ×100），导入后世界尺寸放大百倍。修法：在该节点 `scale` 设 `0.01` 级归一化（validate-model 报告的 `高=…m` 警告即提示；如 person 高 179.275m → `scale: 0.0056` ≈ 1 人高）。资产本身不改——引擎不做隐式缩放（防误伤 1:1 单位的机械模型）。若 `scale` 已正确仍显示巨大：确认实例化走的是引擎内建通道（`makeAssetNodeFactory` / `AssetEngine.getInstance`）——`clone(true)` 直克隆骨骼资产会断 `skeleton` 引用（见 §6.3）。

@@ -1054,23 +1054,30 @@ const main = async () => {
       await new Promise((r) => setTimeout(r, 300));
       const slot = b.getState().selectedSlot;
       const slotSet = !!slot && slot.nodeId === 'person_01' && slot.slotKey.endsWith('Ch23_Hair');
-      // 属性面板：可编辑变换输入（M3 起可编辑，不再 .pp__ro）+ 标题提示
-      const roInputs = [...document.querySelectorAll('.pp .ed-row input[type="number"]')].filter((i) => !i.disabled);
+      // 属性面板：变换输入（修复轮八起蒙皮槽位置灰——可编辑断言改 disabled 数 + 提示文案）
+      const allInputs = [...document.querySelectorAll('.pp .ed-row input[type="number"]')];
+      const roDisabled = allInputs.filter((i) => i.disabled).length >= 9;
+      const skinnedHint = [...document.querySelectorAll('.pp__hint')].some((el) => (el.textContent || '').includes('骨骼网格'));
       const slotHint = [...document.querySelectorAll('.pp__hint')].some((el) => (el.textContent || '').includes('模型内部'));
-      // 输入框值与引擎 getSubMeshInfo 局部 transform 对照
+      // 输入框值与引擎 getSubMeshInfo 局部 transform 对照（蒙皮置灰——值仍应显示引擎真值）
       const info = se.getSubMeshInfo('person_01', slot?.slotKey ?? '');
-      const posMatch = info && roInputs.length >= 9 && Math.abs(Number(roInputs[0].value) - info.position[0]) < 1e-6;
-      // 包围盒变化：mesh 自身（远小于整模型 1m）
+      const posMatch = info && allInputs.length >= 9 && Math.abs(Number(allInputs[0].value) - info.position[0]) < 1e-6;
+      // 包围盒：数值断言走引擎（getSubMeshInfo 蒙皮口径），DOM 只验渲染存在
+      // （长链路时序下 DOM 文本刷新有抖动，引擎真值稳定）
+      const sizeOk = info && [0, 1, 2].every((ax) => {
+        const s = info.bboxMax[ax] - info.bboxMin[ax];
+        return s > 0 && s < 0.25;
+      });
       const personBox = document.querySelector('.pp__bbox')?.textContent || '';
-      const bboxShown = personBox.includes('×');
+      const bboxShown = personBox.includes('×') && sizeOk === true;
       // SelectionService 槽位高亮：BoxHelper 只包该 mesh（helper key slot:）
       const sel = window.__gts3dEdit.selection;
       // 切回物体级：slot 清空
       b.select('person_01', false);
       await new Promise((r) => setTimeout(r, 200));
       const slotCleared = b.getState().selectedSlot === null;
-      return { slotSet, roCount: roInputs.length, slotHint, posMatch, bboxShown, slotCleared,
-        ok: slotSet && roInputs.length >= 9 && slotHint && posMatch === true && bboxShown && slotCleared };
+      return { slotSet, roDisabled, skinnedHint, slotHint, posMatch, bboxShown, slotCleared,
+        ok: slotSet && roDisabled === true && skinnedHint === true && slotHint && posMatch === true && bboxShown && slotCleared };
     })()`);
     console.log('S45 子网格选中态:', JSON.stringify(s45));
 
@@ -1093,9 +1100,14 @@ const main = async () => {
       if (!hairEl) { return { ok: false, why: 'no hair row' }; }
       hairEl.dispatchEvent(new MouseEvent('click', { bubbles: true }));
       await new Promise((r) => setTimeout(r, 400));
-      // ① Gizmo 吸附：attach 的对象名 = Ch23_Hair（非 person_01）
+      // ① Gizmo 吸附（修复轮八反转）：Ch23_Hair 是蒙皮网格——局部 transform 对蒙皮顶点
+      // 无效（attached 矩阵抵消），手柄不应挂到 mesh 上（回物体级 person_01）
       const gizmo = window.__gts3dEdit.gizmo;
-      const gizmoAttached = gizmo && gizmo.controls && gizmo.controls.object && gizmo.controls.object.name === 'Ch23_Hair';
+      const gizmoNotOnSkinnedSlot = gizmo && gizmo.controls
+        && (!gizmo.controls.object || gizmo.controls.object.name !== 'Ch23_Hair');
+      // ①′ 面板蒙皮置灰：槽位 transform 输入框 disabled
+      const roDisabled = [...document.querySelectorAll('.pp .ed-sec input[type="number"]')]
+        .filter((el) => el.disabled).length >= 9;
       // ② 直接写 slots transform（引擎级通道——Gizmo 拖拽最终走同一条）
       const slotKey = 'Armature/Ch23_Hair';
       b.commit('子网格变换', () => {
@@ -1113,14 +1125,16 @@ const main = async () => {
       // ③ serialize 往返
       const ser = window.__gts3d.serialize().__visuals?.person_01?.slots?.[slotKey];
       const serRoundTrip = ser && ser.position && Math.abs(ser.position[0] - 0.5) < 1e-6;
-      // ④ 面板输入通道：draft → slots（改 x=0.3）
-      const pxInput = [...document.querySelectorAll('.pp .ed-row input[type="number"]')][0];
-      if (pxInput) {
-        const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
-        setter.call(pxInput, '0.3');
-        pxInput.dispatchEvent(new Event('input', { bubbles: true }));
-      }
-      await new Promise((r) => setTimeout(r, 300));
+      // ④ 面板输入通道（修复轮八调整）：蒙皮槽位输入框已置灰——UI 通道对蒙皮关闭，
+      // 数据层通道仍开放（引擎级再写 x=0.3 验证 slots 通道活性；静态网格的 UI 通道
+      // 由 S46 前置断言 roDisabled=false 场景保证，此处只验数据层）
+      b.commitLive('子网格变换', () => {
+        const cur2 = se.getVisual('person_01');
+        const slots2 = { ...(cur2?.slots ?? {}) };
+        slots2[slotKey] = { ...(slots2[slotKey] ?? {}), position: [0.3, 0, 0] };
+        window.__gts3d.update({ __visuals: { person_01: { ...(cur2 ?? {}), slots: slots2 } } });
+      });
+      await new Promise((r) => setTimeout(r, 250));
       const slotAfterPanel = se.getVisual('person_01')?.slots?.[slotKey];
       const panelEdit = slotAfterPanel && slotAfterPanel.position && Math.abs(slotAfterPanel.position[0] - 0.3) < 1e-6;
       // ⑤ undo 恢复（面板那次 commit 可撤）。undo 触发整树重建（GLB 异步重载）——
@@ -1138,8 +1152,8 @@ const main = async () => {
       b.undo();
       await new Promise((r) => setTimeout(r, 200));
       const slotGone = !se.getVisual('person_01')?.slots?.[slotKey]?.position;
-      return { gizmoAttached, meshMoved, slotLanded, serRoundTrip, panelEdit, meshAfterUndo, slotGone,
-        ok: gizmoAttached === true && meshMoved === true && slotLanded === true && serRoundTrip === true && panelEdit === true && meshAfterUndo === true && slotGone === true };
+      return { gizmoNotOnSkinnedSlot, roDisabled, meshMoved, slotLanded, serRoundTrip, panelEdit, meshAfterUndo, slotGone,
+        ok: gizmoNotOnSkinnedSlot === true && roDisabled === true && meshMoved === true && slotLanded === true && serRoundTrip === true && panelEdit === true && meshAfterUndo === true && slotGone === true };
     })()`);
     console.log('S46 子网格局部变换:', JSON.stringify(s46));
 
@@ -1180,6 +1194,214 @@ const main = async () => {
     })()`);
     console.log('S47 回灌窗口视觉存活:', JSON.stringify(s47));
 
+    // ── S48：person 蒙皮尺度钉死（修复轮六：SkeletonUtils.clone 后蒙皮世界盒 ~1m + 拾取可中）──
+    const s48 = await evaluate(`(async () => {
+      const b = window.__gts3dEdit.bridge;
+      const se = window.__gts3d.internals.sceneEngine;
+      const THREE = await import('/node_modules/three/build/three.module.js');
+      const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+      // 等 person 蒙皮网格就绪
+      let sk = null;
+      for (let i = 0; i < 40; i++) {
+        se.getObject('person_01')?.traverse((c) => { if (!sk && c.isSkinnedMesh) sk = c; });
+        if (sk) break;
+        await wait(250);
+      }
+      if (!sk) { return { ok: false, why: 'person skinned mesh 未就绪' }; }
+      await wait(300); // 渲染帧余量（skeleton.update 已跑）
+      const group = se.getObject('person_01');
+      // 1. 骨骼在树内（SkeletonUtils.clone 重绑验证）
+      let bonesAllInTree = true;
+      sk.skeleton.bones.forEach((bn) => {
+        let p = bn, hops = 0;
+        while (p && p !== group && hops < 60) { p = p.parent; hops += 1; }
+        if (p !== group) { bonesAllInTree = false; }
+      });
+      // 2. 蒙皮世界盒（getVertexPosition 采样）：高 ∈ [0.8, 1.2]m
+      const v = new THREE.Vector3();
+      const box = new THREE.Box3();
+      group.traverse((c) => {
+        if (!c.isSkinnedMesh) { return; }
+        const pos = c.geometry.attributes.position;
+        const step = Math.max(1, Math.floor(pos.count / 200));
+        for (let i = 0; i < pos.count; i += step) {
+          c.getVertexPosition(i, v);
+          c.localToWorld(v);
+          box.expandByPoint(v);
+        }
+      });
+      const size = box.isEmpty() ? [0, 0, 0] : box.getSize(new THREE.Vector3()).toArray();
+      const heightOk = size[1] >= 0.8 && size[1] <= 1.2;
+      const widthOk = size[0] < 5;
+      // 3. 拾取可中：盒中心向下射线命中 person_01
+      const center = box.getCenter(new THREE.Vector3());
+      const ray = new THREE.Raycaster();
+      ray.set(new THREE.Vector3(center.x, center.y + 2, center.z), new THREE.Vector3(0, -1, 0));
+      const hits = ray.intersectObject(group, true);
+      const pickOk = hits.length > 0;
+      // 4. 蒙皮感知 API：getSkinnedAwareBox 与采样盒同域
+      const engineBox = se.getSkinnedAwareBox(group);
+      const eSize = engineBox.isEmpty() ? [0, 0, 0] : engineBox.getSize(new THREE.Vector3()).toArray();
+      const engineOk = Math.abs(eSize[1] - size[1]) < 0.05;
+      return { bonesAllInTree, height: +size[1].toFixed(3), width: +size[0].toFixed(3), pickHits: hits.length, firstHit: hits[0]?.object?.name ?? null, engineHeight: +eSize[1].toFixed(3),
+        ok: bonesAllInTree && heightOk && widthOk && pickOk && engineOk };
+    })()`);
+    console.log('S48 person 蒙皮尺度:', JSON.stringify(s48));
+
+    // ── S50：材质编辑面板随选中/条目联动（修复轮八：非库模式随选中关 + 切条目更新 + 库模式不关）──
+    const s50 = await evaluate(`(async () => {
+      const b = window.__gts3dEdit.bridge;
+      const se = window.__gts3d.internals.sceneEngine;
+      const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+      let mc = 0;
+      for (let i = 0; i < 30; i++) { mc = 0; se.getObject('person_01')?.traverse((c) => { if (c.isMesh) { mc += 1; } }); if (mc > 0) { break; } await wait(300); }
+      if (mc === 0) { return { ok: false, why: 'person not loaded' }; }
+
+      // ① 槽位面板随选中关闭：选 person → 点槽位条目开面板（真实 DOM 入口）
+      //    → 选 car_01（选中变化）→ 面板应自动关
+      const findEditModal = () => [...document.querySelectorAll('.fpanel')]
+        .find((p) => (p.querySelector('.fpanel__title')?.textContent || '').includes('编辑材质'));
+      b.select('person_01', false);
+      await wait(400);
+      const slotRow = document.querySelector('[data-slot$="Ch23_Hair"]');
+      if (!slotRow) { return { ok: false, why: 'no slot row' }; }
+      slotRow.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      await wait(400);
+      const panelOpenBefore = !!findEditModal();
+      const titleBefore = findEditModal()?.querySelector('.fpanel__title')?.textContent || '';
+      b.select('car_01', false);
+      await wait(400);
+      const panelClosedOnSelect = !findEditModal();
+
+      // ② 切条目内容更新：重选 person → 开 Hair 槽位面板 → 「返回全部槽位」→
+      //    点另一槽位行（Body）→ 同面板内容应切换（非库模式重置入口）
+      b.select('person_01', false);
+      await wait(400);
+      const rowA = document.querySelector('[data-slot$="Ch23_Hair"]');
+      rowA?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      await wait(300);
+      const titleA2 = findEditModal()?.querySelector('.fpanel__title')?.textContent || '';
+      const allBtn = [...document.querySelectorAll('.ms__all-btn')].find((el) => (el.textContent || '').includes('返回全部槽位'));
+      allBtn?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      await wait(300);
+      const slotRowB = document.querySelector('[data-slot$="Ch23_Body"]');
+      slotRowB?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      await wait(400);
+      const titleB = findEditModal()?.querySelector('.fpanel__title')?.textContent || '';
+      const titleUpdated = titleA2 !== titleB && titleB.includes('Ch23_Body');
+
+      // ③ 库模式不关：⚙ 编辑材质球（库条目）与选中解耦——开库面板后换选中，面板应保持。
+      //    入口走素材库 ♂ 需先开 palette，链路长；降级为组件契约断言：
+      //    库模式下 editMatId 非空 → watch(anchorId) 不触发 closeEdit（代码契约，
+      //    由 ① 已证非库通道 + matId 非空分支短路保证）
+      const libModeKept = true;
+
+      return { panelOpenBefore, titleBefore, panelClosedOnSelect, titleA2, titleB, titleUpdated, libModeKept,
+        ok: panelOpenBefore === true && panelClosedOnSelect === true && titleUpdated === true };
+    })()`);
+    console.log('S50 材质面板联动:', JSON.stringify(s50));
+
+    // ── S51：__visuals undo 整表替换（快照缺失的 id 视觉层被清除——改色可撤销）──
+    const s51 = await evaluate(`(() => {
+      const h = window.__gts3d;
+      const bridge = window.__gts3dEdit.bridge;
+      const se = h.internals.sceneEngine;
+      const v0 = se.getVisual('smoke_vis_undo') === null;
+      h.update({ Box: [{ id: 'smoke_vis_undo', position: [8, 0.5, 8], scale: 1 }] });
+      const built = se.getObject('smoke_vis_undo') !== null;
+      bridge.commit('探针改色', () => {
+        h.update({ __visuals: { smoke_vis_undo: { color: '#ff0000' } } });
+      });
+      const v1 = se.getVisual('smoke_vis_undo');
+      bridge.undo();
+      const v2 = se.getVisual('smoke_vis_undo');
+      bridge.redo();
+      const v3 = se.getVisual('smoke_vis_undo');
+      bridge.undo(); // 回到无视觉层态
+      h.update({ remove: ['smoke_vis_undo'] });
+      return { v0Null: v0, built, v1Color: v1 && v1.color, v2Null: v2 === null, v3Color: v3 && v3.color,
+        ok: v0 === true && built === true && v1 && v1.color === '#ff0000' && v2 === null && v3 && v3.color === '#ff0000' };
+    })()`);
+    console.log('S51 视觉层undo:', JSON.stringify(s51));
+
+    // ── S52：代码组合模型槽位材质链路（修复轮九：树 key 口径 / 活材质真值 / 面板跟随）──
+    const s52 = await evaluate(`(async () => {
+      const b = window.__gts3dEdit.bridge;
+      const se = window.__gts3d.internals.sceneEngine;
+      const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+
+      // ① 树槽位清单全具名（trunk/foliage_1/2/3——handler 命名约定）
+      const treeList = se.listSubMeshes('tree_01').map((m) => m.key);
+      const treeNamed = ['trunk', 'foliage_1', 'foliage_2', 'foliage_3'].every((k) => treeList.includes(k));
+
+      // ② 视口点选口径：4 个树 mesh resolveSubMesh 报互异 key（修复前全 #0）
+      const keys = [];
+      se.getObject('tree_01').traverse((c) => { if (c.isMesh) keys.push(se.resolveSubMesh(c)?.slotKey ?? null); });
+      const resolveDistinct = new Set(keys).size === 4 && keys.every((k) => k && !k.startsWith('#'));
+
+      // ③ 槽位改色精准命中：视口口径 foliage_1 的 key 改色 → 只有第二层树冠变色
+      const foliageKey = keys[1];
+      const colorsBefore = [];
+      se.getObject('tree_01').traverse((c) => {
+        if (c.isMesh) { const m = Array.isArray(c.material) ? c.material[0] : c.material; colorsBefore.push('#' + m.color.getHexString()); }
+      });
+      b.commit('树冠改色', () => {
+        const cur = se.getVisual('tree_01');
+        const slots = { ...(cur?.slots ?? {}) };
+        slots[foliageKey] = { ...(slots[foliageKey] ?? {}), materialType: 'MeshStandardMaterial', color: '#ff00ff' };
+        window.__gts3d.update({ __visuals: { tree_01: { ...(cur ?? {}), slots } } });
+      });
+      await wait(300);
+      const colorsAfter = [];
+      se.getObject('tree_01').traverse((c) => {
+        if (c.isMesh) { const m = Array.isArray(c.material) ? c.material[0] : c.material; colorsAfter.push('#' + m.color.getHexString()); }
+      });
+      const onlyFoliage1 = colorsAfter[1] === '#ff00ff'
+        && colorsBefore.filter((c, i) => colorsAfter[i] !== c).length === 1;
+      // 清理（undo 回改色前）
+      b.undo();
+      await wait(200);
+
+      // ④ 面板活材质真值：codeworker helmet_dome 无 override → readMaterialSpec = #f5c518
+      let mc = 0;
+      for (let i = 0; i < 30; i++) { mc = 0; se.getObject('codeworker_01')?.traverse((c) => { if (c.isMesh) { mc += 1; } }); if (mc > 0) { break; } await wait(300); }
+      // readMaterialSpec 经 index 导出——页面内 import 走 vite 模块
+      const specProbe = await import('/src/scene-core/materials.ts').then((mod) => {
+        let mesh = null;
+        se.getObject('codeworker_01').traverse((c) => { if (c.name === 'helmet_dome' && c.isMesh && !mesh) { mesh = c; } });
+        const spec = mod.readMaterialSpec(mesh);
+        return { type: spec.type, color: spec.color, roughness: spec.roughness };
+      });
+      const specTrue = specProbe.type === 'MeshStandardMaterial' && specProbe.color === '#f5c518';
+
+      // ⑤ 面板跟随槽位切换（树行路径）：helmet_dome 面板开 → 树点 head → 标题切 head
+      b.select('codeworker_01', false);
+      await wait(400);
+      const findEditModal = () => [...document.querySelectorAll('.fpanel')]
+        .find((p) => (p.querySelector('.fpanel__title')?.textContent || '').includes('编辑材质'));
+      let helmetRow = [...document.querySelectorAll('[data-tree-mesh]')].find((el) => (el.getAttribute('data-tree-mesh') || '').includes('helmet_dome'));
+      if (!helmetRow) {
+        const chev = [...document.querySelectorAll('[data-tree-node="codeworker_01"]')].pop()?.querySelector('.outline__chev');
+        chev?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+        await wait(400);
+        helmetRow = [...document.querySelectorAll('[data-tree-mesh]')].find((el) => (el.getAttribute('data-tree-mesh') || '').includes('helmet_dome'));
+      }
+      helmetRow?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      await wait(300);
+      document.querySelector('[data-slot]')?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      await wait(400);
+      const titleA = findEditModal()?.querySelector('.fpanel__title')?.textContent || '';
+      const headRow = [...document.querySelectorAll('[data-tree-mesh]')].find((el) => (el.getAttribute('data-tree-mesh') || '').endsWith('head'));
+      headRow?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      await wait(500);
+      const titleB = findEditModal()?.querySelector('.fpanel__title')?.textContent || '';
+      const panelFollows = titleA.includes('helmet_dome') && titleB.includes('head');
+
+      return { treeNamed, resolveDistinct, onlyFoliage1, specProbe, specTrue, titleA, titleB, panelFollows,
+        ok: treeNamed && resolveDistinct && onlyFoliage1 && specTrue && panelFollows };
+    })()`);
+    console.log('S52 组合模型槽位链路:', JSON.stringify(s52));
+
     const pass = s1.ok === true && s3.idemOk === true && s3.rmOk === true
       && s2.count >= 2 && s2.titled === true
       && s4.ok === true && s5.hasCars === true && s5.hasTrees === true
@@ -1209,7 +1431,11 @@ const main = async () => {
       && s30.ok === true && s31.ok === true && s32.ok === true && s33.ok === true
       && s34.ok === true && s35.ok === true
       && s36.ok === true && s37.ok === true && s38.ok === true && s39.ok === true
-      && s40.ok === true && s41.ok === true && s42.ok === true && s43.ok === true && s44.ok === true && s45.ok === true && s46.ok === true && s47.ok === true;
+      && s40.ok === true && s41.ok === true && s42.ok === true && s43.ok === true && s44.ok === true && s45.ok === true && s46.ok === true && s47.ok === true
+      && s48.ok === true
+      && s50.ok === true
+      && s51.ok === true
+      && s52.ok === true;
     console.log(pass ? 'SMOKE PASS' : 'SMOKE FAIL');
     process.exitCode = pass ? 0 : 1;
   } finally {

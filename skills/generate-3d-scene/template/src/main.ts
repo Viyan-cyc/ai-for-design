@@ -6,7 +6,10 @@
  * 编辑态走 edit-main.ts（index.html 的 ?edit=1 分流），与本文件互不影响。
  */
 import { createApp } from 'vue';
-import { createScene, ExampleCard, registerExampleHandler, registerTreeHandler } from '@/scene-core';
+import {
+  createScene, ExampleCard, registerExampleHandler, registerTreeHandler,
+  registerCarHandler, registerWorkerHandler, registerRackHandler,
+} from '@/scene-core';
 import type { SceneData } from '@/scene-core/types';
 import App from './App.vue';
 
@@ -37,10 +40,15 @@ const boot = async (): Promise<void> => {
     (cb) => void handle.internals.renderLoop.onFrame((delta) => cb(delta)),
   );
   registerTreeHandler(handle.internals.sceneEngine);
-  // handler 注册后才存在的分组（cars/examples/trees）重喂（幂等 upsert：已存在节点原地 update）
+  registerCarHandler(handle.internals.sceneEngine);
+  registerWorkerHandler(handle.internals.sceneEngine);
+  registerRackHandler(handle.internals.sceneEngine);
+  // handler 注册后才存在的分组（cars/examples/trees/code models）重喂（幂等 upsert：已存在节点原地 update）
   const refeed: Record<string, unknown> = {};
   for (const [key, val] of Object.entries(data)) {
-    if (Array.isArray(val) && (key === 'examples' || key === 'cars' || key === 'trees')) {
+    if (Array.isArray(val)
+      && (key === 'examples' || key === 'cars' || key === 'trees'
+        || key === 'codecars' || key === 'codeworkers' || key === 'coderacks')) {
       refeed[key] = val;
     }
   }

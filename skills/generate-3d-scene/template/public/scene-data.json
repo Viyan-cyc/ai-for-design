@@ -237,5 +237,31 @@
         "assetId": "person"
       }
     }
+  ],
+  "codecars": [
+    {
+      "id": "codecar_01",
+      "position": [4.5, 0, -1],
+      "rotation": [0, 0.6, 0],
+      "scale": 1,
+      "params": { "paintColor": "#2c5f9e" }
+    }
+  ],
+  "codeworkers": [
+    {
+      "id": "codeworker_01",
+      "position": [3.2, 0, 2.6],
+      "rotation": [0, -0.4, 0],
+      "scale": 1,
+      "params": { "suitColor": "#e07020" }
+    }
+  ],
+  "coderacks": [
+    {
+      "id": "coderack_01",
+      "position": [-5, 0, -1.5],
+      "rotation": [0, 0.3, 0],
+      "scale": 1
+    }
   ]
 }

@@ -12,9 +12,9 @@
 import { computed, ref, watch } from 'vue';
 import * as THREE from 'three';
 import type { MaterialSpec, MaterialType, MaterialLibEntry } from '@/scene-core/types';
-import { migrateMaterialSpec } from '@/scene-core';
+import { migrateMaterialSpec, readMaterialSpec } from '@/scene-core';
 import type { MaterialLibService } from './MaterialLibService';
-import { visualToSpec, specToInline, keepNonMaterial, seedMaterialType } from './MaterialLibService';
+import { visualToSpec, specToInline, keepNonMaterial } from './MaterialLibService';
 import type { Bridge } from './Bridge';
 import MaterialParams from './MaterialParams.vue';
 import FloatingPanel from './FloatingPanel.vue';
@@ -78,26 +78,18 @@ const refresh = (): void => {
   if (v?.materialType || hasInlineFields) {
     spec.value = inlineSpec;
   } else {
-    // 槽位模式无 override 时：从该槽位 mesh 的活材质取类型种子
+    // 无 override：读目标 mesh 活材质真值（GLB/图元/代码组合模型统一口径；
+    // 贴图槽不溯源——GLB 内嵌贴图无 URL，贴图编辑走素材库上传）
     const obj = se.getObject(id);
-    if (props.slotKey && obj) {
-      let targetType: string | null = null;
-      const lastName = props.slotKey.split('/').pop();
-      obj.traverse((c) => {
-        const mesh = c as THREE.Mesh;
-        if (!targetType && mesh.isMesh && c.name === lastName) {
-          const mat = Array.isArray(mesh.material) ? (mesh.material[0] ?? null) : mesh.material;
-          targetType = mat ? mat.type : null;
-        }
-      });
-      spec.value = {
-        type: targetType === 'MeshLambertMaterial' || targetType === 'MeshPhysicalMaterial' || targetType === 'MeshStandardMaterial'
-          ? targetType
-          : 'MeshStandardMaterial',
-      };
-    } else {
-      spec.value = { type: seedMaterialType(obj) };
-    }
+    const lastName = props.slotKey?.split('/').pop();
+    let target: THREE.Mesh | null = null;
+    obj?.traverse((c) => {
+      const mesh = c as THREE.Mesh;
+      if (!target && mesh.isMesh && (props.slotKey ? c.name === lastName : true)) {
+        target = mesh;
+      }
+    });
+    spec.value = target ? readMaterialSpec(target) : { type: 'MeshStandardMaterial' };
   }
 };
 refresh();

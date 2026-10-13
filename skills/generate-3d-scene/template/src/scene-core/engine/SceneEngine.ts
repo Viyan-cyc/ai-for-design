@@ -11,7 +11,7 @@
 import * as THREE from 'three';
 import type { MeshSpecEntry, ModelSpecReport, SceneData, SceneNode, TreeSceneFragment, UpdateStats, Vec3, MaterialLibEntry } from '../types';
 import { RESERVED_KEYS } from '../types';
-import { applyVisualOverride, findBySlotKey, NON_MATERIAL_VISUAL_KEYS, type VisualOverride } from '../materials';
+import { applyVisualOverride, findBySlotKey, NON_MATERIAL_VISUAL_KEYS, unnamedChildIndex, type VisualOverride } from '../materials';
 
 /** 引擎内部节点记录（索引项） */
 interface NodeEntry {
@@ -161,8 +161,11 @@ export class SceneEngine {
   }
 
   /**
-   * 子网格清单（GLB 节点）：逐 mesh { key, name, triangles, materialType }。
-   * 资产报告缺失（未走 AssetEngine 加载）返回空数组。
+   * 子网格清单：逐 mesh { key, name, triangles, materialType }。
+   * 双数据源——资产报告优先（GLB 加载时预解析，无需重新遍历）；报告缺失时
+   * 遍历活实例（代码组合模型：handler 工厂产物无 assetId/报告，但结构自描述）。
+   * 两条路径的 key 口径一致：从场景节点自身起算的名称路径（未命名节点 #索引兜底），
+   * 与 resolveSubMesh 的 slotKey 互查互通。
    */
   listSubMeshes(nodeId: string): MeshSpecEntry[] {
     const entry = this.entries.get(nodeId);
@@ -170,11 +173,50 @@ export class SceneEngine {
       return [];
     }
     const assetId = entry.node.params?.assetId;
-    if (typeof assetId !== 'string' || !this.assetReportProvider) {
-      return [];
+    if (typeof assetId === 'string' && this.assetReportProvider) {
+      const report = this.assetReportProvider(assetId);
+      if (report) {
+        return report.meshes;
+      }
     }
-    const report = this.assetReportProvider(assetId);
-    return report?.meshes ?? [];
+    return this.collectInstanceMeshes(entry.obj);
+  }
+
+  /**
+   * 遍历活实例收集 mesh 清单（代码组合模型回退路径）。
+   * GLB 实例也无害：结构一致时与资产报告同结果。
+   * 工厂 Group 外壳自身若挂 mesh（当前无此形态）会计入——保持
+   * "从场景节点起算"口径与 resolveSubMesh 一致，剥壳逻辑不在数据层做。
+   */
+  private collectInstanceMeshes(root: THREE.Object3D): MeshSpecEntry[] {
+    const out: MeshSpecEntry[] = [];
+    root.traverse((child) => {
+      const mesh = child as THREE.Mesh;
+      if (!mesh.isMesh || !mesh.geometry) {
+        return;
+      }
+      const geo = mesh.geometry;
+      const tris = geo.index ? geo.index.count / 3 : (geo.attributes.position?.count ?? 0) / 3;
+      const mat = Array.isArray(mesh.material) ? mesh.material[0] : mesh.material;
+      const keyOf = (node: THREE.Object3D): string => {
+        const parts: string[] = [];
+        let cur: THREE.Object3D | null = node;
+        while (cur && cur !== root) {
+          parts.unshift(cur.name || unnamedChildIndex(cur));
+          cur = cur.parent;
+        }
+        return parts.join('/');
+      };
+      const key = keyOf(child);
+      const lastName = key.split('/').pop();
+      out.push({
+        key,
+        name: lastName ?? '',
+        triangles: Math.round(tris),
+        materialType: mat ? mat.type : 'unknown',
+      });
+    });
+    return out;
   }
 
   /**
@@ -187,11 +229,12 @@ export class SceneEngine {
     if (!entryObj) {
       return null;
     }
-    // 从命中 mesh 沿父链到场景节点，收集名称路径
+    // 从命中 mesh 沿父链到场景节点，收集名称路径（无名节点 #N=父级无名子序，与
+    // findBySlotKey/collectInstanceMeshes 统一口径）
     const parts: string[] = [];
     let cur: THREE.Object3D | null = object;
     while (cur && cur !== entryObj) {
-      parts.unshift(cur.name || `#${parts.length}`);
+      parts.unshift(cur.name || unnamedChildIndex(cur));
       cur = cur.parent;
     }
     if (parts.length === 0 || cur !== entryObj) {
@@ -219,6 +262,43 @@ export class SceneEngine {
   assetReportProvider: ((assetId: string) => ModelSpecReport | null) | null = null;
 
   /**
+   * 蒙皮感知包围盒（静态/蒙皮统一入口）。
+   * SkinnedMesh 的 geometry 盒是 bind-pose（未蒙皮），Box3.setFromObject 的 coarse
+   * 口径读不到真实渲染形状——蒙皮网格先 computeBoundingBox()（蒙皮采样）再乘
+   * matrixWorld；无蒙皮网格回退 precise 口径 setFromObject(obj, true)。
+   */
+  getSkinnedAwareBox(obj: THREE.Object3D): THREE.Box3 {
+    const box = new THREE.Box3();
+    let hasSkinned = false;
+    const v = new THREE.Vector3();
+    obj.traverse((child) => {
+      const sk = child as THREE.SkinnedMesh;
+      if (!sk.isSkinnedMesh) {
+        return;
+      }
+      hasSkinned = true;
+      sk.computeBoundingBox();
+      if (!sk.boundingBox) {
+        return;
+      }
+      const attr = sk.geometry.attributes.position;
+      if (!attr) {
+        return;
+      }
+      const step = Math.max(1, Math.floor(attr.count / 256));
+      for (let i = 0; i < attr.count; i += step) {
+        sk.getVertexPosition(i, v);
+        sk.localToWorld(v);
+        box.expandByPoint(v);
+      }
+    });
+    if (hasSkinned) {
+      return box;
+    }
+    return new THREE.Box3().setFromObject(obj, true);
+  }
+
+  /**
    * 子网格信息（编辑器选中槽位时面板显示）：按槽位 key 定位 mesh，
    * 返回局部 transform（相对模型节点）+ 该 mesh 自己的世界包围盒 + 材质概要。
    * 未命中返回 null（模型重导出改名等场景）。
@@ -240,7 +320,25 @@ export class SceneEngine {
     if (!target || !target.isMesh) {
       return null;
     }
-    const box = new THREE.Box3().setFromObject(target);
+    // 蒙皮网格的 geometry 盒是 bind-pose——蒙皮感知口径（采样盒 × 世界矩阵）
+    let box: THREE.Box3;
+    if ((target as THREE.SkinnedMesh).isSkinnedMesh) {
+      const sk = target as THREE.SkinnedMesh;
+      const v = new THREE.Vector3();
+      const attr = sk.geometry.attributes.position;
+      if (!attr) {
+        return null;
+      }
+      const step = Math.max(1, Math.floor(attr.count / 256));
+      box = new THREE.Box3();
+      for (let i = 0; i < attr.count; i += step) {
+        sk.getVertexPosition(i, v);
+        sk.localToWorld(v);
+        box.expandByPoint(v);
+      }
+    } else {
+      box = new THREE.Box3().setFromObject(target);
+    }
     const mat = Array.isArray(target.material) ? target.material[0] : target.material;
     const std = mat as THREE.MeshStandardMaterial | undefined;
     return {
@@ -471,8 +569,15 @@ export class SceneEngine {
       visit(item);
     }
 
-    // 3. 编辑器视觉层
-    if (frag.__visuals) {
+    // 3. 编辑器视觉层（提供即整表替换：undo/redo 快照为全集，快照里没有的 id
+    //    必须清除引擎里的视觉层——否则撤销"改色"后颜色残留，视觉编辑全部不可回滚）
+    if (frag.__visuals !== undefined) {
+      const incoming = new Set(Object.keys(frag.__visuals));
+      for (const id of [...this.visuals.keys()]) {
+        if (!incoming.has(id)) {
+          this.applyVisual(id, null);
+        }
+      }
       for (const [id, visual] of Object.entries(frag.__visuals)) {
         this.applyVisual(id, visual);
       }

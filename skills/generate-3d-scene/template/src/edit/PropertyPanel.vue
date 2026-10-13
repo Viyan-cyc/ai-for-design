@@ -59,6 +59,26 @@ const slotTitle = computed(() => {
   return `${s.slotKey.split('/').pop()} · 模型内部（相对 ${s.nodeId}，只读）`;
 });
 
+/** 蒙皮槽位：局部 transform 对蒙皮顶点数学无效（attached 模式矩阵抵消）——输入框置灰 */
+const slotIsSkinned = computed<boolean>(() => {
+  const s = selectedSlot.value;
+  if (!s) {
+    return false;
+  }
+  const obj = props.bridge.handle.internals.sceneEngine.getObject(s.nodeId);
+  if (!obj) {
+    return false;
+  }
+  const lastName = s.slotKey.split('/').pop();
+  let hit = false;
+  obj.traverse((c) => {
+    if (!hit && c.name === lastName && (c as THREE.SkinnedMesh).isSkinnedMesh) {
+      hit = true;
+    }
+  });
+  return hit;
+});
+
 /** 序列化快照（面板数据源；选中或桥状态变化时刷新） */
 const snap = ref<SceneData | null>(null);
 const refreshSnap = (): void => {
@@ -692,8 +712,9 @@ const closePalette = (): void => {
 const editMatId = ref<string | null>(null);
 const editOpen = ref(false);
 
-/** 库条目编辑入口（材质素材 ⚙ / ＋新建） */
+/** 库条目编辑入口（材质素材 ⚙ / ＋新建）——重置槽位态后设库目标 */
 const openEdit = (id: string): void => {
+  editSlotKey.value = null;
   editMatId.value = id;
   editOpen.value = true;
 };
@@ -725,6 +746,29 @@ const closeEdit = (): void => {
   editOpen.value = false;
   editMatId.value = null;
 };
+
+// 非库模式（inline/槽位）编辑目标随选中——选中变了旧目标失效，面板自动关；
+// 库模式（⚙ 编辑材质球本身）与选中解耦，保持不关
+watch(anchorId, () => {
+  if (editOpen.value && editMatId.value === null) {
+    closeEdit();
+  }
+});
+
+// 槽位间切换（同物体，anchorId 不变）：编辑面板开着时跟随新槽位（内容更新不关闭）——
+// 树行/视口点选的 selectedSlot 变化没有其他入口会同步 editSlotKey
+watch(() => state.value.selectedSlot, (slot) => {
+  if (!editOpen.value || editMatId.value !== null || !slot) {
+    return;
+  }
+  if (slot.nodeId !== anchorId.value) {
+    closeEdit();
+    return;
+  }
+  if (editSlotKey.value !== slot.slotKey) {
+    editSlotKey.value = slot.slotKey;
+  }
+});
 
 /** 各面板的排队槽位：先开着的不动，后出现的排到队列末尾（往左一格） */
 const paletteSlot = ref(0);
@@ -785,7 +829,7 @@ const modalPos = computed(() => defaultDockPos(editSlot.value, PANEL_W));
             >{{ selectionCount }} 个选中（编辑基准）</span>
           </div>
 
-          <!-- 子网格选中态：可编辑局部变换（写 slots[key]，M3） -->
+          <!-- 子网格选中态：可编辑局部变换（写 slots[key]，M3）——蒙皮网格置灰（对蒙皮顶点无效） -->
           <template v-if="slotInfo">
             <div class="ed-row">
               <span class="ed-label pp__ax">位置</span>
@@ -794,18 +838,21 @@ const modalPos = computed(() => defaultDockPos(editSlot.value, PANEL_W));
                   v-model.number="draft.px"
                   type="number"
                   step="0.1"
+                  :disabled="slotIsSkinned"
                   @input="applyTransform"
                 >
                 <input
                   v-model.number="draft.py"
                   type="number"
                   step="0.1"
+                  :disabled="slotIsSkinned"
                   @input="applyTransform"
                 >
                 <input
                   v-model.number="draft.pz"
                   type="number"
                   step="0.1"
+                  :disabled="slotIsSkinned"
                   @input="applyTransform"
                 >
               </div>
@@ -817,18 +864,21 @@ const modalPos = computed(() => defaultDockPos(editSlot.value, PANEL_W));
                   v-model.number="draft.rx"
                   type="number"
                   step="0.1"
+                  :disabled="slotIsSkinned"
                   @input="applyTransform"
                 >
                 <input
                   v-model.number="draft.ry"
                   type="number"
                   step="0.1"
+                  :disabled="slotIsSkinned"
                   @input="applyTransform"
                 >
                 <input
                   v-model.number="draft.rz"
                   type="number"
                   step="0.1"
+                  :disabled="slotIsSkinned"
                   @input="applyTransform"
                 >
               </div>
@@ -840,21 +890,30 @@ const modalPos = computed(() => defaultDockPos(editSlot.value, PANEL_W));
                   v-model.number="draft.sx"
                   type="number"
                   step="0.1"
+                  :disabled="slotIsSkinned"
                   @input="applyTransform"
                 >
                 <input
                   v-model.number="draft.sy"
                   type="number"
                   step="0.1"
+                  :disabled="slotIsSkinned"
                   @input="applyTransform"
                 >
                 <input
                   v-model.number="draft.sz"
                   type="number"
                   step="0.1"
+                  :disabled="slotIsSkinned"
                   @input="applyTransform"
                 >
               </div>
+            </div>
+            <div
+              v-if="slotIsSkinned"
+              class="pp__hint"
+            >
+              骨骼网格的局部变换对蒙皮顶点无效（three.js 数学），仅静态网格可调
             </div>
             <div class="ed-row">
               <span class="ed-label">材质</span>

@@ -304,7 +304,7 @@ export class Bridge {
 
   getBbox(id: string): THREE.Box3 | null {
     const obj = this.handle.internals.sceneEngine.getObject(id);
-    return obj ? new THREE.Box3().setFromObject(obj) : null;
+    return obj ? this.handle.internals.sceneEngine.getSkinnedAwareBox(obj) : null;
   }
 
   dispose(): void {

@@ -38,6 +38,7 @@ export const registerTreeHandler = (sceneEngine: SceneEngine): void => {
       new THREE.CylinderGeometry(TRUNK.top * height, TRUNK.radius * height, TRUNK.height * height, TRUNK.segments),
       trunkMat,
     );
+    trunk.name = 'trunk';
     trunk.position.y = (TRUNK.height * height) / 2;
     group.add(trunk);
 
@@ -50,6 +51,7 @@ export const registerTreeHandler = (sceneEngine: SceneEngine): void => {
         new THREE.ConeGeometry(tier.radius * height, tier.height * height, TRUNK.segments),
         new THREE.MeshStandardMaterial({ color, roughness: 0.9, flatShading: true }),
       );
+      cone.name = `foliage_${i + 1}`;
       cone.position.y = tier.y * height;
       group.add(cone);
     });

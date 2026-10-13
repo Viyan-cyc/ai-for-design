@@ -181,6 +181,26 @@ export const applyVisualOverride = (
 };
 
 /**
+ * 无名节点的槽位路径段：`#N` = 该节点在**父节点的无名子节点中的序号**
+ * （兄弟局部序，与遍历顺序无关——槽位 key 生成/解析统一此口径）。
+ */
+export const unnamedChildIndex = (node: THREE.Object3D): string => {
+  if (!node.parent) {
+    return '#0';
+  }
+  let n = 0;
+  for (const c of node.parent.children) {
+    if (c === node) {
+      return `#${n}`;
+    }
+    if (!c.name) {
+      n += 1;
+    }
+  }
+  return '#0';
+};
+
+/**
  * 按槽位 key（名称路径）定位 mesh。key 从 GLB 内部根（如 Armature）起算；
  * root 是场景节点（可能含工厂 Group 外壳 + gltf.scene 容器如 'Scene'）——
  * 首段在 root 直接子级找不到时，向内逐层探一层容器再找（对齐 buildReport 口径）。
@@ -189,15 +209,24 @@ export const findBySlotKey = (root: THREE.Object3D, slotKey: string): THREE.Obje
   const tryFrom = (start: THREE.Object3D): THREE.Object3D | null => {
     const parts = slotKey.split('/');
     let cur: THREE.Object3D = start;
-    let autoIndex = 0;
     for (const part of parts) {
-      const next = cur.children.find((c) => c.name === part)
-        ?? cur.children.find((c) => !c.name && `#${autoIndex}` === part);
+      let next: THREE.Object3D | undefined = cur.children.find((c) => c.name === part);
+      if (!next && part.startsWith('#')) {
+        const idx = Number(part.slice(1));
+        let n = 0;
+        next = cur.children.find((c) => {
+          if (c.name) {
+            return false;
+          }
+          if (n === idx) {
+            return true;
+          }
+          n += 1;
+          return false;
+        });
+      }
       if (!next) {
         return null;
-      }
-      if (!next.name) {
-        autoIndex += 1;
       }
       cur = next;
     }
@@ -444,6 +473,58 @@ export const migrateMaterialSpec = (spec: MaterialSpec, nextType: MaterialType):
 
 /** 图元默认材质（视觉在代码：引擎内建默认值，数据层无颜色字段） */
 export const PRIMITIVE_DEFAULT_COLOR = '#9cabb8';
+
+const SIDE_NAMES: Record<number, 'FrontSide' | 'BackSide' | 'DoubleSide'> = {
+  [THREE.FrontSide]: 'FrontSide',
+  [THREE.BackSide]: 'BackSide',
+  [THREE.DoubleSide]: 'DoubleSide',
+};
+
+/**
+ * 读单个 mesh 活材质的完整 MaterialSpec（标量/颜色/枚举；贴图槽不溯源——
+ * GLB 内嵌贴图无 URL，贴图编辑走素材库上传通道）。
+ * 编辑器「无 override 时的初始值种子」统一口径：GLB / 图元 / 代码组合模型
+ * 都读活实例真值，不猜默认值。
+ */
+export const readMaterialSpec = (mesh: THREE.Mesh): MaterialSpec => {
+  const base = Array.isArray(mesh.material) ? mesh.material[0] : mesh.material;
+  if (!base) {
+    return { type: 'MeshStandardMaterial' };
+  }
+  const type: MaterialType = base.type === 'MeshLambertMaterial' || base.type === 'MeshPhysicalMaterial'
+    ? base.type
+    : 'MeshStandardMaterial';
+  const spec: Record<string, unknown> = { type };
+  const b = base as unknown as Record<string, unknown>;
+  for (const key of fieldsForType(type)) {
+    if (TEXTURE_SLOT_KEYS.has(key) || !(key in base)) {
+      continue;
+    }
+    const val = b[key];
+    if (val === undefined) {
+      continue;
+    }
+    if (COLOR_KEYS.has(key)) {
+      const c = val as THREE.Color;
+      if (c && c.isColor) {
+        spec[key] = `#${c.getHexString()}`;
+      }
+      continue;
+    }
+    if (key === 'side') {
+      spec[key] = SIDE_NAMES[val as number] ?? 'FrontSide';
+      continue;
+    }
+    if (key === 'attenuationDistance') {
+      spec[key] = val === Infinity ? null : val;
+      continue;
+    }
+    if (typeof val === 'number' || typeof val === 'boolean') {
+      spec[key] = val;
+    }
+  }
+  return spec as unknown as MaterialSpec;
+};
 
 /** 简易贴图缓存（同 URL 只加载一次；实例间共享纹理） */
 const texCache = new Map<string, THREE.Texture>();

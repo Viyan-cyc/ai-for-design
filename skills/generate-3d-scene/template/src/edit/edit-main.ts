@@ -7,7 +7,10 @@
  */
 import { createApp } from 'vue';
 import { createScene, ExampleCard } from '@/scene-core';
-import { registerExampleHandler, registerTreeHandler } from '@/scene-core/handlers';
+import {
+  registerExampleHandler, registerTreeHandler,
+  registerCarHandler, registerWorkerHandler, registerRackHandler,
+} from '@/scene-core/handlers';
 import type { SceneData } from '@/scene-core/types';
 import { Bridge } from './Bridge';
 import { SelectionService } from './SelectionService';
@@ -50,9 +53,14 @@ const boot = async (): Promise<void> => {
     (cb) => void handle.internals.renderLoop.onFrame((delta) => cb(delta)),
   );
   registerTreeHandler(handle.internals.sceneEngine);
+  registerCarHandler(handle.internals.sceneEngine);
+  registerWorkerHandler(handle.internals.sceneEngine);
+  registerRackHandler(handle.internals.sceneEngine);
   const refeed: Record<string, unknown> = {};
   for (const [key, val] of Object.entries(data)) {
-    if (Array.isArray(val) && (key === 'examples' || key === 'cars' || key === 'trees')) {
+    if (Array.isArray(val)
+      && (key === 'examples' || key === 'cars' || key === 'trees'
+        || key === 'codecars' || key === 'codeworkers' || key === 'coderacks')) {
       refeed[key] = val;
     }
   }

@@ -347,7 +347,7 @@ export const createScene = async (
     frameObject(id: string): void {
       const obj = sceneEngine.getObject(id);
       if (obj) {
-        const box = new THREE.Box3().setFromObject(obj);
+        const box = sceneEngine.getSkinnedAwareBox(obj);
         controlsEngine.frameBox(box, cameraEngine.camera);
       }
     },

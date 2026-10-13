@@ -40,9 +40,12 @@ export class SelectionService {
     canvas.addEventListener('click', this.onClick);
     canvas.addEventListener('pointerdown', this.onPointerDown);
     window.addEventListener('keydown', this.onKeydown);
-    // 每帧刷新包围盒：物体被 Gizmo 拖拽/面板调参/动画驱动时实时跟随
+    // 每帧刷新包围盒：物体被 Gizmo 拖拽/面板调参/动画驱动时实时跟随。
+    // 蒙皮网格先重算蒙皮采样盒/球（BoxHelper 的 setFromObject 与 raycast
+    // 都优先读 object.boundingBox/boundingSphere——重算即跟随真实渲染形状）
     handle.internals.renderLoop.onFrame(() => {
       this.highlights.forEach((helper) => {
+        this.refreshSkinnedBounds(helper.userData.target as THREE.Object3D | undefined);
         helper.update();
       });
     });
@@ -109,6 +112,25 @@ export class SelectionService {
     }
   }
 
+  /**
+   * 蒙皮网格的 geometry 盒是 bind-pose——BoxHelper 派生自它，选中骨骼模型时
+   * 框的是假盒。每帧 update 前重算蒙皮采样盒（getVertexPosition），
+   * 并把 geometry.boundingBox 同步成蒙皮盒，让 helper 跟真实渲染形状。
+   */
+  private refreshSkinnedBounds(target: THREE.Object3D | undefined): void {
+    if (!target) {
+      return;
+    }
+    target.traverse((child) => {
+      const sk = child as THREE.SkinnedMesh;
+      if (!sk.isSkinnedMesh) {
+        return;
+      }
+      sk.computeBoundingBox();
+      sk.computeBoundingSphere();
+    });
+  }
+
   private addHelper(obj: THREE.Object3D, color: number, key: string): void {
     const helper = new THREE.BoxHelper(obj, color);
     // helper 自身不可被拾取（否则点中边框会命中 helper 干扰 pick）
@@ -118,6 +140,8 @@ export class SelectionService {
     mat.transparent = true;
     mat.opacity = 0.9;
     helper.renderOrder = 999;
+    helper.userData.target = obj;
+    this.refreshSkinnedBounds(obj);
     this.scene.add(helper);
     helper.update();
     this.highlights.set(key, helper);
