@@ -472,6 +472,22 @@ export const inspectModel = (model, opts = {}) => {
     warnings.push(...conventions.map((c) => `[约定·告警] ${c}`));
   }
 
+  // 消费端一致性硬门禁（three GLTFLoader 同款行为——自解析通过≠运行时能加载，
+  // 56 资产 bufferView 缺 buffer 字段实测漏检教训）：
+  // ① bufferView.buffer 必填（spec 要求；undefined 会直传 loadBuffer 抛错）
+  // ② images/textures 引用的 bufferView 索引不得越界
+  const viewCount = json.bufferViews?.length ?? 0;
+  for (const [i, bv] of (json.bufferViews ?? []).entries()) {
+    if (bv?.buffer === undefined) {
+      violations.push(`bufferView[${i}] 缺 buffer 字段（glTF 2.0 必填；three 加载会抛错）`);
+    }
+  }
+  for (const [i, img] of images.entries()) {
+    if (img.bufferView !== undefined && (img.bufferView < 0 || img.bufferView >= viewCount)) {
+      violations.push(`images[${i}].bufferView=${img.bufferView} 越界（bufferViews 共 ${viewCount}）`);
+    }
+  }
+
   if (unknownTextureFormats > 0) {
     warnings.push(`${unknownTextureFormats} 张贴图尺寸未知（KTX2/Basis/未解析格式），未纳入尺寸门禁`);
   }

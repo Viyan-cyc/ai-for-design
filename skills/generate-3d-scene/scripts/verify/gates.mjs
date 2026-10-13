@@ -183,7 +183,7 @@ rmSync(join(F('stripped'), 'src', 'edit'), { recursive: true, force: true });
   const data = JSON.parse(readFileSync(p, 'utf8'));
   data.Box = [...data.Box, ...Array.from({ length: 401 }, (_, i) => ({ id: `pad_${i}`, position: [i, 0, 0] }))];
   writeFileSync(p, `${JSON.stringify(data, null, 2)}\n`);
-  // R1-3 修订（§8.2）：预算超限默认 WARN 放行，--strict 升阻断
+  // 预算超限默认 WARN 放行（重类不阻塞），--strict 升阻断
   const rWarn = run('build.mjs', [d], true);
   check('build: 预算超限 WARN 放行（重类不阻塞）', rWarn.ok && /场景预算超限/.test(rWarn.out), `status=${rWarn.status} ${firstFail(rWarn.out)}`);
   const rStrict = run('build.mjs', [d, '--strict'], false);

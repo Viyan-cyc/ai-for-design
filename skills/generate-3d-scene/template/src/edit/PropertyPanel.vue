@@ -208,15 +208,16 @@ const applyTransform = (): void => {
   if (s && s.nodeId === id) {
     // 槽位态：局部 transform 写 slots[key]（merge 通道，其余槽位/物体级不动）
     props.bridge.commitLive('子网格变换', () => {
-      const cur = props.bridge.handle.internals.sceneEngine.getVisual(id);
-      const slots = { ...(cur?.slots ?? {}) };
-      slots[s.slotKey] = {
-        ...(slots[s.slotKey] ?? {}),
-        position: [d.px, d.py, d.pz],
-        rotation: [d.rx, d.ry, d.rz],
-        scale: [d.sx, d.sy, d.sz],
-      };
-      props.bridge.handle.update({ __visuals: { [id]: { ...(cur ?? {}), slots } } });
+      // applyVisual 单物体合并语义——update({__visuals}) 是整表替换（会清其他物体的视觉层）
+      props.bridge.handle.internals.sceneEngine.applyVisual(id, {
+        slots: {
+          [s.slotKey]: {
+            position: [d.px, d.py, d.pz],
+            rotation: [d.rx, d.ry, d.rz],
+            scale: [d.sx, d.sy, d.sz],
+          },
+        },
+      });
     });
     return;
   }

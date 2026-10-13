@@ -1,7 +1,7 @@
 /**
- * perf-fps.mjs — 运行期性能观测（R1-3 修订：三层分类，§4.5）
+ * perf-fps.mjs — 运行期性能观测（三层分类口径）
  *
- * 三层断言（2026-10-13 用户裁决，§8.2）：
+ * 三层断言：
  *   坏 = 唯一硬 FAIL：报错/白屏/无法渲染/场景图不符/加载失败（smoke-structural 管，本脚本管 __gts3d 挂载）
  *   重 = WARN：calls/triangles/programs 超预算——预算数值机器相关 + 需求相关（60 块岩石=合法 3M 三角形），
  *        不阻塞交付；LLM 必须在验证报告回应（优化或说明理由）
@@ -10,6 +10,7 @@
  * `--strict` 恢复严格判定（超预算/帧率不足升 FAIL，validate-model 同款先例）。
  * 软渲染环境（swiftshader）只做预算观测不计 fps（fps 天然偏低无意义）。
  * 采样：renderLoop.getStats()（每帧记录的 1s 窗口帧率，零侵入）。
+ * 口径依据见 references/verification.md。
  *
  * 用法：node perf-fps.mjs [url] [--duration 20] [--gpu] [--strict] [--json]
  *          [--max-calls N] [--max-triangles N] [--max-materials N]

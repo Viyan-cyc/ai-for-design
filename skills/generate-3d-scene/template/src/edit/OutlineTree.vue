@@ -354,12 +354,10 @@ const toggleMeshExpand = (id: string): void => {
 /** 子网格 eye：写 slots[key].visible（merge 物体级其余槽位；undo/serialize 现成） */
 const toggleSlotVisible = (nodeId: string, slotKey: string): void => {
   const se = props.bridge.handle.internals.sceneEngine;
-  const cur = se.getVisual(nodeId);
-  const slots = { ...(cur?.slots ?? {}) };
-  const slotCur = slots[slotKey] ?? {};
-  slots[slotKey] = { ...slotCur, visible: !(slotCur.visible !== false) };
+  const slotCur = se.getVisual(nodeId)?.slots?.[slotKey] ?? {};
   props.bridge.commit('子网格显隐', () => {
-    props.bridge.handle.update({ __visuals: { [nodeId]: { ...(cur ?? {}), slots } } });
+    // applyVisual 单物体合并语义——update({__visuals}) 是整表替换（会清其他物体的视觉层）
+    se.applyVisual(nodeId, { slots: { [slotKey]: { visible: !(slotCur.visible !== false) } } });
   });
 };
 
@@ -386,14 +384,14 @@ const onDblClick = (id: string): void => {
 const toggleVisible = (id: string): void => {
   const next = !isVisible(id);
   props.bridge.commit('显隐', () => {
-    props.bridge.handle.update({ __visuals: { [id]: { visible: next } } });
+    props.bridge.handle.internals.sceneEngine.applyVisual(id, { visible: next });
   });
 };
 
 const toggleLocked = (id: string): void => {
   const next = !isLocked(id);
   props.bridge.commit('锁定', () => {
-    props.bridge.handle.update({ __visuals: { [id]: { locked: next } } });
+    props.bridge.handle.internals.sceneEngine.applyVisual(id, { locked: next });
   });
 };
 

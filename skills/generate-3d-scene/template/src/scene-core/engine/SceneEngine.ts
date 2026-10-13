@@ -354,7 +354,7 @@ export class SceneEngine {
 
   // ---- 生命周期 ----
 
-  /** 应用编辑器视觉层（单物体；增量合入） */
+  /** 应用编辑器视觉层（单物体；增量合入——slots 逐槽合并，槽内字段覆盖） */
   applyVisual(id: string, visual: VisualOverride | null): void {
     const obj = this.entries.get(id)?.obj;
     if (!obj) {
@@ -369,7 +369,16 @@ export class SceneEngine {
       }
       return;
     }
-    const merged = { ...(this.visuals.get(id) ?? {}), ...visual };
+    const cur = this.visuals.get(id) ?? {};
+    // 浅 merge 会整块替换 slots map（同物体其他槽位丢失）——slots 逐槽合并，
+    // 槽内字段浅覆盖（编辑面板每次提交都带该槽完整意图字段）
+    const merged = { ...cur, ...visual };
+    if (visual.slots !== undefined || cur.slots !== undefined) {
+      merged.slots = { ...(cur.slots ?? {}) };
+      for (const [key, slotInc] of Object.entries(visual.slots ?? {})) {
+        merged.slots[key] = { ...merged.slots[key], ...slotInc };
+      }
+    }
     // 纯开关增量（不含任何材质字段）不重放材质——避免材质已编辑物体的显隐/锁定
     // 操作反复克隆材质（旧 clone 不释放）+ 贴图异步重赋。
     // slots 增量（槽位换材质/隐藏）必须走 full——槽位命中在 applyVisualOverride 内部定位

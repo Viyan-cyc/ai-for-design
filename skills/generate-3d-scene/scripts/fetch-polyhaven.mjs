@@ -124,6 +124,8 @@ const TAG_ZH = {
   'street lamp': '路灯', 'light fixture': '灯具', fixture: '灯具',
   scaffolding: '脚手架', 'power supply': '电源', junction: '接线盒',
   'junction box': '接线盒', underground: '地下', connectors: '连接器',
+  wheelchair: '轮椅', infirmary: '医务室', hospital: '医院', medical: '医疗',
+  clinic: '诊所', mobilityaid: '助行器', 'folding wheelchair': '折叠轮椅',
 };
 
 /* ── ① 精选（确定性算法）────────────────────────────────────────────────── */
@@ -257,18 +259,21 @@ export const mergeToGlb = (dir, gltfName) => {
   });
 
   // 贴图在后（按 images 顺序，保留 mimeType）；bufferView 索引 = 原 bufferViews 数 + 本图序号
+  // （bin 是数据块不占 view 索引——曾多加 binViews.length 致 images 引用整体 +1 越界，实测教训）
   const imgViews = (json.images ?? []).map((img, idx) => {
     if (!img.uri) {
       throw new Error('image 无 uri（已内嵌形态不支持）');
     }
     const { byteOffset, byteLength } = makeView(readFileSync(join(dir, img.uri)));
-    return { bufferView: (json.bufferViews ?? []).length + binViews.length + idx, mimeType: img.mimeType ?? 'image/jpeg', byteOffset, byteLength };
+    return { bufferView: (json.bufferViews ?? []).length + idx, mimeType: img.mimeType ?? 'image/jpeg', byteOffset, byteLength };
   });
 
   // 重写 json：单 buffer（无 uri）+ images 走 bufferView 引用（原 bufferViews 原样前置保留——
-  // 它们引用的顶点数据位于 bin 块起始区，与合并前 buffers[0] 切片位置一致）
+  // 它们引用的顶点数据位于 bin 块起始区，与合并前 buffers[0] 切片位置一致）。
+  // bufferView.buffer 必填（glTF 2.0 spec）——贴图 view 显式补 buffer:0，
+  // 缺字段时 three GLTFParser 把 undefined 传 loadBuffer 直接抛错（56 资产实测教训）
   const newJson = { ...json };
-  newJson.bufferViews = [...(json.bufferViews ?? []).map((v) => ({ ...v })), ...imgViews.map((v) => ({ byteOffset: v.byteOffset, byteLength: v.byteLength }))];
+  newJson.bufferViews = [...(json.bufferViews ?? []).map((v) => ({ buffer: 0, ...v })), ...imgViews.map((v) => ({ buffer: 0, byteOffset: v.byteOffset, byteLength: v.byteLength }))];
   newJson.images = imgViews.map((v) => ({ bufferView: v.bufferView, mimeType: v.mimeType }));
   newJson.buffers = [{ byteLength: binLen }];
 
@@ -313,7 +318,7 @@ export const translateTags = (tags) => {
 };
 
 /**
- * manifest 条目（§4.16.3：英文 name / 中文 category / 字典 tags / 英文 search_text）。
+ * manifest 条目（英文 name / 中文 category / 字典翻译 tags（含 id 逐词补捞）/ 英文 search_text）。
  */
 export const buildEntry = (id, meta, glbSize) => {
   const lowerId = id.toLowerCase();

@@ -221,12 +221,10 @@ export class MaterialLibService {
       return;
     }
     this.bridge.commit('槽位链接材质', () => {
-      const se = this.handle.internals.sceneEngine;
-      const cur = se.getVisual(nodeId);
-      const slots = { ...(cur?.slots ?? {}) };
-      slots[slotKey] = { ...(slots[slotKey] ?? {}), libraryRef: matId };
-      // merge 写入（applyVisual 合并语义对 slots 整块替换无残留问题——slots 不与物体级互斥）
-      this.handle.update({ __visuals: { [nodeId]: { ...(cur ?? {}), slots } } });
+      // applyVisual 单物体合并语义——update({__visuals}) 是整表替换（会清其他物体的视觉层）
+      this.handle.internals.sceneEngine.applyVisual(nodeId, {
+        slots: { [slotKey]: { libraryRef: matId } },
+      });
     });
   }
 

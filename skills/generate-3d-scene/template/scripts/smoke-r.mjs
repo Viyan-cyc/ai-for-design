@@ -90,7 +90,7 @@ const shouldRun = (n) => {
   }
   return true;
 };
-/** 段是否计入 pass 判定（前置铺状态段不计——skipped 守卫已覆盖，此函数保留给分段输出过滤用） */
+
 const EDGE = 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe';
 const CDP_PORT = 9223;
 

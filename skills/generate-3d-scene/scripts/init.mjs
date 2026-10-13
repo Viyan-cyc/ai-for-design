@@ -2,7 +2,7 @@
  * init.mjs — 工程脚手架（母版复制 → 资产库注入 → 占位替换 → 首次构建校验）
  *
  * 场景生成：把 skill 的母版工程（template/）复制成目标工程，
- * 注入本次要用到的资产（skill assets/ → 目标 public/assets/，R2-5），替换占位，
+ * 注入本次要用到的资产（skill assets/ → 目标 public/assets/），替换占位，
  * 然后跑构建门禁做首次校验——LLM 拿到一个"能开局"的编辑态工程。
  *
  * 做五件事：

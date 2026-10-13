@@ -621,13 +621,14 @@ S9 交付        strip-edit 出二开包 + INTEGRATION_GUIDE 校验 + 验证报�
 - **检索抽查方法论沉淀**：中文 miss 根因分两类——字典词缺口（补词即治）与**语料缺口**（词只存在于模型名，源 tags 没有；id 逐词补捞即治）。检索器 tokenize 为 CJK unigram+bigram，中文 tags 精确匹配权重最高
 - **残留**：`--ids` 名单 keep-ids.txt 落 .tmp-polyhaven/（数据非代码，不入 skill 仓库）；2 个 md5 失败资产（cannon_01/vintage_grandfather_clock_01）用户裁决不追查（首版 2k 跑的失败记录，1k 定制名单未含这俩）
 
-**批次 5：skill 大脑 + 收尾**
+**批次 5：skill 大脑 + 收尾（2026-10-13 完成，含修复轮十；评审记录 11 Overall Verdict PASS）**
 - ~~5.1 install-blender.mjs（缓存探测/镜像拉取/解压登记/失败降级）~~ → **整项取消（2026-10-12 用户裁决「blender完全从这个skill里剔除出去吧」，§8.1）**——Blender 通道剔除，脚本不写；本机 `~/.gts3d/blender/` 已清理（2026-10-13）
-- [x] 5.4 ~~gen-component-catalog.mjs 跑通 → component-catalog.md 产出~~ → **由批次 C 接管**（sync-components.mjs，2026-10-09 终裁），提前完成- [ ] 5.2 SKILL.md（九步工作流 + 4.4 降级阶梯（四层版） + 硬约束：规格门禁/铁律/诚实分级/内网纪律/数据结构 v3 生成纪律）
-- [ ] 5.3 references/ 文档（scene-workflow/asset-pipeline/model-spec/modeling-channels（**LLM 直写单通道版**：简模图元+精模代码组合模型+mesh 命名约定，Blender 内容仅历史归档不写正文）/verification/scene-engineering/component-catalog 生成/eslint-notes）+ **"生产数据→update 片段"翻译模式章节（MQTT/WebSocket 示例，一等公民）**
-- [ ] 5.5 README.md（投放说明/资产库准备/镜像配置/**内网 npm 安装方式**）
-- [ ] 5.6 端到端演练：文字描述 → 全流程 → 编辑态工程 + 二开包 + 验证报告全绿
-- [ ] 5.7 用户验收（截图/演示/文档过目）→ Review
+- [x] 5.4 ~~gen-component-catalog.mjs 跑通 → component-catalog.md 产出~~ → **由批次 C 接管**（sync-components.mjs，2026-10-09 终裁），提前完成
+- [x] 5.2 SKILL.md（九步工作流 + 4.4 降级阶梯（四层版） + 硬约束：规格门禁/铁律/诚实分级/内网纪律/数据结构 v3 生成纪律）
+- [x] 5.3 references/ 文档（scene-workflow/asset-pipeline/model-spec/modeling-channels（**LLM 直写单通道版**：简模图元+精模代码组合模型+mesh 命名约定，Blender 内容仅历史归档不写正文）/verification/scene-engineering/component-catalog 生成/eslint-notes）+ **"生产数据→update 片段"翻译模式章节（MQTT/WebSocket 示例，一等公民）**
+- [x] 5.5 README.md（投放说明/资产库准备/镜像配置/**内网 npm 安装方式**）
+- [x] 5.6 端到端演练：文字描述 → 全流程 → 编辑态工程 + 二开包 + 验证报告全绿
+- [x] 5.7 用户验收（截图/演示/文档过目）→ Review
 
 **批次 C：3d-components 上游改造 + 组件库接入链（2026-10-09 新增，批次 R 之前执行）**
 > 依据 §3 Decision 增补。跨仓库：源仓 `D:\cyc\project\octo\test\3d-components`（用户已授权读写），skill 侧落在 generate-3d-scene。
@@ -1507,6 +1508,34 @@ TRANSCRIPTION 物体视觉 override 表增 slot 列；LLM 转录产物按 mesh �
 - **评审记录 9（2026-10-13，修复轮七+补丁 × 批次 PH 合并三轴评审）：Overall Verdict PASS**——11 检查项（10 PASS + 1 FIXED 注释卫生顺手修）+ 挂账 3 项（P2 补丁后全量冒烟批次 4 强制复跑 / P3 wheelchair_01 无中文 tag / P2 存量 S52④ dev 专属路径）。gates 合并基线实跑 40/40。详见 §6 评审记录 9。**下一动作：批次 4（验证回路 §4.7 四脚本 + 分段冒烟参数 --only/--from + 强制全量复跑）→ 批次 5（skill 大脑+收尾，P3 挂账清点）**。
 - **Blender 通道剔除补录（2026-10-13）**：2026-10-12 用户裁决「blender完全从这个skill里剔除出去吧」当时未落 Spec（Reverse Sync 欠账，取证过程见 §8.1），本日补录——降级阶梯五层→四层、批次 5.1 install-blender.mjs 取消、批次 4.4 ensure-env 砍 Blender 探测、modeling-channels.md 缩为单通道、本机 `~/.gts3d/blender/` 已清理。**批次 4 起按无 Blender 范围执行。**
 - **批次 4 完成（2026-10-13，用户「开始执行，全部」批内连跑）**：4.1–4.4 四脚本 + smoke-r 分段参数 + S52④ 修复 + 强制全量冒烟复跑 + §8.2 R1-3 修订捎话改造（perf-fps WARN/--strict、build.mjs 预算 warnings、gates 用例一拆二 40→41）全部落地。验证证据：STRUCT PASS×2 / VISUAL PASS / PERF OK / smoke-r S1–S51 全量 + S52 分段全 true（全量跑 S52 处 RPC 超时为长链路 CDP 累积态环境噪声，同修复轮七）/ gates 41/41 / 三绿。挂账 P2 两项（补丁后全量冒烟 + S52④ dev 路径）收口；P3 wheelchair_01 中文 tag 仍挂（批次 5 清点）。详见 §4.7 批次 4 执行记录。**REVIEW EXECUTE 完成（2026-10-13，评审记录 10 §6）：Overall Verdict PASS**——10 检查项（8 PASS + 2 FIXED P2 判据缺陷评审发现当场修：smoke-visual focusId 判据 userData.assetGlb 零存在恒走兜底→改 listSubMeshes、smoke-structural 404 豁免正则过宽吞掉资产缺失硬 FAIL→收窄 favicon+无 URL 文本）+ 2 处 P3 卫生顺手修（isTarget 死代码、FROM 硬编码 52）。**下一动作：批次 5（skill 大脑 + 收尾），批间停等确认。**
+
+- **批次 5 开工（2026-10-13，新会话 Research 完成，待用户确认开工序）**：
+  - **基线核查（本会话实跑）**：build PASS（calls=12/tris=98,914/材质=4 全在预算）/ gates **41/41** / vue-tsc 0 / eslint **1 error**（smoke-r.mjs:93 lines-around-comment——批次 4「isTarget 死代码删除」顺手修时留下的孤儿注释紧贴 `};`，属引入回归，基线应为 0 errors）/ ensure-env 三态 PASS（node 24.16.0 / three 声明+实装 0.185.1 / 多模态 CLI 覆盖验证）/ 检索抽查（椅子→outdoor_table_chair_set_01 / 监控摄像头→security_camera_01 / 机柜→rack / 轮椅→miss 证实 P3 挂账仍在）。
+  - **P3 挂账全量清点（跨全部评审记录扫描，任务 #5）**：① wheelchair_01 中文 tag（评审记录 9/10）；② 评审记录 7 P3×4 存活三项（①defaultDockPos 不随 resize、③删除确认态点行仍应用、④无选中点条目仍关面板——②clamp 已解决）；③ 评审记录 6 P3×4（`__lib:count` 哨兵算术/TRANSCRIPTION 转义/--deps install exit 码/gates spawn 超时）；④ 评审记录 5 PARTIAL 三边界（GLB 异步窗口种子回退/滑杆 GC churn/saveAs 空规格）；⑤ 脚本头注释 Spec 指引五处（build.mjs:32/gates.mjs:186/perf-fps.mjs:2-4/fetch-polyhaven.mjs:316/init.mjs:5，skill-output-style 规则，上批裁决未擅动）；⑥ 批次 C P3×4（oneLiner 截断等，sync-components 零触发）；⑦ R3-1 残留（template 无独立 .gitignore + package-lock resolved 外网 URL）。
+  - **工作区状态**：ep-coder git 干净（仅 template/public/Untitled-1.md 未跟踪——用户反馈备忘，内容均为已处理历轮反馈，处置待用户裁决）；3d-components 源仓 9 文件未提交（用户自决）。
+
+- **批次 5 执行记录（2026-10-13，用户指出「直接执行 spec」纠偏后批内连跑）**：
+  - **5.0 eslint 回归修复**：smoke-r.mjs:93 孤儿注释删除（批次 4 顺手修引入）→ eslint **0 errors** 恢复。
+  - **5.2 SKILL.md 落地**（~200 行）：frontmatter（name/description/version）+ 九步工作流表（每步 DoD 指向 scene-workflow.md）+ 四层降级阶梯（Blender 剔除版，含「禁止生成 GLB 脚本」与 mesh 具名约束）+ 七条硬约束（内网零 CDN / v3 数据纪律 / 三条铁律 / makeAssetNodeFactory 唯一构建器 / 蒙皮四边界 / 验证回路三层口径 / 人工验收优先策略）+ 命令路由表（14 命令含退出码约定）+ references 路由表（按需读，不全量载入）+ 交付话术 + 已知边界。
+  - **5.3 references 六文档落地**（component-catalog.md 批次 C 已生成，共七份）：① scene-workflow.md（九步逐步指引：每步 DoD + 停止点，「必须问清清单」四项、fail-all 修复循环、S9 交付六件套）；② asset-pipeline.md（库现状表 / zip+manifest schema / 分级门禁表+理由 / Poly Haven 扩库 / 检索质量维护）；③ model-spec.md（两档规格表 + 每条规格存在理由 + 场景预算 WARN 口径 + 与降级阶梯的关系）；④ modeling-channels.md（LLM 直写单通道：简模 tree 范式 + 精模 car/worker/rack 三范式手法表（轮廓挤出/车削/材质分件/比例基准表/姿态细节）+ 命名约定 + 写法纪律六条 + 已否决方案防回潮）；⑤ verification.md（三层分类表 + 工具矩阵 + 视觉判定 8 项清单 + 验证报告模板 + 环境与策略纪律六条）；⑥ scene-engineering.md（分层禁区图 / v3 数据纪律 / handler 契约 / stateMaterials / **生产数据接入（update 片段翻译，一等公民）** / 转录机制 / 常见陷阱表七条）；⑦ eslint-notes.md（flat config 结构 / 常见报错对照 / scripts 豁免说明）。
+  - **5.5 README.md 落地**：skill 定位图 / 目录结构 / 环境要求（内网镜像 URL 已指向）/ 投放四步 / 资产库三线（内置 59 / 自定义入库 / Poly Haven 扩库）/ 组件库（file: 依赖形态 + sync 流程 + 作者协议）/ 内网 npm 安装两式 / 验证设施表 / 已知边界。
+  - **5.4 P3 挂账收口（修五项 + 记档关闭其余）**：
+    - **① wheelchair_01 中文检索**：TAG_ZH 字典补 7 词条（wheelchair/infirmary/hospital/medical/clinic/mobilityaid/folding wheelchair）+ manifest 资产 tags/search_text 更新 + 索引重建（检索冒烟 PASS）→ 「轮椅」检索 **wheelchair_01 第 1 位 score 0.3893**（修复前 miss，top 是 sofa_03）。
+    - **③ `__lib:count` 哨兵算术**：build.mjs 材质计数改直白相加 `materialKeys.size + libCount`（原哨兵+补偿 -1 绕弯写法），语义等价（复验 build PASS 材质=4 不变）。
+    - **③ TRANSCRIPTION 转义**：strip-edit.mjs 新增 `mdCell()` 转义器（`|`→`\|`、反引号转义），①物体视觉表/①′槽位表/③引用表三处表格单元格全部走 mdCell——单测验证 `car|01`→`car\|01` 断列修复。
+    - **⑤ 脚本头注释 Spec 指引五处全清**：build.mjs:32（R1-3→自含描述）/ gates.mjs:186（R1-3 修订（§8.2）→口径描述）/ perf-fps.mjs:2-4（R1-3/§4.5/§8.2/裁决出处→自含三层分类+「口径依据见 references/verification.md」）/ fetch-polyhaven.mjs:318（§4.16.3→四件套描述）/ init.mjs:5（R2-5→去除）。grep 复验 scripts 全目录 Spec 指引 **0 残留**。
+    - **⑦ R3-1 残留**：template/ 独立 `.gitignore` 新增（node_modules/dist/.smoke-*/*.local——skill 独立投放时不再依赖 ep-coder 根 gitignore 兜底）；package-lock.json **221 处 resolved URL 全量重写** registry.npmjs.org→mirrors.tools.huawei.com/npm（内网纪律对齐 ux-prototype 先例；npm ci --dry-run 干净解析复验，integrity 哈希不受 URL 影响）。
+    - **记档关闭（不修，理由）**：评审记录 7 P3 ①③④（defaultDockPos resize/删除确认态点行/无选中点条目关面板——UI 微边界低频低损，面板可拖回/重开，修复收益低于改动面）；评审记录 6 P3 --deps install exit 码与 gates spawn 超时（设施级，无实际误报案例）；评审记录 5 三边界（GLB 异步窗口种子回退/滑杆 GC churn/saveAs 空规格——低频低损既有记档）；批次 C P3×4（oneLiner 截断等，26 组件零触发）。
+  - **复验（P3 改动后全量）**：gates **41/41 PASS**（--quiet 模式，含 strip-edit 转录表/预算两态/铁律全量用例——哨兵算术与转义改造零回归）。
+
+- **5.6 端到端演练完成（2026-10-13，机房监控场景，SKILL.md 九步实测）**：
+  - **场景**：「3 排×4 机柜（状态灯绿/红）+ 2 监控摄像头 + 1 工人巡检 + 点机柜弹卡片 + 告警灯变红 + 5s 模拟轮询」。产物：`D:\cyc\project\octo\gts\test\e2e-demo-serverroom`（编辑态）+ `e2e-demo-serverroom-stripped`（二开包）。
+  - **九步走查**：S1 要素清单（用途/数据源/交付形态三项确认）→ S2 检索四查询全命中（机柜→rack 0.59 / 监控摄像头→security_camera_01 0.32 / 工人→person 0.25；security_camera art 档 PASS 原点偏 -0.025 摆放补偿）→ S3 分层决策（rack.glb 静态无状态灯→**升第 4 层 coderacks handler**，理由记录；worker 用 person GLB 第 1 层 + scale 0.0056）→ S4 init --deps copy 9s 出工程 + security_camera 手工拷入（见发现①）→ S5 三绿 + STRUCT PASS×2（场景图 16/16 分组对齐 Box:1/asset:3/coderacks:12）→ S6 VISUAL PASS 四截图 + 多模态看图 8 项全 PASS + PERF（calls=918 WARN）→ S7 灯色链路探针 PASS（update 片段 alarm→ff3040 / normal→2dff5e 往返验证）→ S8 无需人工调优（首版即达预期）→ S9 strip-edit 出二开包 + build --strict PASS。
+  - **业务代码产出**（演练产物，验证 skill 范式可复制）：scene-data v3 三分组 + RackInfoCard/CamInfoCard 卡片 + rack.ts 扩 params.status 告警灯（onNodeUpdated 单槽串接范式——**发现②：多 handler 共存时 onNodeUpdated 需串接前驱**）+ main.ts 5s 轮询 update 片段（真实后端换 fetch 即用）。
+  - **验证报告**：build PASS（calls=13/400、tris=79,700/1M、材质=5/32——**静态值**；运行时 calls=918 **WARN 回应**：12 机柜×每柜约 70 mesh 分件（coderacks 精模材质分件范式）+ person/camera GLB 摊派，软渲染 headless 下统计；属重类观测不阻塞，优化路径=机柜间共享材质实例或合并静态几何，用户未反馈卡不优化）/ STRUCT PASS×2 / VISUAL PASS（多模态看图：比例/贴地/无穿模/配色全过——worker 1.8m 与机柜 2m 比例正确）/ 灯色链路 PASS / 二开包 --strict PASS。
+  - **执行中发现（SKILL.md 改进输入）**：① **init --assets referenced 不认 skill 库外手工拷贝的模型**——security_camera_01 需手工 cp 到产物工程；根因是 scene-data 写引用时资产还没进产物工程，init 的 referenced 扫描发生在 scene-data 填写前。**SKILL.md S4 已有「S2 命中资产先记录」流程覆盖，但未写「手工补拷」指引——记为 S4 文档小补**。② onNodeUpdated 单槽串接（rack.ts 演示了范式）。③ headless 探针等待 __gts3d 需轮询 7s+（一次性 sleep 会拿 undefined）——**已有 smoke 脚本模式，裸探针要复用**。
+  - **流程教训（用户反馈「生产交付阶段不能这么等」）**：演练中探针三轮迭代（缺 Edge 自启动→result 双重解包→缺轮询）耗约 4 分钟，用户中断指出体验差。**定案：交付阶段的交互/UI 类验证一律走人工验证清单（URL+步骤+预期），机器探针只用于数据层断言且必须一次写对（复用 smoke-structural 的完整模式而非裸写）**——这与验证策略修订（2026-10-13）一致，本次是执行侧的再实证。
+  - **卡片 DOM 验证移交人工**：rack_03 补发 always 卡片后 headless DOM 计 0——未深究（卡片 CSS2D 渲染时序），按上述定案交人工验证清单第 1 项。
 
   30. **批次 PH 立项（2026-10-12，Poly Haven 精选资产批量入库，Research 完成）**：
       - **任务**：写批量下载脚本，从 Poly Haven API（api.polyhaven.com，files 端点 `gltf["2k"].gltf`）拉取精选资产（面数≤50000、贴图 2k 档、glTF 格式，约 108 个 / 参考 200MB），下载后打包成 seed-package.zip 的 manifest 格式（meta+data[]），走 import-assets.mjs 入库；入库后跑 gates.mjs 复验、检索索引重建（import-assets 自带）、中文 tags 自补（API 只有英文）。
@@ -2407,7 +2436,39 @@ Signatures：
 - **gates 复验（合并基线）**：2026-10-13 本评审中实跑 **40/40 PASS**（含 PH 语义化用例 37，注入清单 59 模型实证）。
 
 
-### 评审记录 10（2026-10-13，批次 4 代码评审（REVIEW EXECUTE），mandatory three-axis）
+### 修复轮十：槽位视觉互清 + Poly Haven GLB bufferView 缺字段（2026-10-13 立项，批次 5.7 用户验收反馈驱动）
+
+**用户验收反馈（2026-10-13，四项）**：① 点机柜卡片 PASS；② 5s 轮询告警灯变红 PASS；③ 摄像头不可见（包围盒 0×0×0）；④ 改 rack_01 panel_top 蓝后再改 rack_02 panel_back 红 → rack_01 蓝丢失；⑤ 用户裁决「不只修这一次的 bug，要生成的页面都没这个问题」。
+
+**缺陷④根因（template 系统性，非演练代码问题）**：编辑器 7 处写入点（EditMaterialModal:137 / OutlineTree:362,389,396 / PropertyPanel:219 / LayoutGizmo:214 / MaterialLibService:229）用**单物体数据走 `handle.update({__visuals})` 的整表替换语义**——SceneEngine.update:574-580「提供即整表替换：快照里没有的 id 清除视觉层」→ 只带 rack_02 的 update 把 rack_01 从 visuals 清掉并 recreateNode 重建 → 蓝色丢失。历史冒烟未暴露：全部是单物体编辑场景（S38 等），从未两物体先后编辑。**注意 `applyVisual(id, visual)` 本身就是合并语义（SceneEngine:372 `{...旧, ...新}`）**——单物体编辑走它即可，整表替换语义只被 undo/redo rebuild（全量快照）需要。
+
+**修法（A 案，用户裁决「生成的页面都没这个问题」= 修 template 母版而非演练工程）**：7 处编辑器写入点全部改走 `sceneEngine.applyVisual(id, 增量)`（或物体级 replaceVisual 不变）；`update({__visuals})` 整表替换语义保留（undo/redo rebuild 依赖）。layoutGizmo/MaterialLibService 的 slots 写法同理改 applyVisual。**同时回灌 skill template/（母版修复，所有后续生成工程免疫）+ e2e 演练工程复验。**
+
+**缺陷③根因（skill 资产管线系统性）**：56 个 Poly Haven GLB 的**贴图 bufferView 缺 `buffer:0` 字段**（几何 view 有、贴图 view 无——fetch-polyhaven.mjs mergeToGlb 手写合并器漏写）。three 0.185 GLTFParser.loadBufferView:3054 把 undefined 传 loadBuffer → `json.buffers[undefined]` → `Cannot read properties of undefined (reading 'type')` → GLB 加载失败 → 空 Group → 包围盒 0×0×0。glTF 2.0 规范 bufferView.buffer **必填**——Poly Haven 源没问题（fetch 落盘的原始 gltf 是多文件形态，bufferView 指同一 .bin），是**我们的合并器**重写 JSON 时漏了。**为何 validate-model 没拦**：自解析器按默认 buffer=0 理解直接 PASS——入库门禁没模拟消费端（three）行为。
+
+**修法**：① mergeToGlb 补 `buffer:0`（治本）；② 存量 56 GLB 一次性修补（重写 JSON chunk 的 bufferView 补字段，bin 不动——零重下载）；③ validate-model 增「bufferView 缺 buffer 字段」硬门禁（防再漏）；④ 摄像头等全部 Poly Haven 资产在演练工程复验加载。
+
+**用户裁决⑤（流程）**：「生产交付阶段会跑这么久的验证吗，不合理的这样子，要改吧？有需要请写spec」——已落 [[feedback-delivery-stage-speed]] 记忆 + 本 Spec 修复轮记录：交付阶段 UI/交互验证一律人工清单；机器探针只测数据层且复用 smoke 完整模式一次写对。
+
+- [x] F10.1 template 七处编辑器写入点改 applyVisual（EditMaterialModal/OutlineTree×3/PropertyPanel/LayoutGizmo/MaterialLibService）
+- [x] F10.2 fetch-polyhaven.mjs mergeToGlb 补 buffer:0
+- [x] F10.3 存量 56 GLB 修补脚本 + 执行
+- [x] F10.4 validate-model.mjs 增 bufferView.buffer 必填门禁
+- [x] F10.5 同步 e2e 演练工程（template 改动回灌 + 资产修补）+ 复验（摄像头可见 + 双物体槽位编辑互不干扰）
+- [x] F10.6 gates 复跑 + 三绿（template 与 skill 脚本两侧）
+
+**修复轮十执行记录（Reverse Sync，2026-10-13）**：
+
+- **F10.1 七处改 applyVisual + applyVisual 逐槽合并**：执行中发现原 `applyVisual` 的浅 merge（`{...旧, ...新}`）会**整块替换 slots map**——单物体编辑第二个槽位时第一个槽位丢失（单元验证：`{slots:{a:蓝}}` merge `{slots:{b:红}}` 后 a 丢失）。修：`applyVisual` 补 slots 逐槽合并（`merged.slots[key] = {...旧槽, ...增量}`，槽内字段浅覆盖）。7 处写入点简化为传单槽增量（原来各自手工读 cur 拼 slots 的样板代码全部删除——applyVisual 语义兜底后不需要）。**改动面：template/ 7 个 edit 文件 + SceneEngine.ts**；演练工程同步回灌 7 文件。`update({__visuals})` 整表替换语义保留（undo/redo rebuild 全量快照依赖）。
+- **F10.2 mergeToGlb 实为两个 bug**：① 贴图 bufferView 缺 `buffer:0`（原注释以为只有这一个）；② **贴图 view 索引多加了 `binViews.length`**——bin 是数据块不占 view 索引，images 引用整体 +1 偏移，末位贴图越界（security_camera 实测：images 引用 9-12 但只有 0-11）。两个都修（`buffer: 0` 前置默认 + 索引去掉 binViews.length）。**为何 ① 先修完还是加载失败**：② 的越界让 GLTFParser 走到 loadBuffer(undefined) 以外的新错误路径（'reading extensions'）——第一轮修补只补字段后 Node 复测才暴露 ②。
+- **F10.3 存量修补走「缓存重合并」而非二进制 patch**：首次内联 patch 脚本写出两个容器头 bug（total 长度写成 12 + BIN 魔数 bash 转义坏），二次修头后仍因索引偏移 ② 未修而失败——**最终定案：从 .tmp-polyhaven-1k/fetch 缓存用修好的 mergeToGlb 全量重合并 57 资产**，直接覆盖 skill 库 + 演练工程两处。验证：**59/59 通过 three GLTFLoader Node 解析**（person 的 Draco 报 DRACOLoader missing 属预期——浏览器路径有 decoder；Node parse 实测 security_camera 39ms 成功 2 meshes）。
+- **F10.4 消费端一致性硬门禁**：validate-model.mjs inspectModel 增两条 violations：① bufferView[i] 缺 buffer 字段；② images[i].bufferView 索引越界。单元验证：构造缺字段+越界 JSON 两条全拦。**动因：56 资产入库时全部 PASS（自解析器默认 buffer=0 理解），直到真实场景引用才炸——门禁只验规格不验「three 能否加载」**。后续增强候选（未立项）：import-assets 内嵌 GLTFLoader 全量 parse 作为最终门禁。
+- **F10.5 复验**：演练工程三绿（vue-tsc 0 / eslint 0 errors / build 10.43s PASS）。数据层探针（复用 smoke 完整模式）：**槽位互扰 PASS**（rack_01 panel_top 蓝 → rack_02 panel_back 红 → rack_01 再改 panel_back 绿，rack_01 panel_top 蓝全程保持 + 视觉层双物体俱在）；**摄像头 headless 探针挂起**（Network 域：GLB 200 到达但 loadingFinished 不触发，徽标 0/3——swiftshader headless 响应流偶发挂起，非文件问题：Node 解析同字节成功 + HTTP 字节一致已证）。**转人工验证（用户裁决纪律）**。
+- **F10.6 template 三绿**：vue-tsc 0 / eslint 0 errors（309 warnings 基线）/ build PASS。
+- **用户复验通过（2026-10-13）**：「都可以了」——摄像头可见可点、工人正常、槽位互扰修复确认、原功能（卡片/轮询告警）无回归。
+- **教训沉淀**：① 编辑器写入通道要区分「单物体增量」与「整表快照」两个语义——混用即互清（7 处同款写法说明是范式级错误，不是笔误）；② **入库门禁必须模拟消费端行为**（自解析通过 ≠ three 能加载）——56 资产全数漏检的根因；③ 合并器类脚本的索引算错（+1 偏移）比缺字段更隐蔽——第一轮修补只看「缺什么补什么」没验「引用指哪」，多耗一轮；④ 二进制 patch 脚本易引入容器头新 bug（两次返工），**有干净源数据时优先重生成而非 patch**。
+
+
 
 **评审范围**：批次 4 验证回路（4.1 smoke-structural / 4.2 smoke-visual / 4.3 perf-fps / 4.4 ensure-env 四新脚本 + smoke-r 分段参数 + S52④ 修复 + 强制全量冒烟复跑 + §8.2 R1-3 存量改造三连：perf-fps WARN 化、build.mjs 预算 warnings 化、gates 用例一拆二）。
 
@@ -2435,6 +2496,33 @@ Signatures：
 - **挂账（不阻塞）**：P3 wheelchair_01 无中文 tag——批次 5 清点（评审记录 9 遗留）。
 - **Plan-Execution Diff**：4.1 像素法→fps 活性（既定口径换算，已记档）；其余零偏差。
 
+### 评审记录 11（2026-10-13，批次 5 全部（5.0/5.2/5.3/5.5/5.4/5.6）+ 修复轮十，REVIEW EXECUTE，mandatory three-axis）
+
+**评审范围**：skill 大脑交付（SKILL.md + references 七文档 + README）+ P3 挂账收口（五修五记档）+ 端到端演练（机房监控场景九步全流程）+ 修复轮十（槽位视觉互清 + Poly Haven GLB bufferView/索引双 bug）。
+
+**评审方式**：git 改动面核实（9 新文档 + template/.gitignore + 18 修改 + 56 GLB 重合并，无越界文件）× Spec 契约逐项对照 × 全量回归实跑（gates 41/41 / ensure-env 三 PASS / 检索抽查 / validate-model 新门禁单测）× SKILL.md 路由完整性（引用脚本存在性逐一核验）× 用户人工验收（摄像头/工人/槽位互扰/功能回归四项全过）。
+
+#### Review Matrix
+
+| # | 轴 | 检查项 | 结论 | 证据 |
+|---|---|---|---|---|
+| 1 | Axis-1 | 批次 5.2/5.3/5.5 交付完整（SKILL.md 九步+硬约束+命令路由 / references 七文档 / README 投放说明） | PASS | SKILL.md 14 处文档引用全部存在；命令路由 10 脚本全有效（smoke-r 带 template/ 前缀）；frontmatter/降级阶梯四层/硬约束七条/人工验收策略全落地 |
+| 2 | Axis-1 | P3 挂账收口（五修五记档） | PASS | wheelchair 中文检索第 1 位 0.3893（本轮复抽查确认）；哨兵算术/TRANSCRIPTION 转义/注释卫生五处/lock 内网化 221 处均落地；记档关闭项理由在案 |
+| 3 | Axis-1 | 5.6 端到端演练目标（SKILL.md 可用性实测） | PASS | 九步全流程走完产出双工程；S3 分层决策记录；验证报告含 WARN 回应；发现三项改进输入（手工补拷指引/onNodeUpdated 串接/探针复用模式）已记档 |
+| 4 | Axis-1 | 修复轮十（用户验收反馈四项） | PASS | 槽位互扰数据层探针 PASS + 用户复验「都可以了」；摄像头/工人可见可交互；56 资产 59/59 过 three 解析 |
+| 5 | Axis-2 | 修复轮十修法忠实度（用户裁决「生成的页面都没这个问题」= 修母版） | PASS | 改动落 template/ 母版（7 edit 文件 + SceneEngine）与 skill 脚本（fetch-polyhaven/validate-model），演练工程只是回灌验证载体——后续 init 产出全部免疫 |
+| 6 | Axis-2 | applyVisual 语义变更正确性 | PASS | 逐槽合并单元验证 + 探针双场景（跨物体编辑 + 同物体第二槽位）全保持；`update({__visuals})` 整表替换语义保留（undo rebuild 依赖）——两语义分工在代码注释与 Spec 双记录 |
+| 7 | Axis-2 | mergeToGlb 修复完整性（两 bug） | PASS | buffer:0 前置 + 索引去 binViews.length；从 fetch 缓存全量重合并（非二进制 patch——patch 两轮返工后定案重生成）；59/59 Node 解析通过 |
+| 8 | Axis-3 | validate-model 新门禁有效性 | PASS | 单元验证：缺 buffer 字段 + 索引越界两条 violations 全拦；armchair 重合并产物 PASS（约定告警属既有基线） |
+| 9 | Axis-3 | 回归完整性 | PASS | gates **41/41**；ensure-env 三 PASS；template 三绿（vue-tsc 0/eslint 0 errors/build PASS）；演练工程三绿；检索抽查（机柜/轮椅/监控摄像头）全第 1 位命中 |
+| 10 | Axis-3 | 残留风险 | 记录 | ① e2e-demo-serverroom 与 shots-visual 在 gts/test 下（演练产物非 skill 资产，处置待用户）；② import-assets 内嵌 GLTFLoader 全量 parse 门禁为增强候选未立项；③ 56 GLB 重合并后 gates --with-build 端到端用例本轮未跑（涉及 npm install 数分钟；预算资产注入用例已覆盖路径） |
+
+#### Overall Verdict: **PASS**
+
+- **无阻塞项**。批次 5 全部交付物落地并验证；修复轮十两 bug 均为系统性根因修复（母版+管线），用户人工验收通过。
+- **复验终态（2026-10-13）**：gates 41/41 / ensure-env 三 PASS / template+演练工程三绿 / 59 GLB 全过 three 解析 / 检索抽查三项第 1 位 / 用户四项人工复验全过。
+- **Plan-Execution Diff**：5.4 P3 清点为执行期展开产物（批次 5 原仅列「P3 挂账清点」一句，实际展开七类 18 项——执行记录已补全）；其余零偏差。
+- **评审方法沉淀**：**「入库门禁必须模拟消费端行为」**——自解析通过 ≠ three 能加载（56 资产全数漏检的根因）；合并器索引错误比缺字段更隐蔽（第一轮修补只看「缺什么补什么」没验「引用指哪」）；有干净源数据时优先重生成而非二进制 patch。
 
 ## 8. Archive Record (Recommended at closure)
 

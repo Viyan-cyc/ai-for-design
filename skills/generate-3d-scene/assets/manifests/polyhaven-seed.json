@@ -1095,16 +1095,16 @@
       "modelPath": "assets/models/wheelchair_01.glb",
       "category": "道具",
       "tags": [
-        "infirmary",
-        "hospital",
-        "wheelchair",
-        "medical",
-        "clinic",
-        "mobilityaid",
-        "foldingwheelchair"
+        "轮椅",
+        "医务室",
+        "医院",
+        "医疗",
+        "诊所",
+        "助行器",
+        "折叠轮椅"
       ],
       "description": "Free 4K model. Folding wheelchair with teal padded vinyl seat and back, chrome tubular frame, spoked rear wheels, small front casters and subtle surface wear.",
-      "search_text": "Wheelchair 01 infirmary hospital wheelchair medical clinic mobilityaid foldingwheelchair props",
+      "search_text": "Wheelchair 01 轮椅 医务室 医院 医疗 infirmary hospital wheelchair medical clinic mobilityaid foldingwheelchair props",
       "polycount": 40252,
       "gate": {
         "tier": "art",

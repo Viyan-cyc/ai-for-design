@@ -68,6 +68,9 @@ const rewriteApp = (code) => code
  */
 const VISUAL_META_KEYS = new Set(['libraryRef', 'locked', 'slots']);
 
+/** markdown 表格单元格转义：| 断列、反引号断代码段 */
+const mdCell = (val) => `\`${String(val).replace(/\|/g, '\\|').replace(/`/g, '\\`')}\``;
+
 /**
  * 从私有区生成转录清单 markdown。
  * @param {object} visuals scene-data.__visuals
@@ -105,7 +108,7 @@ export const buildTranscription = (visuals, materialLib, liveNodeIds) => {
     }
     const fields = Object.entries(v ?? {}).filter(([k]) => !VISUAL_META_KEYS.has(k));
     for (const [k, val] of fields) {
-      visualRows.push(`| \`${nodeId}\` | \`${k}\` | \`${JSON.stringify(val)}\` |`);
+      visualRows.push(`| ${mdCell(nodeId)} | ${mdCell(k)} | ${mdCell(JSON.stringify(val))} |`);
     }
   }
   if (visualRows.length) {
@@ -123,9 +126,9 @@ export const buildTranscription = (visuals, materialLib, liveNodeIds) => {
     for (const [slotKey, slot] of Object.entries(v?.slots ?? {})) {
       for (const [k, val] of Object.entries(slot ?? {})) {
         if (k === 'libraryRef') {
-          slotRows.push(`| \`${nodeId}\` | \`${slotKey}\` | libraryRef | \`${val}\`（→ ② 对应条目） |`);
+          slotRows.push(`| ${mdCell(nodeId)} | ${mdCell(slotKey)} | libraryRef | ${mdCell(val)}（→ ② 对应条目） |`);
         } else {
-          slotRows.push(`| \`${nodeId}\` | \`${slotKey}\` | \`${k}\` | \`${JSON.stringify(val)}\` |`);
+          slotRows.push(`| ${mdCell(nodeId)} | ${mdCell(slotKey)} | ${mdCell(k)} | ${mdCell(JSON.stringify(val))} |`);
         }
       }
     }
@@ -175,7 +178,7 @@ export const buildTranscription = (visuals, materialLib, liveNodeIds) => {
     lines.push('| nodeId | mat_id | name |');
     lines.push('|---|---|---|');
     for (const r of refs) {
-      lines.push(`| \`${r.nodeId}\` | \`${r.matId}\` | ${lib[r.matId]?.name ?? '?'} |`);
+      lines.push(`| ${mdCell(r.nodeId)} | ${mdCell(r.matId)} | ${mdCell(lib[r.matId]?.name ?? '?')} |`);
     }
   } else {
     lines.push('_（无）_');

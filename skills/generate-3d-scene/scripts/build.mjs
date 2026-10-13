@@ -29,7 +29,7 @@ import { loadModel, reachableNodes, primitiveTriangles } from './validate-model.
 
 /* ── 契约常量（阈值与白名单）──────────────────────────────── */
 
-/** 场景预算默认值（R1-3：构建期静态估算上限，可 CLI 覆盖） */
+/** 场景预算默认值（构建期静态估算上限，可 CLI 覆盖；超限默认 WARN，--strict 升阻断） */
 export const DEFAULT_BUDGET = {
   maxCalls: 400,
   maxTriangles: 1_000_000,
@@ -391,13 +391,12 @@ export const checkProject = (dir, opts = {}) => {
         }
         budgetReport.estimates.push({ group: key, nodes: group.length, triangles: groupTris, calls: groupCalls, handlerNodes });
       }
-      // 材质库条目也算材质实例
+      // 材质库条目也算材质实例（与物体材质去重集合分开，直接相加）
       const libCount = data.__materialLib ? Object.keys(data.__materialLib).length : 0;
       if (libCount > 0) {
-        materialKeys.add('__lib:count');
         budgetReport.libMaterials = libCount;
       }
-      budgetReport.materials = materialKeys.size + (libCount > 0 ? libCount - 1 : 0);
+      budgetReport.materials = materialKeys.size + libCount;
 
       if (budgetReport.assets.missing.length) {
         errors.push(`scene-data 引用的资产缺文件（public/assets/models/）：${budgetReport.assets.missing.join(', ')}`);

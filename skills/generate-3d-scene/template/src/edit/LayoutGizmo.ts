@@ -203,15 +203,16 @@ export class LayoutGizmo {
     if (this.slotTarget && this.slotTarget.mesh === obj) {
       const { nodeId, slotKey } = this.slotTarget;
       this.bridge.commit('子网格变换', () => {
-        const cur = this.bridge.handle.internals.sceneEngine.getVisual(nodeId);
-        const slots = { ...(cur?.slots ?? {}) };
-        slots[slotKey] = {
-          ...(slots[slotKey] ?? {}),
-          position: [obj.position.x, obj.position.y, obj.position.z],
-          rotation: [obj.rotation.x, obj.rotation.y, obj.rotation.z],
-          scale: [obj.scale.x, obj.scale.y, obj.scale.z],
-        };
-        this.bridge.handle.update({ __visuals: { [nodeId]: { ...(cur ?? {}), slots } } });
+        // applyVisual 单物体合并语义——update({__visuals}) 是整表替换（会清其他物体的视觉层）
+        this.bridge.handle.internals.sceneEngine.applyVisual(nodeId, {
+          slots: {
+            [slotKey]: {
+              position: [obj.position.x, obj.position.y, obj.position.z],
+              rotation: [obj.rotation.x, obj.rotation.y, obj.rotation.z],
+              scale: [obj.scale.x, obj.scale.y, obj.scale.z],
+            },
+          },
+        });
       });
       return;
     }

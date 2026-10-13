@@ -130,11 +130,10 @@ const apply = (): void => {
   const s = { ...spec.value };
   if (props.slotKey) {
     props.bridge.commitLive('槽位材质', () => {
-      const se = props.bridge.handle.internals.sceneEngine;
-      const cur = se.getVisual(id);
-      const slots = { ...(cur?.slots ?? {}) };
-      slots[props.slotKey!] = { ...(slots[props.slotKey!] ?? {}), ...specToInline(s) };
-      props.bridge.handle.update({ __visuals: { [id]: { ...(cur ?? {}), slots } } });
+      // applyVisual 单物体合并语义——update({__visuals}) 是整表替换（会清其他物体的视觉层）
+      props.bridge.handle.internals.sceneEngine.applyVisual(id, {
+        slots: { [props.slotKey!]: specToInline(s) },
+      });
     });
     return;
   }
