@@ -3,7 +3,7 @@
  *
  * 二开者只需要认识这个文件：createScene + 类型 + 卡片组件注册 + 状态视觉注册表。
  */
-export { createScene, type SceneHandle } from './createScene';
+export { createScene, type SceneHandle, getLoadBadgeState } from './createScene';
 export * from './types';
 export { stateMaterials, applyState, type StateVisual, type VisualOverride, NON_MATERIAL_VISUAL_KEYS, findBySlotKey } from './materials';
 export {

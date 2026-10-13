@@ -6,7 +6,7 @@
  * 三栏布局 DOM（工具条/物体树/视口/属性面板）由 EditApp.vue 提供，canvas 移入视口栏。
  */
 import { createApp } from 'vue';
-import { createScene, ExampleCard } from '@/scene-core';
+import { createScene, ExampleCard, getLoadBadgeState } from '@/scene-core';
 import {
   registerExampleHandler, registerTreeHandler,
   registerCarHandler, registerWorkerHandler, registerRackHandler,
@@ -47,10 +47,12 @@ const boot = async (): Promise<void> => {
 
   // 业务 handler 示例（注册要赶在首次建树后重喂——createScene 建树时 examples/cars
   // 分组尚无工厂被 warn 跳过，注册后按数据原样重喂，幂等 upsert 补建缺失节点）
+  // onLoadCount：业务 handler 经 makeAssetNodeFactory 建的 GLB 节点也汇入加载徽标
   registerExampleHandler(
     handle.internals.sceneEngine,
     handle.internals.assetEngine,
     (cb) => void handle.internals.renderLoop.onFrame((delta) => cb(delta)),
+    getLoadBadgeState(handle.internals.assetEngine).onCount,
   );
   registerTreeHandler(handle.internals.sceneEngine);
   registerCarHandler(handle.internals.sceneEngine);

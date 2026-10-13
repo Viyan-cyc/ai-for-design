@@ -7,7 +7,7 @@
  */
 import { createApp } from 'vue';
 import {
-  createScene, ExampleCard, registerExampleHandler, registerTreeHandler,
+  createScene, ExampleCard, getLoadBadgeState, registerExampleHandler, registerTreeHandler,
   registerCarHandler, registerWorkerHandler, registerRackHandler,
 } from '@/scene-core';
 import type { SceneData } from '@/scene-core/types';
@@ -38,6 +38,7 @@ const boot = async (): Promise<void> => {
     handle.internals.sceneEngine,
     handle.internals.assetEngine,
     (cb) => void handle.internals.renderLoop.onFrame((delta) => cb(delta)),
+    getLoadBadgeState(handle.internals.assetEngine).onCount,
   );
   registerTreeHandler(handle.internals.sceneEngine);
   registerCarHandler(handle.internals.sceneEngine);

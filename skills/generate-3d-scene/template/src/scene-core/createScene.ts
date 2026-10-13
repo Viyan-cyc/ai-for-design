@@ -83,6 +83,35 @@ const createDebugHud = (canvas: HTMLCanvasElement): HTMLElement => {
   return hud;
 };
 
+/** GLB 加载进度徽标 DOM（异步 GLB 节点 N/M loaded；全载或无异步节点时隐藏） */
+const createLoadBadge = (canvas: HTMLCanvasElement): {
+  update: (loaded: number, total: number) => void;
+  dispose: () => void;
+} => {
+  const badge = document.createElement('div');
+  badge.className = 'gts3d-load-badge';
+  badge.style.cssText = [
+    'position:absolute', 'right:12px', 'bottom:12px', 'z-index:10',
+    'font:12px/1.6 monospace', 'color:#fff', 'background:rgba(0,0,0,.55)',
+    'padding:4px 10px', 'border-radius:10px', 'pointer-events:none',
+  ].join(';');
+  badge.style.display = 'none';
+  (canvas.parentElement ?? canvas).appendChild(badge);
+  return {
+    update(loaded: number, total: number): void {
+      if (total <= 0 || loaded >= total) {
+        badge.style.display = 'none';
+        return;
+      }
+      badge.style.display = 'block';
+      badge.textContent = `${loaded}/${total} loaded`;
+    },
+    dispose(): void {
+      badge.remove();
+    },
+  };
+};
+
 /** 提取片段中的 type 分组（跳过保留 key 与非数组值） */
 const extractGroups = (frag: TreeSceneFragment): Array<[string, SceneNode[]]> => {
   const groups: Array<[string, SceneNode[]]> = [];
@@ -92,6 +121,22 @@ const extractGroups = (frag: TreeSceneFragment): Array<[string, SceneNode[]]> =>
     }
   }
   return groups;
+};
+
+/**
+ * 挂到 assetEngine 的加载计数接线（按引擎实例隔离，多处 createScene 不串）。
+ * entry 挂在 assetEngine 对象上：registerExampleHandler 等业务侧凭引擎拿到同一 onCount
+ * 汇入徽标，徽标本体由 createScene 侧持有（dispose 时一并移除）。
+ */
+const badgeRegistry = new WeakMap<AssetEngine, { onCount: (l: number, t: number) => void }>();
+
+export const getLoadBadgeState = (assetEngine: AssetEngine): { onCount: (l: number, t: number) => void } => {
+  let state = badgeRegistry.get(assetEngine);
+  if (!state) {
+    state = { onCount: () => {} };
+    badgeRegistry.set(assetEngine, state);
+  }
+  return state;
 };
 
 /** 把 SceneData/片段的对象形态规整为分组数组（建树用） */
@@ -122,9 +167,13 @@ export const createScene = async (
     data.scene.environment ? { intensity: data.scene.environment.intensity } : null,
   );
 
-  // 物体工厂注册（内建），先于建树
+  // 物体工厂注册（内建），先于建树。加载计数徽标：'asset' 内建工厂与业务 handler
+  // 两路的异步 GLB 节点统一汇入（makeAssetNodeFactory 计数器口径=节点实例）
+  const loadBadge = createLoadBadge(canvas);
+  const badgeState = getLoadBadgeState(assetEngine);
+  badgeState.onCount = loadBadge.update;
   const { registerBuiltinFactories } = await import('./handlers/registry');
-  registerBuiltinFactories(sceneEngine, assetEngine);
+  registerBuiltinFactories(sceneEngine, assetEngine, undefined, badgeState.onCount);
 
   // 卡片系统（依赖注入节点视图与相机；Vue 组件表由业务方传入）
   const { setupCards } = await import('./cards/registry');
@@ -389,6 +438,8 @@ export const createScene = async (
       assetEngine.dispose();
       raycastEngine.dispose();
       rendererEngine.dispose();
+      badgeState.onCount = () => {};
+      loadBadge.dispose();
     },
   };
 

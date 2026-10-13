@@ -18,6 +18,7 @@
  *   S33 内置材质删除不复活（removeEntry(seed) 后重调 seeds() 不补回）
  *   S34 浮动面板并存不重叠 + 无全屏遮罩（材质素材 + 编辑材质球同开，MU2）
  *   S35 材质一材质一行（内置材质也是行、同列，非换行 chips，MU2）
+ *   S49 GLB 加载计数徽标（修复轮七：N/M 徽标收敛；占位盒已裁决撤除）
  *   S13 兼测中文文件名上传（encodeURIComponent 双端）
  *
  * 用法：node scripts/smoke-r.mjs <url> [--edit]
@@ -1248,6 +1249,42 @@ const main = async () => {
     })()`);
     console.log('S48 person 蒙皮尺度:', JSON.stringify(s48));
 
+    // ── S49：GLB 加载计数徽标（修复轮七：N/M 徽标收敛；占位盒已裁决撤除 2026-10-13）──
+    // 徽标 DOM 存在 + 重建后 GLB 回来（mesh 存在且无异常残留）+ 终态 N=M 徽标隐藏。
+    const s49 = await evaluate(`(async () => {
+      const b = window.__gts3dEdit.bridge;
+      const se = window.__gts3d.internals.sceneEngine;
+      const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+      let mc = 0;
+      for (let i = 0; i < 30; i++) { mc = 0; se.getObject('car_01')?.traverse((c) => { if (c.isMesh) mc += 1; }); if (mc > 0) break; await wait(300); }
+      if (mc === 0) { return { ok: false, why: 'car_01 not loaded' }; }
+      const badgeEl = document.querySelector('.gts3d-load-badge');
+      const badgeExists = !!badgeEl;
+      // 删除 + undo 重建（徽标应在重建窗口重新出现并收敛）
+      const snap = window.__gts3d.serialize();
+      b.commit('重建-计数', () => {
+        window.__gts3d.update({ remove: ['car_01'] });
+        const { remove: _drop, ...frag } = snap;
+        void _drop;
+        window.__gts3d.update(frag);
+      });
+      let mesh = null;
+      for (let i = 0; i < 40; i++) {
+        mesh = null;
+        se.getObject('car_01')?.traverse((c) => {
+          if (!mesh && c.isMesh) { mesh = c; }
+        });
+        if (mesh) { break; }
+        await wait(300);
+      }
+      const meshBack = !!mesh;
+      await wait(600);
+      const badgeHidden = !badgeEl || badgeEl.style.display === 'none';
+      return { badgeExists, meshBack, badgeHidden,
+        ok: badgeExists && meshBack && badgeHidden };
+    })()`);
+    console.log('S49 加载计数徽标:', JSON.stringify(s49));
+
     // ── S50：材质编辑面板随选中/条目联动（修复轮八：非库模式随选中关 + 切条目更新 + 库模式不关）──
     const s50 = await evaluate(`(async () => {
       const b = window.__gts3dEdit.bridge;
@@ -1433,6 +1470,7 @@ const main = async () => {
       && s36.ok === true && s37.ok === true && s38.ok === true && s39.ok === true
       && s40.ok === true && s41.ok === true && s42.ok === true && s43.ok === true && s44.ok === true && s45.ok === true && s46.ok === true && s47.ok === true
       && s48.ok === true
+      && s49.ok === true
       && s50.ok === true
       && s51.ok === true
       && s52.ok === true;

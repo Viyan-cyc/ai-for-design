@@ -24,6 +24,7 @@ export const registerExampleHandler = (
   sceneEngine: SceneEngine,
   assetEngine: AssetEngine,
   onFrame: (cb: (delta: number) => void) => void,
+  onLoadCount?: (loaded: number, total: number) => void,
 ): void => {
   /** 需要旋转的实例表（id → Object3D；remove/update 时清理） */
   const spinners = new Map<string, THREE.Object3D>();
@@ -52,6 +53,7 @@ export const registerExampleHandler = (
       }
       applyStatusVisual(type, node, instance);
     },
+    onLoadCount,
   );
 
   sceneEngine.registerFactory('cars', factory('cars'));

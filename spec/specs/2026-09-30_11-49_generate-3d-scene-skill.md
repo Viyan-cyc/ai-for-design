@@ -577,7 +577,7 @@ S9 交付        strip-edit 出二开包 + INTEGRATION_GUIDE 校验 + 验证报�
 - [ ] 4.3 perf-fps.mjs（CDP 60s 采样；**真机 GPU 环境测 p95≥40fps + calls/triangles/programs 运行时断言（R1-3）；软渲染环境只做结构验证不计 fps**）
 - [ ] 4.4 ensure-env.mjs（node/three/Blender 探测 + 多模态档位声明解析——声明载体定为 SKILL.md 会话指令或环境变量 GTS3D_MULTIMODAL，二选一生效）
 
-**批次 PH：Poly Haven 精选资产批量入库（2026-10-12 立项，Research 已完成探针，待用户裁决 Open Questions 后进 Plan）**
+**批次 PH：Poly Haven 精选资产批量入库（2026-10-12 立项，2026-10-13 Open Questions 四项已裁决，进入 Plan）**
 > 目标：批量下载脚本从 Poly Haven API 拉精选模型（面数≤50000 / 贴图 2k 档 / glTF 格式，约 108 个 / 参考量 200MB），打包 seed-package.zip manifest 格式，走 import-assets.mjs 入库；入库后 gates.mjs 复验 + 检索索引重建（import-assets 自带）+ 中文 tags 自补（API 只有英文）。数据源：`.tmp-polyhaven/models.json`（521 模型全量缓存，含 polycount/categories/download_count）。
 - Research 探针实证（4 模型实下载过门禁 + 管线源码核对，详见 §5 #30）：
   - **链路可行**：files API `gltf["2k"].gltf` 给主文件 + include{}（bin+textures/*.jpg 各带 size/md5），dl.polyhaven.org 直接 fetch 无鉴权；2k jpg 贴图均过 2048 门禁
@@ -586,11 +586,21 @@ S9 交付        strip-edit 出二开包 + INTEGRATION_GUIDE 校验 + 验证报�
   - **gates.mjs 用例 37 写死 `models.length === 3`**——入库后必 FAIL，需改语义断言（含 example+person+rack 即可）
   - **id 不合规**：Poly Haven id 如 `ArmChair_01` 首字母大写违反 `^[a-z][a-z0-9_]*$`，manifest 必须显式小写
   - **体量实测**：抽样 8 资产 2k 档平均 2.78MB → 108 个约 300MB（略超参考量）
-- Open Questions（待裁决）：① gltf 形态：(A) 下载时合并转 GLB【推荐】 / (B) gltf 目录入库留后患 / (C) 改 init.mjs 支持目录形态；② 精选策略：download_count 降序 + 类别多样性配额 + 贴图数预检，或用户指定清单；③ 中文 tags：脚本内置英文→中文映射字典，或生成后人工审；④ category 字段：Poly Haven 原类别透传（仅 warning）或映射到建议集 [demo/equipment/building/vegetation/vehicle]
-- [ ] PH.1 下载脚本（精选过滤 + 下载 + md5 校验 + manifest 生成 + 中文 tags/search_text + zip 打包）——设计待 Plan
-- [ ] PH.2 走 import-assets.mjs 入库 + 索引重建
-- [ ] PH.3 gates.mjs 用例 37 断言改语义化 + 复验
-- [ ] PH.4 中文检索抽查（新资产中文查询 top-3 命中）
+- Open Questions 裁决（2026-10-13 用户）：① **A——下载时合并转 GLB**（零依赖手写：gltf json + bin + 外部贴图合并单 .glb 二进制容器，贴图 data: URI 内嵌）；② **推荐策略**——download_count 降序 + 类别多样性配额（约 12 大类：furniture/seating/props/industrial/lighting/plants/nature/decorative/electronics/containers/tools/food，每类配额内取下载量 top）+ 贴图数预检（读 gltf json images 数 >8 剔除）；③ **推荐**——脚本内置英文→中文映射字典自动生成 tags，产出后用户评审；④ **中文类别映射表**——Poly Haven 类别→中文（furniture→家具/seating→座椅/lighting→灯具/plants→植物...）写入 category，英文原词拼进 search_text（与建议集不冲突：category 越集本就 warning 不阻断；检索语料与中文检索同语言直接受益；零改 import-assets）
+- [x] PH.1 `scripts/fetch-polyhaven.mjs`（§4.16.6 签名：精选配额 + 下载 md5 校验 + gltf→GLB 合并 + manifest 中文三件套 + writeZip 打包；支持 --resume）
+- [x] PH.2 跑 fetch-polyhaven.mjs 产出 manifest → 用户评审中文 tags/category（裁决 ③ 后半）——评审产出**方案修正**：2k 档 108 资产 565MB 超量，用户裁决 **B+C 合并**（1k 贴图档 + 定制名单 57 资产：砍容器/工具/食品整类 + 场景适配挑半 + 捞回 13 个基建向落选者），脚本随之扩 `--res 1k|2k` 与 `--ids <名单文件>` 两参数（`--ids` 模式名单即终选，预检剔除不递补）
+- [x] PH.3 import-assets.mjs 入库（art 档门禁 + 索引重建 + 检索冒烟）——56 资产（57 名单 − modular_pipes 节点 106>64 预检剔除）/ 122.4MB / 1k 档；md5 失败 1 个（Barrel_01 首跑 fetch failed，--resume 续跑自愈）；四轮重入库（字典三轮补词迭代，见 PH.5）
+- [x] PH.4 gates.mjs 用例 37 断言语义化（§4.16.5）+ 全量复验（2026-10-13 改毕即复验 40/40 PASS，先于入库完成——用例 37 改语义断言后与库内模型数解耦，入库前后均成立；**入库 59 模型（56 新 + example/person/rack）后复跑仍 40/40 PASS**）
+- [x] PH.5 中文检索抽查（2026-10-13 完成，14/14 命中）——抽查暴露两类字典缺口并当轮修复：① 场景词 miss（pipe/barrier/cctv/generator 等词不在字典 → 补 26+ 多词 key 词条，含 'road barrier'/'power generator' 复合词）；② **id 内嵌词盲区**（modular_electric_cables 的 cable 在模型名里但不在源 tags → buildEntry 增补「id 逐词过字典进 tags」）。最终 14 词断言全命中（椅子/桌子/灯具/植物/岩石/管道/路障/监控/发电机/线缆/井盖/垃圾桶/沙发/摄像头 → 各自目标资产 top-3）
+
+**批次 PH 执行记录（Reverse Sync，2026-10-13 完成）**：
+- **Spec 修复前置**：§4.16.3 曾发生写入事故（1379 行 id 条目被文件头标题覆盖截断，name/tags/search_text 全丢），执行前按 import-assets schema + 裁决重写补齐；§4.16.1 类别归一修正为「次类别回退」（原「取第一个有效类别」会排除 45 个资产，实测其多数次类别命中 12 大类，用户裁决回退）
+- **两处用户裁决（执行中）**：① 类别归一次类别回退；② name 保留英文原名（字典覆盖不了专名，中文靠 tags/search_text）；③ 体量方案 B+C 合并（1k 档 + 57 定制名单，565MB → 122.4MB）
+- **fetch-polyhaven.mjs 最终形态**：配额模式（--quota）与名单模式（--ids）双入口共用 runFetch；`--res 1k|2k` 贴图档；`--resume` md5 缓存续跑；TAG_ZH 字典 ~200 词条（含复合词 key）；buildEntry = id 小写化 + 英文 name + 中文 category + 字典 tags（含 id 逐词补捞）+ 英文 search_text
+- **探针数据修复**：.tmp-polyhaven/probe/ 的 CoffeeCart_01 与 wine_bottles_01 文件曾被重命名（model.bin/model_2k.gltf）致 gltf 内部 uri 断链，恢复原名后 4 探针合并验证恢复预期（3 PASS + wine_bottles 贴图 13>8 FAIL = 预检口径验证）
+- **1k 档验证**：files API 1k 档全量可用，抽验贴图均为 1024px（门禁上限 2048 合规）；56 资产 2k 原始缓存（fetch/）保留于 .tmp-polyhaven，1k 缓存独立目录 .tmp-polyhaven-1k/
+- **检索抽查方法论沉淀**：中文 miss 根因分两类——字典词缺口（补词即治）与**语料缺口**（词只存在于模型名，源 tags 没有；id 逐词补捞即治）。检索器 tokenize 为 CJK unigram+bigram，中文 tags 精确匹配权重最高
+- **残留**：`--ids` 名单 keep-ids.txt 落 .tmp-polyhaven/（数据非代码，不入 skill 仓库）；2 个 md5 失败资产（cannon_01/vintage_grandfather_clock_01）用户裁决不追查（首版 2k 跑的失败记录，1k 定制名单未含这俩）
 
 **批次 5：skill 大脑 + 收尾**
 - [ ] 5.1 install-blender.mjs（缓存探测/镜像拉取/解压登记/失败降级）——**执行依据已就绪（2026-10-12 前置探索实测，见 §7 Blender 通道前置探索区块）**：版本锁 4.5 LTS（Intel Mac 根因）；平台产物矩阵 windows-x64.zip / macos-x64.dmg / macos-arm64.dmg / linux-x64.tar.xz；URL 模板 `release/Blender{maj.min}/blender-{ver}-{platform}`；sha256 校验；镜像样板清华同路径；**探索期本机已就绪**（`~/.gts3d/blender/blender-4.5.9-windows-x64/` 已解压可跑，headless 通道已实测——install-blender 实装时缓存探测一步即命中）
@@ -1346,6 +1356,91 @@ TRANSCRIPTION 物体视觉 override 表增 slot 列；LLM 转录产物按 mesh �
 **验收反馈三次修复（同日，用户实测「窗口小一点，卡片又叠在一起了」——自适应缺失）**：排队位置只在**挂载时**按当时的视口宽算，resize 后不重算（fixed 坐标失效）；且矮窗纵向两档放不下时旧 fallback 拉回顶部致叠。修两层：① **FloatingPanel 增 resize 钳制**——`onMounted`/`window.resize` 时 `clamp()`（右不出界 / 左留 60px 抓手 / 顶不出头 / 纵向优先完整可见，面板高于视口才退化保标题栏；用面板真实 offsetHeight）；② **FloatingDock 重排算法**——横向 `perRow = ⌊(右栏左缘−左树右缘)/(面板宽+GAP)⌋` 放不下时**纵向下移一整档**（ROW_H 430 + GAP，同列完整错位非 40px 小步），去掉矮窗拉回（交 clamp 兜底）。**窄窗探针验证**（900×600 开两面板 → CDP 缩到 700×500，一次性验完删）：编辑面板钳在视口内（bottom=视口高）、素材完全可见、宽窗不重叠断言保持。**断言分级原则（记方法论）**：宽窗（横向容得下两面板）必须不重叠；窄/矮窗物理放不下时允许纵向部分重叠（可拖走），但**任何窗口都必须在视口内**。复验：三绿 + **SMOKE PASS 39/39**。
 
 
+### 4.16 Poly Haven 批量入库管线（2026-10-13 立项，批次 PH 执行依据）
+
+**契约**：新增脚本 `scripts/fetch-polyhaven.mjs`（一次性数据工具，不是 skill 运行时依赖），从 Poly Haven API 拉精选资产转 GLB 入库。四项裁决（2026-10-13）：下载时合并转 GLB / 类别配额精选 / 内置映射字典自动生成中文 / 中文类别映射。
+
+#### 4.16.1 精选策略（确定性算法）
+
+1. **候选池**：`<CACHE>/models.json` 中 `polycount <= 50000` 的条目（430 个）
+2. **类别归一（2026-10-13 修正：次类别回退）**：`categories[]` 剔除 `collection:*` 前缀项后取**第一个命中 12 大类的类别**为主类别（实测 45 个资产主类别为 rocks/appliances/vases 等非大类，但次类别多命中，如 `ceramic_vase_01 → [vases, containers, decorative]` 归 containers）；无命中归 `props`。次类别回退后分布：props 133 / furniture 75 / industrial 49 / decorative 37 / containers 31 / nature 24 / lighting 22 / tools 21 / electronics 15 / food 12 / seating 6 / plants 5（总 430）
+3. **配额分配**（目标 ~108 个）：12 大类每类配额 = `round(108 × 类别候选数占比)`，向下取整后余量按各类候选 download_count top 补齐到总数 108；配额不足的类（候选 < 配额）实际候选全取，缺口由 props/furniture 等大类补
+4. **类内排序**：download_count 降序，取前 N（配额数）
+5. **下载期预检（三重过滤，逐资产在下载后、入库前）**：
+   - 贴图数 > 8（读 gltf json 的 `images.length`）→ 剔除，类内顺位递补
+   - md5 校验失败（主文件/bin/贴图任一）→ 剔除递补
+   - 节点数（gltf json `nodes.length`）> 64 → 剔除递补
+6. **递补终止**：配额类候选耗尽即接受少于 108（实际数如实打印），不跨类强凑
+
+#### 4.16.2 gltf→GLB 合并（零依赖，脚本内实现）
+
+输入：Poly Haven gltf 目录（`<id>_2k.gltf` + `<id>.bin` + `textures/*.jpg`）。步骤：
+1. 解析 gltf json；断言 `extensionsRequired` 为空（Poly Haven 实测无）
+2. 收集所有 `buffers[].uri`（相对 bin）与 `images[].uri`（相对 jpg）为待嵌入清单
+3. 逐一读文件 → 拼 BIN 块：bin 在前，贴图按 images 顺序在后，各 4 字节对齐（padding 补 0x00）
+4. 重写 json：buffers → 单 buffer（无 uri，byteLength=bin 总长）；images → `bufferView` 引用（mimeType 保留 image/jpeg）；删除所有 uri 字段
+5. 产出 GLB：12B 头（magic 0x46546C67 / version 2 / total）+ JSON chunk（0x4E4F534A，4 对齐，pad 空格 0x20）+ BIN chunk（0x004E4942）
+6. 产出即过 validate-model（triangles/nodeCount/textureCount/maxTextureSize 与源一致——探针已证 2k jpg 均 2048）
+
+#### 4.16.3 manifest 生成（中文三件套）
+
+每个资产条目（对齐 import-assets manifest schema：name/file_name/file_path 必填）：
+- `id`：Poly Haven id 全小写（`ArmChair_01` → `armchair_01`；`^[a-z][a-z0-9_]*$` 硬校验）
+- `name`：英文原名透传（`Arm Chair 01`）——2026-10-13 裁决：字典覆盖不了全部专名，name 保留英文，中文靠 tags/search_text 承载
+- `file_name` / `file_path`：`<id>.glb` / `data/<id>.glb`
+- `category`：中文类别映射（12 大类 → 家具/座椅/道具/工业/灯具/植物/自然/装饰/电子/容器/工具/食品；裁决④）
+- `tags`：内置英文→中文映射字典逐词翻译 `tags[]`（armchair→扶手椅/chair→椅子/wood→木质...），未命中原词保留；产出后用户评审（裁决③）
+- `description`：英文 description 透传
+- `search_text`：英文原词（原名+原 tags+原类别）拼进检索语料，保证英文查询可命中；检索语料五字段 = name + category + tags + description + search_text 拼接（build-search-index 契约），中文 tags/category 与英文 search_text 同条目共存即双语检索
+
+#### 4.16.4 打包与入库
+
+- zip 结构：`manifest.json` + `data/<id>.glb` × N；复用 `import-assets.mjs` 导出的 `writeZip`
+- 包名 `polyhaven-seed`（`import-assets.mjs <zip> --name polyhaven-seed`，默认 art 档门禁）
+- 入库成功判据：import-assets 退出码 0 + 内置检索冒烟 PASS + `--json` 摘要无 FAIL
+- **产出物落位**：下载缓存 `.tmp-polyhaven/fetch/`（含 gltf 原始文件，支持 --resume 断点续跑）；最终 `polyhaven-seed.zip` 落 `.tmp-polyhaven/`（数据非代码，不入 skill 仓库）
+
+#### 4.16.5 gates.mjs 用例 37 修正
+
+`init: --assets all 注入全部模型（example+person+rack）` 断言 `models.length === 3` → 改语义断言：`models.length >= 3 && [example.glb, person.glb, rack.glb].every(f => models.includes(f))`（同批次 2 起始资产断言语义化先例）。断言文本同步改「注入全部模型（含 example+person+rack）」。
+
+#### 4.16.6 File Changes / Signatures
+
+| 文件 | 动作 | 签名 |
+|---|---|---|
+| `scripts/fetch-polyhaven.mjs` | 新建 | `selectAssets(models, quota=108) → {id, meta}[]`；`fetchAsset(id) → {gltfJson, bin, textures:Map}`；`mergeToGlb(dir) → Buffer`；`buildEntry(id, meta, glb) → entry`；CLI：`node fetch-polyhaven.mjs [--cache <dir>] [--quota 108] [--out <zip>] [--resume]` |
+| `scripts/verify/gates.mjs` | 改 | 用例 37 断言语义化（1 行） |
+| `.tmp-polyhaven/models.json` | 只读 | 数据源（已存在） |
+| skill `assets/` | 数据落库 | models/ +N glb、manifests/polyhaven-seed.json、search-index.json 重建 |
+
+依赖：`node:fs/path/zlib/crypto`（md5）+ `import-assets.mjs` 的 `writeZip`。无 npm 新依赖。
+
+#### 4.16.7 PH 批次 Plan 细节（2026-10-13，Research 补充实证后）
+
+**Research 新增实证（批次 PH 立项后补）**：
+- Spec 写入事故已修复：§4.16.3 曾被文件头标题覆盖截断（1379 行 id 条目写一半后拼入 `# SDD Spec: ...`，name/tags/search_text 全丢），本日按 import-assets schema + 裁决重写补齐
+- **类别归一口径修正（用户裁决：次类别回退）**：原 §4.16.1「取第一个有效类别」实测排除 45 个资产（rocks 10/appliances 9/structures 7/table 3/office 3/wall decoration 3/instrument 3/weapons 2/shelves 2/books 1/vases 1/bed 1），其中多数次类别命中 12 大类（ceramic_vase_01→containers、classic_laptop→electronics、chinese_cabinet→furniture）。修正为「第一个命中 12 大类的类别」，无命中归 props。修正后分布：props 133/furniture 75/industrial 49/decorative 37/containers 31/nature 24/lighting 22/tools 21/electronics 15/food 12/seating 6/plants 5
+- **name 语言裁决（用户）**：name 保留英文原名，中文靠 tags/search_text 承载（字典覆盖不了全部专名）
+- 推演配额（quota=108，次类别回退后）：props 34/furniture 19/industrial 13/decorative 10/containers 7/nature 6/lighting 5/tools 5/electronics 3/food 3/seating 1/plants 2
+- **tags 映射字典规模**：候选池 tags 词频 Top 160 覆盖核心名词（vintage 124/old 108/antique 70/metal 69/wooden 68/wood 61/chair 17/table 17/lamp 7...）。字典收录策略：高频名词全收（chair/table/lamp/vase/statue/...）+ 12 大类词 + 材质/风格/状态常见词（wood/metal/brass/vintage/old/worn/rusted/...），约 120–150 词；未命中词原样保留进 tags（英文词本身也是检索语料）
+- **下载细节**：files API `https://api.polyhaven.com/files/<id>`，取 `gltf["2k"]` 档（主 gltf url+md5 / include 中 bin+textures 各带 size+md5）；dl.polyhaven.org 无鉴权直接 GET；逐资产顺序下载（礼貌限速，不并发轰击）；md5 用 node:crypto
+
+**fetch-polyhaven.mjs 结构（对齐既有脚本风格）**：
+1. `selectAssets(models, quota)`：候选池过滤 → 次类别回退归一 → 配额分配（floor+余量按 top download_count 补齐）→ 类内 download_count 降序 → 每类产出「正选 + 候补队列」（预检剔除时类内顺位递补，§4.16.1 第 5 条）
+2. `fetchAsset(id)`：files API 查询 → 逐文件下载（.gltf/.bin/textures/*.jpg）落 `.tmp-polyhaven/fetch/<id>/` → 全量 md5 校验 → 返回 gltf json
+3. `mergeToGlb(dir)`：§4.16.2 六步合并（读 gltf json → 断言 extensionsRequired 空 → bin 前贴图后拼 BIN 块 4 对齐 → 重写 json bufferView 引用 → 12B 头+JSON chunk+BIN chunk）
+4. `buildEntry(id, meta, glb)`：中文三件套（§4.16.3：id 小写/英文 name/中文 category/字典翻译 tags/英文 description/英文 search_text）
+5. CLI：`node fetch-polyhaven.mjs [--cache <dir>] [--quota 108] [--out <zip>] [--resume] [--dry-run]`；`--dry-run` 只跑 selectAssets 打印精选名单（含各类配额/候选数/剔除原因预演），不下载
+6. 产出：`manifest.json`（meta: version/source/license CC0）+ zip 打包（writeZip）
+
+**PH checklist 执行序**（§4.7 批次 PH 已有 PH.1–PH.5，本节细化）：
+- PH.1 脚本 + 单元自检：--dry-run 跑通（配额分布与推演一致）+ 用探针目录 4 资产（.tmp-polyhaven/probe/）实测 mergeToGlb 产出过 validate-model（ArmChair/tea_set/CoffeeCart 应 PASS，wine_bottles 贴图 13 应 FAIL 即预检逻辑验证）
+- PH.2 全量下载 108 资产 → manifest 产出 → 用户评审中文 tags/category
+- PH.3 import-assets 入库（预检剔除数/入库数/体量如实打印）
+- PH.4 gates 用例 37 语义化 + 全量复验
+- PH.5 中文检索抽查（椅子/桌子/灯具/植物/岩石 → 对应类别 top-3）
+
+
 ## 5. Execute Log
 - Plan Approved：2026-09-30（用户指令"plan approved"）。状态 [ACTIVE]，进入 Execute。
 - **Spec 评审（review_spec）2026-10-08 完成**：GO with conditions。P1 四项 / P2 七项 / P3 七项，详见 §4.8 评审记录 1。
@@ -1386,7 +1481,11 @@ TRANSCRIPTION 物体视觉 override 表增 slot 列；LLM 转录产物按 mesh �
 - **批次 MU4 完成（2026-10-10，用户「全部」批内连跑）**：MU4.1–MU4.4 全落地（条目 ⊞ 直达素材库 + 编辑面板 dock 感知 paletteOpen 紧贴/退避 + 冒烟 S39）。三绿 + **SMOKE PASS 39/39**。S39 初版断言两处口径错（边框未计/排序取反，实装正确经 rect 诊断证实）。人工视觉走查待用户。**下一动作批次 M2（GLB 子节点与多材质，§4.13），批间停等确认**。
 - **批次 M2 完成（2026-10-10/11，用户裁决批内连跑）**：M2.1–M2.8 全落地（ModelSpecReport.meshes / listSubMeshes+resolveSubMesh+槽级 applyVisualOverride / OutlineTree 子网格层 / MaterialSection 列表化+槽位聚焦 / applySlotLink+syncAll 槽位重挂 / strip-edit ①′ 槽位表+GUIDE §6.2 / S40–S44 / gates 40/40）。**执行中发现并修复三大缺口**：① **Draco 支持**（person.glb Draco 压缩暴露 GLTFLoader 裸奔——真实世界 GLB 主流压缩格式；修：DRACOLoader + decoder 随模板 vendor `public/assets/draco/` 零 CDN）；② **槽位 key 双口径**（buildReport 从 GLB 内部根起算 vs resolveSubMesh 含容器名——三处对齐修复 + applyVisual 的 slots 增量必须走 full）；③ **单 mesh 回落**（槽位列表误伤单 mesh GLB 的 inline 编辑路径）。验收素材 person 入库（art 档超限人工放行，deviations 记录）。三绿 + **SMOKE PASS 44/44** + **gates 40/40**。**下一动作 REVIEW EXECUTE（MU3 + MU4 + M2 合并三轴评审，用户裁决攒评）**。
 - **REVIEW EXECUTE 完成（2026-10-12，评审记录 8 §6）**：批次 MU3 + MU4 + M2 + 修复轮 1–5 + **M3（评审时发现代码已落码但未回写 spec，一并纳入）** 三轴评审。Overall Verdict: **CONDITIONAL PASS**——12 检查项：9 PASS + 2 FAIL（同一 P1：M3 undo 后 slots transform 运行时丢失——examples 工厂 GLB 异步加载后不重挂视觉层，数据层正确但活 mesh 位置未恢复；`asset` 工厂有 applyVisualIfAny 而 examples 只调 applyStatusVisual）+ 1 排除断言侧（S46 RPC 超时为长会话累积态问题，探针独立跑通）。复跑：三绿 + gates 40/40 + SMOKE 45/45（S46 未完成判定，探针分段覆盖六段 true / meshAfterUndo false = P1）。**M3 执行记录已补写（Reverse Sync 欠账清偿）**。
-- **M3 P1 修复轮完成（2026-10-12 同日，用户裁决超出修法 a/b——「改彻底：不打补丁，收敛为唯一实现」，Plan Approved 批内连跑 R1–R5）**：`makeAssetNodeFactory` 唯一异步 GLB 构建器落地（registry.ts：过期守卫身份比对 + 阴影默认 + 视觉层重挂 + onLoaded 业务回调集中一处；example.ts 瘦身纯业务化 −40 行删 makeAssetNode/loadTokens；二开范式升级）；顺带治好 `asset` 工厂孤儿泄漏（原无过期守卫）。smoke RPC 超时 20s→40s + **新增 S47 回灌窗口视觉存活断言** + S46 断言侧修正（undo 后旧 mesh 引用失联，改重新 traverse + 轮询）。修复中两轮探针定位：第一轮证 undo 后 mesh 是新实例且位置 0（数据层正确）；第二轮证单次 undo 后 meshXAfterWait=0.5 即时生效（构建器重挂工作，产品链路本已正确——S46 FAIL 实为断言旧引用缺陷）。复验：三绿（edit-main 124.53 kB 隔离保持）/ **SMOKE PASS 47/47** / **gates 40/40**。**评审记录 8 升 PASS（修复闭环）**。**下一动作：批次 4（验证回路，§4.7：smoke-structural/smoke-visual/perf-fps/ensure-env 四脚本），批间停等确认**。
+- **M3 P1 修复轮完成（2026-10-12 同日，用户裁决超出修法 a/b——「改彻底：不打补丁，收敛为唯一实现」，Plan Approved 批内连跑 R1–R5）**：`makeAssetNodeFactory` 唯一异步 GLB 构建器落地（registry.ts：过期守卫身份比对 + 阴影默认 + 视觉层重挂 + onLoaded 业务回调集中一处；example.ts 瘦身纯业务化 −40 行删 makeAssetNode/loadTokens；二开范式升级）；顺带治好 `asset` 工厂孤儿泄漏（原无过期守卫）。smoke RPC 超时 20s→40s + **新增 S47 回灌窗口视觉存活断言** + S46 断言侧修正（undo 后旧 mesh 引用失联，改重新 traverse + 轮询）。修复中两轮探针定位：第一轮证 undo 后 mesh 是新实例且位置 0（数据层正确）；第二轮证单次 undo 后 meshXAfterWait=0.5 即时生效（构建器重挂工作，产品链路本已正确——S46 FAIL 实为断言旧引用缺陷）。复验：三绿（edit-main 124.53 kB 隔离保持）/ **SMOKE PASS 47/47** / **gates 40/40**。**评审记录 8 升 PASS（修复闭环）**。
+
+- **修复轮七完成 + 补丁收口（2026-10-13）**：主轮（占位盒 A 案 + scene-core 内置徽标 + S49，SMOKE 52 段全绿 + gates 40/40 + 三绿）→ 用户复测反馈「盒子看不到」→ 探针定案（首载报告缓存恒空永无盒 + 资产缓存后盒闪过价值窗口≈0）→ **用户裁决撤除占位盒，保留 N/M 徽标**（模型附议：四文件补救成本不对称）→ 补丁执行（删盒 + 顺手修两真 bug：计数器闭包串组→模块级共享、S49 快照时序）→ **用户浏览器人工验收通过**。**同步落「验证策略修订」**：模型三绿 + 人工验证清单交付，用户目检验收；冒烟只在数据层改动/收口 Review/用户要求三类时点跑；无头环境预检不过直接转人工；分段参数 `--only/--from` 批次 4 落地。详见 §7 修复轮七补丁区块。
+- **批次 PH 完成（2026-10-13，并行会话）**：fetch-polyhaven.mjs 落地（配额/名单双模式 + 1k/2k 档 + --resume + TAG_ZH 字典）→ 56 资产 122.4MB 入库（polyhaven-seed，art 档全过，modular_pipes 预检剔除）→ gates 用例 37 语义化 40/40 → 中文检索 14/14。详见 §4.7 批次 PH 执行记录。
+- **评审记录 9（2026-10-13，修复轮七+补丁 × 批次 PH 合并三轴评审）：Overall Verdict PASS**——11 检查项（10 PASS + 1 FIXED 注释卫生顺手修）+ 挂账 3 项（P2 补丁后全量冒烟批次 4 强制复跑 / P3 wheelchair_01 无中文 tag / P2 存量 S52④ dev 专属路径）。gates 合并基线实跑 40/40。详见 §6 评审记录 9。**下一动作：批次 4（验证回路 §4.7 四脚本 + 分段冒烟参数 --only/--from + 强制全量复跑）→ 批次 5（skill 大脑+收尾，P3 挂账清点）**。
 
   30. **批次 PH 立项（2026-10-12，Poly Haven 精选资产批量入库，Research 完成）**：
       - **任务**：写批量下载脚本，从 Poly Haven API（api.polyhaven.com，files 端点 `gltf["2k"].gltf`）拉取精选资产（面数≤50000、贴图 2k 档、glTF 格式，约 108 个 / 参考 200MB），下载后打包成 seed-package.zip 的 manifest 格式（meta+data[]），走 import-assets.mjs 入库；入库后跑 gates.mjs 复验、检索索引重建（import-assets 自带）、中文 tags 自补（API 只有英文）。
@@ -1400,6 +1499,8 @@ TRANSCRIPTION 物体视觉 override 表增 slot 列；LLM 转录产物按 mesh �
         - 体量：抽样 8 资产 2k 档平均 2.78MB/资产 → 108 个约 300MB（略超参考量 200MB，可接受）
       - **Open Questions（待用户裁决，裁决后进 Plan）**：① gltf 形态：(A) 下载时合并转 GLB【推荐，零依赖手写 bin 合并】/(B) gltf 目录形态先入库（检索可用，init 注入留后患）/(C) 改 init.mjs 支持目录形态（超本任务边界）；② 精选策略：download_count 降序 + 类别多样性配额 + 贴图数预检，或用户指定清单；③ 中文 tags 生成：脚本内置英文→中文映射字典（类别词+常见名词）或人工审一轮；④ category 字段：Poly Haven 原类别透传（仅 warning 不阻断）或映射到建议集 [demo/equipment/building/vegetation/vehicle]
       - checklist 落 §4.7 批次 PH（PH.1–PH.4，设计细节待 Plan）。
+
+  31. **批次 PH 完成（2026-10-13，Plan Approved 同日批内连跑 PH.1–PH.5）**：fetch-polyhaven.mjs 落地（配额/名单双模式 + --res 1k|2k + --resume + TAG_ZH ~200 词条字典）→ 首版 2k/108 资产/565MB 产出 → 用户评审裁决瘦身（B+C：1k 档 + 57 定制名单，场景定位建筑/机房/电站/地图）→ 终版 **56 资产 / 122.4MB / 1k 档入库**（polyhaven-seed 包，art 档门禁全过，modular_pipes 节点 106>64 预检剔除）。gates 用例 37 语义化后复验 **40/40**（入库前后双跑）。中文检索抽查三轮字典迭代（场景词 26+ 补词 / id 逐词补捞 / camera 词条）后 **14/14 命中**。执行中三处前置修复：Spec §4.16.3 写入事故重写、§4.16.1 类别归一次类别回退（用户裁决）、探针目录文件名恢复。详见 §4.7 批次 PH 执行记录。**下一动作：批次 4（验证回路）或批次 5（收尾），批间停等确认**。
 
 ### 批次 1：skill 骨架 + 母版工程（2026-09-30 完成，冒烟通过）
 - [x] 1.1 建 skill 目录树
@@ -1971,7 +2072,7 @@ TRANSCRIPTION 物体视觉 override 表增 slot 列；LLM 转录产物按 mesh �
 - **blender-mcp 情报更新（接入方式变化）**：PyPI 包已从 `blender-mcp` 改名 **`mcp-for-blender`**（旧名配置仍兼容）；Claude Code 接入=`claude mcp add blender uvx mcp-for-blender`；addon 安装=`uvx mcp-for-blender install-addon`（自动拷入 Blender addons 目录）或手动 `addon.py` 经 Preferences→Add-ons 安装；要求 Blender≥3.0 + Python≥3.10 + uv；MCP server 由客户端拉起（勿手动终端跑），Blender 端 socket server 开 Blender 即起（N 面板 MCP for Blender 页签）；安全项：socket 无鉴权仅限 localhost、`execute_blender_code` 是任意代码执行面（`BLENDER_MCP_SAFE_MODE=1` 可开脚本校验）、多实例用 `--port 9877` 区分。
 - **探索期残留（2026-10-12 用户裁决「按推荐来」，已清理）**：Blender 原始 zip 已删（解压目录 `~/.gts3d/blender/blender-4.5.9-windows-x64/` 留作通道就绪）；探索资产 table 已出库（模型+manifest 删 + 索引重建 + gates 40/40 复验通过）；`.tmp-blender-explore/` 仅留 `gts3d_model_template.py`（将来改造为 references/modeling-channels.md 素材），产物与打包目录已删。
 
-### 修复轮七：GLB 加载占位可视化 + 加载计数指示（2026-10-12 立项，Research 完成）
+### 修复轮七：GLB 加载占位可视化 + 加载计数指示（2026-10-12 立项，2026-10-13 执行完成，SMOKE 52 段全绿 + gates 40/40，待用户复测）
 
 **目标**：GLB 异步加载期间的用户感知改进——①占位可视化：加载期间显示按模型 bbox 尺寸的半透明线框盒（代替现在空 Group 完全不可见）；②加载计数指示：工具栏或角落显示 "N/M loaded"。
 
@@ -2030,12 +2131,66 @@ TRANSCRIPTION 物体视觉 override 表增 slot 列；LLM 转录产物按 mesh �
 - `const createLoadBadge = (canvas: HTMLCanvasElement): { update(loaded: number, total: number): void; dispose(): void }`（createScene.ts 内部）
 
 **原子 Checklist**：
-- [ ] P1 registry.ts：createPlaceholderBox + makeAssetNodeFactory 占位盒挂/移除/dispose + 计数器三态收敛 + onLoadCount 尾参
-- [ ] P2 createScene.ts：createLoadBadge DOM 徽标 + registerBuiltinFactories 计数接线（内建 'asset' 工厂 + example handler 两路都汇入）
-- [ ] P3 smoke-r.mjs：S49 四段断言 + pass 链
-- [ ] P4 三绿（vue-tsc / build / eslint 0 errors）
-- [ ] P5 复验闭环：重启 5183 dev server（时间胶囊纪律）→ SMOKE 49/49（重点 S47/S40/S46/S48 回归）→ gates 40/40
-- [ ] P6 Reverse Sync：执行记录 + 验证证据 + 教训回写 spec
+- [x] P1 registry.ts：createPlaceholderBox + makeAssetNodeFactory 占位盒挂/移除/dispose + 计数器三态收敛 + onLoadCount 尾参
+- [x] P2 createScene.ts：createLoadBadge DOM 徽标 + registerBuiltinFactories 计数接线（内建 'asset' 工厂 + example handler 两路都汇入）
+- [x] P3 smoke-r.mjs：S49 四段断言 + pass 链
+- [x] P4 三绿（vue-tsc / build / eslint 0 errors）
+- [x] P5 复验闭环：重启 dev server（时间胶囊 + 修复轮九教训：TaskStop 不级联杀 vite 子进程，须 Stop-Process 杀净再起）→ SMOKE 全绿（当前基线 S1–S48+S50+S51+S52=51 段，S49 加入后 52 段；重点 S47/S40/S46/S48/S50/S52 回归）→ gates 40/40
+- [x] P6 Reverse Sync：执行记录 + 验证证据 + 教训回写 spec
+
+**修复轮七执行记录（2026-10-13，本会话 Plan 批准后批内连跑）**：
+
+1. **P1** registry.ts：`createPlaceholderBox`（EdgesGeometry(BoxGeometry) + 半透明 LineBasicMaterial + `raycast = () => {}` 防拾取误中，照抄 SelectionService BoxHelper 既有手法）+ `disposePlaceholderBox`（geometry/material 双释放——disposeInstance 只处理 isMesh，LineSegments 由构建器自管防反复增删泄漏）；`makeAssetNodeFactory` 签名扩尾参 `onLoadCount?`，闭包内 `pendingTotal/pendingDone` 计数器（创建时 M+1 即回调一次让徽标立刻出现，完成/过期守卫命中/加载失败三态收敛 N+1——过期路径同样 dispose 占位盒）。占位盒只在 `getReport(assetId)` 命中时创建（A 案：无真值不显示假值），position 按报告 bbox 中心偏移（盒与模型真实位置对齐，模型原点居底时盒底=地面）。
+2. **P2** createScene.ts：`createLoadBadge`（DOM 徽标 `.gts3d-load-badge` 挂 canvas 容器右下角，`pointer-events:none`，N≥M 或 M=0 时 `display:none`）+ `getLoadBadgeState(assetEngine)`（WeakMap 按引擎实例隔离接线对象，业务侧凭引擎拿同一 `onCount` 汇入，多处 createScene 不串）+ dispose 时徽标移除且 onCount 置空防悬挂。example.ts `registerExampleHandler` 扩第 4 参 `onLoadCount?` 透传构建器——main.ts/edit-main.ts 两入口都接线 `getLoadBadgeState(...).onCount`，业务分组（cars/examples）与内建 'asset' 工厂统一汇入。registerBuiltinFactories 扩尾参转发。
+3. **P3** smoke-r.mjs S49 六判据：badgeExists（徽标 DOM 存在）/ sawPlaceholder（重建早期窗口抓到 LineSegments，尽力断言）/ placeholderGone（抓到后消失）/ meshBack（加载完成 mesh 存在）/ noResidual（无残留 LineSegments）/ badgeHidden（终态 N=M 收敛徽标隐藏）；抓不到占位盒（加载太快）降级为不产生破坏。pass 链追加 `s49.ok === true`，S49 插入 S48 与 S50 之间（编号空缺归位）。
+4. **P4** 三绿：vue-tsc 0 errors / build 绿（edit-main 125.84 kB，隔离保持）/ eslint 0 errors（302 warnings 均既有基线类）。
+5. **P5** 复验：杀净 5183（PID 2800，10-12 17:22 起的时间胶囊）与 5199（PID 18108，修复轮九冒烟遗留）双残留 server（netstat 查 PID + Stop-Process）→ 5199 新起 → **SMOKE PASS 全绿 52 段**（S49 一次全过：sawPlaceholder true + placeholderGone true + badgeHidden true；S40–S52 含 S47/S48/S50/S51/S52 全回归无破坏——占位盒 LineSegments 不命中任何 isMesh 判据的防护设计实证）→ **gates 40/40 PASS** → 5199 杀净（TaskStop 后 vite 子进程存活，再 Stop-Process 补刀——教训第 N 次验证）→ 5183 重启（10:33:31，代码新鲜）。
+6. **P6** 本记录即 Reverse Sync。
+
+**验证证据（2026-10-13）**：三绿 + SMOKE PASS 52 段 + gates 40/40。S49 详情：`{"badgeExists":true,"sawPlaceholder":true,"placeholderGone":true,"meshBack":true,"noResidual":true,"badgeHidden":true,"ok":true}`。
+
+**与并行会话的协调**：批次 PH（Poly Haven 入库）同期在另一会话推进——其改动面（scripts/fetch-polyhaven.mjs 新建 + gates 用例 37）与本轮改动面（registry.ts/createScene.ts/example.ts/main.ts/edit-main.ts/index.ts/smoke-r.mjs）零交集；本轮 gates 复验时用例 37 断言仍为旧口径（PH.4 未落），40/40 基于当前时点快照。
+
+**F-6e 复测清单追加（修复轮七新增三项）**：⑬ 刷新页面后场景重新加载期间，右下角应出现 "N/M loaded" 徽标，全部加载完成后自动消失；⑭ 删除任一 GLB 物体后 Ctrl+Z 撤销，徽标应在重建窗口重现并收敛，模型回来；⑮ 加载失败场景徽标不应永久停留（三态收敛）。
+**复测结果（2026-10-13 用户实测）**：⑬⑭ 视觉验收「正确」——但用户同时反馈「占位盒没看到，一开始没加载出来的时候也没看到」。探针定案（probe-placeholder/2）后用户裁决撤除占位盒（见下方「占位盒撤除」区块）。
+
+### 修复轮七补丁：占位盒撤除 + 计数器串组修复 + 验证策略修订（2026-10-13，用户裁决驱动）
+
+**复测反馈与探针定案（probe-placeholder.mjs / probe-placeholder2.mjs，三探针）**：
+
+1. **首载永无占位盒（主根因）**：boot 建树瞬间 `getReport` 恒返回 null（资产还在网络加载，报告要 GLB 解析完才生成）——A 案「报告缓存命中才显示」在首载场景=**永无盒**。而首载恰是最需要加载反馈的场景。manifest（import-assets 落库的 `report.bbox` 真值）存在但模板运行时无人加载（registerAssetStates 无人调用、init.mjs 注入资产不拷 manifests）。
+2. **undo 重建盒"闪过"**：资产已缓存时 GLB 毫秒级回归（探针 2：`meshAtFrame: 1`，即首采样帧 mesh 已回来）——盒一闪而过符合实现，视觉价值窗口≈0。
+3. **补救方案评估**：让首载有盒需引入 manifest 预注册链路（AssetEngine preregisterReports + createScene fetch + init.mjs 聚合 + 母版预置四文件改动）——服务一个毫秒级视觉瞬间，成本不对称。
+
+**用户裁决（2026-10-13）**：「要不就不要盒子了，麻烦死了」——**撤除占位盒，保留加载计数徽标**。模型认同并附议（价值窗口≈0 + 四文件维护成本 + 徽标已承担加载感知）。
+
+**执行记录（同日）**：
+
+1. registry.ts：删 `createPlaceholderBox`/`disposePlaceholderBox` 与构建器内全部占位盒逻辑（创建/挂载/移除/dispose），留一行撤除裁决注释；eslint warnings 302→300（删的代码自带 2 个）。
+2. **顺手修复两处真 bug**：
+   - **计数器串组**：原实现 `pendingTotal/pendingDone` 是每个工厂闭包独立——boot 期 cars/examples 并行加载时各计各的，徽标数字互串、先完成的工厂提前隐藏徽标。修=模块级共享 `loadTotal/loadDone`（N/M 语义=场景内异步 GLB 节点全局口径）。
+   - **S49 快照时序**（重写判据时引入，被冒烟超时掩盖）：快照在 `remove` 之后拍——快照里已无 car_01，重喂后车永远回不来。修=快照先于 remove。
+3. S49 判据重写为三判据：badgeExists / meshBack / badgeHidden（占位盒判据全删）。
+4. 三绿复验：vue-tsc 0 / build 绿（edit-main 125.84 kB）/ eslint 0 errors。
+5. **冒烟收口策略修订（本轮最大流程教训，见下方验证策略区块）**：全量冒烟连跑 3 次皆 S49 处 RPC 超时（长链路 CDP 累积态，既有教训重演），独立探针隔离复现又遇 Edge headless 环境起不来（CDP 端口无响应、`--dump-dom` 空输出——环境问题非代码问题，耗时约 20 分钟）。**最终验证=用户浏览器人工目检（⑬⑭「正确」）**。
+
+**验证证据（2026-10-13）**：三绿 + 用户浏览器人工验收通过。全量冒烟未在本补丁后重跑（Edge 环境问题 + 策略修订后人工验收优先；本补丁只删代码，最后全量基线 52 段绿已覆盖此前的盒路径，删盒不引入新逻辑分支）——**下次冒烟环境可用时顺带全量复跑一次作回归保险**。
+
+#### 验证策略修订（2026-10-13 用户裁决，后续批次一律遵循）
+
+**分工：模型交付人工验证清单，用户浏览器目检验收**（F-6e 复测清单模式的正式化）：
+
+1. **模型侧验证降级为三绿**（vue-tsc/build/eslint，纯本地秒级）+ 交付时附「人工验证清单」：每项=操作步骤 + 预期现象 + 访问方式（默认 `http://localhost:5183/?edit=1`）。用户回「通过/哪条不对」，模型只修不对的。
+2. **冒烟只在三类时点跑**：① 改动涉及数据层/引擎核心（SceneEngine/序列化/Bridge）；② 收口 Review 前（一次全量回归保险）；③ 用户要求。UI 视觉/交互类改动默认走人工验收。
+3. **无头浏览器环境预检**：起冒烟前 5 秒探测 CDP 可用性（spawn + `/json/version`），不可用直接转人工验证清单，不修环境不硬跑。
+4. **分段冒烟参数（批次 4 落地）**：smoke-r.mjs 加 `--only S49` / `--from S45`——需要跑时不再为全量买单；失败段后续跑汇总（一次全量看全所有失败）。
+5. **断言时序预检（执行 checklist 固定项）**：写/改冒烟断言先自查「此断言依赖什么时序、快照在哪一步拍、轮询判据的最早/最晚窗口」——本轮 S49 快照时序 bug 若先走此自检即可拦住。
+
+**Plan 基线同步（2026-10-13，修复轮八/九并行会话完成后）**：
+- 修复轮八（蒙皮槽位 Gizmo 禁用 + 面板联动，S50/S51）与修复轮九（组合模型槽位材质链路，S52）已由并行会话完成收口——S49 编号空缺仍归本轮使用；验证段数基线从「48/48」更新为「S1–S52 全绿 + S49 新增」。
+- 代码环境：registry.ts/createScene.ts 未被并行会话改动（占位盒/徽标落点无冲突）；materials.ts（F9-1 readMaterialSpec）/SceneEngine（F9-2 #索引口径）/LayoutGizmo+PropertyPanel（F8-1~3）为新基线，与本轮改动面零交集。
+- scene-data.json 17:11 版含 codecars/codeworkers/coderacks（procedural 路线，不经过 makeAssetNodeFactory）——M 计数仍=4（car_01/car_02/example_01/person_01），Plan 不变。
+- 环境实况（2026-10-13 核实）：5183 与 5199 双 server 存活（5199 疑为修复轮九冒烟遗留）——P5 执行时一并清理重启；smoke-r.mjs 22:19 版 pass 链现状 s1–s48+s50+s51+s52（无 s49）。
 
 **风险与回退**：
 - 风险 1：S49 断言「重建瞬间存在占位盒」有时序敏感（GLB 加载快时占位盒一闪而过）——断言设计为轮询早期窗口抓 LineSegments 存在性，抓不到时降级为「不产生破坏」（占位盒存在性属尽力断言，核心断言是移除+计数收敛+回归不破坏）
@@ -2196,6 +2351,38 @@ Signatures：
 - 风险 2：# 索引修复改变现存 scene-data 里已写入的 slots key（codecars 等若已用 # key 存了 override）——实测当前 scene-data 无 slots 残留（探针 listKeys 无命中），无迁移负担；GUIDE 已记「key 与结构绑定，重导出失效」同类语义。
 - 风险 3：S52 ④ 复用 S50 的面板断言套路（.fpanel__title 含「编辑材质」），路径已验证可跑通。
 - 回退：六文件各自独立可 revert；tree.ts 补名会改槽位 key（#N → 具名）——若用户已用旧 key 存数据需同步（当前无此数据）。
+
+### 评审记录 9（2026-10-13，修复轮七（含补丁）+ 批次 PH 代码评审（REVIEW EXECUTE），mandatory three-axis）
+
+**评审范围**：修复轮七（GLB 加载感知：徽标；占位盒已裁决撤除）+ 修复轮七补丁（撤盒 + 计数器串组修复 + S49 快照时序修复 + 验证策略修订）+ 批次 PH（fetch-polyhaven.mjs + 56 资产入库 + gates 用例 37 语义化）。两轮由并行会话同期完成，改动面经 git status/diff 核实零交集后合并评审。
+
+**评审方式**：git diff HEAD 逐文件对照 Spec 契约 × manifest/search-index/gates 复跑 × 中文检索实测抽查（椅子/灯具/工业机柜/变电站/摄像头/岩石/轮椅七查询）× S49 代码逻辑复核（时序预检）。
+
+#### Review Matrix
+
+| # | 轴 | 检查项 | 结论 | 证据 |
+|---|---|---|---|---|
+| 1 | Axis-1 | 修复轮七目标（加载感知）最终态达成 | PASS | 用户浏览器人工验收「正确」（验证策略修订后人工验收为一级证据）；徽标三态收敛设计（完成/过期/失败都 N+1）代码核实；三绿过 |
+| 2 | Axis-1 | 占位盒撤除裁决闭环完整 | PASS | 探针定案记录（probe-placeholder/2：首载 getReport 恒 null + 缓存后盒闪过）→ 用户裁决 → 撤除执行 → 复测清单⑬⑭更新 → 人工验收——决策链全程留痕 |
+| 3 | Axis-1 | 批次 PH 目标（56 资产入库+检索可用） | PASS | polyhaven-seed manifest 56 entries；models/ 59 glb（含 56 PH + example/person/rack）与 manifest 逐一对账 PASS；search-index docs=59 含全部 PH 资产；中文检索七查询抽查：椅子→outdoor_table_chair_set_01 / 灯具→chandelier_03 / 工业机柜→rack+portable_generator / 变电站→modular_electric_cables+utility_box / 摄像头→security_camera_01 top-1 / 岩石→rock_09 top-1 全命中 |
+| 4 | Axis-2 | 修复轮七 Plan 签名忠实度 | PASS | makeAssetNodeFactory 五参签名（onLoadCount 尾参可选）/ createLoadBadge 返回 {update,dispose} / getLoadBadgeState WeakMap 按引擎隔离——三签名与 §7 Plan 一致；registerBuiltinFactories 尾参转发、example.ts/main.ts/edit-main.ts 接线全落码（diff 逐行核实） |
+| 5 | Axis-2 | Plan-Execution Diff：占位盒撤除是计划外变更 | **记录（非 FAIL）** | Plan P1 含 createPlaceholderBox，补丁轮裁决撤除——用户显式裁决（「不要盒子了」）+ 探针证据支撑，属合法范围变更；Spec 补丁区块已完整记录变更动机与执行细节 |
+| 6 | Axis-2 | PH 签名忠实度（§4.16.6） | PASS | fetch-polyhaven.mjs 配额/名单双模式 + --res 1k\|2k + --resume 与裁决一致；gates 用例 37 语义断言 `>=3 && [example,person,rack].every(includes)` 落码（diff 核实）；manifest 中文三件套（中文 category/tags + 英文 name/search_text）符合四项裁决 |
+| 7 | Axis-3 | 计数器模块级共享的正确性 | PASS | 闭包改模块级 loadTotal/loadDone——boot 期 cars/examples/asset 三工厂并行计数不串组、先完成的工厂不提前隐藏徽标；缺陷机理（各闭包独立计数）与修法记录完整 |
+| 8 | Axis-3 | S49 快照时序修复 | PASS | 快照先于 remove 拍——撤除盒判据后 S49 三判据（badgeExists/meshBack/badgeHidden）逻辑自洽；注：补丁后全量冒烟因 Edge 环境问题未重跑，已挂账（见 Blocking 之下挂账项） |
+| 9 | Axis-3 | PH 资产数据质量 | PASS（1 处 P3） | id 违规 0；中文 tag 覆盖 55/56（wheelchair_01 无中文 tag——搜「轮椅」miss，top 结果是 sofa_03/armchair_01）；类别分布合理（工业 18/道具 10/家具 10/灯具 6/装饰 4…） |
+| 10 | Axis-3 | 代码卫生（评审顺手修复） | **FIXED** | registry.ts:82 `@param onLoadCount` 注释残留「占位盒仍生效」——占位盒已撤注释撒谎；评审中已修（vue-tsc 复验 0 错） |
+| 11 | Axis-3 | 验证策略修订的落地风险 | PARTIAL（提示项） | 人工验收为一级证据 + 冒烟三类时点——策略合理，但「补丁后全量冒烟未跑」意味着 S1–S48/S50–S52 回归证据停留在撤盒前版本；挂账批次 4 收口时强制全量复跑一次闭环 |
+
+#### Overall Verdict: **PASS**
+
+- **无阻塞项**。两轮目标全部达成、签名忠实、数据质量过门禁，1 处注释卫生问题评审中已修。
+- **挂账（不阻塞）**：
+  1. [P2] 补丁后全量冒烟未复跑（Edge headless 环境问题 + 策略修订转人工验收）——**批次 4 收口时强制全量复跑一次**作回归保险；若环境仍不可用，评估以 gates 40/40 + 分段冒烟（--only S49）替代。
+  2. [P3] wheelchair_01 无中文 tag（搜「轮椅」miss）——字典补「wheelchair→轮椅」词条或接受（56 中 1 条，用户裁决过 name 保留英文，中文覆盖靠 tags 的边界情形）。
+  3. [P2 存量] S52④ `import('/src/...')` vite dev 专属路径——批次 4 验证回路评估（历史挂账并入）。
+- **Plan-Execution Diff（§7 合并）**：占位盒撤除（计划内→用户裁决撤除，记录完整）；其余零偏差。
+- **gates 复验（合并基线）**：2026-10-13 本评审中实跑 **40/40 PASS**（含 PH 语义化用例 37，注入清单 59 模型实证）。
 
 
 ## 8. Archive Record (Recommended at closure)

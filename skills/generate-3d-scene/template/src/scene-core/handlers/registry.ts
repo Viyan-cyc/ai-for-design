@@ -55,6 +55,12 @@ export const applyVisualIfAny = (
 };
 
 /**
+ * 加载期间占位可视化：已裁决撤除（2026-10-13）——探针实证首载报告缓存恒空
+ * （盒永不出）+ 资产缓存后 GLB 毫秒级回归（盒一闪而过），视觉价值窗口≈0；
+ * 加载感知由 N/M 徽标承担（createLoadBadge）。
+ */
+
+/**
  * 异步 GLB 节点的唯一构建器（'asset' 内建工厂与业务 handler 共用）。
  *
  * 同步返回占位 Group（建树不等待、渲染不阻塞），加载完成后按序：
@@ -68,39 +74,64 @@ export const applyVisualIfAny = (
  * slots 按 mesh 名定位、在空 Group 上命中不了——没有这步，异步窗口内的
  * 槽位 transform 与内联材质编辑会在重建后静默丢失。
  *
+ * 加载计数（节点实例口径：创建 M+1，完成/过期/失败三态收敛 N+1，防指示永不消失）
+ * 在本构建器——业务经 onLoaded 只挂业务逻辑，感知能力零成本获得。
+ *
  * @param onLoaded 业务回调（状态视觉/spinners 注册等；instance 已应用完通用视觉）
+ * @param onLoadCount 加载计数回调（不传即无感知）
  */
+/**
+ * 加载计数（模块级共享：'asset' 内建工厂与业务 handler 各自的 factory 闭包统一累计。
+ * 若按闭包各计各的，boot 期 cars/examples 并行加载时徽标数字互串、先完成的
+ * 工厂会把徽标提前隐藏——N/M 语义是「场景内异步 GLB 节点」全局口径）。
+ */
+let loadTotal = 0;
+let loadDone = 0;
+
 export const makeAssetNodeFactory = (
   sceneEngine: SceneEngine,
   assetEngine: AssetEngine,
   resolveAssetUrl: (assetId: string) => string,
   onLoaded?: (node: SceneNode, instance: THREE.Object3D) => void,
-): (node: SceneNode) => THREE.Object3D => (node: SceneNode): THREE.Object3D => {
-  const group = new THREE.Group();
-  applyTransform(group, node);
-  const assetId = node.params?.assetId;
-  if (typeof assetId !== 'string' || !assetId) {
-    console.warn(`[registry] asset 节点缺 params.assetId: ${node.id}`);
+  onLoadCount?: (loaded: number, total: number) => void,
+): (node: SceneNode) => THREE.Object3D => {
+  const settle = (): void => {
+    loadDone += 1;
+    onLoadCount?.(loadDone, loadTotal);
+  };
+  return (node: SceneNode): THREE.Object3D => {
+    const group = new THREE.Group();
+    applyTransform(group, node);
+    const assetId = node.params?.assetId;
+    if (typeof assetId !== 'string' || !assetId) {
+      console.warn(`[registry] asset 节点缺 params.assetId: ${node.id}`);
+      return group;
+    }
+    loadTotal += 1;
+    onLoadCount?.(loadDone, loadTotal);
+    void assetEngine.getInstance(assetId, resolveAssetUrl(assetId))
+      .then((instance) => {
+        if (sceneEngine.getObject(node.id) !== group) {
+          settle();
+          return;
+        }
+        applyShadowDefaults(instance);
+        applyVisualIfAny(instance, node.id, (id) => sceneEngine.getVisual(id));
+        group.add(instance);
+        settle();
+        onLoaded?.(node, instance);
+      })
+      .catch((err: unknown) => {
+        console.warn(`[registry] 资产加载失败: ${assetId}（id=${node.id}）`, err);
+        settle();
+      });
     return group;
-  }
-  void assetEngine.getInstance(assetId, resolveAssetUrl(assetId))
-    .then((instance) => {
-      if (sceneEngine.getObject(node.id) !== group) {
-        return;
-      }
-      applyShadowDefaults(instance);
-      applyVisualIfAny(instance, node.id, (id) => sceneEngine.getVisual(id));
-      group.add(instance);
-      onLoaded?.(node, instance);
-    })
-    .catch((err: unknown) => {
-      console.warn(`[registry] 资产加载失败: ${assetId}（id=${node.id}）`, err);
-    });
-  return group;
+  };
 };
 
 /**
  * 注册内建工厂到 SceneEngine（createScene 装配时调用一次）。
+ * @param onLoadCount 加载计数回调（'asset' 工厂与业务 handler 的 GLB 节点统一汇入）
  */
 export const registerBuiltinFactories = (
   sceneEngine: SceneEngine,
@@ -108,6 +139,7 @@ export const registerBuiltinFactories = (
 
   /** 资产 id → URL 解析器（模板按资产清单静态生成；默认走 public/assets/） */
   resolveAssetUrl: (assetId: string) => string = (id) => `assets/models/${id}.glb`,
+  onLoadCount?: (loaded: number, total: number) => void,
 ): void => {
   // 每种图元一个分组 key：'Box'/'Sphere'/'Cylinder'/'Plane'/'Cone'/'Torus'
   for (const kind of PRIMITIVE_KINDS) {
@@ -125,7 +157,7 @@ export const registerBuiltinFactories = (
   }
 
   // 'asset'：GLB 资产实例（asset id 在 params.assetId）
-  sceneEngine.registerFactory('asset', makeAssetNodeFactory(sceneEngine, assetEngine, resolveAssetUrl));
+  sceneEngine.registerFactory('asset', makeAssetNodeFactory(sceneEngine, assetEngine, resolveAssetUrl, undefined, onLoadCount));
 };
 
 /** 导出给业务 handler 复用的工具 */

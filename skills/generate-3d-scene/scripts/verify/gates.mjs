@@ -308,7 +308,11 @@ rmSync(join(F('stripped'), 'src', 'edit'), { recursive: true, force: true });
     'init: --with-components 写 file: 依赖 + tgz 落 vendor',
     r.ok && /file:\.\/vendor\/.+\.tgz/.test(pkg.dependencies?.['@a3d/a3d-components'] ?? '') && existsSync(join(out, 'vendor')),
   );
-  check('init: --assets all 注入全部模型（example+person+rack）', models.length === 3, `[${models.join(',')}]`);
+  check(
+    'init: --assets all 注入全部模型（含 example+person+rack）',
+    models.length >= 3 && ['example.glb', 'person.glb', 'rack.glb'].every((f) => models.includes(f)),
+    `[${models.join(',')}]`,
+  );
 }
 
 /* ── 端到端（--with-build）：小写盘符 spawn + 首次 npm run build ───────────── */
