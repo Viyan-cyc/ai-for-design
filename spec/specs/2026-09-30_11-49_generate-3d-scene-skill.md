@@ -3,7 +3,7 @@
 ## 0. Open Questions
 - [x] Q1 资产管线落位 → **已裁决（2026-09-30）**：skill 自带 `assets/`；后续再迁云端。上传方本地丢压缩包+manifest 给 skill 入库即可，上传方不接触检索库
 - [x] Q2 embedding 服务 → **已裁决（2026-09-30）**：先用本地方案，不引入大模型；放 skill 下某目录。内网有 API 但后续再接
-- [x] Q3 "LLM 自己建模"边界 → **已裁决（2026-09-30）**：用户倾向 Blender MCP（LLM 驱动 Blender 建模导出 GLB）；LLM 直接写 three.js 建模代码是兜底方案
+- [x] Q3 "LLM 自己建模"边界 → **已裁决（2026-09-30）**：用户倾向 Blender MCP（LLM 驱动 Blender 建模导出 GLB）；LLM 直接写 three.js 建模代码是兜底方案。**→ 已推翻（2026-10-12 用户裁决，2026-10-13 补录）：Blender 通道完全剔除，LLM 直写 three.js 代码建模（含代码组合精模）为唯一过程化建模通道；资产缺口靠 Poly Haven 精选库预填（批次 PH 已完成 56 资产）。详见 §8.1 范围变更记录**
 - [x] Q4 skill 交付形态 → **已裁决（2026-09-30）**：与 generate-ux-prototype 同级（ep-coder/skills/ 下）；内网投递纪律延续（npm 内网源、零 CDN）
 - [x] Q5 组件库去留 → **已裁决（2026-09-30）**：组件库代码保留（用户沉淀的资产，非废弃对象）；components.json 形式可换。处理方式（检索 vs vendor）由模型给方案、用户确认——见 §3
 
@@ -41,7 +41,7 @@
   - **3dviz-pro-max**（github.com/viettranx/3dviz-pro-max）— 十步工作流（intent→reasoning→grounding→routing→first view→behavior→run-and-inspect→refine→honest reporting）、recipes+知识记录数据结构、**Playwright capture 截图自检回路**、"诚实分级"（proven vs guidance）。方法论核心可移植
   - **open-model-workbench**（github.com/icejyzy0430/open-model-workbench）— GLB/Draco/纹理依赖管线经验、layout-as-JSON 人机协作模式
   - **Spline** — 判定不可参考（闭源无 codegen API、不支持 Vue 导出、与"生成 three.js 源码交付"相悖）
-  - **blender-mcp**（github.com/ahujasid/blender-mcp，~29.7k stars，MIT，活跃；**2026-10-12 更新：PyPI 包已改名 `mcp-for-blender`**，接入情报见 §7 Blender 通道前置探索区块）— LLM 经 MCP 驱动 Blender：场景/物体操作、任意 Python 执行（有 safe mode）、**导出 GLB/FBX（export_scene）**、Poly Haven/Sketchfab/Poly Pizza 素材库、Hyper3D Rodin/混元3D 生成。架构=Blender 插件(socket server) + Python MCP 桥。**用户已裁决采用为建模主通道**，LLM 直写 three.js 建模代码降为兜底。风险记录：execute_blender_code 是任意代码执行面（localhost 使用、保存现场）、socket 无鉴权、大资源下载冻结 UI 主线程
+  - **blender-mcp**（github.com/ahujasid/blender-mcp，~29.7k stars，MIT，活跃；**2026-10-12 更新：PyPI 包已改名 `mcp-for-blender`**，接入情报见 §7 Blender 通道前置探索区块）— LLM 经 MCP 驱动 Blender：场景/物体操作、任意 Python 执行（有 safe mode）、**导出 GLB/FBX（export_scene）**、Poly Haven/Sketchfab/Poly Pizza 素材库、Hyper3D Rodin/混元3D 生成。架构=Blender 插件(socket server) + Python MCP 桥。~~**用户已裁决采用为建模主通道**~~ → **通道已剔除（2026-10-12 用户裁决，见 §8.1）**，本条目转为历史归档。风险记录（历史）：execute_blender_code 是任意代码执行面（localhost 使用、保存现场）、socket 无鉴权、大资源下载冻结 UI 主线程
 - Existing Assets（现状调研）:
   - 3d-templete（D:\cyc\project\octo\test\3d-templete）：LiveDataConfig JSON 驱动 + handler 注册制 + assetsLibrary（ASSET_CATALOG 2 个 glb + 文本检索 + lowPolyFallback + hunyuan 生成器）——架构思想可参考，代码按用户决策不强制保留
   - 3d-components（@a3d/a3d-components）：14+ 组件（Rack/Wall/HeatMap/Sky/BitmapText/InstancedMesh2 等），docs/components.json 机器可读目录，peerDeps three>=0.150 兼容 0.185.1——是否保留待 Q5
@@ -62,7 +62,7 @@
   - 资产元数据格式用户已给样例（meta + data[]，含 search_text/tags/thumbnail_path 字段——天然适合向量检索喂料）
   - 检索策略用户已定：向量检索；embedding 先本地方案（skill 内目录，不用大模型），内网 API 后续再接
   - 验证是硬要求（用户明示"要有验证"）
-  - 建模主通道：Blender MCP（LLM 驱动 Blender 导出 GLB）；LLM 直写 three.js 建模代码是兜底
+  - 建模主通道：~~Blender MCP~~ → **已改（2026-10-12 裁决）：LLM 直写 three.js 代码建模（含代码组合精模）为唯一过程化建模通道；Blender 剔除，见 §8.1**
   - 资产库：skill 自带 assets/，支持本地压缩包+manifest 入库，后续迁云端
   - 组件库代码保留（用户沉淀资产）；组织形式（检索 vs vendor）待方案确认
   - 内网投递纪律延续（npm 内网源、零 CDN）
@@ -86,25 +86,25 @@
   - **验证回路是业界共识核心**：3dviz-pro-max 用 Playwright capture 让 agent 看真实渲染帧而非凭空断言；threejs-architecture-effects 自带 verification 文档。与用户 generate-ux-prototype 的 CDP 冒烟经验同构
   - **向量检索喂料现成**：用户 manifest 格式的 search_text/tags/description 字段即 embedding 输入；thumbnail_path 支持多模态选型（缩略图给人看/给多模态模型看）
   - **three 0.185.1 与组件库兼容**：@a3d/a3d-components peerDeps `three>=0.150.0`，0.185.1 满足
-  - **Blender MCP 是成熟建模通道**：~29.7k stars 活跃项目；LLM 可场景操作/Python 执行/**导出 GLB**/Poly Haven 素材/AI 生成（Rodin/混元）。作为建模主通道已裁决。风险记录：execute_blender_code 是任意代码执行面（localhost 使用、保存现场）、socket 无鉴权、大资源下载冻结 UI 主线程
-  - **Blender 通道双模式（2026-09-30 向用户说明）**：① MCP 交互式（Blender+插件+运行中，LLM 写 bpy Python→截图回看→纠错→导出，适合复杂迭代建模）；② headless 脚本式（只装 Blender 即可，LLM 生成 bpy 脚本→`blender --background --python`→直出 GLB，全自动可封装）；③ 两者皆无→LLM 直写 three.js 过程化建模兜底（零外部依赖）。skill 启动时探测环境择道，永不因缺 Blender 失败
-  - **用户澄清（2026-09-30）**：skill 是给很多人用的——用户只发文字/截图描述收工程，Blender 是 LLM 的工具而非用户的工具，用户零 Blender 操作；但目标机器未必装 Blender，skill 要解决自带问题
-  - **Blender 分发裁决（2026-09-30）**：A/B 混合——Blender 便携版作为"增强包"独立分发（不进 skill 代码目录），skill 带 install-blender 脚本（探测本地缓存→无则从可配镜像 URL 拉便携 zip 解压→headless 通道就绪，用户全自动零操作）；镜像 URL 可配（内网投递配内网地址、外网配 blender.org）；拉取失败自动降级 LLM 直写，skill 永不因缺 Blender 失败
-  - **非 multimodal LLM 能力分层（2026-09-30）**：skill 启动探测 LLM 多模态能力（或用户配置声明），分档执行——多模态档：Blender 视口截图自查 + 渲染帧视觉判断；非多模态档：① Blender 建模走数值自查（bpy 输出结构化 JSON：bbox/面数/部件数/孤立体，LLM 读数字比对参考值）；② 场景冒烟走结构化断言（WebGL canvas 像素统计/readPixels 采样、场景图 JSON 导出、CDP 布局断言，复用 generate-ux-prototype CDP 设施模式）。非多模态档结论按"诚实分级"标注"结构验证通过，未经视觉确认"。可选增强：截图先经本地脚本提特征（色彩分布/边缘密度/空白占比）变数字给 LLM 读
+  - **Blender MCP 是成熟建模通道**：~29.7k stars 活跃项目；LLM 可场景操作/Python 执行/**导出 GLB**/Poly Haven 素材/AI 生成（Rodin/混元）。~~作为建模主通道已裁决~~。**→ 通道已剔除（2026-10-12 用户裁决，见 §8.1）——以下 Blender 相关条目全部转为历史归档，不再是执行依据**。风险记录（历史）：execute_blender_code 是任意代码执行面（localhost 使用、保存现场）、socket 无鉴权、大资源下载冻结 UI 主线程
+  - **Blender 通道双模式（2026-09-30 向用户说明，已归档）**：~~① MCP 交互式；② headless 脚本式；③ 两者皆无→LLM 直写兜底~~ → **2026-10-12 裁决：三通道只留 LLM 直写**
+  - **用户澄清（2026-09-30）**：skill 是给很多人用的——用户只发文字/截图描述收工程，用户零建模工具操作；目标机器零外部依赖
+  - **Blender 分发裁决（2026-09-30，已随 2026-10-12 剔除裁决作废）**：~~A/B 混合——便携版增强包 + install-blender 脚本~~ → **install-blender.mjs 取消（批次 5.1 撤销），本机 `~/.gts3d/blender/` 已清理（2026-10-13）**
+  - **非 multimodal LLM 能力分层（2026-09-30；Blender 引用已随通道剔除过时，保留场景冒烟部分）**：skill 启动探测 LLM 多模态能力（或用户配置声明），分档执行——多模态档：渲染帧视觉判断；非多模态档：场景冒烟走结构化断言（WebGL canvas 像素统计/readPixels 采样、场景图 JSON 导出、CDP 布局断言，复用 generate-ux-prototype CDP 设施模式）。非多模态档结论按"诚实分级"标注"结构验证通过，未经视觉确认"。可选增强：截图先经本地脚本提特征（色彩分布/边缘密度/空白占比）变数字给 LLM 读
   - **性能规格重定（2026-09-30 用户补充，2026-09-30 二次修订）**：真实场景复杂——模型数量成百上千，性能要求 ≥40fps。推导：单模型 prop≤2k 三角（多数几百）、少量主角≤10k、场景总预算≤1M 三角；draw call 约束——**同类物体实例数 >1000 才强制 InstancedMesh**（≤1000 普通 mesh + 静态几何合并），场景 draw call 超预算由性能冒烟打回触发优化；全场景材质数上限（≤32 草案）；贴图降到单张≤1024² 图集优先。运行侧门禁：CDP 实测帧率 ≥40fps 不达标打回。**推论**：此性能档下工业级低模只能人工/专业管线产出，资产库检索复用从"优先"升为"性能刚需"；LLM 建模通道退为库未命中最后手段且必须过 validator
   - **母版工程机制确认（2026-09-30）**：LLM 每次生成 = 复制母版 + 填业务层。母版三层：① 引擎层（固定，LLM 永不修改：场景初始化/渲染循环/相机灯光/资产加载/增量更新协议/handler 注册机制）② 接入层（固定契约，LLM 只产出此处业务代码：handlers/<type>/<type>.ts、scene-data.json、cards/*.vue 可选、assets 引用清单）③ 文档（INTEGRATION_GUIDE.md 一份即可接手）。效果：引擎层跨交付物完全一致（bug 修一次全受益），二开者"数据级二开不需要懂 three.js，深度二开有完整源码"——与 generate-ux-prototype starter 模式同构，3d-templete handler 注册制思想一脉相承
   - **母版工程代码四要求（2026-09-30 用户）**：① 2D 卡片为可修改 Vue 组件，参考 3d-templete 卡片机制但用自己的想法重写；② 模板代码简洁可读、单一职责（场景/灯光/控制器/射线拾取/renderer 各自独立文件）；③ 遵循 3d-templete 的 eslint 配置；④ 双模式架构：编辑态（LLM 交流中选中调参：场景/控制器/灯光/renderer/材质/贴图，可调布局，类 Spline 可编辑）+ 二开态（二开者拿到的代码物理不含编辑态代码）。双模式隔离方案见下条
   - **双模式隔离方案（2026-09-30）**：edit → core 单向依赖。core（scene-core/：engine 各单一职责文件 + handlers/ + cards/ + scene-data.json + createScene.ts 唯一入口）不知道 edit 存在；edit/（SelectionService 射线选中复用 core 拾取、PropertyPanel 调参 UI、LayoutGizmo 布局拖拽、Bridge 唯一桥梁只调 core 公开 API sceneHandle、edit-main.ts 独立入口）整体可删除。两种交付：编辑态工程=core+edit（调参结果序列化回写 scene-data.json）；二开交付=build 剔除 edit/ + 回写后 scene-data.json（二开者代码里物理无编辑态）。机器保证：build 门禁规则——core 文件 import edit/ 即 FAIL；core 暴露有限 API（get/set 属性、serialize、updateObject 增量），edit 不得伸手进 core 内部。3d-templete editBridge/ 契约思想可参考、代码重写
   - **3d-templete 处置裁决（2026-09-30）**：代码不直接用（现有实现/assetLibrary 文本检索/lowPolyFallback 丢弃或重写）；三个架构思想吸收进新 skill：① LiveDataConfig JSON 驱动（数据进场景出，二开者改数据不改引擎）② handler 注册制（LLM 业务代码以 handler 插入，引擎母版不动——受控沙箱思想）③ 增量更新协议（物体移动/状态变色不重建场景，监控场景刚需）。新场景工程模板=重写，设计输入=3d-templete 三思想 + 业界最佳 + 新性能规格；LiveDataConfig schema 与 handler 契约作为起点重新推导
-  - **模型生成规格 + 校验器双层机制（2026-09-30 修订版）**：skill 内置 model-spec.md（用户可覆盖默认值）：底面中心 y=0 向上生长 / 三角面数 prop≤2k（多数几百）、主角≤10k、场景总预算≤1M / 子节点≤64 扁平化 / 命名小写 snake_case 语义化 / 贴图单张≤1024² 图集优先 / 米制 +Y up 导出转 glTF -Z forward / **同类物体实例数 >1000 才强制 InstancedMesh，≤1000 普通 mesh+静态几何合并**、材质数上限（草案≤32）。三条建模通道（MCP/headless/LLM直写）共用同一规格：Blender 通道 bpy 脚本模板内置约束（收尾自动 apply modifiers/重命名/居中/报告面数）；导出入库前统一 validator 脚本硬门禁（GLB 解析：面数/节点树/命名/贴图尺寸/bbox 原点），不合格打回而非警告；场景级性能冒烟门禁 CDP 实测≥40fps（draw call 超预算同样打回）
-  - **Blender glTF 导出保证**：原生 glTF 2.0 导出器支持 GLB（单文件自包含，默认推荐）与 glTF 分离格式；PBR 材质/层级/动画可导。硬规则：建模须 glTF 友好（修改器 apply、Principled BSDF 材质）
-  - **建模↔检索闭环**：Blender 产出 GLB + manifest 元数据回注册进资产库——下次检索命中，库随使用增长
+  - **模型生成规格 + 校验器双层机制（2026-09-30 修订版；2026-10-13 随 Blender 剔除改写「三条建模通道」表述）**：skill 内置 model-spec.md（用户可覆盖默认值）：底面中心 y=0 向上生长 / 三角面数 prop≤2k（多数几百）、主角≤10k、场景总预算≤1M / 子节点≤64 扁平化 / 命名小写 snake_case 语义化 / 贴图单张≤1024² 图集优先 / 米制 +Y up 导出转 glTF -Z forward / **同类物体实例数 >1000 才强制 InstancedMesh，≤1000 普通 mesh+静态几何合并**、材质数上限（草案≤32）。LLM 代码建模通道（唯一通道）：handler 内建约束（mesh 必须 .name 具名，见 GUIDE §3.2 命名约定）；产出实体 GLB 入库前统一 validator 脚本硬门禁（GLB 解析：面数/节点树/命名/贴图尺寸/bbox 原点），不合格打回而非警告；场景级性能冒烟门禁 CDP 实测≥40fps（draw call 超预算同样打回）
+  - **Blender glTF 导出保证（已归档，通道剔除）**：~~原生 glTF 2.0 导出器支持 GLB~~——Blender 通道剔除后此条仅历史记录
+  - **建模↔检索闭环（保留，通道改写）**：LLM 代码建模产出 GLB（若经入库）+ manifest 元数据回注册进资产库——下次检索命中，库随使用增长。**代码组合模型（修复轮九 car/rack/worker.ts）当前为 handler 过程化路线（不产 GLB），GLB 回库仅在产出实体模型文件时适用**
   - **generate-ux-prototype 外壳可复用模式**（非代码，模式）：init 脚手架（starter 工程）、build 门禁（结构扫描+import 白名单）、预览（file:// 或 dev server）、CDP 冒烟断言、vendor 示例沉淀
   - **内网约束传承**：npm 走内网源 mirrors.tools.huawei.com、无 CDN 依赖——新 skill 延续此纪律
   - **本地 embedding 可行性**：不引大模型的前提 = 轻量词法向量（如 TF-IDF/字符 n-gram 哈希向量 + 余弦相似度）或极小 onnx 模型；检索对象是"资产描述文本"（search_text/tags/description 拼接），语料小且领域窄，词法方案够用——精确方案 Plan 内定，先记方向
 - 风险与不确定项:
   - 本地轻量 embedding 的召回质量未验证——Plan 中安排检索样例验证（给定查询，断言期望资产进 top-k）
-  - Blender MCP 是外部依赖（需用户本机装 Blender+插件）——skill 必须把它设计为"可选增强通道"而非硬依赖，缺 Blender 时降级 LLM 直写
+  - Blender MCP 是外部依赖（需用户本机装 Blender+插件）——~~skill 必须把它设计为"可选增强通道"而非硬依赖~~ → **已裁决剔除（2026-10-12），外部依赖归零**
   - LLM 过程化建模质量不稳定（漂浮/比例失调）——业界方案是装配分级+截图自检，skill 内固化为硬约束
   - 模型库规模未知——向量索引方案要支持从几个到几千个资产的伸缩
   - gltf（带外部 .bin/纹理）比 glb 复杂（多文件依赖）——入库管线要处理解包后的相对路径
@@ -179,7 +179,7 @@
 - 二开态工程：干净的运行时工程 + 集成文档，二开者不需要懂 three.js 就能改数据级内容
 
 **skill 使用者的两种身份**（都会存在，流程对两者透明）：
-- 终端用户：只发描述、收工程，全程不接触 Blender/three.js 概念
+- 终端用户：只发描述、收工程，全程不接触建模工具/three.js 概念
 - skill 运维者：管理资产库（上传压缩包）、配置 embedding/镜像 URL
 
 ### 4.1 File Changes（skill 目录树，全部新建）
@@ -194,14 +194,14 @@ generate-3d-scene/
 │   ├── scene-workflow.md             # 九步工作流逐步指引（含每步 DoD 与停止点）
 │   ├── asset-pipeline.md             # 资产入库手册：压缩包格式、manifest schema、校验规则
 │   ├── model-spec.md                 # 模型规格（默认值+覆盖方法）：面数/命名/原点/贴图…
-│   ├── modeling-channels.md          # 三条建模通道操作指引（MCP/headless/LLM直写）+ 探测逻辑
-│   ├── verification.md               # 验证回路：多模态/非多模态两档断言清单 + 40fps 门禁
+│   ├── modeling-channels.md          # 代码建模指引（LLM 直写唯一通道：简模图元/精模代码组合模型，
+│   │                                 #  含修复轮九范式与 handler mesh 命名约定）——Blender 三通道版已废（§8.1）
+│   ├── verification.md               # 验证回路：多模态/非多模态两档断言清单 + 性能观测口径（R1-3 修订版）
 │   ├── scene-engineering.md          # 母版工程结构说明 + handler 契约 + 二开指南要点
 │   ├── component-catalog.md          # 组件清单（脚本生成）：name+summary+importPath+props 摘要
 │   └── eslint-notes.md               # eslint 继承说明（3d-templete 规则集迁移注意点）
 ├── scripts/
-│   ├── ensure-env.mjs                # 环境探测：node 版本/three 版本/Blender 可用性/多模态声明
-│   ├── install-blender.mjs           # Blender 便携版按需拉取（缓存→镜像 URL→解压→登记）
+│   ├── ensure-env.mjs                # 环境探测：node 版本/three 版本/多模态声明（Blender 探测已删，§8.1）
 │   ├── import-assets.mjs             # 压缩包+manifest 入库：解压/校验/规格门禁/建索引
 │   ├── build-search-index.mjs        # 向量索引构建：manifest 文本字段 → 轻量词法向量 → 索引文件
 │   ├── search-assets.mjs             # 检索 CLI：query → top-k 资产（含相似度分数），LLM 直接调
@@ -212,7 +212,7 @@ generate-3d-scene/
 │   └── verify/
 │       ├── smoke-structural.mjs      # 结构化冒烟（非多模态档）：场景图 JSON/canvas 像素统计断言
 │       ├── smoke-visual.mjs          # 视觉冒烟（多模态档）：渲染帧截图产出给 LLM 看图判断
-│       └── perf-fps.mjs              # 性能门禁：CDP 实测帧率 ≥40fps（1 分钟采样，p95 判定）
+│       └── perf-fps.mjs              # 性能观测（R1-3 修订版）：预算三项+fps 采样全 WARN 观测项（--strict 恢复门禁）
 ├── template/                         # 母版工程（见 4.3，结构完整可独立 build）
 ├── vendor/
 │   └── a3d-components-<ver>.tgz     # 3d-components npm pack 产物（sync-components.mjs 同步，最终发包后移除）
@@ -262,7 +262,7 @@ generate-3d-scene/
 
 **validate-model 规格门禁**（model-spec.md 的机器执行面，用户可 CLI 覆盖）——**分级门禁**（2026-10-09 裁决，批次 2 落地）：
 
-| 门禁类别 | 项目 | art 档（默认：第三方美术资产） | strict 档（AI 生成资产，降级阶梯第 4/5 层） |
+| 门禁类别 | 项目 | art 档（默认：第三方美术资产） | strict 档（AI 生成资产，降级阶梯第 4 层） |
 |---|---|---|---|
 | 性能类（硬阻断） | 面数 | 道具≤5k / 主角≤50k | 道具≤2k / 主角≤10k |
 | | 子节点 | ≤64 | ≤64 |
@@ -367,23 +367,21 @@ LLM 调参期：init 出编辑态工程（core+edit 全量）→ LLM 起 dev ser
 
 ### 4.4 降级阶梯（LLM 拿到场景需求后的资产决策顺序，SKILL.md 硬约束）
 
+> **2026-10-13 修订（依据 2026-10-12 用户裁决，见 §8.1）**：删除原第 4 层「Blender 建模」，原第 5 层「LLM 直写」升为第 4 层。资产缺口前置由 Poly Haven 精选库预填（批次 PH，56 资产已入库）。
+
 ```
 第1层 检索命中 → 直接用（search-assets top-k 有合适资产）
 第2层 检索近似 → 参考改造（命中同类但细节不符：加载后 scale/材质覆盖/组合多个）
 第3层 组件拼装 → 用组件库按需组合（读 component-catalog.md + 按需 component-docs/<Name>.md，
                      handler 内 import '@a3d/a3d-components/...'，源码零读取，见 §3 Decision 增补）
-第4层 Blender 建模 → 环境可用（MCP 或 headless）时，LLM 写 bpy 脚本建模导出 GLB
-                     （多模态：视口截图迭代纠错；非多模态：bpy 输出结构化 JSON 数值自查）
-                     → 产出必过 validate-model 门禁 → 回注册资产库（建模↔检索闭环）
-第5层 LLM 直写 → three.js 过程化建模代码（纯代码兜底，同样过规格门禁）
+第4层 LLM 直写 → three.js 代码建模（唯一过程化建模通道，零外部依赖）
+                     简模：图元/参数化几何（数百行内）；精模：代码组合模型（修复轮九 car/rack/worker.ts
+                     实证——多节点拼装+子节点独立材质，槽位级编辑全链路可用）
+                     → 产出实体 GLB 时过 validate-model 门禁；handler 过程化产物走 build.mjs 场景预算
 每一层都比上一层"重"，SKILL.md 规定：能跳过就不升级，升级需在执行日志记录原因
 ```
 
-**Blender 环境探测**（ensure-env.mjs，按序）：
-1. 本地缓存有便携版（`~/.gts3d/blender/`）→ headless 通道就绪
-2. 无缓存 → 提示 install-blender.mjs（镜像 URL 可配：内网/外网）→ 拉取成功即就绪
-3. 拉取失败/用户跳过 → 检测系统 Blender + MCP 插件（运行中）→ MCP 交互式通道
-4. 全无 → 第 5 层 LLM 直写（skill 永不因缺 Blender 失败）
+~~**Blender 环境探测**（ensure-env.mjs，按序）~~ → **已删除（2026-10-12 裁决）**：Blender 通道剔除后 ensure-env.mjs 不再探测 Blender（缩为 node 版本/three 版本/多模态声明，见批次 4.4）。原探测链（缓存便携版→install-blender 拉取→系统 Blender+MCP→LLM 直写）随通道一并作废。
 
 ### 4.5 验证回路（每次场景生成必须走完，Done by Evidence）
 
@@ -392,11 +390,20 @@ LLM 调参期：init 出编辑态工程（core+edit 全量）→ LLM 起 dev ser
 ② 结构冒烟          smoke-structural.mjs：CDP 加载页面 → 断言场景图 JSON（物体数量=预期/
                     相机存在/模型加载成功计数）+ canvas 像素统计（非空/非单色）+ 零 rejection
 ③ 视觉冒烟（多模态档）smoke-visual.mjs：四视口截图（全景/主视角/特写/线框）→ LLM 看图判定
-                    （比例/遮挡/漂浮/配色）；非多模态档跳过，结论标注"未经视觉确认"
-④ 性能门禁          perf-fps.mjs：CDP 采样 60s → p95 fps ≥40 → 不达标输出优化建议
-                    （draw call 数/面数 top 物体/材质数）→ 修复后重跑
+                    （比例/遮挡/漂浮/配色）；非多模态档交用户浏览器人眼验收，结论标注"未经视觉确认"
+④ 性能观测          perf-fps.mjs：预算三项（calls/triangles/programs，秒级直读）+ fps 采样
+                    （默认 20s，p95 计算）——全部 WARN 观测项不判 FAIL；LLM 须对每条 WARN
+                    在验证报告回应（优化或说明理由）；`--strict` 恢复 FAIL 判定；
+                    用户反馈"卡"→ LLM 参考基线数据修复 → 复测对比
 ⑤ 诚实分级          验证报告注明：哪些断言机器验证 / 哪些 LLM 看图验证 / 哪些未经视觉确认
 ```
+
+**R1-3 修订（2026-10-13 用户裁决，推翻原「预算+fps 双 FAIL 门禁」）**：
+
+- **裁决动因**：① 预算数值（calls≤400/triangles≤1M/materials≤32）与 fps 同为**机器相关判断**——生成环境（A 机）超标对交付环境（B 机独显）可能毫无压力，「超标」不是机器无关的客观事实；② **性能取舍属用户主权**——优化=砍物体/换低模/合并材质，在用户没说可以牺牲视觉之前替他做取舍可能优化掉他想要的东西；「用户觉得卡再让 LLM 修」回路反而精准（真实机器/真实规模/真实交互下的真实不满）；③ 自动循环修复存在无上限空转风险（等待焦虑），fps 60s 采样×无上限循环成本不对称。
+- **新分类**：**坏**（报错/白屏/无法渲染/场景图不符/加载失败）= 唯一硬 FAIL，进修复循环（秒级断言，fail-all 一次全列出——学 ux-prototype build.mjs 协议）；**重**（预算三项超限）= WARN + LLM 必须回应；**卡**（fps）= WARN 观测值，用户反馈驱动。
+- **存量改造（批次 4 执行项）**：perf-fps.mjs 预算/fps 断言 FAIL→WARN（`--strict` 恢复 FAIL，validate-model 同款先例）+ `--duration` 默认 60→20；build.mjs 预算超限 errors→warnings（`--strict` 同步）。「W44 计数」（gates 用例）如断言预算 FAIL 行为需同步改口径。
+- **与验证策略修订（2026-10-13）的关系**：同日两修订精神一致——机器断言降本、人眼验收升权、诚实分级。
 
 ### 4.6 SKILL.md 九步工作流（references/scene-workflow.md 展开，此处定骨架）
 
@@ -405,8 +412,9 @@ S1 澄清需求    文字/截图 → 场景要素清单（物体/规模/交互/�
 S2 检索资产    search-assets（多查询词覆盖）→ 命中/近似/缺失 三分类
 S3 缺口建模    按 4.4 阶梯补缺（每层升级记录原因）→ 产出资产全部过 validate-model
 S4 生成工程    init.mjs 出编辑态工程 → 按检索/建模结果填 scene-data.json + handlers + cards
-S5 build+冒烟  4.5 的 ①②（不过则修复重跑，循环至过）
-S6 视觉/性能   4.5 的 ③④（性能不达标按建议优化后重跑）
+S5 build+冒烟  4.5 的 ①②（不过则修复重跑，循环至过——秒级断言 fail-all，一轮改完再跑）
+S6 视觉/性能   4.5 的 ③④（性能为 WARN 观测项：LLM 回应每条 WARN，用户觉得卡再修——
+               不自动循环优化；fps 基线数据留验证报告供修复对比）
 S7 交互联调    卡片/handler/增量更新演示数据 → 结构冒烟回归
 S8 编辑调优    起 dev server → LLM 用编辑态自检微调（多模态看截图，非多模态看数值）
                → SaveService 定稿 scene-data.json（用户要求人工看效果时停、等确认）
@@ -571,11 +579,22 @@ S9 交付        strip-edit 出二开包 + INTEGRATION_GUIDE 校验 + 验证报�
 
 **批次 M2 修复轮五（2026-10-11，用户实测「选中 Hair 包围盒仍框整个人 + 改红无效」——排查结论：**均为环境陈旧，代码已正确**）**：5183 端口存在**起于多轮修复前的旧 dev server**（后续代码修复都在 52xx 临时端口验证，用户浏览器连的 5183 一直跑旧代码）。证据：① 探针读视口 BoxHelper 盒 `size=[0.11,0.13,0.12]` = Hair 自己的盒（Body 是 [1.0,0.96,0.13]）——槽位高亮已正确只框 Hair；② 探针改红后 `hairColorAfter=ff0000` 且其余 mesh 保持——槽位改材质链正确。处置：kill 旧 5183 → 最新代码重启 → `SMOKE PASS 45/45`（S45 含选中态断言）复验。**教训（流程性）**：多轮迭代验证若都在临时端口跑，用户默认端口的 dev server 会成为"时间胶囊"——**每轮修复后应同步重启默认端口（5183）的 dev server**，或提示用户手动重启。
 
-**批次 4：验证回路**
-- [ ] 4.1 smoke-structural.mjs（场景图 JSON/canvas 像素/零 rejection 断言）
-- [ ] 4.2 smoke-visual.mjs（四视口截图产出）
-- [ ] 4.3 perf-fps.mjs（CDP 60s 采样；**真机 GPU 环境测 p95≥40fps + calls/triangles/programs 运行时断言（R1-3）；软渲染环境只做结构验证不计 fps**）
-- [ ] 4.4 ensure-env.mjs（node/three/Blender 探测 + 多模态档位声明解析——声明载体定为 SKILL.md 会话指令或环境变量 GTS3D_MULTIMODAL，二选一生效）
+**批次 4：验证回路（2026-10-13 完成，执行记录见下）**
+- [x] 4.1 smoke-structural.mjs（场景图 JSON/渲染活性/零 rejection 断言）
+- [x] 4.2 smoke-visual.mjs（四视口截图产出）
+- [x] 4.3 perf-fps.mjs（**R1-3 修订（§8.2）口径已落地：重（预算）/卡（fps）WARN 观测 + `--strict` 升阻断 + duration 默认 20s；软渲染不计 fps（R3-3 维持）**）
+- [x] 4.4 ensure-env.mjs（node/three 探测 + 多模态档位声明解析——CLI 优先于环境变量 GTS3D_MULTIMODAL，都无→默认非多模态档）
+
+**批次 4 执行记录（Reverse Sync，2026-10-13）**：
+
+- **4.4 ensure-env.mjs**：node≥22 / three@0.185.1（声明+实装双查，母版未装只告警）/ 多模态档位三态解析。默认/CLI/环境变量三态 + CLI 覆盖优先级 + `--json` 输出实测全过。
+- **4.1 smoke-structural.mjs**：场景图分组对齐（SCENE_KEYS 剔除 lights/camera/controls/renderer 舞台配置——SceneEngine 只收物体节点）+ GLB 徽标收敛轮询 + 渲染活性（fps>0，swiftshader 像素法不可靠同 S1 口径）+ 零 rejection（Runtime.exceptionThrown + Log.error 全监听；favicon 404 类 headless 噪声豁免——用户浏览器实测无 404 定案）。双模式（run/edit）STRUCT PASS。
+- **4.2 smoke-visual.mjs**：四视口截图（全景 / frameObject 主视角 / 相机推近特写 / 全材质 wireframe 后还原）经 `Page.captureScreenshot` 落盘——CDP 合成层是 headless 下拿 WebGL 内容的唯一可靠路径；四张 31–107KB 产出，多模态看图自证有效（场景可见/无漂浮/比例正常）。看图判定归多模态 LLM，断言清单落 verification.md（批次 5）。
+- **4.3 perf-fps.mjs**：首版按旧 R1-3 口径落地后，§8.2 裁决捎话改造完成——重（calls/triangles/programs 超预算）WARN 不阻塞、卡（fps p95）WARN 观测、`--strict` 恢复阻断（strict 退出码实测 1）；连动 **build.mjs 预算 errors→warnings + `--strict`**（两态实测：默认 exit 0 WARN / strict exit 1 FAIL）+ **gates 预算用例一拆二**（WARN 放行 + strict 阻断，40→41 用例）。
+- **smoke-r 分段参数（验证策略修订落地）**：`--only S49`（自动级联前置闭包：DEPS 表 S10/S11/S12←S9——sharedId/smoke_m1 状态依赖）+ `--from S45`（目标段+前置随行）；52 段批量三元守卫（Python 脚本改 51 头+52 尾），skipped 段 pass 链视为 true（s17 字符串比较形态补包）。`--only S49` / `--from S52` 双模式实测 PASS。
+- **S52④ 修复（挂账 P2 存量收口）**：`import('/src/scene-core/materials.ts')` vite dev 专属路径 → 直读活材质实例（`mesh.material` 的 type/color；readMaterialSpec 语义即活实例真值读取器，断言只消费 type/color 等价）。S52 五断言实测全 true。
+- **强制全量冒烟复跑（挂账 P2 收口）**：双 dev server（5183/5199 陈旧进程）清理重启 → 全量跑到 S52 处 RPC 40s 超时（**修复轮七同款长链路 CDP 累积态，环境噪声非产品缺陷**——分段参数的价值场景当日实证）→ S1–S51 全量跑过全 true + S52 分段隔离复跑全 true。
+- **验证证据（2026-10-13）**：STRUCT PASS×2（run/edit）+ VISUAL PASS 四截图 + PERF OK（calls=226/400、triangles=207K/1M、programs=16/32 全在预算内）+ smoke-r S1–S51 全量 + S52 分段全 true + **gates 41/41** + 三绿（vue-tsc 0 / eslint 0 / build PASS）。
 
 **批次 PH：Poly Haven 精选资产批量入库（2026-10-12 立项，2026-10-13 Open Questions 四项已裁决，进入 Plan）**
 > 目标：批量下载脚本从 Poly Haven API 拉精选模型（面数≤50000 / 贴图 2k 档 / glTF 格式，约 108 个 / 参考量 200MB），打包 seed-package.zip manifest 格式，走 import-assets.mjs 入库；入库后 gates.mjs 复验 + 检索索引重建（import-assets 自带）+ 中文 tags 自补（API 只有英文）。数据源：`.tmp-polyhaven/models.json`（521 模型全量缓存，含 polycount/categories/download_count）。
@@ -603,9 +622,9 @@ S9 交付        strip-edit 出二开包 + INTEGRATION_GUIDE 校验 + 验证报�
 - **残留**：`--ids` 名单 keep-ids.txt 落 .tmp-polyhaven/（数据非代码，不入 skill 仓库）；2 个 md5 失败资产（cannon_01/vintage_grandfather_clock_01）用户裁决不追查（首版 2k 跑的失败记录，1k 定制名单未含这俩）
 
 **批次 5：skill 大脑 + 收尾**
-- [ ] 5.1 install-blender.mjs（缓存探测/镜像拉取/解压登记/失败降级）——**执行依据已就绪（2026-10-12 前置探索实测，见 §7 Blender 通道前置探索区块）**：版本锁 4.5 LTS（Intel Mac 根因）；平台产物矩阵 windows-x64.zip / macos-x64.dmg / macos-arm64.dmg / linux-x64.tar.xz；URL 模板 `release/Blender{maj.min}/blender-{ver}-{platform}`；sha256 校验；镜像样板清华同路径；**探索期本机已就绪**（`~/.gts3d/blender/blender-4.5.9-windows-x64/` 已解压可跑，headless 通道已实测——install-blender 实装时缓存探测一步即命中）
-- [x] 5.4 ~~gen-component-catalog.mjs 跑通 → component-catalog.md 产出~~ → **由批次 C 接管**（sync-components.mjs，2026-10-09 终裁），提前完成- [ ] 5.2 SKILL.md（九步工作流 + 4.4 降级阶梯 + 硬约束：规格门禁/铁律/诚实分级/内网纪律/数据结构 v3 生成纪律）
-- [ ] 5.3 references/ 文档（scene-workflow/asset-pipeline/model-spec/modeling-channels/verification/scene-engineering/component-catalog 生成/eslint-notes）+ **"生产数据→update 片段"翻译模式章节（MQTT/WebSocket 示例，一等公民）**
+- ~~5.1 install-blender.mjs（缓存探测/镜像拉取/解压登记/失败降级）~~ → **整项取消（2026-10-12 用户裁决「blender完全从这个skill里剔除出去吧」，§8.1）**——Blender 通道剔除，脚本不写；本机 `~/.gts3d/blender/` 已清理（2026-10-13）
+- [x] 5.4 ~~gen-component-catalog.mjs 跑通 → component-catalog.md 产出~~ → **由批次 C 接管**（sync-components.mjs，2026-10-09 终裁），提前完成- [ ] 5.2 SKILL.md（九步工作流 + 4.4 降级阶梯（四层版） + 硬约束：规格门禁/铁律/诚实分级/内网纪律/数据结构 v3 生成纪律）
+- [ ] 5.3 references/ 文档（scene-workflow/asset-pipeline/model-spec/modeling-channels（**LLM 直写单通道版**：简模图元+精模代码组合模型+mesh 命名约定，Blender 内容仅历史归档不写正文）/verification/scene-engineering/component-catalog 生成/eslint-notes）+ **"生产数据→update 片段"翻译模式章节（MQTT/WebSocket 示例，一等公民）**
 - [ ] 5.5 README.md（投放说明/资产库准备/镜像配置/**内网 npm 安装方式**）
 - [ ] 5.6 端到端演练：文字描述 → 全流程 → 编辑态工程 + 二开包 + 验证报告全绿
 - [ ] 5.7 用户验收（截图/演示/文档过目）→ Review
@@ -690,7 +709,7 @@ S9 交付        strip-edit 出二开包 + INTEGRATION_GUIDE 校验 + 验证报�
 
 - **R1-1**：无需用户操作。Spec 自行修正三处矛盾：§3 Decision 补 `Selected: C，经 Plan Approved 2026-09-30 一并确认`、User Decision 改 Accepted；§2.1 划掉"Q5 组件库组织方案…用户确认"项（Plan Approved 即确认）。
 - **R1-2**：**已裁决——不补风机模型，starter 改用 example.glb**。windTurbine handler 改造：资产引用换 example.glb；handler 演示点通用化（params.spin 旋转整组），注释说明是自定义 handler 演示模式。checklist 2.1 种子名单维持 example+rack。（并入批次 R.5/R.7）
-- **R1-3**：**已批准——分层门禁**。数值（model-spec.md 可覆盖）：draw call ≤400、场景总三角 ≤1M、材质数 ≤32。构建期 build.mjs 静态估算（读 validate-model 报告 + 图元面数表）超限 FAIL；运行期 perf-fps.mjs 断言 renderer.info.render.calls/.triangles + programs.length 超限 FAIL；40fps 仅真机 GPU 环境生效，软渲染只做结构验证（R3-3 一并解决）。§4.5④ 口径从"优化建议"升为门禁断言。
+- **R1-3**：~~已批准——分层门禁~~ → **已修订（2026-10-13 二次裁决，见 §4.5「R1-3 修订」区块）**。原裁决：数值（model-spec.md 可覆盖）draw call ≤400、场景总三角 ≤1M、材质数 ≤32；构建期 build.mjs 静态估算超限 FAIL；运行期 perf-fps.mjs 断言超限 FAIL；40fps 仅真机 GPU 生效。**修订后：预算三项与 fps 双双降级为 WARN 观测项（FAIL 仅保留结构性失败），`--strict` 可恢复严格判定**——依据：预算数值与 fps 同为机器相关判断（A 机超标对 B 机独显无意义）+ 性能取舍属用户主权（用户觉得卡再修，LLM 修复时有基线可比）。
 - **R1-4**：**已批准——契约块按代码现状重写为 10 成员**（§4.2 已更新）；internals 保留但降格声明（edit 实现便利通道，非稳定 API，二开者禁用）；build.mjs 铁律 2 判定规则：edit/ 只允许 `'@/scene-core'` 一个 import 入口，engine 内部文件经 handle.internals 属性访问放行；edit/ 文件清单同步（11 文件以实际为准）。
 - **R2-3 hover 收窄**：已批准。CardConfig.trigger 收窄为 `'click' | 'always'`，hover 记入后续扩展待办。
 - **R2-4 preset 收窄**：已批准。EnvironmentPreset 收窄为 `'studio'`，其余 9 值记 HDRI 扩展待办；PropertyPanel preset 选择 UI 暂时隐藏（只留 intensity）。
@@ -756,7 +775,7 @@ S9 交付        strip-edit 出二开包 + INTEGRATION_GUIDE 校验 + 验证报�
 
 | 层 | 内容 | 谁写 | 文件 |
 |---|---|---|---|
-| 资产层 | GLB（单状态资产自带材质）/ 白模+贴图集（多状态） | Blender 通道/美术 | assets/models + textures + manifest |
+| 资产层 | GLB（单状态资产自带材质）/ 白模+贴图集（多状态） | 美术/资产库（Poly Haven 精选等） | assets/models + textures + manifest |
 | 代码层 | 状态视觉注册表 + handlers + 图元底座 | LLM/二开者 | materials.ts / handlers/<type>.ts / engine 内建 |
 | 数据层 | 业务分组 + params 纯业务字段 + transform + card | LLM 生成/生产更新 | scene-data.json |
 | 编辑器视觉层 | 调参产生的 override（serialize 内部字段） | 编辑器 | 交付时剥离+转录 |
@@ -1486,6 +1505,8 @@ TRANSCRIPTION 物体视觉 override 表增 slot 列；LLM 转录产物按 mesh �
 - **修复轮七完成 + 补丁收口（2026-10-13）**：主轮（占位盒 A 案 + scene-core 内置徽标 + S49，SMOKE 52 段全绿 + gates 40/40 + 三绿）→ 用户复测反馈「盒子看不到」→ 探针定案（首载报告缓存恒空永无盒 + 资产缓存后盒闪过价值窗口≈0）→ **用户裁决撤除占位盒，保留 N/M 徽标**（模型附议：四文件补救成本不对称）→ 补丁执行（删盒 + 顺手修两真 bug：计数器闭包串组→模块级共享、S49 快照时序）→ **用户浏览器人工验收通过**。**同步落「验证策略修订」**：模型三绿 + 人工验证清单交付，用户目检验收；冒烟只在数据层改动/收口 Review/用户要求三类时点跑；无头环境预检不过直接转人工；分段参数 `--only/--from` 批次 4 落地。详见 §7 修复轮七补丁区块。
 - **批次 PH 完成（2026-10-13，并行会话）**：fetch-polyhaven.mjs 落地（配额/名单双模式 + 1k/2k 档 + --resume + TAG_ZH 字典）→ 56 资产 122.4MB 入库（polyhaven-seed，art 档全过，modular_pipes 预检剔除）→ gates 用例 37 语义化 40/40 → 中文检索 14/14。详见 §4.7 批次 PH 执行记录。
 - **评审记录 9（2026-10-13，修复轮七+补丁 × 批次 PH 合并三轴评审）：Overall Verdict PASS**——11 检查项（10 PASS + 1 FIXED 注释卫生顺手修）+ 挂账 3 项（P2 补丁后全量冒烟批次 4 强制复跑 / P3 wheelchair_01 无中文 tag / P2 存量 S52④ dev 专属路径）。gates 合并基线实跑 40/40。详见 §6 评审记录 9。**下一动作：批次 4（验证回路 §4.7 四脚本 + 分段冒烟参数 --only/--from + 强制全量复跑）→ 批次 5（skill 大脑+收尾，P3 挂账清点）**。
+- **Blender 通道剔除补录（2026-10-13）**：2026-10-12 用户裁决「blender完全从这个skill里剔除出去吧」当时未落 Spec（Reverse Sync 欠账，取证过程见 §8.1），本日补录——降级阶梯五层→四层、批次 5.1 install-blender.mjs 取消、批次 4.4 ensure-env 砍 Blender 探测、modeling-channels.md 缩为单通道、本机 `~/.gts3d/blender/` 已清理。**批次 4 起按无 Blender 范围执行。**
+- **批次 4 完成（2026-10-13，用户「开始执行，全部」批内连跑）**：4.1–4.4 四脚本 + smoke-r 分段参数 + S52④ 修复 + 强制全量冒烟复跑 + §8.2 R1-3 修订捎话改造（perf-fps WARN/--strict、build.mjs 预算 warnings、gates 用例一拆二 40→41）全部落地。验证证据：STRUCT PASS×2 / VISUAL PASS / PERF OK / smoke-r S1–S51 全量 + S52 分段全 true（全量跑 S52 处 RPC 超时为长链路 CDP 累积态环境噪声，同修复轮七）/ gates 41/41 / 三绿。挂账 P2 两项（补丁后全量冒烟 + S52④ dev 路径）收口；P3 wheelchair_01 中文 tag 仍挂（批次 5 清点）。详见 §4.7 批次 4 执行记录。**REVIEW EXECUTE 完成（2026-10-13，评审记录 10 §6）：Overall Verdict PASS**——10 检查项（8 PASS + 2 FIXED P2 判据缺陷评审发现当场修：smoke-visual focusId 判据 userData.assetGlb 零存在恒走兜底→改 listSubMeshes、smoke-structural 404 豁免正则过宽吞掉资产缺失硬 FAIL→收窄 favicon+无 URL 文本）+ 2 处 P3 卫生顺手修（isTarget 死代码、FROM 硬编码 52）。**下一动作：批次 5（skill 大脑 + 收尾），批间停等确认。**
 
   30. **批次 PH 立项（2026-10-12，Poly Haven 精选资产批量入库，Research 完成）**：
       - **任务**：写批量下载脚本，从 Poly Haven API（api.polyhaven.com，files 端点 `gltf["2k"].gltf`）拉取精选资产（面数≤50000、贴图 2k 档、glTF 格式，约 108 个 / 参考 200MB），下载后打包成 seed-package.zip 的 manifest 格式（meta+data[]），走 import-assets.mjs 入库；入库后跑 gates.mjs 复验、检索索引重建（import-assets 自带）、中文 tags 自补（API 只有英文）。
@@ -2061,7 +2082,7 @@ TRANSCRIPTION 物体视觉 override 表增 slot 列；LLM 转录产物按 mesh �
 - 风险 3：S48 蒙皮盒采样需 GLB 加载 + bind 完成——轮询口径对齐 S47（traverse 找 mesh + 等待）
 - 回退：单 commit revert 即回现状（178m 为已知态，无数据风险）
 
-**Blender 通道前置探索完成（2026-10-12，与修复轮六并行执行；批次 4.4/5.1/5.3 的执行依据，全程实测非转述）**：
+**Blender 通道前置探索（2026-10-12 完成；⚠️ 2026-10-12 当日稍后被用户裁决剔除 Blender 通道——本区块转为历史归档，不再是批次 4.4/5.1/5.3 的执行依据，范围变更见 §8.1。经验中仍有效的部分：headless 工具链方法论、bpy 脚本模板结构（若未来重启外部建模通道可复用）、建模↔校验↔入库↔检索闭环实证）**：
 
 - **本机环境**：探测结论零 Blender（PATH/注册表/`~/.gts3d/blender/` 缓存/常见安装路径/winget 全空）→ 按「install-blender 拉取」设计走完整链路。缓存目录 `~/.gts3d/blender/` 已建立。
 - **版本终裁：4.5 LTS（4.5.9）**，根因是 Intel Mac 支持——**Blender 4.6 起停止 Intel Mac 构建**（5.2.2 目录实测 `macos-x64.dmg` HTTP 404，仅 arm64），而 skill 要求 Windows x64 / mac-intel / mac-apple 三平台全覆盖 → 4.5 LTS 是唯一三平台齐活的版本线（4.5.9 实测 `windows-x64.zip` / `macos-x64.dmg` 335MB / `macos-arm64.dmg` 308MB / `linux-x64.tar.xz` 全 200）。三平台统一版本 = bpy 脚本行为一致；放弃 5.x 新特性（headless 建模导出 GLB 用不到）；升级窗口待 Blender 6 LTS。
@@ -2070,7 +2091,8 @@ TRANSCRIPTION 物体视觉 override 表增 slot 列；LLM 转录产物按 mesh �
 - **建模↔校验↔入库↔检索闭环首跑全绿**：bpy 产出 GLB → `validate-model.mjs --strict --check-mesh-names` **PASS** → `import-assets.mjs --strict` 入库成功 → 中文检索「木桌」命中第 1 位（score 0.677）。Spec 设计的「建模产出回注册资产库，库随使用增长」闭环从纸面到实证。
 - **bpy 关键坑（modeling-channels.md 必写）**：`object.name` 与 `mesh_data.name` 是两个名字，glTF 导出用 **mesh_data.name**——只改 object.name 时 GLB 里 mesh 名仍是 `Cube`/`Cylinder.001`（首跑被 `--check-mesh-names` 抓到）；修法=收尾规范里 `obj.data.name = obj.name` 同步（与 buildReport 槽位 key 口径直接相关——mesh 名即槽位显示名）。另：Blender polygon 是 n 边形，三角数按 fan 估算 `len(p.vertices)-2`。
 - **blender-mcp 情报更新（接入方式变化）**：PyPI 包已从 `blender-mcp` 改名 **`mcp-for-blender`**（旧名配置仍兼容）；Claude Code 接入=`claude mcp add blender uvx mcp-for-blender`；addon 安装=`uvx mcp-for-blender install-addon`（自动拷入 Blender addons 目录）或手动 `addon.py` 经 Preferences→Add-ons 安装；要求 Blender≥3.0 + Python≥3.10 + uv；MCP server 由客户端拉起（勿手动终端跑），Blender 端 socket server 开 Blender 即起（N 面板 MCP for Blender 页签）；安全项：socket 无鉴权仅限 localhost、`execute_blender_code` 是任意代码执行面（`BLENDER_MCP_SAFE_MODE=1` 可开脚本校验）、多实例用 `--port 9877` 区分。
-- **探索期残留（2026-10-12 用户裁决「按推荐来」，已清理）**：Blender 原始 zip 已删（解压目录 `~/.gts3d/blender/blender-4.5.9-windows-x64/` 留作通道就绪）；探索资产 table 已出库（模型+manifest 删 + 索引重建 + gates 40/40 复验通过）；`.tmp-blender-explore/` 仅留 `gts3d_model_template.py`（将来改造为 references/modeling-channels.md 素材），产物与打包目录已删。
+- **探索期残留（2026-10-12 用户裁决「按推荐来」，已清理）**：Blender 原始 zip 已删（解压目录 `~/.gts3d/blender/blender-4.5.9-windows-x64/` 留作通道就绪）；探索资产 table 已出库（模型+manifest 删 + 索引重建 + gates 40/40 复验通过）；`.tmp-blender-explore/` 仅留 `gts3d_model_template.py`（~~将来改造为 references/modeling-channels.md 素材~~——通道剔除后不再作素材，见 §8.1），产物与打包目录已删。
+- **终局清理（2026-10-13，§8.1 裁决后）**：`~/.gts3d/blender/` 整目录删除（含 blender-4.5.9-windows-x64 解压目录）；`.tmp-blender-explore/gts3d_model_template.py` 一并删除（bpy 模板随通道作废）。
 
 ### 修复轮七：GLB 加载占位可视化 + 加载计数指示（2026-10-12 立项，2026-10-13 执行完成，SMOKE 52 段全绿 + gates 40/40，待用户复测）
 
@@ -2385,8 +2407,84 @@ Signatures：
 - **gates 复验（合并基线）**：2026-10-13 本评审中实跑 **40/40 PASS**（含 PH 语义化用例 37，注入清单 59 模型实证）。
 
 
+### 评审记录 10（2026-10-13，批次 4 代码评审（REVIEW EXECUTE），mandatory three-axis）
+
+**评审范围**：批次 4 验证回路（4.1 smoke-structural / 4.2 smoke-visual / 4.3 perf-fps / 4.4 ensure-env 四新脚本 + smoke-r 分段参数 + S52④ 修复 + 强制全量冒烟复跑 + §8.2 R1-3 存量改造三连：perf-fps WARN 化、build.mjs 预算 warnings 化、gates 用例一拆二）。
+
+**评审方式**：git diff/status 改动面核实（4 新建 + 3 修改，无越界文件）× diff 逐行对照 §8.2/验证策略修订契约 × 全部验证设施实跑复验 × 新脚本逐个 Axis-3 正确性审查（判据真实性/死代码/硬编码/豁免过宽四类检查）。
+
+#### Review Matrix
+
+| # | 轴 | 检查项 | 结论 | 证据 |
+|---|---|---|---|---|
+| 1 | Axis-1 | 批次 4 目标达成（验证回路四脚本可用） | PASS | ensure-env 三态+CLI 优先级+JSON 全实测；smoke-structural 双模式 STRUCT PASS×2；smoke-visual 四截图 31–107KB 产出且多模态看图自证有效（场景可见/无漂浮/比例正常）；perf-fps 预算+fps 观测跑通 |
+| 2 | Axis-1 | 挂账三项收口 | PASS | P2 全量冒烟（S1–S51 全量跑过 + S52 分段隔离全 true；S52 处 RPC 超时=长链路 CDP 累积态环境噪声，同修复轮七定案）；P2 S52④ dev 路径（import('/src/...') → 直读 mesh.material 活实例，S52 五断言全 true）；P3 wheelchair_01 仍挂（批次 5，非本批次范围） |
+| 3 | Axis-1 | 验证策略修订落地（分段参数） | PASS | `--only S49`/`--from S52` 双模式实测 PASS；DEPS 前置闭包级联（S10/S11/S12←S9 sharedId 状态依赖）防分段假失败 |
+| 4 | Axis-2 | §8.2 R1-3 修订契约忠实度（三连改造） | PASS | perf-fps：重/卡 WARN 不改退出码 + --strict 升 1（实测 exit 1）+ duration 默认 20；build.mjs：预算 errors→warnings + --strict（两态实测 exit 0/1）；gates：预算用例一拆二（WARN 放行 + strict 阻断）40→41 用例 41/41 PASS——三层分类（坏=唯一硬 FAIL 归 smoke-structural）与 §8.2 逐条对齐 |
+| 5 | Axis-2 | Plan-Execution Diff | PASS | 4.1 首版「canvas 像素统计」实装为「fps>0 渲染活性」——swiftshader 下像素法不可靠（S1 既定口径，执行记录已记档）；其余零偏差 |
+| 6 | Axis-3 | smoke-visual focusId 判据真实性 | **FIXED（P2，评审发现）** | 首版判据 `c.userData?.assetGlb` 在代码库零存在（grep 证实）——恒 false 每次走 ids[0] 兜底，被兜底掩盖。修：改 `listSubMeshes(id).length > 0`（GLB/组合模型才有子网格清单）；复跑 VISUAL PASS 四截图 |
+| 7 | Axis-3 | smoke-structural 404 豁免口径 | **FIXED（P2，评审发现）** | 首版豁免 `/favicon\|Failed to load resource.*404/` 过宽——任何资源 404 都被吞，资产缺失类硬 FAIL（§8.2 坏类）漏检。修：豁免收窄为 favicon + 无 URL 的通用 404 Log 文本（真机浏览器实测无 404 定案，headless 特有噪声；带路径的资源 404 仍会以 Network 形态暴露）；复跑双模式 STRUCT PASS |
+| 8 | Axis-3 | smoke-r 分段守卫质量 | FIXED（P3×2，评审顺手修） | ① isTarget 死代码（定义后零调用，skipped 守卫已覆盖其职责）删除；② FROM 闭包硬编码 `i <= 52` 上限（未来加段漏级联）→ 从 DEPS 动态取上界。复跑 --only S49 / --from S52 双 PASS |
+| 9 | Axis-3 | ensure-env 非法值行为 | PASS | GTS3D_MULTIMODAL=abc → 视同未声明走默认非多模态档（fail-safe 方向正确：宁缺勿误判多模态） |
+| 10 | Axis-3 | 评审流程自身教训 | 记录 | 404 定位时对 CDP 探针空转重试 4 次（环境间歇性问题），用户两次打断——沉淀「卡点升级规则」：探针 2 次不中停手转用户浏览器目检 + 人工可验点主动给「URL+步骤+预期」清单（用户浏览器 10 秒判定：真机无 404） |
+
+#### Overall Verdict: **PASS**
+
+- **无阻塞项**。四脚本+分段参数+挂账收口+§8.2 三连改造全部落地并验证；评审发现 2 处 P2 判据缺陷 + 2 处 P3 卫生问题，均当场修复复验。
+- **复验终态（2026-10-13）**：STRUCT PASS×2（run/edit）+ VISUAL PASS（判据修正后复跑）+ PERF OK + smoke-r --only S49 / --from S52 双 PASS + **gates 41/41** + 三绿（vue-tsc 0 / eslint 0 / build PASS）。
+- **挂账（不阻塞）**：P3 wheelchair_01 无中文 tag——批次 5 清点（评审记录 9 遗留）。
+- **Plan-Execution Diff**：4.1 像素法→fps 活性（既定口径换算，已记档）；其余零偏差。
+
+
 ## 8. Archive Record (Recommended at closure)
+
+### 8.2 范围变更记录：R1-3 性能门禁降级为 WARN 观测（裁决 2026-10-13，即时落盘）
+
+**用户裁决（2026-10-13，本会话，参考 generate-ux-prototype 验证策略对比后）**：
+> 「是不是应该放宽检测标准啊」「卡就卡一点不行吗，然后用户自己觉得卡再让 llm 修复呢」
+
+**对比研究结论（generate-ux-prototype 实读）**：其唯一硬门禁 build.mjs 是**秒级**真实编译检查（fail-all 一次全列出错误），视觉验收交**用户人眼**（预览 HTML 双击即看），**无性能门禁**（2D 无此风险）——「循环至过」无等待焦虑靠的是每轮秒级成本结构，不是标准松。CDP 冒烟设施只在开发期跑不随 skill 交付。
+
+**裁决内容**（三层分类取代原「预算+fps 双 FAIL」）：
+1. **坏**（报错/白屏/无法渲染/场景图不符/加载失败）= 唯一硬 FAIL——机器无关客观标准（用户定义），进修复循环，秒级断言 fail-all；
+2. **重**（calls/triangles/materials 超预算）= WARN + LLM 必须在验证报告回应（优化或说明理由），不阻塞交付——预算数值机器相关（A 机超标对 B 机独显无意义）+ 需求相关（60 块岩石=合法 3M 三角形）；
+3. **卡**（fps）= WARN 观测值（默认 20s 采样），用户反馈「卡」→ LLM 参考基线修复 → 复测对比——性能取舍属用户主权，不自动循环优化。
+
+**关键论证（用户驳倒模型第一版方案）**：模型初版建议「静态预算保留 FAIL、仅 fps 降级」，用户指出「draw call 800/三角形 3M 在独显上正常渲染，明显坏是报错白屏无法渲染」——识破「预算超标」与「帧率不足」同为机器相关判断，非机器无关客观事实。模型认同并全盘降级。
+
+**存量改造（批次 4 执行项，本会话不动代码）**：
+- perf-fps.mjs（2026-10-13 14:50 已按旧 FAIL 口径落地）：预算/fps 断言 FAIL→WARN + `--strict` 恢复严格判定（validate-model 同款先例）+ `--duration` 默认 60→20；
+- build.mjs：预算超限 errors→warnings（`--strict` 同步恢复）；
+- gates.mjs 相关用例口径同步核查。
+- ⚠️ **并行会话协调**：批次 4 正在另一会话执行（当前进度 smoke-r 分段参数），其 4.3 按旧口径已写完——本修订落盘后需用户在批次 4 会话捎话，按 §4.5「R1-3 修订」区块改造后再收口 Review。
+
+**回写位置**：§4.5 验证回路（重写④+新增修订区块）、§4.6 S5/S6、§4.1 目录树（perf-fps/verification.md 描述）、§4.7 批次 4.3 条目、R1-3 决议（标注修订指向本区块）。
+
 - 待任务收口后填写
+
+### 8.1 范围变更记录：Blender 通道完全剔除（裁决 2026-10-12，补录 2026-10-13）
+
+**用户裁决原文**（2026-10-12 08:40，会话 13b562c6）：
+> 「我不要blender了，就直接代码几何体就行」「blender完全从这个skill里剔除出去吧」
+
+**裁决动因**：与 Poly Haven 批量入库（批次 PH）同批权衡——56 资产精选库预填后，库未命中的缺口走「LLM 直写 three.js 代码建模」（简模图元 + 精模代码组合模型，修复轮九 car/rack/worker 已实证精模路线：多节点拼装+子节点独立材质+槽位级编辑全链路可用），Blender 外部依赖（安装/分发/镜像/维护）成本不再成立。
+
+**Reverse Sync 欠账经过（流程教训）**：当时模型回复「Blender 剔除——收到，落 Spec」，但经会话记录核查，该会话对 Spec 的实际写入为 **0 次**——承诺蒸发。后续并行分工（A=PH 入库 / B=占位盒 / C=代码建模）各自推进，PH 立项（§5 #30）只带了「Poly Haven 下载」一条决议，Blender 剔除被漏网，Spec 中 Blender 相关区块（§0 Q3 / §1.1 / §2 / §4.1 / §4.4 / §4.5 / §4.9.3 / 批次 4.4 / 批次 5.1 / 批次 5.3 / §7 探索区块）持续以旧范围挂着。2026-10-13 由用户指出、经 Untitled-1.md 底稿 + 会话 jsonl 双重取证后本日补录。**教训：裁决出口必须当场落 Spec（IMMEDIATE PERSISTENCE），并行分工前先收口范围变更。**
+
+**变更清单（本日已全部回写）**：
+1. §0 Q3：裁决推翻标注（Blender 剔除，LLM 直写为唯一过程化建模通道）
+2. §1.1 / §2 / §2 风险项：Blender 相关条目全部转历史归档
+3. §4.1 目录树：删 install-blender.mjs；modeling-channels.md 缩为代码建模单通道指引；ensure-env.mjs 描述去 Blender
+4. §4.4 降级阶梯：五层→四层（删第 4 层 Blender，原第 5 层 LLM 直写升为第 4 层，含简模/精模双形态说明）；Blender 环境探测链删除
+5. §4.5 / 批次 4.4：ensure-env.mjs 缩为 node/three + 多模态声明探测
+6. 批次 5.1：install-blender.mjs 整项取消
+7. 批次 5.2 / 5.3：SKILL.md 与 references 按四层阶梯 + 单通道指引执行
+8. §4.9.3 资产层：产出方改「美术/资产库（Poly Haven 精选等）」
+9. validate-model strict 档表述：「降级阶梯第 4/5 层」→「第 4 层」
+10. §7 Blender 前置探索区块：标注历史归档，不再是执行依据
+11. 本机清理：`~/.gts3d/blender/` 整目录 + `.tmp-blender-explore/gts3d_model_template.py` 删除（2026-10-13）
+
+**对执行序的影响**：批次 4（验证回路）按无 Blender 范围执行（4.4 缩减）；批次 5 不含 install-blender.mjs（5.1 撤销），modeling-channels.md 工作量相应缩减。
 
 ## 9. Project Sync Candidates
 - Stable project facts discovered:

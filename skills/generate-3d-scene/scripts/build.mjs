@@ -17,7 +17,7 @@
  *
  * CLI：
  *   node build.mjs <project-dir> [--stripped] [--json]
- *        [--max-calls N] [--max-triangles N] [--max-materials N]
+ *        [--max-calls N] [--max-triangles N] [--max-materials N] [--strict]
  *   退出码：0 通过（可有警告）/ 1 门禁违规 / 2 用法错误
  *
  * 预算数值来源：构建期静态估算（运行期 perf-fps.mjs 为权威）。
@@ -412,7 +412,12 @@ export const checkProject = (dir, opts = {}) => {
         budgetReport.over.push(`材质数 ${budgetReport.materials} > ${budget.maxMaterials}`);
       }
       if (budgetReport.over.length) {
-        errors.push(`场景预算超限（静态估算）：${budgetReport.over.join('；')}`);
+        const msg = `场景预算超限（静态估算，重=WARN）：${budgetReport.over.join('；')}`;
+        if (opts.strictBudget) {
+          errors.push(msg);
+        } else {
+          warnings.push(`${msg}（--strict 升阻断；LLM 须在验证报告回应：优化或说明理由）`);
+        }
       }
       if (budgetReport.unknownGroups.length) {
         warnings.push(`以下分组几何由代码生成，静态估算未计入（以 runtime perf 门禁为准）：${budgetReport.unknownGroups.join('；')}`);
@@ -487,6 +492,7 @@ const USAGE = `用法: node build.mjs <project-dir> [选项]
   --max-calls N            覆盖 draw call 上限（默认 400）
   --max-triangles N        覆盖场景三角面上限（默认 1000000）
   --max-materials N        覆盖材质数上限（默认 32）
+  --strict                 预算超限从 WARN 升阻断（重/卡类默认告警不阻塞）
   --json                   输出完整报告 JSON
   --quiet                  仅退出码`;
 
@@ -504,6 +510,8 @@ const parseArgs = (argv) => {
     const a = argv[i];
     if (a === '--stripped') {
       opts.stripped = true;
+    } else if (a === '--strict') {
+      opts.strictBudget = true;
     } else if (a === '--max-calls') {
       opts.budget.maxCalls = nextNum(a, argv[++i]);
     } else if (a === '--max-triangles') {
