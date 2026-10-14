@@ -25,6 +25,8 @@ export class RenderLoop {
 
   private callbacks: FrameCallback[] = [];
 
+  private afterFrameCallbacks: FrameCallback[] = [];
+
   private running = false;
 
   private rafId = 0;
@@ -63,6 +65,14 @@ export class RenderLoop {
     };
   }
 
+  /** 成功渲染后的回调；渲染抛错时不触发。 */
+  onAfterFrame(cb: FrameCallback): () => void {
+    this.afterFrameCallbacks.push(cb);
+    return () => {
+      this.afterFrameCallbacks = this.afterFrameCallbacks.filter((c) => c !== cb);
+    };
+  }
+
   /** 注册 resize 回调（相机 aspect / CSS2D 层同步用；返回反注册函数） */
   onResize(cb: (width: number, height: number) => void): () => void {
     this.resizeCbs.push(cb);
@@ -89,6 +99,9 @@ export class RenderLoop {
       }
       this.rendererEngine.render(this.getScene(), this.getCamera());
       this.recordFrame();
+      for (const cb of this.afterFrameCallbacks) {
+        cb(delta, elapsed);
+      }
     };
     this.rafId = requestAnimationFrame(tick);
   }
@@ -124,5 +137,6 @@ export class RenderLoop {
     this.resizeObserver.disconnect();
     this.resizeCbs = [];
     this.callbacks = [];
+    this.afterFrameCallbacks = [];
   }
 }

@@ -5,6 +5,7 @@
  */
 export { createScene, type SceneHandle, getLoadBadgeState } from './createScene';
 export * from './types';
+export type { SceneDiagnostics, LoadOutcome } from './diagnostics';
 export { stateMaterials, applyState, type StateVisual, type VisualOverride, NON_MATERIAL_VISUAL_KEYS, findBySlotKey } from './materials';
 export {
   createMaterialFromSpec, applyMaterialTextures, applyMaterialScalars, migrateMaterialSpec,

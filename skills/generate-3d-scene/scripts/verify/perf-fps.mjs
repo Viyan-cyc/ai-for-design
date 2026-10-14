@@ -12,16 +12,17 @@
  * 采样：renderLoop.getStats()（每帧记录的 1s 窗口帧率，零侵入）。
  * 口径依据见 references/verification.md。
  *
+ * 连接层已迁移 scripts/lib/cdp.mjs（P1）。CLI 与退出码不变。
+ *
  * 用法：node perf-fps.mjs [url] [--duration 20] [--gpu] [--strict] [--json]
  *          [--max-calls N] [--max-triangles N] [--max-materials N]
  *   --gpu  真机 GPU 模式（不注入 swiftshader）→ 采样 fps
  *   退出码：0 无坏项（WARN 不改退出码；--strict 下超限升 1）/ 1 FAIL / 2 CDP 环境不可用
  */
-import { spawn } from 'node:child_process';
+import { openBrowserSession, positionalArg, CdpEnvironmentError } from '../lib/cdp.mjs';
 
 const argv = process.argv.slice(2);
-const urlIdx = argv.findIndex((a) => !a.startsWith('-'));
-const URL_ARG = urlIdx >= 0 ? argv[urlIdx] : 'http://localhost:5199/';
+const URL_ARG = positionalArg(argv) ?? 'http://localhost:5199/';
 const numArg = (name, dflt) => {
   const i = argv.indexOf(name);
   return i >= 0 ? Number(argv[i + 1]) : dflt;
@@ -34,77 +35,26 @@ const GPU_MODE = argv.includes('--gpu');
 const STRICT = argv.includes('--strict');
 const AS_JSON = argv.includes('--json');
 
-const EDGE = 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe';
-const CDP_PORT = 9233;
-
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 const main = async () => {
-  const args = [
-    '--headless=new', '--no-first-run',
-    `--remote-debugging-port=${CDP_PORT}`,
-    `--user-data-dir=${process.env.TEMP}\\gts-perf-fps`,
-    '--window-size=1280,800', URL_ARG,
-  ];
-  if (!GPU_MODE) {
-    args.unshift('--disable-gpu', '--use-angle=swiftshader', '--enable-unsafe-swiftshader');
-  }
-  const proc = spawn(EDGE, args, { stdio: 'ignore' });
-
+  let session;
   try {
-    let wsUrl = null;
-    for (let i = 0; i < 15; i += 1) {
-      await sleep(800);
-      try {
-        const res = await fetch(`http://127.0.0.1:${CDP_PORT}/json/list`);
-        const list = await res.json();
-        const page = list.find((t) => t.type === 'page' && t.webSocketDebuggerUrl);
-        if (page) {
-          wsUrl = page.webSocketDebuggerUrl;
-          break;
-        }
-      } catch { /* retry */ }
-    }
-    if (!wsUrl) {
+    session = await openBrowserSession({
+      url: URL_ARG,
+      port: 9233,
+      gpu: GPU_MODE,
+    });
+  } catch (e) {
+    if (e instanceof CdpEnvironmentError) {
       console.error('CDP 不可用（环境预检不过）→ 性能门禁转人工/真机环境');
       process.exit(2);
     }
+    throw e;
+  }
 
-    const ws = new WebSocket(wsUrl);
-    await new Promise((res, rej) => {
-      ws.onopen = res;
-      ws.onerror = () => rej(new Error('WebSocket 连接失败'));
-    });
-    let seq = 0;
-    const pending = new Map();
-    ws.onmessage = (ev) => {
-      try {
-        const msg = JSON.parse(String(ev.data));
-        if (msg.id !== undefined && pending.has(msg.id)) {
-          pending.get(msg.id)(msg);
-          pending.delete(msg.id);
-        }
-      } catch { /* 忽略坏帧 */ }
-    };
-    const rpc = (method, params = {}) => new Promise((res, rej) => {
-      seq += 1;
-      const id = seq;
-      pending.set(id, res);
-      setTimeout(() => {
-        if (pending.has(id)) {
-          pending.delete(id);
-          rej(new Error(`RPC 超时: ${method}`));
-        }
-      }, 40000);
-      ws.send(JSON.stringify({ id, method, params }));
-    });
-    const evaluate = async (expression) => {
-      const r = await rpc('Runtime.evaluate', { expression, returnByValue: true, awaitPromise: true });
-      if (r.result?.exceptionDetails) {
-        throw new Error(`页面异常: ${r.result.exceptionDetails.exception?.description ?? JSON.stringify(r.result.exceptionDetails)}`);
-      }
-      return r.result?.result?.value;
-    };
+  try {
+    const { evaluate } = session;
 
     // 等场景挂载 + GLB 收敛
     let mounted = false;
@@ -184,7 +134,7 @@ const main = async () => {
       process.exitCode = fail ? 1 : 0;
     }
   } finally {
-    proc.kill();
+    await session.close();
   }
 };
 

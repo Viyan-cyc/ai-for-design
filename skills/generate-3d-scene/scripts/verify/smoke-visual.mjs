@@ -10,6 +10,8 @@
  * 截图方式：CDP Page.captureScreenshot（headless 下 canvas 前缓冲不可达，
  * drawImage/toDataURL 拿不到 WebGL 内容——CDP 合成层截图是唯一可靠路径）。
  *
+ * 连接层已迁移 scripts/lib/cdp.mjs（P1）。CLI 与退出码不变。
+ *
  * 用法：node smoke-visual.mjs [url] [--out <目录>] [--edit]
  *   url 默认 http://localhost:5199/；--out 默认 <cwd>/shots-visual
  *   退出码：0 四张产出 / 1 缺失 / 2 CDP 环境不可用
@@ -17,90 +19,40 @@
  * 注意：本脚本只负责产出截图。看图判定由多模态 LLM 做（读 PNG 判比例/遮挡/漂浮/配色），
  * 断言清单见 references/verification.md。
  */
-import { spawn } from 'node:child_process';
-import { mkdirSync, existsSync, statSync } from 'node:fs';
+import { mkdirSync, existsSync, statSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { openBrowserSession, positionalArg, CdpEnvironmentError } from '../lib/cdp.mjs';
 
 const argv = process.argv.slice(2);
 const EDIT = argv.includes('--edit');
-const urlIdx = argv.findIndex((a) => !a.startsWith('-'));
-const URL_ARG = urlIdx >= 0 ? argv[urlIdx] : 'http://localhost:5199/';
-const PAGE = EDIT ? `${URL_ARG}?edit=1` : URL_ARG;
 const outIdx = argv.indexOf('--out');
+const URL_ARG = positionalArg(argv) ?? 'http://localhost:5199/';
+const PAGE = EDIT ? `${URL_ARG}?edit=1` : URL_ARG;
 const OUT_DIR = resolve(outIdx >= 0 ? argv[outIdx + 1] : 'shots-visual');
-
-const EDGE = 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe';
-const CDP_PORT = 9231;
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 const main = async () => {
   mkdirSync(OUT_DIR, { recursive: true });
 
-  const proc = spawn(EDGE, [
-    '--headless=new', '--disable-gpu', '--use-angle=swiftshader', '--enable-unsafe-swiftshader',
-    `--remote-debugging-port=${CDP_PORT}`, '--no-first-run',
-    `--user-data-dir=${process.env.TEMP}\\gts-smoke-visual`,
-    '--window-size=1280,800', PAGE,
-  ], { stdio: 'ignore' });
-
+  let session;
   try {
-    let wsUrl = null;
-    for (let i = 0; i < 15; i += 1) {
-      await sleep(800);
-      try {
-        const res = await fetch(`http://127.0.0.1:${CDP_PORT}/json/list`);
-        const list = await res.json();
-        const page = list.find((t) => t.type === 'page' && t.webSocketDebuggerUrl);
-        if (page) {
-          wsUrl = page.webSocketDebuggerUrl;
-          break;
-        }
-      } catch { /* retry */ }
-    }
-    if (!wsUrl) {
+    session = await openBrowserSession({
+      url: PAGE,
+      port: 9231,
+    });
+  } catch (e) {
+    if (e instanceof CdpEnvironmentError) {
       console.error('CDP 不可用（环境预检不过）→ 视觉冒烟转人工');
       process.exit(2);
     }
+    throw e;
+  }
 
-    const ws = new WebSocket(wsUrl);
-    await new Promise((res, rej) => {
-      ws.onopen = res;
-      ws.onerror = () => rej(new Error('WebSocket 连接失败'));
-    });
-    let seq = 0;
-    const pending = new Map();
-    ws.onmessage = (ev) => {
-      try {
-        const msg = JSON.parse(String(ev.data));
-        if (msg.id !== undefined && pending.has(msg.id)) {
-          pending.get(msg.id)(msg);
-          pending.delete(msg.id);
-        }
-      } catch { /* 忽略坏帧 */ }
-    };
-    const rpc = (method, params = {}) => new Promise((res, rej) => {
-      seq += 1;
-      const id = seq;
-      pending.set(id, res);
-      setTimeout(() => {
-        if (pending.has(id)) {
-          pending.delete(id);
-          rej(new Error(`RPC 超时: ${method}`));
-        }
-      }, 40000);
-      ws.send(JSON.stringify({ id, method, params }));
-    });
-    const evaluate = async (expression) => {
-      const r = await rpc('Runtime.evaluate', { expression, returnByValue: true, awaitPromise: true });
-      if (r.result?.exceptionDetails) {
-        throw new Error(`页面异常: ${r.result.exceptionDetails.exception?.description ?? JSON.stringify(r.result.exceptionDetails)}`);
-      }
-      return r.result?.result?.value;
-    };
+  try {
+    const { evaluate, rpc } = session;
     const shot = async (name) => {
       const r = await rpc('Page.captureScreenshot', { format: 'png' });
-      const { writeFileSync } = await import('node:fs');
       const file = `${OUT_DIR}/${name}.png`;
       writeFileSync(file, Buffer.from(r.result.data, 'base64'));
       return file;
@@ -169,7 +121,7 @@ const main = async () => {
     console.log(`VISUAL PASS: 四视口截图产出 → ${files.join(' / ')}`);
     console.log('（看图判定由多模态 LLM 做：读 PNG 判比例/遮挡/漂浮/配色；非多模态档跳过本步）');
   } finally {
-    proc.kill();
+    await session.close();
   }
 };
 

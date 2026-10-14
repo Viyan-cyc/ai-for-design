@@ -79,6 +79,42 @@ export class SceneEngine {
   /** params 原地更新后触发（handler 重放状态视觉/动画参数用） */
   onNodeUpdated: ((id: string) => void) | null = null;
 
+  /**
+   * 多订阅生命周期事件（P1 Review R3 / 优化 Spec §4.2）：订阅互不覆盖，释放时
+   * 退订干净。与旧单槽字段并存：直接赋值 onNodeRemoved 仍然有效（兼容旧 handler），
+   * 本方法新增的订阅不会被后一次赋值清掉。
+   * @returns 退订函数
+   */
+  subscribeNodeEvent(
+    event: 'created' | 'removed' | 'updated',
+    callback: (id: string) => void,
+  ): () => void {
+    const list = this.nodeEventSubs[event];
+    list.push(callback);
+    return () => {
+      const i = list.indexOf(callback);
+      if (i >= 0) {
+        list.splice(i, 1);
+      }
+    };
+  }
+
+  private nodeEventSubs = {
+    created: [] as Array<(id: string) => void>,
+    removed: [] as Array<(id: string) => void>,
+    updated: [] as Array<(id: string) => void>,
+  };
+
+  /** 触发生命周期（旧单槽 + 多订阅都走这里） */
+  private emitNodeEvent(event: 'created' | 'removed' | 'updated', id: string): void {
+    const single = event === 'created' ? this.onNodeCreated
+      : event === 'removed' ? this.onNodeRemoved : this.onNodeUpdated;
+    single?.(id);
+    for (const cb of [...this.nodeEventSubs[event]]) {
+      cb(id);
+    }
+  }
+
   constructor() {
     this.scene = new THREE.Scene();
   }
@@ -464,7 +500,7 @@ export class SceneEngine {
     }
     (parent ?? this.scene).add(obj);
     this.entries.set(node.id, { obj, node: { ...node, parentId }, type });
-    this.onNodeCreated?.(node.id);
+    this.emitNodeEvent('created', node.id);
   }
 
   /** 重建节点（视觉清除/结构性变化时：同 id 重建实例）。子节点实体重挂到新实例下，不留孤儿 */
@@ -483,7 +519,7 @@ export class SceneEngine {
     });
     old.obj.removeFromParent();
     this.entries.delete(node.id);
-    this.onNodeRemoved?.(node.id);
+    this.emitNodeEvent('removed', node.id);
     const obj = this.createNode(type, node);
     if (obj) {
       childObjs.forEach((child) => {
@@ -648,7 +684,7 @@ export class SceneEngine {
     }
     if (incoming.params !== undefined) {
       entry.node.params = incoming.params;
-      this.onNodeUpdated?.(incoming.id);
+      this.emitNodeEvent('updated', incoming.id);
     }
   }
 
@@ -679,7 +715,7 @@ export class SceneEngine {
         target.obj.removeFromParent();
         this.entries.delete(eid);
         this.visuals.delete(eid);
-        this.onNodeRemoved?.(eid);
+        this.emitNodeEvent('removed', eid);
         removed.push(eid);
       }
     });

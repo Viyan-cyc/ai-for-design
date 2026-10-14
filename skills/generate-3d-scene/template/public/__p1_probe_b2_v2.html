@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html><body>
+<canvas id="scene-canvas" style="display:block;width:600px;height:400px"></canvas>
+<script type="module">
+  const ids = ["id_0","id_1","id_2","id_3","id_4","id_5","id_6","id_7","id_8","id_9","id_10","id_11","id_12"];
+  const cam = {
+    updateMatrixWorld() {}, updateProjectionMatrix() {},
+    projectionMatrix: { clone() { return { multiply() { return { elements: [1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1] } } } },
+    matrixWorldInverse: {},
+  };
+  window.__gts3d = { internals: {
+    sceneEngine: {
+      getAllIds: () => ids, getNodeType: () => 'Box',
+      getObject: () => null,
+    },
+    camera: cam,
+    renderLoop: { getStats: () => ({ fps: 60, calls: 0, triangles: 0 }) },
+  } };
+</script>
+</body></html>

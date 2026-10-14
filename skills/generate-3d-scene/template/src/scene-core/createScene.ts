@@ -20,6 +20,9 @@ import {
   SceneEngine, CameraEngine, LightEngine, ControlsEngine,
   RendererEngine, RaycastEngine, AssetEngine, RenderLoop, EnvironmentEngine,
 } from './engine';
+import {
+  installDiagnostics, getPageErrorSink, waitForReady, type SceneDiagnostics,
+} from './diagnostics';
 
 /** 对外 Handle API（edit 外壳只允许经此触达 core——build 铁律 2） */
 export interface SceneHandle {
@@ -51,6 +54,14 @@ export interface SceneHandle {
 
   /** F 聚焦：相机看向指定物体 */
   frameObject(id: string): void;
+
+  // 等待当前 epoch 加载终态（P1.2）：全部 settle 后 resolve；有 failed 即 reject。
+  //  timeoutMs 到点 pending>0 也 reject；signal 中止等待。
+  whenReady(options?: { timeoutMs?: number; signal?: AbortSignal }): Promise<SceneDiagnostics>;
+
+  // 诊断快照（P1.2）：epoch、pending/succeeded/failed/cancelled、failedAssets、
+  //  页面错误（安装后窗口）、firstFrame。
+  getDiagnostics(): SceneDiagnostics;
 
   /** 相机实例被替换（透视/正交切换）时回调：TransformControls/OrbitControls 重挂用 */
   onCameraSwap(cb: (camera: THREE.Camera) => void): () => void;
@@ -141,7 +152,7 @@ export const getLoadBadgeState = (assetEngine: AssetEngine): { onCount: (l: numb
 
 /** 把 SceneData/片段的对象形态规整为分组数组（建树用） */
 const toGroups = (source: SceneData | TreeSceneFragment): Array<[string, SceneNode[]]> =>
-  extractGroups(source as TreeSceneFragment);
+  extractGroups(source);
 
 export const createScene = async (
   canvas: HTMLCanvasElement,
@@ -162,6 +173,16 @@ export const createScene = async (
   // 子网格槽位层：SceneEngine 查资产报告（逐 mesh 清单）用
   sceneEngine.assetReportProvider = (assetId) => assetEngine.getReport(assetId);
 
+  // P1.2 diagnostics：页面错误监听在一切装配之前安装（启动期异常也进窗口）；
+  // tracker 按 assetEngine 隔离（双 handle 不串）。节点移除走 subscribeNodeEvent
+  // （多订阅，R3：不被业务 handler 的 onNodeRemoved 赋值覆盖），取消按节点定向。
+  getPageErrorSink(assetEngine);
+  const tracker = installDiagnostics(assetEngine);
+  sceneEngine.subscribeNodeEvent('removed', (id) => {
+    tracker.bumpEpoch();
+    tracker.cancelNode(id);
+  });
+
   void environmentEngine.apply(
     rendererEngine.renderer, sceneEngine.scene,
     data.scene.environment ? { intensity: data.scene.environment.intensity } : null,
@@ -171,7 +192,14 @@ export const createScene = async (
   // 两路的异步 GLB 节点统一汇入（makeAssetNodeFactory 计数器口径=节点实例）
   const loadBadge = createLoadBadge(canvas);
   const badgeState = getLoadBadgeState(assetEngine);
-  badgeState.onCount = loadBadge.update;
+  badgeState.onCount = (loaded, total) => {
+    if (tracker) {
+      const c = tracker.counts();
+      loadBadge.update(c.loaded, c.total);
+    } else {
+      loadBadge.update(loaded, total);
+    }
+  };
   const { registerBuiltinFactories } = await import('./handlers/registry');
   registerBuiltinFactories(sceneEngine, assetEngine, undefined, badgeState.onCount);
 
@@ -215,6 +243,15 @@ export const createScene = async (
     () => cameraEngine.camera,
   );
   renderLoop.onFrame(() => cardSystem.updateProjection());
+  // P1.2：首帧标记（diagnostics.firstFrame；一次性退订）
+  let firstFrameMarked = false;
+  const unmarkFirstFrame = renderLoop.onAfterFrame(() => {
+    if (!firstFrameMarked) {
+      firstFrameMarked = true;
+      tracker.markFirstFrame();
+      unmarkFirstFrame();
+    }
+  });
   // resize：相机 aspect 与 CSS2D 投影层同步（编辑态 canvas 被移入中栏后尺寸必变）
   renderLoop.onResize((w, h) => {
     cameraEngine.setAspect(w / Math.max(h, 1));
@@ -401,6 +438,14 @@ export const createScene = async (
       }
     },
 
+    whenReady(options = {}): Promise<SceneDiagnostics> {
+      return waitForReady(tracker, options);
+    },
+
+    getDiagnostics(): SceneDiagnostics {
+      return tracker.snapshot();
+    },
+
     onCameraSwap(cb: (camera: THREE.Camera) => void): () => void {
       cameraSwapCbs.push(cb);
       return () => {
@@ -439,6 +484,7 @@ export const createScene = async (
       raycastEngine.dispose();
       rendererEngine.dispose();
       badgeState.onCount = () => {};
+      getPageErrorSink(assetEngine).detach();
       loadBadge.dispose();
     },
   };

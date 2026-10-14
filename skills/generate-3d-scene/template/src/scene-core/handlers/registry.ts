@@ -16,6 +16,7 @@ import type { AssetEngine } from '../engine/AssetEngine';
 import type { SceneNode } from '../types';
 import { applyVisualOverride, type VisualOverride } from '../materials';
 import { createPrimitiveGeometry, createPrimitiveMaterial, PRIMITIVE_KINDS } from '../primitives';
+import { getDiagnosticsTracker } from '../diagnostics';
 
 /** 应用 transform（position/rotation/scale，全部显式字段缺省安全值） */
 export const applyTransform = (obj: THREE.Object3D, node: SceneNode): void => {
@@ -81,52 +82,55 @@ export const applyVisualIfAny = (
  * @param onLoadCount 加载计数回调（不传即无感知）
  */
 /**
- * 加载计数（模块级共享：'asset' 内建工厂与业务 handler 各自的 factory 闭包统一累计。
- * 若按闭包各计各的，boot 期 cars/examples 并行加载时徽标数字互串、先完成的
- * 工厂会把徽标提前隐藏——N/M 语义是「场景内异步 GLB 节点」全局口径）。
+ * 加载计数回调：由调用方注入。
+ * P1.2 起推荐喂 installDiagnostics 的 tracker（每 handle 隔离 + 失败/取消分态）；
+ * 旧注入（徽标直连）继续可用——本构建器只透传，不持有计数状态。
  */
-let loadTotal = 0;
-let loadDone = 0;
-
 export const makeAssetNodeFactory = (
   sceneEngine: SceneEngine,
   assetEngine: AssetEngine,
   resolveAssetUrl: (assetId: string) => string,
   onLoaded?: (node: SceneNode, instance: THREE.Object3D) => void,
   onLoadCount?: (loaded: number, total: number) => void,
-): (node: SceneNode) => THREE.Object3D => {
-  const settle = (): void => {
-    loadDone += 1;
-    onLoadCount?.(loadDone, loadTotal);
-  };
-  return (node: SceneNode): THREE.Object3D => {
-    const group = new THREE.Group();
-    applyTransform(group, node);
-    const assetId = node.params?.assetId;
-    if (typeof assetId !== 'string' || !assetId) {
-      console.warn(`[registry] asset 节点缺 params.assetId: ${node.id}`);
-      return group;
-    }
-    loadTotal += 1;
-    onLoadCount?.(loadDone, loadTotal);
-    void assetEngine.getInstance(assetId, resolveAssetUrl(assetId))
-      .then((instance) => {
-        if (sceneEngine.getObject(node.id) !== group) {
-          settle();
-          return;
-        }
-        applyShadowDefaults(instance);
-        applyVisualIfAny(instance, node.id, (id) => sceneEngine.getVisual(id));
-        group.add(instance);
-        settle();
-        onLoaded?.(node, instance);
-      })
-      .catch((err: unknown) => {
-        console.warn(`[registry] 资产加载失败: ${assetId}（id=${node.id}）`, err);
-        settle();
-      });
+): (node: SceneNode) => THREE.Object3D => (node: SceneNode): THREE.Object3D => {
+  const group = new THREE.Group();
+  applyTransform(group, node);
+  const assetId = node.params?.assetId;
+  if (typeof assetId !== 'string' || !assetId) {
+    console.warn(`[registry] asset 节点缺 params.assetId: ${node.id}`);
     return group;
+  }
+  // P1.2：tracker（每 AssetEngine 隔离）接管 begin/settle；未安装时退回旧回调语义。
+  // R2：begin 返回 token，settle 按 token 对账——同节点重建/重试不会互相覆盖。
+  const tracker = getDiagnosticsTracker(assetEngine);
+  const report = (): void => {
+    if (tracker) {
+      const { loaded, total } = tracker.counts();
+      onLoadCount?.(loaded, total);
+    }
   };
+  const token = tracker?.begin(node.id, assetId);
+  report();
+  void Promise.resolve().then(() => assetEngine.getInstance(assetId, resolveAssetUrl(assetId)))
+    .then((instance) => {
+      if (sceneEngine.getObject(node.id) !== group) {
+        tracker?.settle(token!, 'cancelled');
+        report();
+        return;
+      }
+      applyShadowDefaults(instance);
+      applyVisualIfAny(instance, node.id, (id) => sceneEngine.getVisual(id));
+      group.add(instance);
+      onLoaded?.(node, instance);
+      tracker?.settle(token!, 'succeeded');
+      report();
+    })
+    .catch((err: unknown) => {
+      console.warn(`[registry] 资产加载失败: ${assetId}（id=${node.id}）`, err);
+      tracker?.settle(token!, 'failed', String((err as Error)?.message ?? err));
+      report();
+    });
+  return group;
 };
 
 /**
