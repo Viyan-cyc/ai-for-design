@@ -1,17 +1,12 @@
 /**
  * edit/edit-main — 编辑态入口（独立于 main.ts，strip-edit 后不存在于二开交付物）
  *
- * 装配序：createScene（core）→ 业务 handler 注册 → Bridge → Selection/LayoutGizmo/Save
- *   → EditApp.vue 挂载 → 全局快捷键。
+ * 装配序：bootScene（core + 业务 factory，建树前注册）→ Bridge →
+ *   Selection/LayoutGizmo/Save → EditApp.vue 挂载 → 全局快捷键。
  * 三栏布局 DOM（工具条/物体树/视口/属性面板）由 EditApp.vue 提供，canvas 移入视口栏。
  */
 import { createApp } from 'vue';
-import { createScene, ExampleCard, getLoadBadgeState } from '@/scene-core';
-import {
-  registerExampleHandler, registerTreeHandler,
-  registerCarHandler, registerWorkerHandler, registerRackHandler,
-} from '@/scene-core/handlers';
-import type { SceneData } from '@/scene-core/types';
+import { bootScene } from '@/boot-scene';
 import { Bridge } from './Bridge';
 import { SelectionService } from './SelectionService';
 import { LayoutGizmo } from './LayoutGizmo';
@@ -26,49 +21,13 @@ const boot = async (): Promise<void> => {
   if (!root) {
     throw new Error('[edit-main] 找不到 #app');
   }
-  const canvas = document.createElement('canvas');
-  canvas.id = 'scene-canvas';
-  canvas.style.cssText = 'display:block;width:100%;height:100%;';
   const viewport = document.createElement('div');
   viewport.id = 'edit-viewport';
   viewport.style.cssText = 'position:relative;width:100%;height:100%;';
-  viewport.appendChild(canvas);
   root.appendChild(viewport);
 
-  // 场景数据：dev server 从 public/scene-data.json 提供
-  const res = await fetch('/scene-data.json');
-  if (!res.ok) {
-    throw new Error(`[edit-main] scene-data.json 加载失败: ${res.status}`);
-  }
-  const data = (await res.json()) as SceneData;
-
-  // 卡片组件注册表（编辑态所见即二开所得）
-  const handle = await createScene(canvas, data, { example: ExampleCard });
-
-  // 业务 handler 示例（注册要赶在首次建树后重喂——createScene 建树时 examples/cars
-  // 分组尚无工厂被 warn 跳过，注册后按数据原样重喂，幂等 upsert 补建缺失节点）
-  // onLoadCount：业务 handler 经 makeAssetNodeFactory 建的 GLB 节点也汇入加载徽标
-  registerExampleHandler(
-    handle.internals.sceneEngine,
-    handle.internals.assetEngine,
-    (cb) => void handle.internals.renderLoop.onFrame((delta) => cb(delta)),
-    getLoadBadgeState(handle.internals.assetEngine).onCount,
-  );
-  registerTreeHandler(handle.internals.sceneEngine);
-  registerCarHandler(handle.internals.sceneEngine);
-  registerWorkerHandler(handle.internals.sceneEngine);
-  registerRackHandler(handle.internals.sceneEngine);
-  const refeed: Record<string, unknown> = {};
-  for (const [key, val] of Object.entries(data)) {
-    if (Array.isArray(val)
-      && (key === 'examples' || key === 'cars' || key === 'trees'
-        || key === 'codecars' || key === 'codeworkers' || key === 'coderacks')) {
-      refeed[key] = val;
-    }
-  }
-  if (Object.keys(refeed).length > 0) {
-    handle.update(refeed);
-  }
+  // 场景装配（业务 factory 建树前注册，与 run 态共用 scene-profile）
+  const { handle } = await bootScene(viewport);
   handle.refreshCards();
 
   // 编辑服务

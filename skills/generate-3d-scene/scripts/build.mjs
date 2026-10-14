@@ -26,6 +26,7 @@ import { readFileSync, readdirSync, existsSync, statSync } from 'node:fs';
 import { join, resolve, relative, dirname, sep } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { loadModel, reachableNodes, primitiveTriangles } from './validate-model.mjs';
+import { validateSceneData, factoryRegistryFromProfile } from './lib/scene-schema.mjs';
 
 /* ── 契约常量（阈值与白名单）──────────────────────────────── */
 
@@ -232,7 +233,8 @@ export const checkProject = (dir, opts = {}) => {
   const required = [
     'package.json', 'index.html', 'vite.config.ts', 'eslint.config.mjs',
     'tsconfig.json', 'tsconfig.app.json',
-    'src/main.ts', 'src/App.vue', 'src/scene-core/createScene.ts',
+    'src/main.ts', 'src/App.vue', 'src/entry.ts', 'src/boot-scene.ts', 'src/scene-profile.ts',
+    'src/scene-core/createScene.ts',
     'src/scene-core/types.ts', 'src/scene-core/index.ts',
     'src/scene-core/handlers/registry.ts', 'src/scene-core/cards/registry.ts',
     'public/scene-data.json', 'docs/INTEGRATION_GUIDE.md',
@@ -323,6 +325,7 @@ export const checkProject = (dir, opts = {}) => {
     over: [], unknownGroups: [], assets: { referenced: [], missing: [] },
     estimates: [],
   };
+  let schemaReport = null;
   const dataPath = join(root, 'public', 'scene-data.json');
   if (existsSync(dataPath)) {
     let data;
@@ -332,9 +335,82 @@ export const checkProject = (dir, opts = {}) => {
       errors.push(`public/scene-data.json 解析失败：${err.message}`);
     }
     if (data) {
+      // 6a. 场景 schema（P2.3/V08 + P2-R3）：确定性结构错误硬失败。
+      //     工厂注册表从工程自身 src/scene-profile.ts 提取（单一来源）：
+      //     未注册分组的节点引擎建树会静默跳过——在构建期就硬失败。
+      let factoryRegistry = null;
+      const profilePath = join(srcDir, 'scene-profile.ts');
+      if (existsSync(profilePath)) {
+        try {
+          factoryRegistry = factoryRegistryFromProfile(readFileSync(profilePath, 'utf8'));
+        } catch (err) {
+          errors.push(`业务 profile 工厂表提取失败：${err.message}`);
+        }
+      }
+      schemaReport = validateSceneData(data, factoryRegistry ?? {});
+      for (const e of schemaReport.errors) {
+        errors.push(`场景 schema 违规 [${e.code}] ${e.path}: ${e.message}`);
+      }
       const materialKeys = new Set();
       const modelCache = new Map();
       const modelsDir = join(root, 'public', 'assets', 'models');
+      // 资产映射（P2-R1）：init 落的 asset-manifest.json 是路径真相源；
+      // 旧工程无此文件 → 回退 models/<id>.glb|gltf 猜测（兼容不自动升级）
+      const assetManifestPath = join(root, 'public', 'assets', 'asset-manifest.json');
+      let assetManifest = null;
+      if (existsSync(assetManifestPath)) {
+        try {
+          assetManifest = JSON.parse(readFileSync(assetManifestPath, 'utf8'));
+        } catch (err) {
+          errors.push(`public/assets/asset-manifest.json 解析失败：${err.message}`);
+        }
+      }
+      /** id → 模型文件绝对路径（manifest 优先，legacy 兜底） */
+      const resolveModelFile = (assetId) => {
+        const entry = assetManifest?.[assetId];
+        if (entry?.model) {
+          const p = join(root, 'public', 'assets', entry.model);
+          return existsSync(p) ? p : null;
+        }
+        return ['glb', 'gltf'].map((e) => join(modelsDir, `${assetId}.${e}`)).find((p) => existsSync(p)) ?? null;
+      };
+      // glTF 依赖闭包校验（P2-R1）：.gltf 声明的外部 buffer/image URI 必须真实存在。
+      // URI 按规则解析（P2-RR3）：百分号编码解码后才是磁盘文件名（data%20mesh.bin →
+      // data mesh.bin——与浏览器 fetch/GLTFLoader 行为一致）；解码后仍做目录边界检查
+      const decodeUriPath = (uri) => {
+        try {
+          return decodeURIComponent(uri);
+        } catch {
+          // 非法编码序列（孤立的 %）按原样处理（fetch 也不会解码它，视为不同文件名）
+          return uri;
+        }
+      };
+      const checkGltfClosure = (gltfPath, assetId) => {
+        try {
+          const json = JSON.parse(readFileSync(gltfPath, 'utf8'));
+          const base = dirname(gltfPath);
+          const uris = [
+            ...(json.buffers ?? []).map((b) => b?.uri),
+            ...(json.images ?? []).map((i) => i?.uri),
+          ].filter((u) => typeof u === 'string' && !/^data:/.test(u));
+          for (const uri of uris) {
+            if (/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(uri) && !uri.startsWith('file:')) {
+              return `glTF 外部依赖协议不支持：${relative(root, gltfPath)} 声明 ${uri}（仅支持相对路径）`;
+            }
+            const decoded = decodeUriPath(uri.replace(/^file:\/\//, ''));
+            const abs = resolve(base, decoded);
+            const rootAbs = resolve(root);
+            const inside = abs === rootAbs || abs.startsWith(rootAbs + sep) || abs.startsWith(rootAbs + '/');
+            if (!inside || !existsSync(abs)) {
+              return `glTF 外部依赖缺失：${relative(root, gltfPath)} 声明 ${uri}，文件不存在`;
+            }
+          }
+        } catch (err) {
+          return `glTF 解析失败（${assetId}）：${err.message}`;
+        }
+        return null;
+      };
+      const gltfChecked = new Set();
       const reserved = new Set(['version', 'meta', 'scene', 'camera', 'lights', 'controls', 'renderer', 'remove', '__visuals', '__materialLib']);
       for (const [key, group] of Object.entries(data)) {
         if (reserved.has(key) || !Array.isArray(group)) {
@@ -346,9 +422,7 @@ export const checkProject = (dir, opts = {}) => {
         let handlerNodes = 0;
         for (const node of group) {
           const assetId = node?.params?.assetId;
-          const file = assetId
-            ? ['glb', 'gltf'].map((e) => join(modelsDir, `${assetId}.${e}`)).find((p) => existsSync(p))
-            : null;
+          const file = assetId ? resolveModelFile(assetId) : null;
           if (assetId) {
             if (!budgetReport.assets.referenced.includes(assetId)) {
               budgetReport.assets.referenced.push(assetId);
@@ -358,6 +432,14 @@ export const checkProject = (dir, opts = {}) => {
                 budgetReport.assets.missing.push(assetId);
               }
               continue;
+            }
+            // glTF 主文件：外部 bin/贴图闭包硬校验（缺依赖 = 缺文件同级错误）
+            if (/\.gltf$/i.test(file) && !gltfChecked.has(assetId)) {
+              gltfChecked.add(assetId);
+              const closureErr = checkGltfClosure(file, assetId);
+              if (closureErr) {
+                errors.push(closureErr);
+              }
             }
             if (!modelCache.has(assetId)) {
               try {
@@ -445,6 +527,12 @@ export const checkProject = (dir, opts = {}) => {
         stripped.violations.push(`${relative(root, file)} 残留 edit 入口引用（?edit=1 / edit-main）`);
       }
     }
+    // 固定入口（P2.1）：entry.ts 存在且只 import main（残留 edit 分支 = 未剥离干净）
+    const entryPath = join(srcDir, 'entry.ts');
+    if (existsSync(entryPath) && /edit-main|edit\/|\?edit=1/.test(readFileSync(entryPath, 'utf8'))) {
+      stripped.ok = false;
+      stripped.violations.push('src/entry.ts 残留 edit 入口分流');
+    }
     const htmlPath = join(root, 'index.html');
     if (existsSync(htmlPath) && /edit-main|\?edit=1/.test(readFileSync(htmlPath, 'utf8'))) {
       stripped.ok = false;
@@ -476,6 +564,7 @@ export const checkProject = (dir, opts = {}) => {
       versions,
       ironRules: { coreNoEdit, editEntry },
       imports,
+      schema: schemaReport,
       budget: budgetReport,
       stripped: opts.stripped ? stripped : undefined,
     },

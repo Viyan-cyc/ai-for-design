@@ -1,20 +1,25 @@
 /**
- * init.mjs — 工程脚手架（母版复制 → 资产库注入 → 占位替换 → 首次构建校验）
+ * init.mjs — 工程脚手架（母版复制 → 场景选择 → 资产库注入 → 占位替换 → 首次构建校验）
  *
  * 场景生成：把 skill 的母版工程（template/）复制成目标工程，
- * 注入本次要用到的资产（skill assets/ → 目标 public/assets/），替换占位，
- * 然后跑构建门禁做首次校验——LLM 拿到一个"能开局"的编辑态工程。
+ * 按 profile/--scene 决定起步场景，经资产目录（manifests 真相源）注入
+ * 本次要用到的资产，替换占位，然后跑构建门禁做首次校验。
  *
- * 做五件事：
+ * 做六件事：
  *   ① 复制 template/ → <target>/（剔除 node_modules / dist / .smoke-* / .git 等残留）
- *   ② 占位替换：package.json name → 工程名（kebab）
- *   ③ 资产注入：按 scene-data.json 引用（默认）或全部/指定 id，拷 assets/models + assets/textures
- *   ④ --with-components：拷 vendor/*.tgz 进产物工程 + package.json 写 file: 依赖
- *   ⑤ 首次构建校验：跑 build.mjs 结构门禁（必须 PASS）；--deps 可选装依赖并跑 npm run build
+ *   ② 场景选择：--profile empty（默认，空起步）/ --profile demo（示例场景）/
+ *      --scene <file>（业务场景数据：资产闭包按其引用注入）
+ *   ③ 占位替换：package.json name → 工程名（kebab）
+ *   ④ 资产注入：经 asset-catalog（manifests）解析真实 modelPath 与依赖闭包
+ *      （glTF 多文件整目录、多状态贴图集），按场景引用（默认）/全部/指定 id
+ *   ⑤ --with-components：拷 vendor/*.tgz 进产物工程 + package.json 写 file: 依赖
+ *      （多 tgz 时 --components-version 显式选择；缺省报错列出可选版本，不猜字典序）
+ *   ⑥ 首次构建校验：跑 build.mjs 结构门禁（必须 PASS）；--deps 可选装依赖并跑 npm run build
  *
  * CLI：
- *   node init.mjs <target-dir> [--name <proj-name>] [--assets referenced|all|<id,id>]
- *        [--with-components] [--deps skip|copy|install] [--force] [--json]
+ *   node init.mjs <target-dir> [--name <proj-name>] [--profile empty|demo] [--scene <file>]
+ *        [--assets referenced|all|<id,id>] [--with-components [--components-version <ver>]]
+ *        [--deps skip|copy|install] [--force] [--json]
  *   退出码：0 成功 / 1 校验失败 / 2 用法错误
  */
 import { readFileSync, writeFileSync, existsSync, mkdirSync, cpSync, readdirSync, rmSync, realpathSync } from 'node:fs';
@@ -22,6 +27,8 @@ import { join, resolve, basename, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import { checkProject } from './build.mjs';
+import { buildAssetCatalog, resolveAsset, referencedAssetIds } from './lib/asset-catalog.mjs';
+import { validateSceneData, factoryRegistryFromProfile } from './lib/scene-schema.mjs';
 
 const SKILL_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const TEMPLATE_DIR = join(SKILL_ROOT, 'template');
@@ -31,6 +38,43 @@ const VENDOR_DIR = join(SKILL_ROOT, 'vendor');
 const EXCLUDE = new Set(['node_modules', 'dist', '.git', '.smoke-r', '.smoke-vendor', '.tmp-a3d-verify']);
 const copyFilter = (src) => !EXCLUDE.has(basename(src))
   && !/^smoke.*\.png$/.test(basename(src)); // 冒烟上传产物不进生成工程
+
+/**
+ * 清理母版残留的 demo 模型：最终场景未引用的 public/assets/models/<id>.glb|gltf 删除。
+ * 母版自带 demo 资产是为母版自身冒烟；生成工程按最终场景保留闭包（F09：空工程不带 Demo）。
+ * draco/（解码器）与 textures 顶层贴图（materials 状态视觉常驻）不属模型闭包，保留。
+ */
+const pruneUnreferencedModels = (out, data) => {
+  const referenced = new Set(referencedAssetIds(data));
+  const modelsDir = join(out, 'public', 'assets', 'models');
+  if (!existsSync(modelsDir)) {
+    return { removed: [], kept: [] };
+  }
+  const removed = [];
+  const kept = [];
+  // 多文件 glTF 目录（models/<id>/）按目录名判定引用
+  const entries = readdirSync(modelsDir, { withFileTypes: true });
+  const dirIds = new Set(entries.filter((e) => e.isDirectory()).map((e) => e.name));
+  for (const ent of entries) {
+    if (ent.isDirectory()) {
+      if (!referenced.has(ent.name)) {
+        rmSync(join(modelsDir, ent.name), { recursive: true, force: true });
+        removed.push(`${ent.name}/`);
+      } else {
+        kept.push(ent.name);
+      }
+    } else {
+      const id = ent.name.replace(/\.(glb|gltf)$/i, '');
+      if (!referenced.has(id)) {
+        rmSync(join(modelsDir, ent.name));
+        removed.push(ent.name);
+      } else {
+        kept.push(ent.name);
+      }
+    }
+  }
+  return { removed, kept };
+};
 
 /**
  * 子进程 cwd 规范形：Windows 上把盘符/目录名整成磁盘上的真实大小写。
@@ -65,26 +109,10 @@ const toSlug = (s) => s
   .replace(/^-+|-+$/g, '')
   .slice(0, 60) || 'gts-3d-scene';
 
-/** 从 scene-data.json 收集被引用的资产 id。 */
-const referencedAssets = (data) => {
-  const ids = new Set();
-  for (const [key, group] of Object.entries(data ?? {})) {
-    if (!Array.isArray(group)) {
-      continue;
-    }
-    for (const node of group) {
-      if (node?.params?.assetId) {
-        ids.add(node.params.assetId);
-      }
-    }
-  }
-  return ids;
-};
-
 /**
  * 初始化工程。
  * @param {string} target 目标目录
- * @param {object} opts { name, assets, withComponents, deps, force }
+ * @param {object} opts { name, profile, scene, assets, withComponents, componentsVersion, deps, force }
  */
 export const initProject = (target, opts = {}) => {
   const out = resolve(target);
@@ -105,7 +133,58 @@ export const initProject = (target, opts = {}) => {
   /* ① 复制母版 */
   cpSync(TEMPLATE_DIR, out, { recursive: true, filter: copyFilter });
 
-  /* ② 占位替换 + .gitignore */
+  /* ② 场景选择：--scene > --profile（empty 默认 / demo） */
+  const profile = opts.profile ?? 'empty';
+  let sceneSource = null;
+  if (opts.scene) {
+    sceneSource = resolve(opts.scene);
+    if (!existsSync(sceneSource)) {
+      return { ok: false, out, errors: [`--scene 文件不存在：${sceneSource}`], warnings };
+    }
+  } else if (profile === 'demo') {
+    sceneSource = join(TEMPLATE_DIR, 'scenes', 'demo.json');
+  } else if (profile !== 'empty') {
+    return { ok: false, out, errors: [`未知 profile：${profile}（empty|demo，或用 --scene <file>）`], warnings };
+  }
+
+  let data = {};
+  const dataPath = join(out, 'public', 'scene-data.json');
+  if (sceneSource) {
+    try {
+      data = JSON.parse(readFileSync(sceneSource, 'utf8'));
+    } catch (err) {
+      return { ok: false, out, errors: [`场景数据解析失败（${sceneSource}）：${err.message}`], warnings };
+    }
+    writeFileSync(dataPath, `${JSON.stringify(data, null, 2)}\n`);
+  } else {
+    // empty profile：母版自带 scenes/empty.json 装配（模板已含，public 里已是空场景则保持）
+    try {
+      data = JSON.parse(readFileSync(join(out, 'scenes', 'empty.json'), 'utf8'));
+    } catch (err) {
+      return { ok: false, out, errors: [`母版 scenes/empty.json 解析失败：${err.message}`], warnings };
+    }
+    writeFileSync(dataPath, `${JSON.stringify(data, null, 2)}\n`);
+  }
+
+  // 母版 demo 资产按最终场景闭包清理（F09：空工程不带未引用 Demo 模型）
+  const pruned = pruneUnreferencedModels(out, data);
+
+  // 场景 schema 校验（P2.3/V08）：确定性结构错误在脚手架期拦截，不带病进工程
+  const validateLevel = opts.validate ?? 'preview';
+  if (!['preview', 'standard', 'off'].includes(validateLevel)) {
+    return { ok: false, out, errors: [`--validate 取值非法：${validateLevel}（preview|standard|off）`], warnings };
+  }
+  let schema = null;
+  if (validateLevel !== 'off') {
+    // 工厂注册表从模板业务 profile 提取（P2-R3 单一来源，不维护镜像）
+    const profileSrc = readFileSync(join(TEMPLATE_DIR, 'src', 'scene-profile.ts'), 'utf8');
+    schema = validateSceneData(data, factoryRegistryFromProfile(profileSrc));
+    for (const e of schema.errors) {
+      errors.push(`场景 schema 违规 [${e.code}] ${e.path}: ${e.message}`);
+    }
+  }
+
+  /* ③ 占位替换 + .gitignore */
   const name = toSlug(opts.name ?? basename(out));
   const pkgPath = join(out, 'package.json');
   let pkg;
@@ -117,62 +196,106 @@ export const initProject = (target, opts = {}) => {
   pkg.name = name;
   writeFileSync(join(out, '.gitignore'), GITIGNORE);
 
-  /* ③ 资产注入 */
-  const dataPath = join(out, 'public', 'scene-data.json');
-  let data = {};
-  if (existsSync(dataPath)) {
-    try {
-      data = JSON.parse(readFileSync(dataPath, 'utf8'));
-    } catch (err) {
-      return { ok: false, out, errors: [`母版 public/scene-data.json 解析失败：${err.message}`], warnings };
-    }
-  }
+  /* ④ 资产注入（manifests 真相源：真实 modelPath + glTF 依赖闭包 + 状态贴图）
+     assetsRoot 测试缝：gates 用假资产库验证目录闭包，生产恒为 SKILL_ROOT */
+  const assetsRoot = opts.assetsRoot ?? SKILL_ROOT;
+  const catalog = buildAssetCatalog(assetsRoot);
   const selector = opts.assets ?? 'referenced';
   let wanted;
   if (selector === 'all') {
-    wanted = existsSync(join(ASSETS_DIR, 'models'))
-      ? readdirSync(join(ASSETS_DIR, 'models')).map((f) => f.replace(/\.(glb|gltf)$/, ''))
-      : [];
+    wanted = [...catalog.byId.keys()];
   } else if (selector === 'referenced') {
-    wanted = [...referencedAssets(data)];
+    wanted = referencedAssetIds(data);
   } else {
     wanted = selector.split(',').map((s) => s.trim()).filter(Boolean);
   }
 
-  const modelsOut = join(out, 'public', 'assets', 'models');
-  const texturesOut = join(out, 'public', 'assets', 'textures');
-  mkdirSync(modelsOut, { recursive: true });
   const copied = [];
   const missingAssets = [];
+  const manifestOut = {}; // id → { model, format, textures? }（运行时/构建共用的资产映射）
   for (const id of wanted) {
-    const glb = ['glb', 'gltf'].map((e) => join(ASSETS_DIR, 'models', `${id}.${e}`)).find((p) => existsSync(p));
-    if (!glb) {
-      missingAssets.push(id);
+    const resolved = resolveAsset(id, catalog);
+    if (!resolved.ok) {
+      missingAssets.push(`${id}（${resolved.error}）`);
       continue;
     }
-    cpSync(glb, join(modelsOut, basename(glb)));
-    // 多状态资产的贴图集（assets/textures/<id>/）
-    const texDir = join(ASSETS_DIR, 'textures', id);
-    if (existsSync(texDir)) {
-      mkdirSync(texturesOut, { recursive: true });
-      cpSync(texDir, join(texturesOut, id), { recursive: true });
+    for (const rel of resolved.files) {
+      // catalog files 相对 skill 根，形态恒为 assets/…；越出 assets/ 的解析结果拒绝落盘
+      if (!rel.startsWith('assets/')) {
+        missingAssets.push(`${id}（解析文件越出资产目录：${rel}）`);
+        continue;
+      }
+      const dest = join(out, 'public', rel);
+      mkdirSync(dirname(dest), { recursive: true });
+      cpSync(join(assetsRoot, rel), dest);
     }
+    // 映射条目：model 相对 public/assets/（剥 assets/ 前缀）；glTF 目录资产指到 .gltf 文件
+    manifestOut[id] = {
+      model: resolved.entry.modelPath.replace(/^assets\//, ''),
+      format: resolved.format,
+      ...(resolved.textures
+        ? {
+          textures: Object.fromEntries(
+            Object.entries(resolved.textures).map(([k, rel]) => [k, rel.replace(/^assets\//, '')]),
+          ),
+        }
+        : {}),
+    };
     copied.push(id);
   }
   if (missingAssets.length) {
-    errors.push(`skill 资产库缺以下模型（无法注入）：${missingAssets.join(', ')}`);
+    errors.push(`skill 资产库无法解析以下资产（catalog manifests 为真相源）：${missingAssets.join('; ')}`);
   }
-  // 目标工程 public/assets/textures 顶层散图（图元/GLB 引用）保留模板自带（已在母版里）
 
-  /* ④ 组件库（可选；vendor 多 tgz 时按文件名排序取最新，选择确定性） */
+  // 母版残留且被最终场景引用的资产也进映射（prune 保留的文件需要可解析）
+  const referencedIds = new Set(referencedAssetIds(data));
+  const modelsDir = join(out, 'public', 'assets', 'models');
+  if (existsSync(modelsDir)) {
+    for (const ent of readdirSync(modelsDir, { withFileTypes: true })) {
+      const id = ent.isDirectory() ? ent.name : ent.name.replace(/\.(glb|gltf)$/i, '');
+      if (manifestOut[id] || !referencedIds.has(id)) {
+        continue;
+      }
+      if (ent.isDirectory()) {
+        // glTF 目录：找 .gltf 主文件
+        const main = readdirSync(join(modelsDir, ent.name)).find((f) => /\.gltf$/i.test(f));
+        if (main) {
+          manifestOut[id] = { model: `models/${ent.name}/${main}`, format: 'gltf' };
+        }
+      } else {
+        manifestOut[id] = {
+          model: `models/${ent.name}`,
+          format: /\.gltf$/i.test(ent.name) ? 'gltf' : 'glb',
+        };
+      }
+    }
+  }
+  // 落资产映射（P2-R1：build 与运行时 loader 的同一真相源；旧工程无此文件走 legacy）
+  mkdirSync(join(out, 'public', 'assets'), { recursive: true });
+  writeFileSync(join(out, 'public', 'assets', 'asset-manifest.json'), `${JSON.stringify(manifestOut, null, 2)}\n`);
+
+  /* ⑤ 组件库（可选；多 tgz 须显式选版本，不按字典序猜最新） */
   const components = { included: false };
   if (opts.withComponents) {
-    const tgz = existsSync(VENDOR_DIR)
-      ? readdirSync(VENDOR_DIR).filter((f) => f.endsWith('.tgz')).sort().at(-1) ?? null
-      : null;
-    if (!tgz) {
+    const available = existsSync(VENDOR_DIR)
+      ? readdirSync(VENDOR_DIR).filter((f) => f.endsWith('.tgz'))
+      : [];
+    let tgz = null;
+    if (available.length === 0) {
       warnings.push('--with-components 但 skill vendor/ 无 tgz（跳过组件库注入）');
+    } else if (available.length === 1) {
+      tgz = available[0];
+    } else if (opts.componentsVersion) {
+      const hit = available.filter((f) => f.includes(opts.componentsVersion));
+      if (hit.length !== 1) {
+        errors.push(`--components-version "${opts.componentsVersion}" 匹配 ${hit.length} 个 tgz（须唯一）：${available.join(', ')}`);
+      } else {
+        tgz = hit[0];
+      }
     } else {
+      errors.push(`vendor/ 有多个 tgz，须 --components-version 显式选择：${available.join(', ')}`);
+    }
+    if (tgz) {
       const vendorOut = join(out, 'vendor');
       mkdirSync(vendorOut, { recursive: true });
       cpSync(join(VENDOR_DIR, tgz), join(vendorOut, tgz));
@@ -183,10 +306,10 @@ export const initProject = (target, opts = {}) => {
   }
   writeFileSync(pkgPath, `${JSON.stringify(pkg, null, 2)}\n`);
 
-  /* ⑤ 首次构建校验（结构门禁） */
+  /* ⑥ 首次构建校验（结构门禁） */
   const check = checkProject(out);
 
-  /* ⑤b 可选装依赖并跑 npm run build */
+  /* ⑥b 可选装依赖并跑 npm run build */
   let buildRun = null;
   const cwd = spawnCwd(out);
   if (opts.deps === 'copy') {
@@ -199,6 +322,35 @@ export const initProject = (target, opts = {}) => {
     } else {
       warnings.push('--deps copy 但母版无 node_modules（退回 skip）');
     }
+    if (components.included) {
+      // P2-R2：copy 模式带组件时必须真装所选 tgz 并同步 lock——
+      // 只拷 node_modules 不装 file: 依赖，构建假绿、首次 import 即解析失败。
+      const registry = process.env.GTS3D_REGISTRY;
+      const args = ['install', '--no-audit', '--no-fund'];
+      if (registry) {
+        args.push('--registry', registry);
+      }
+      const r = spawnSync('npm', args, { cwd, stdio: 'inherit', shell: process.platform === 'win32' });
+      if (r.status !== 0) {
+        errors.push(`--with-components --deps copy 但组件依赖安装失败（npm install exit=${r.status}）；lock 未同步，产物工程不可直接构建`);
+      } else {
+        const installedDir = join(out, 'node_modules', '@a3d', 'a3d-components');
+        const lockPath = join(out, 'package-lock.json');
+        let lockHasDep = false;
+        try {
+          const lock = JSON.parse(readFileSync(lockPath, 'utf8'));
+          lockHasDep = (lock.packages?.['']?.dependencies?.['@a3d/a3d-components']
+            ?? lock.dependencies?.['@a3d/a3d-components']) !== undefined;
+        } catch {
+          // lock 缺失在下方统一报错
+        }
+        if (!existsSync(installedDir)) {
+          errors.push('组件安装后 node_modules/@a3d/a3d-components 仍不存在（安装假成功）');
+        } else if (!lockHasDep) {
+          errors.push('npm install 后 package-lock.json 缺 @a3d/a3d-components 根依赖（lock 未同步）');
+        }
+      }
+    }
   } else if (opts.deps === 'install') {
     const registry = process.env.GTS3D_REGISTRY;
     const args = ['install', '--no-audit', '--no-fund'];
@@ -208,6 +360,11 @@ export const initProject = (target, opts = {}) => {
     const r = spawnSync('npm', args, { cwd, stdio: 'inherit', shell: process.platform === 'win32' });
     if (r.status !== 0) {
       warnings.push('npm install 失败（离线/镜像问题）——依赖未装，后续需手动安装');
+    } else if (components.included) {
+      const installedDir = join(out, 'node_modules', '@a3d', 'a3d-components');
+      if (!existsSync(installedDir)) {
+        errors.push('--install 模式组件依赖未落 node_modules（解析将失败）');
+      }
     }
   }
   if (['copy', 'install'].includes(opts.deps) && existsSync(join(out, 'node_modules'))) {
@@ -215,14 +372,16 @@ export const initProject = (target, opts = {}) => {
     buildRun = { ok: r.status === 0, status: r.status };
   }
 
-  const ok = check.ok && buildRun?.ok !== false;
+  const ok = check.ok && buildRun?.ok !== false && errors.length === 0;
   return {
     ok,
     out,
     name,
+    profile: opts.scene ? 'scene' : profile,
+    scene: opts.scene ? resolve(opts.scene) : null,
     errors: [...errors, ...check.errors],
     warnings: [...warnings, ...check.warnings],
-    assets: { copied, missing: missingAssets },
+    assets: { copied, missing: missingAssets, prunedDemo: pruned.removed },
     components,
     gate: check.report,
     buildRun,
@@ -235,13 +394,18 @@ const USAGE = `用法: node init.mjs <target-dir> [选项]
 
 选项:
   --name <proj>            工程名（kebab；默认取目标目录名）
-  --assets referenced      只注入 scene-data 引用的资产（默认）
+  --profile empty          空起步场景（默认：舞台配置齐备，零业务节点）
+  --profile demo           示例场景（trees/cars/examples 业务分组）
+  --scene <file>           业务场景数据 JSON（优先于 profile；资产按其引用注入）
+  --assets referenced      只注入场景引用的资产（默认）
   --assets all             注入 skill 资产库全部模型
   --assets id1,id2         注入指定资产
   --with-components        注入 3d-components（vendor tgz + file: 依赖）
+  --components-version <v> 多 tgz 时显式选择版本（含 v 的文件名须唯一匹配）
   --deps skip              只做结构门禁（默认）
   --deps copy              从母版复制 node_modules（离线）并跑 npm run build
   --deps install           npm install（--registry 或环境变量 GTS3D_REGISTRY）并跑 npm run build
+  --validate preview       场景 schema 校验档位（默认 preview；standard 同级严格；off 跳过）
   --force                  目标目录非空时覆盖
   --json / --quiet`;
 
@@ -253,12 +417,20 @@ const parseArgs = (argv) => {
     const next = () => argv[++i];
     if (a === '--name') {
       opts.name = next();
+    } else if (a === '--profile') {
+      opts.profile = next();
+    } else if (a === '--scene') {
+      opts.scene = next();
     } else if (a === '--assets') {
       opts.assets = next();
     } else if (a === '--with-components') {
       opts.withComponents = true;
+    } else if (a === '--components-version') {
+      opts.componentsVersion = next();
     } else if (a === '--deps') {
       opts.deps = next();
+    } else if (a === '--validate') {
+      opts.validate = next();
     } else if (a === '--force') {
       opts.force = true;
     } else if (a === '--json') {
@@ -294,7 +466,7 @@ const main = () => {
     console.log(JSON.stringify(result, null, 2));
   } else if (!opts.quiet) {
     const mark = result.ok ? 'PASS' : 'FAIL';
-    console.log(`[init/${mark}] ${result.out}  (name=${result.name ?? '-'})`);
+    console.log(`[init/${mark}] ${result.out}  (name=${result.name ?? '-'}, profile=${result.profile})`);
     if (result.assets) {
       console.log(`  资产注入: ${result.assets.copied.length} 个 [${result.assets.copied.join(', ')}]`);
     }

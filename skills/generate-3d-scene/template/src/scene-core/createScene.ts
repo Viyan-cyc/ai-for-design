@@ -154,12 +154,29 @@ export const getLoadBadgeState = (assetEngine: AssetEngine): { onCount: (l: numb
 const toGroups = (source: SceneData | TreeSceneFragment): Array<[string, SceneNode[]]> =>
   extractGroups(source);
 
+/** createScene 第四参（P2.1）：建树前的业务装配钩子 */
+export interface SceneOptions {
+
+  /**
+   * 业务 factory 注册回调（建树前调用一次；renderLoop 已可用但尚未 start）。
+   * run/edit 共用同一 profile 注册函数（见 src/scene-profile.ts），
+   * 首次建树即命中工厂，无需建树后重喂。
+   */
+  profile?: (context: {
+    sceneEngine: SceneEngine;
+    assetEngine: AssetEngine;
+    renderLoop: RenderLoop;
+  }) => void;
+}
+
 export const createScene = async (
   canvas: HTMLCanvasElement,
   data: SceneData,
 
   /** 卡片组件注册表（节点 card.type 在此查表挂载） */
   cardComponents: Record<string, import('vue').Component> = {},
+
+  options: SceneOptions = {},
 ): Promise<SceneHandle> => {
   // 装配（依赖序）。工厂注册先于建树：自定义 type 才能在 buildTree 时被分发。
   const rendererEngine = new RendererEngine(canvas, data.renderer);
@@ -201,7 +218,8 @@ export const createScene = async (
     }
   };
   const { registerBuiltinFactories } = await import('./handlers/registry');
-  registerBuiltinFactories(sceneEngine, assetEngine, undefined, badgeState.onCount);
+  const { makeAssetUrlResolver } = await import('./asset-manifest');
+  registerBuiltinFactories(sceneEngine, assetEngine, makeAssetUrlResolver(), badgeState.onCount);
 
   // 卡片系统（依赖注入节点视图与相机；Vue 组件表由业务方传入）
   const { setupCards } = await import('./cards/registry');
@@ -219,23 +237,7 @@ export const createScene = async (
     components: cardComponents,
   });
 
-  // 全量建树 + 卡片同步
-  sceneEngine.buildTree(toGroups(data));
-  // 编辑器私有区回灌：数据里带则喂回引擎（重新载入编辑过的场景时，视觉层与材质库都保留；
-  // 漏灌 __visuals 会导致 serialize 视觉层为空 → 下次保存把视觉编辑永久剥掉）
-  if (data.__visuals) {
-    for (const [id, visual] of Object.entries(data.__visuals)) {
-      sceneEngine.applyVisual(id, visual);
-    }
-  }
-  if (data.__materialLib) {
-    for (const [id, entry] of Object.entries(data.__materialLib)) {
-      sceneEngine.setMaterialLibEntry(id, entry);
-    }
-  }
-  cardSystem.refresh();
-
-  // 渲染循环（卡片投影回调在 start 前注册）
+  // 渲染循环（先建（不 start），profile 需要注册帧回调；卡片投影回调在 start 前注册）
   const renderLoop = new RenderLoop(
     rendererEngine,
     controlsEngine,
@@ -257,6 +259,30 @@ export const createScene = async (
     cameraEngine.setAspect(w / Math.max(h, 1));
     cardSystem.resize(w, h);
   });
+
+  // 业务 factory 注册（P2.1）：内建工厂之后、建树之前——首次建树即命中，
+  // 消灭"建树后注册再重喂"的旧时序。run/edit 共用同一 profile（scene-profile.ts）。
+  options.profile?.({
+    sceneEngine,
+    assetEngine,
+    renderLoop,
+  });
+
+  // 全量建树 + 卡片同步
+  sceneEngine.buildTree(toGroups(data));
+  // 编辑器私有区回灌：数据里带则喂回引擎（重新载入编辑过的场景时，视觉层与材质库都保留；
+  // 漏灌 __visuals 会导致 serialize 视觉层为空 → 下次保存把视觉编辑永久剥掉）
+  if (data.__visuals) {
+    for (const [id, visual] of Object.entries(data.__visuals)) {
+      sceneEngine.applyVisual(id, visual);
+    }
+  }
+  if (data.__materialLib) {
+    for (const [id, entry] of Object.entries(data.__materialLib)) {
+      sceneEngine.setMaterialLibEntry(id, entry);
+    }
+  }
+  cardSystem.refresh();
 
   // 相机投影切换后 TransformControls/OrbitControls 持有旧相机引用，经回调重挂
   const cameraSwapCbs: Array<(camera: THREE.Camera) => void> = [];
@@ -438,8 +464,8 @@ export const createScene = async (
       }
     },
 
-    whenReady(options = {}): Promise<SceneDiagnostics> {
-      return waitForReady(tracker, options);
+    whenReady(readyOptions = {}): Promise<SceneDiagnostics> {
+      return waitForReady(tracker, readyOptions);
     },
 
     getDiagnostics(): SceneDiagnostics {

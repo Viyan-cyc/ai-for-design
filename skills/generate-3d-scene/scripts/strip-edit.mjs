@@ -42,14 +42,29 @@ const copyFilter = (src) => {
   return true;
 };
 
-/* ── index.html：双入口 → 单入口 ───────────────────────────────────────────── */
+/* ── entry.ts：双态分流 → 二开单入口（固定入口文件，P2.1）────────────────── */
 
-const INDEX_ENTRY = `<script type="module">
-      // 二开态单入口（编辑态已随交付剥离）
-      import('/src/main.ts');
-    </script>`;
+const ENTRY_IF_RE = /if \(new URLSearchParams[\s\S]*?import\('\.\/edit\/edit-main'\);[\s\S]*?\}\s*else\s*\{[\s\S]*?import\('\.\/main'\);[\s\S]*?\}/;
 
-const rewriteIndex = (html) => html.replace(/<script type="module">[\s\S]*?<\/script>/, INDEX_ENTRY);
+/** 二开交付物的 entry.ts（整文件替换，确定性内容——不复用源文件的注释与形态） */
+const ENTRY_RUNTIME = `/**
+ * entry — 二开态单入口（编辑态已随交付剥离）
+ */
+void import('./main');
+`;
+
+/**
+ * 重写 src/entry.ts 为二开单入口。
+ * 源形态含 edit 分支时替换为固定内容；已是单入口（重复 strip / 二开工程）幂等放行；
+ * 非 chunk import 形态报错（不静默产出坏入口）。
+ */
+const rewriteEntry = (code, errors) => {
+  if (ENTRY_IF_RE.test(code) || /import\('\.\/main'\)/.test(code)) {
+    return ENTRY_RUNTIME;
+  }
+  errors.push('src/entry.ts 形态非预期（既无 edit 分支也无 main 入口），拒绝改写');
+  return code;
+};
 
 /* ── App.vue：去掉编辑态链接 ──────────────────────────────────────────────── */
 
@@ -239,10 +254,12 @@ export const stripEdit = (srcProject, outDir, opts = {}) => {
   // ① 复制（剔除 edit 世界 + 依赖 + 残留）
   cpSync(src, out, { recursive: true, filter: copyFilter });
 
-  // index.html 单入口化 + App.vue 去链接
-  const htmlPath = join(out, 'index.html');
-  if (existsSync(htmlPath)) {
-    writeFileSync(htmlPath, rewriteIndex(readFileSync(htmlPath, 'utf8')));
+  // entry.ts 单入口化（固定入口文件，删除 edit 分支）+ App.vue 去链接
+  const entryPath = join(out, 'src', 'entry.ts');
+  if (existsSync(entryPath)) {
+    writeFileSync(entryPath, rewriteEntry(readFileSync(entryPath, 'utf8'), errors));
+  } else {
+    errors.push('缺 src/entry.ts（固定入口）');
   }
   const appPath = join(out, 'src', 'App.vue');
   if (existsSync(appPath)) {

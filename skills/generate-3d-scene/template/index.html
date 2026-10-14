@@ -23,14 +23,6 @@
   </head>
   <body>
     <div id="app"></div>
-    <script type="module">
-      // 双入口分流：?edit=1 → 编辑态（edit-main），否则二开态（main）。
-      // 二选一，防双开（两个 WebGL context 与渲染循环同时跑、DOM 互相覆盖）
-      if (new URLSearchParams(window.location.search).get('edit') === '1') {
-        import('/src/edit/edit-main.ts');
-      } else {
-        import('/src/main.ts');
-      }
-    </script>
+    <script type="module" src="/src/entry.ts"></script>
   </body>
 </html>

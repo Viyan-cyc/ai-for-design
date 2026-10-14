@@ -83,8 +83,11 @@ rmSync(join(F('stripped'), 'src', 'edit'), { recursive: true, force: true });
   check('build: 二开产物 --stripped PASS', r.ok && /\[build\/PASS\]/.test(r.out), `status=${r.status}`);
   const app = readFileSync(join(out, 'src/App.vue'), 'utf8');
   const html = readFileSync(join(out, 'index.html'), 'utf8');
+  const entry = readFileSync(join(out, 'src/entry.ts'), 'utf8');
   check('strip-edit: App.vue 去链接且无死 CSS 残留', !/\?edit=1/.test(app) && !/\.app-root__hint a\s*\{/.test(app));
-  check('strip-edit: index.html 单入口', !/\?edit=1|edit-main/.test(html) && /import\('\/src\/main\.ts'\)/.test(html));
+  check('strip-edit: 固定入口单态化', !/\?edit=1|edit-main/.test(html)
+    && /src\/entry\.ts/.test(html)
+    && /import\('\.\/main'\)/.test(entry) && !/edit/.test(entry));
 }
 
 /* ── build.mjs：铁律 1（core → edit）───────────────────────────────────────── */
@@ -290,17 +293,35 @@ rmSync(join(F('stripped'), 'src', 'edit'), { recursive: true, force: true });
   const out = F('init-ok');
   const r = run('init.mjs', [out, '--name', 'Factory Monitor', '--assets', 'referenced'], true);
   const pkg = existsSync(join(out, 'package.json')) ? JSON.parse(readFileSync(join(out, 'package.json'), 'utf8')) : {};
-  const refModels = existsSync(join(out, 'public/assets/models')) ? readdirSync(join(out, 'public/assets/models')) : [];
-  check('init: 首次 build 门禁 PASS', r.ok && /\[init\/PASS\]/.test(r.out), `status=${r.status}`);
+  const refModels = existsSync(join(out, 'public/assets/models'))
+    ? readdirSync(join(out, 'public/assets/models'))
+    : [];
+  const scene = existsSync(join(out, 'public/scene-data.json'))
+    ? JSON.parse(readFileSync(join(out, 'public/scene-data.json'), 'utf8'))
+    : {};
+  const RESERVED = new Set(['version', 'meta', 'scene', 'camera', 'lights', 'controls', 'renderer', 'remove', '__visuals', '__materialLib']);
+  const groupKeys = Object.keys(scene).filter((k) => Array.isArray(scene[k]) && !RESERVED.has(k) && !k.startsWith('__'));
+  check('init: 首次 build 门禁 PASS（默认 empty profile）', r.ok && /\[init\/PASS\]/.test(r.out), `status=${r.status}`);
   check('init: 占位替换 name=kebab', pkg.name === 'factory-monitor', `name=${pkg.name}`);
   check('init: 编辑态工程（含 src/edit）', existsSync(join(out, 'src/edit')));
-  check('init: 只注入被引用资产（starter 引用 example+person）', refModels.length === 2 && refModels.includes('example.glb') && refModels.includes('person.glb'), `[${refModels.join(',')}]`);
+  check('init: 空起步场景（零业务分组）', groupKeys.length === 0, `groups=[${groupKeys.join(',')}]`);
+  check('init: 空工程不带未引用 Demo 模型（F09）', refModels.length === 0, `[${refModels.join(',')}]`);
   check('init: .gitignore 已写', existsSync(join(out, '.gitignore')));
   check('init: 母版残留未拷入（无 dist/node_modules）', !existsSync(join(out, 'dist')) && !existsSync(join(out, 'node_modules')));
 }
 {
   const r = run('init.mjs', [F('init-ok')], false);
   check('init: 目标非空且无 --force 拒绝', r.ok && /已存在且非空/.test(r.out), `status=${r.status}`);
+}
+{
+  const out = F('init-demo');
+  const r = run('init.mjs', [out, '--name', 'demo-proj', '--profile', 'demo'], true);
+  const models = existsSync(join(out, 'public/assets/models')) ? readdirSync(join(out, 'public/assets/models')) : [];
+  check(
+    'init: --profile demo 注入 demo 场景资产闭包（example+person）',
+    r.ok && models.length === 2 && ['example.glb', 'person.glb'].every((f) => models.includes(f)),
+    `status=${r.status} [${models.join(',')}] ${firstFail(r.out)}`,
+  );
 }
 {
   const out = F('init-withcomp');
@@ -312,9 +333,9 @@ rmSync(join(F('stripped'), 'src', 'edit'), { recursive: true, force: true });
     r.ok && /file:\.\/vendor\/.+\.tgz/.test(pkg.dependencies?.['@a3d/a3d-components'] ?? '') && existsSync(join(out, 'vendor')),
   );
   check(
-    'init: --assets all 注入全部模型（含 example+person+rack）',
-    models.length >= 3 && ['example.glb', 'person.glb', 'rack.glb'].every((f) => models.includes(f)),
-    `[${models.join(',')}]`,
+    'init: --assets all 注入全部库内模型（catalog manifests 全集）',
+    r.ok && models.length >= 59 && ['example.glb', 'person.glb', 'rack.glb'].every((f) => models.includes(f)),
+    `[${models.length} 个] ${firstFail(r.out)}`,
   );
 }
 
@@ -362,6 +383,346 @@ if (withBuild) {
     .filter((f) => f.endsWith('.glb') && !['person.glb'].includes(f))[0];
   const rOk = run('validate-model.mjs', [join(SKILL, 'assets', 'models', okGlb)], true);
   check('validate: 库内资产过消费端加载门禁（three 真实 parse）', rOk.ok, `status=${rOk.status} ${firstFail(rOk.out)}`);
+}
+
+/* ── 场景 schema（P2.3/V08 + P2-R3/R4）：负例硬失败 + 正例干净 ─────────────── */
+{
+  const { validateSceneData, factoryRegistryFromProfile } = await import('../lib/scene-schema.mjs');
+  const reg = factoryRegistryFromProfile(readFileSync(join(TEMPLATE, 'src', 'scene-profile.ts'), 'utf8'));
+  const base = { version: '1', meta: {}, scene: {}, camera: {}, lights: [], controls: {}, renderer: {} };
+  const cases = [
+    ['重复 ID', { ...base, cars: [{ id: 'a' }, { id: 'a' }] }, ['duplicate-id']],
+    ['parent 环（互指）', { ...base, cars: [{ id: 'a', parentId: 'b' }, { id: 'b', parentId: 'a' }] }, ['parent-cycle']],
+    ['parent 自环', { ...base, cars: [{ id: 'a', parentId: 'a' }] }, ['parent-cycle']],
+    ['缺父', { ...base, cars: [{ id: 'a', parentId: 'ghost' }] }, ['missing-parent']],
+    ['NaN position', { ...base, cars: [{ id: 'a', position: [0, NaN, 0] }] }, ['bad-vec3']],
+    ['Infinity rotation', { ...base, cars: [{ id: 'a', rotation: [0, Infinity, 0] }] }, ['bad-vec3']],
+    ['零缩放', { ...base, cars: [{ id: 'a', scale: 0 }] }, ['zero-scale']],
+    ['向量零分量缩放 [1,0,1]', { ...base, cars: [{ id: 'a', scale: [1, 0, 1] }] }, ['zero-scale']],
+    ['非法 scale 类型', { ...base, cars: [{ id: 'a', scale: 'big' }] }, ['bad-scale']],
+    ['未知 factory 分组', { ...base, robots: [{ id: 'a' }] }, ['unknown-factory']],
+    ['内建 asset 分组缺 params.assetId', { ...base, asset: [{ id: 'a' }] }, ['missing-asset-id']],
+  ];
+  for (const [name, data, expectCodes] of cases) {
+    const r = validateSceneData(data, reg);
+    const codes = r.errors.map((e) => e.code);
+    check(`schema 负例：${name} 硬失败`, !r.ok && expectCodes.every((c) => codes.includes(c)),
+      `codes=[${codes.join(',')}]`);
+  }
+  const demo = JSON.parse(readFileSync(join(TEMPLATE, 'public', 'scene-data.json'), 'utf8'));
+  const empty = JSON.parse(readFileSync(join(TEMPLATE, 'scenes', 'empty.json'), 'utf8'));
+  const rDemo = validateSceneData(demo, reg);
+  const rEmpty = validateSceneData(empty, reg);
+  check('schema 正例：母版 demo 场景干净', rDemo.ok && rDemo.stats.nodes > 0,
+    JSON.stringify(rDemo.errors));
+  check('schema 正例：empty 场景干净（零节点非错误）', rEmpty.ok && rEmpty.stats.nodes === 0,
+    JSON.stringify(rEmpty.errors));
+  // 路径可定位性：错误条目必须带 path（V08「输出明确失败路径」）
+  const rPath = validateSceneData({ ...base, cars: [{ id: 'a' }, { id: 'a' }] }, reg);
+  check('schema 错误条目带路径', rPath.errors.every((e) => typeof e.path === 'string' && e.path.length > 0));
+}
+
+/* ── schema 接入 build：坏数据工程被结构门禁拦截 ─────────────────────────── */
+{
+  const d = F('fx-schema-bad');
+  copy(F('tpl'), d);
+  const data = JSON.parse(readFileSync(join(d, 'public', 'scene-data.json'), 'utf8'));
+  data.cars.push({ ...data.cars[0] }); // 复制首节点 → 重复 ID
+  writeFileSync(join(d, 'public', 'scene-data.json'), JSON.stringify(data, null, 2));
+  const r = run('build.mjs', [d], false);
+  check('build: 场景 schema 违规（重复 ID）→ 门禁 FAIL', r.ok && /场景 schema 违规.*duplicate-id/.test(r.out), `status=${r.status} ${firstFail(r.out)}`);
+}
+
+/* ── P2-R3/R4 生产入口：未注册分组 / 缺 assetId / 向量零缩放经 build 硬失败 ── */
+{
+  // 未注册分组（robots 不在 scene-profile 登记表）——旧实现仅预算告警假绿
+  const d = F('fx-unknown-factory');
+  copy(F('tpl'), d);
+  const data = JSON.parse(readFileSync(join(d, 'public', 'scene-data.json'), 'utf8'));
+  data.robots = [{ id: 'robot_01' }];
+  writeFileSync(join(d, 'public', 'scene-data.json'), JSON.stringify(data, null, 2));
+  const r = run('build.mjs', [d], false);
+  check('build: 未注册 factory 分组（robots）→ 硬 FAIL（P2-R3）',
+    r.ok && /场景 schema 违规.*unknown-factory/.test(r.out) && !/\[build\/PASS\]/.test(r.out),
+    `status=${r.status} ${firstFail(r.out)}`);
+}
+{
+  // 内建 asset 分组缺 params.assetId——旧实现建空 Group 无失败记录
+  const d = F('fx-asset-noid');
+  copy(F('tpl'), d);
+  const data = JSON.parse(readFileSync(join(d, 'public', 'scene-data.json'), 'utf8'));
+  data.asset = [{ id: 'bare_asset' }];
+  writeFileSync(join(d, 'public', 'scene-data.json'), JSON.stringify(data, null, 2));
+  const r = run('build.mjs', [d], false);
+  check('build: asset 分组缺 params.assetId → 硬 FAIL（P2-R4）',
+    r.ok && /场景 schema 违规.*missing-asset-id/.test(r.out), `status=${r.status} ${firstFail(r.out)}`);
+}
+{
+  // 向量零分量缩放 [1,0,1]——旧实现 ok=true
+  const d = F('fx-zero-vec');
+  copy(F('tpl'), d);
+  const data = JSON.parse(readFileSync(join(d, 'public', 'scene-data.json'), 'utf8'));
+  data.Box[0] = { ...data.Box[0], scale: [1, 0, 1] };
+  writeFileSync(join(d, 'public', 'scene-data.json'), JSON.stringify(data, null, 2));
+  const r = run('build.mjs', [d], false);
+  check('build: 向量零分量 scale [1,0,1] → 硬 FAIL（P2-R4）',
+    r.ok && /场景 schema 违规.*zero-scale/.test(r.out), `status=${r.status} ${firstFail(r.out)}`);
+}
+
+/* ── glTF 多文件 fixture：manifest 目录闭包复制（F10/V20）─────────────────── */
+{
+  // 在临时资产库造一个 glTF 多文件资产（.gltf + .bin + 贴图），经 init --scene 注入
+  // 验证整目录复制（不是只拷 .gltf 单文件）
+  const gltfJson = JSON.stringify({
+    asset: { version: '2.0' },
+    scene: 0,
+    scenes: [{ nodes: [0] }],
+    nodes: [{ mesh: 0 }],
+    meshes: [{ primitives: [{ attributes: { POSITION: 0 }, indices: 1, material: 0 }], extras: { targetVertexCount: 3 } }],
+    materials: [{ pbrMetallicRoughness: { baseColorTexture: { index: 0 } } }],
+    textures: [{ source: 0 }],
+    images: [{ uri: 'tex.png' }],
+    accessors: [
+      { bufferView: 0, componentType: 5126, count: 3, type: 'VEC3' },
+      { bufferView: 1, componentType: 5123, count: 3, type: 'SCALAR' },
+    ],
+    bufferViews: [
+      { buffer: 0, byteOffset: 0, byteLength: 36 },
+      { buffer: 0, byteOffset: 36, byteLength: 6 },
+    ],
+    buffers: [{ uri: 'data.bin', byteLength: 42 }],
+  });
+  const fakeLib = F('fake-skill-lib');
+  mkdirSync(join(fakeLib, 'assets', 'models', 'multifile_gltf'), { recursive: true });
+  mkdirSync(join(fakeLib, 'assets', 'manifests'), { recursive: true });
+  writeFileSync(join(fakeLib, 'assets', 'models', 'multifile_gltf', 'model.gltf'), gltfJson);
+  writeFileSync(join(fakeLib, 'assets', 'models', 'multifile_gltf', 'data.bin'), Buffer.alloc(42));
+  writeFileSync(join(fakeLib, 'assets', 'models', 'multifile_gltf', 'tex.png'), Buffer.from([0x89, 0x50]));
+  writeFileSync(join(fakeLib, 'assets', 'manifests', 'fixture.json'), JSON.stringify({
+    package: 'fixture',
+    entries: [{
+      id: 'multifile_gltf',
+      name: '多文件 glTF fixture',
+      file: 'model.gltf',
+      format: 'gltf',
+      modelPath: 'assets/models/multifile_gltf/model.gltf',
+    }],
+  }));
+  const { buildAssetCatalog, resolveAsset } = await import('../lib/asset-catalog.mjs');
+  const catalog = buildAssetCatalog(fakeLib);
+  const resolved = resolveAsset('multifile_gltf', catalog);
+  const sorted = (resolved.ok ? resolved.files : []).map((f) => f.split('/').pop()).sort();
+  check(
+    'asset-catalog: glTF 多文件目录闭包展开（gltf+bin+贴图全进 files）',
+    resolved.ok && ['data.bin', 'model.gltf', 'tex.png'].every((f) => sorted.includes(f)),
+    `ok=${resolved.ok} files=[${sorted.join(',')}] ${resolved.ok ? '' : resolved.error}`,
+  );
+
+  // 端到端（P2-R1）：init（假资产库）→ 落 asset-manifest.json → build 按映射找文件
+  const sceneData = JSON.parse(readFileSync(join(TEMPLATE, 'public', 'scene-data.json'), 'utf8'));
+  delete sceneData.trees; delete sceneData.cars; delete sceneData.examples;
+  delete sceneData.codecars; delete sceneData.codeworkers; delete sceneData.coderacks;
+  sceneData.asset = [{ id: 'mf_01', params: { assetId: 'multifile_gltf' } }];
+  const sceneFile = join(fakeLib, 'scene.json');
+  writeFileSync(sceneFile, JSON.stringify(sceneData, null, 2));
+  const { initProject } = await import('../init.mjs');
+  const proj = F('fx-gltf-e2e');
+  const rInit = initProject(proj, { name: 'gltf-e2e', scene: sceneFile, assetsRoot: fakeLib, force: true });
+  const projManifestPath = join(proj, 'public', 'assets', 'asset-manifest.json');
+  const projManifest = existsSync(projManifestPath) ? JSON.parse(readFileSync(projManifestPath, 'utf8')) : null;
+  check(
+    'init: glTF 资产落 asset-manifest.json（真实目录路径）',
+    rInit.ok && projManifest?.multifile_gltf?.model === 'models/multifile_gltf/model.gltf',
+    `initOk=${rInit.ok} manifest=${JSON.stringify(projManifest?.multifile_gltf ?? null)} errs=${JSON.stringify(rInit.errors)}`,
+  );
+  // build 正常闭包 PASS（manifest 命中 + bin/贴图齐全）
+  const rBuildOk = run('build.mjs', [proj], true);
+  check(
+    'build: glTF 目录资产经 asset-manifest 解析 + 闭包齐全 → PASS（P2-R1）',
+    rBuildOk.ok && /\[build\/PASS\]/.test(rBuildOk.out) && !/缺文件/.test(rBuildOk.out),
+    `status=${rBuildOk.status} ${firstFail(rBuildOk.out)}`,
+  );
+  // 负例：抽掉 data.bin → build 闭包校验 FAIL
+  rmSync(join(proj, 'public', 'assets', 'models', 'multifile_gltf', 'data.bin'));
+  const rBuildBad = run('build.mjs', [proj], false);
+  check(
+    'build: glTF 声明 data.bin 但文件缺失 → 闭包校验 FAIL（P2-R1）',
+    rBuildBad.ok && /glTF 外部依赖缺失.*data\.bin/.test(rBuildBad.out),
+    `status=${rBuildBad.status} ${firstFail(rBuildBad.out)}`,
+  );
+}
+
+/* ── P2-RR1：工厂登记与实际注册共用真实来源（登记表删项/加项两侧）────────── */
+{
+  const { initProject } = await import('../init.mjs');
+  const { extractBusinessFactoryTypes } = await import('../lib/scene-schema.mjs');
+
+  // 负例：删掉 trees 注册条目（scene-data 仍用 trees 分组）→ build FAIL（旧实现 PASS）
+  const neg = F('fx-rr1-unregistered');
+  initProject(neg, { name: 'rr1-neg', profile: 'demo', force: true });
+  const negProfile = join(neg, 'src', 'scene-profile.ts');
+  writeFileSync(negProfile, readFileSync(negProfile, 'utf8')
+    .replace(/\r?\n\s*trees: \(\{ sceneEngine \}\) => registerTreeHandler\(sceneEngine\),/, ''));
+  const rNeg = run('build.mjs', [neg], false);
+  check(
+    'P2-RR1: 删除 trees 注册条目（数据仍用 trees）→ build FAIL',
+    rNeg.ok && /unknown-factory.*trees/.test(rNeg.out) && !/\[build\/PASS\]/.test(rNeg.out),
+    `status=${rNeg.status} ${firstFail(rNeg.out)}`,
+  );
+
+  // 正例：真实新增业务分组（登记条目 + 注册实现 + 数据）→ build PASS
+  const pos = F('fx-rr1-newfactory');
+  initProject(pos, { name: 'rr1-pos', force: true });
+  const posProfile = join(pos, 'src', 'scene-profile.ts');
+  writeFileSync(posProfile, readFileSync(posProfile, 'utf8').replace(
+    'coderacks: ({ sceneEngine }) => registerRackHandler(sceneEngine),',
+    'coderacks: ({ sceneEngine }) => registerRackHandler(sceneEngine),\n'
+      + '  crates: ({ sceneEngine }) => {\n'
+      + '    sceneEngine.registerFactory(\'crates\', (node) => ({ name: node.id }));\n'
+      + '  },',
+  ));
+  const posData = JSON.parse(readFileSync(join(pos, 'public', 'scene-data.json'), 'utf8'));
+  posData.crates = [{ id: 'crate_01' }];
+  writeFileSync(join(pos, 'public', 'scene-data.json'), JSON.stringify(posData, null, 2));
+  const rPos = run('build.mjs', [pos], true);
+  check(
+    'P2-RR1: 新增业务分组（登记+注册实现+数据）→ build PASS',
+    rPos.ok && /\[build\/PASS\]/.test(rPos.out),
+    `status=${rPos.status} ${firstFail(rPos.out)}`,
+  );
+
+  // 登记表提取器三态：真实 profile 全量 / 空对象合法 / 缺失抛错
+  const realTypes = extractBusinessFactoryTypes(readFileSync(join(TEMPLATE, 'src', 'scene-profile.ts'), 'utf8'));
+  check(
+    'P2-RR1: 登记表提取 = 实际注册来源（全量 6 分组）',
+    JSON.stringify(realTypes) === JSON.stringify(['examples', 'cars', 'trees', 'codecars', 'codeworkers', 'coderacks']),
+    JSON.stringify(realTypes),
+  );
+  let emptyOk = false;
+  try {
+    emptyOk = extractBusinessFactoryTypes('export const BUSINESS_REGISTRARS: Record<string, (ctx) => void> = {\n};').length === 0;
+  } catch { emptyOk = false; }
+  check('P2-RR2: 空业务登记表合法（提取器返回空表）', emptyOk);
+  let missingThrows = false;
+  try {
+    extractBusinessFactoryTypes('export const OTHER = 1;');
+  } catch { missingThrows = true; }
+  check('P2-RR2: 登记表缺失/形态坏 → 抛错（不静默放行）', missingThrows);
+
+  // P2-RRR2：顶层 key 语法级提取（不再用行首正则冒充对象解析）
+  const wrapBody = (body) => `export const BUSINESS_REGISTRARS: Record<string, (ctx) => void> = {\n${ body }\n};`;
+  const rrr2Cases = [
+    // 单行多 key（旧行正则只提第一个）
+    ['单行多 key 全提取', wrapBody('trees: registerTreeHandler, crates: registerCrates'), ['trees', 'crates']],
+    // 值内嵌套对象的 key 不上浮（旧行正则把 ghost 当工厂）
+    ['嵌套对象 key 不上浮', wrapBody('crates: ({ sceneEngine }) => {\n  const defaults = { ghost: 1 };\n  sceneEngine.registerFactory(\'crates\', () => null);\n}'), ['crates']],
+    // 行/块注释里的假 key 不提取
+    ['注释 key 不提取', wrapBody('// robots: fake\n  /* shelves: also-fake */\n  trees: reg,'), ['trees']],
+    // 字符串里的假 key 不提取
+    ['字符串假 key 不提取', wrapBody("trees: () => { const s = 'phantom: not-a-key'; return s; }"), ['trees']],
+    // 引号 key（含空格分组名）
+    ['引号 key（含空格）', wrapBody("'my type': reg"), ['my type']],
+    // 尾逗号
+    ['尾逗号容错', wrapBody('trees: reg, codecars: reg2,'), ['trees', 'codecars']],
+  ];
+  // P2-RRR2 四审：注释内的括号不得截断对象/漏 key（手写扫描器三处复现；AST 词法天然正确）
+  rrr2Cases.push(
+    ['行注释含 } 后续 key 保留', wrapBody('trees: f, // }\n  crates: g'), ['trees', 'crates']],
+    ['块注释含 { 前缀', wrapBody('/* { */ trees: f'), ['trees']],
+    ['函数体内行注释含 }', wrapBody('crates: ({ sceneEngine }) => {\n  // }\n  sceneEngine.registerFactory(\'crates\', () => null);\n}'), ['crates']],
+  );
+  for (const [name, src, expected] of rrr2Cases) {
+    let got = null; let err = null;
+    try { got = extractBusinessFactoryTypes(src); } catch (e) { err = e.message; }
+    check(
+      `P2-RRR2: ${ name }`,
+      !err && JSON.stringify(got) === JSON.stringify(expected),
+      err ?? `got=${JSON.stringify(got)} want=${JSON.stringify(expected)}`,
+    );
+  }
+}
+
+/* ── P2-RR2：纯内建图元工程（空业务表）init/build 正例 ────────────────────── */
+{
+  const { initProject } = await import('../init.mjs');
+  const out = F('fx-rr2-builtin-only');
+  initProject(out, { name: 'rr2-builtin', force: true });
+  // 清空业务登记表（empty profile 场景只有 Box 地面等内建分组）
+  const profilePath = join(out, 'src', 'scene-profile.ts');
+  writeFileSync(profilePath, readFileSync(profilePath, 'utf8').replace(
+    /export const BUSINESS_REGISTRARS[\s\S]*?\r?\n\};/,
+    'export const BUSINESS_REGISTRARS: Record<string, (ctx: BusinessRegistrarContext) => void> = {\n};',
+  ));
+  const data = JSON.parse(readFileSync(join(out, 'public', 'scene-data.json'), 'utf8'));
+  const RESERVED = new Set(['version', 'meta', 'scene', 'camera', 'lights', 'controls', 'renderer', 'remove']);
+  const groupKeys = Object.keys(data).filter((k) => Array.isArray(data[k]) && !RESERVED.has(k) && !k.startsWith('__'));
+  const r = run('build.mjs', [out], true);
+  check(
+    'P2-RR2: 空业务登记表 + 纯内建分组工程 → build PASS',
+    r.ok && /\[build\/PASS\]/.test(r.out) && groupKeys.every((k) => ['Box', 'Sphere', 'Cylinder', 'Plane', 'Cone', 'Torus', 'asset'].includes(k)),
+    `status=${r.status} groups=[${groupKeys.join(',')}] ${firstFail(r.out)}`,
+  );
+}
+
+/* ── P2-RR3：glTF 外部 URI 按规则解码（含空格/非 ASCII 文件名）────────────── */
+{
+  const { initProject } = await import('../init.mjs');
+  const lib = F('fx-rr3-lib');
+  mkdirSync(join(lib, 'assets', 'models', 'encoded'), { recursive: true });
+  mkdirSync(join(lib, 'assets', 'manifests'), { recursive: true });
+  // 磁盘文件名含空格/非 ASCII；glTF 声明用百分号编码 URI（与浏览器 fetch 行为一致）
+  const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==', 'base64');
+  writeFileSync(join(lib, 'assets', 'models', 'encoded', '贴 图.png'), png);
+  const pos = Buffer.alloc(36);
+  for (let i = 0; i < 9; i += 1) {
+    pos.writeFloatLE([0, 0, 0, 1, 0, 0, 0, 1, 0][i], i * 4);
+  }
+  const idx = Buffer.alloc(6);
+  idx.writeUInt16LE(0, 0); idx.writeUInt16LE(1, 2); idx.writeUInt16LE(2, 4);
+  writeFileSync(join(lib, 'assets', 'models', 'encoded', 'data mesh.bin'), Buffer.concat([pos, idx]));
+  const gltf = {
+    asset: { version: '2.0' }, scene: 0, scenes: [{ nodes: [0] }], nodes: [{ mesh: 0 }],
+    meshes: [{ primitives: [{ attributes: { POSITION: 0 }, indices: 1, material: 0 }], extras: { targetVertexCount: 3 } }],
+    materials: [{ pbrMetallicRoughness: { baseColorTexture: { index: 0 } } }],
+    textures: [{ source: 0 }], images: [{ uri: '%E8%B4%B4%20%E5%9B%BE.png' }],
+    accessors: [
+      { bufferView: 0, componentType: 5126, count: 3, type: 'VEC3' },
+      { bufferView: 1, componentType: 5123, count: 3, type: 'SCALAR' },
+    ],
+    bufferViews: [
+      { buffer: 0, byteOffset: 0, byteLength: 36 },
+      { buffer: 0, byteOffset: 36, byteLength: 6 },
+    ],
+    buffers: [{ uri: 'data%20mesh.bin', byteLength: 42 }],
+  };
+  writeFileSync(join(lib, 'assets', 'models', 'encoded', 'model.gltf'), JSON.stringify(gltf));
+  writeFileSync(join(lib, 'assets', 'manifests', 'rr3.json'), JSON.stringify({
+    package: 'rr3',
+    entries: [{ id: 'encoded', name: '编码 URI fixture', file: 'model.gltf', format: 'gltf', modelPath: 'assets/models/encoded/model.gltf' }],
+  }));
+  const scene = JSON.parse(readFileSync(join(TEMPLATE, 'public', 'scene-data.json'), 'utf8'));
+  delete scene.trees; delete scene.cars; delete scene.examples;
+  delete scene.codecars; delete scene.codeworkers; delete scene.coderacks;
+  scene.asset = [{ id: 'enc_01', params: { assetId: 'encoded' } }];
+  const sceneFile = join(lib, 'scene.json');
+  writeFileSync(sceneFile, JSON.stringify(scene, null, 2));
+  const proj = F('fx-rr3-proj');
+  const rInit = initProject(proj, { name: 'rr3', scene: sceneFile, assetsRoot: lib, force: true });
+  const rBuild = run('build.mjs', [proj], true);
+  check(
+    'P2-RR3: 编码 URI（data%20mesh.bin / 非 ASCII 贴图名）init→build PASS',
+    rInit.ok && rBuild.ok && /\[build\/PASS\]/.test(rBuild.out),
+    `init=${rInit.ok} status=${rBuild.status} ${firstFail(rBuild.out)} ${firstFail(rInit.errors.join('\n') ?? '')}`,
+  );
+  // 边界保留负例：URI 指向工程外（../ 越界）→ FAIL
+  const evilGltf = { ...gltf, buffers: [{ uri: '..%2F..%2Fescape.bin', byteLength: 4 }] };
+  writeFileSync(join(proj, 'public', 'assets', 'models', 'encoded', 'model.gltf'), JSON.stringify(evilGltf));
+  const rEscape = run('build.mjs', [proj], false);
+  check(
+    'P2-RR3: URI 解码后越出工程根（..%2F..%2F）→ 闭包边界 FAIL',
+    rEscape.ok && /glTF 外部依赖缺失|不支持/.test(rEscape.out),
+    `status=${rEscape.status} ${firstFail(rEscape.out)}`,
+  );
 }
 
 /* ── 汇总 ─────────────────────────────────────────────────────────────────── */

@@ -26,10 +26,30 @@ registerHooks({
       if (existsSync(fileURLToPath(url))) {
         return { url: url.href, shortCircuit: true };
       }
+      // 目录导入（'./scene-core' → index.ts）：scene-profile 生产模块加载需要
+      try {
+        const dirIndex = new URL(`${specifier }/index.ts`, context.parentURL);
+        if (existsSync(fileURLToPath(dirIndex))) {
+          return { url: dirIndex.href, shortCircuit: true };
+        }
+      } catch { /* 非 URL 形态走 next */ }
+    }
+    // '@/' 别名（vite）：按 template/src 解析（scene-profile 及其依赖用）
+    if (specifier.startsWith('@/') && context.parentURL?.startsWith(pathToFileURL(template).href)) {
+      const aliased = join(template, 'src', specifier.slice(2));
+      for (const cand of [`${aliased }.ts`, join(aliased, 'index.ts')]) {
+        if (existsSync(cand)) {
+          return { url: pathToFileURL(cand).href, shortCircuit: true };
+        }
+      }
     }
     return next(specifier, context);
   },
   load(url, context, next) {
+    // .vue 单文件组件：Node 不解析 SFC——stub（注册链路测试只关心模块图可加载）
+    if (url.endsWith('.vue')) {
+      return { format: 'module', shortCircuit: true, source: 'export default { name: "SfcStub" };' };
+    }
     if (url.endsWith('.ts') && url.startsWith(pathToFileURL(template).href)) {
       return {
         format: 'module',
@@ -134,6 +154,64 @@ await test('RR5 real factory callback exception stays failed', async () => {
   await sleep(0);
   await assert.rejects(waitForReady(t), /onLoaded-broken/);
   assert.equal(t.snapshot().succeeded, 0);
+});
+await test('P2-R1 real AssetEngine load failure (glTF bin 404) rejects ready with failedAssets', async () => {
+  // 生产链路：真 AssetEngine + 不可达 URL → GLTFLoader 抛错 → registry settle failed
+  // → whenReady 拒绝 + failedAssets 记 nodeId@assetId（vite dev HTML 回落下的真 404 等价物）
+  const { AssetEngine } = await import(pathToFileURL(join(template, 'src/scene-core/engine/AssetEngine.ts')));
+  const assetEngine = new AssetEngine();
+  const t = installDiagnostics(assetEngine);
+  const factory = makeAssetNodeFactory(
+    { getObject: () => engineObj, getVisual: () => null },
+    assetEngine, (id) => `http://127.0.0.1:59999/missing/${id}/model.gltf`,
+  );
+  const engineObj = factory({ id: 'mf_01', params: { assetId: 'multifile_gltf' } });
+  void engineObj;
+  await assert.rejects(waitForReady(t, { timeoutMs: 8000 }), /multifile_gltf@mf_01|fetch failed/);
+  const failed = t.snapshot().failedAssets;
+  assert.ok(failed.some((f) => f.nodeId === 'mf_01' && f.assetId === 'multifile_gltf'),
+    JSON.stringify(failed));
+});
+await test('P2-RRR1 real registerBusinessFactories registers every declared type on real engine', async () => {
+  // 生产链路：真 scene-profile（TS 转译直跑）+ 真 SceneEngine → 登记表全量注册
+  const { registerBusinessFactories } = await import(pathToFileURL(join(template, 'src/scene-profile.ts')));
+  const engine = new SceneEngine();
+  registerBusinessFactories({
+    sceneEngine: engine,
+    assetEngine: { registerAssetStates() { }, getInstance: async () => ({}) },
+    renderLoop: { onFrame: () => () => { } },
+  });
+  for (const type of ['examples', 'cars', 'trees', 'codecars', 'codeworkers', 'coderacks']) {
+    assert.ok(engine.hasFactory(type), `hasFactory(${type}) 应为 true`);
+  }
+});
+await test('P2-RRR1 empty/wrong-name registrar throws after post-registration check', async () => {
+  const { registerBusinessFactories, BUSINESS_REGISTRARS } = await import(pathToFileURL(join(template, 'src/scene-profile.ts')));
+  const ctx = (engine) => ({
+    sceneEngine: engine,
+    assetEngine: { registerAssetStates() { }, getInstance: async () => ({}) },
+    renderLoop: { onFrame: () => () => { } },
+  });
+  // 空实现（review 复现：robots: () => {} 不抛错）
+  BUSINESS_REGISTRARS.robots = () => { };
+  try {
+    assert.throws(() => registerBusinessFactories(ctx(new SceneEngine())), /robots/);
+  } finally {
+    delete BUSINESS_REGISTRARS.robots;
+  }
+  // 注册错名（实现注册了别的 type）
+  BUSINESS_REGISTRARS.wrongname = ({ sceneEngine }) => {
+    sceneEngine.registerFactory('somethingelse', () => null);
+  };
+  try {
+    assert.throws(() => registerBusinessFactories(ctx(new SceneEngine())), /wrongname/);
+  } finally {
+    delete BUSINESS_REGISTRARS.wrongname;
+  }
+  // 复原：真实表仍全注册
+  const engine = new SceneEngine();
+  registerBusinessFactories(ctx(engine));
+  assert.ok(engine.hasFactory('trees') && engine.hasFactory('coderacks'));
 });
 await test('SceneEngine subscribers survive legacy callback replacement', () => {
   const engine = new SceneEngine();

@@ -18,6 +18,7 @@ import type { SceneEngine } from '../../engine/SceneEngine';
 import type { AssetEngine } from '../../engine/AssetEngine';
 import type { SceneNode } from '../../types';
 import { applyState, stateMaterials } from '../../materials';
+import { makeAssetUrlResolver } from '../../asset-manifest';
 import { makeAssetNodeFactory } from '../registry';
 
 export const registerExampleHandler = (
@@ -42,10 +43,11 @@ export const registerExampleHandler = (
   };
 
   /** 共享构建器 + 业务回调：状态视觉 + spinners 注册（onLoaded 时 instance 已应用完通用视觉） */
+  const resolveAssetUrl = makeAssetUrlResolver();
   const factory = (type: string) => makeAssetNodeFactory(
     sceneEngine,
     assetEngine,
-    (assetId) => `assets/models/${assetId}.glb`,
+    resolveAssetUrl,
     (node, instance) => {
       spinners.delete(node.id);
       if (node.params?.spin) {
