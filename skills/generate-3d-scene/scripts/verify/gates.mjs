@@ -326,6 +326,44 @@ if (withBuild) {
   check('init: 小写盘符目标 + --deps copy 端到端构建 PASS', r.ok && built && /npm run build: PASS/.test(r.out), `status=${r.status}`);
 }
 
+/* ── 消费端加载门禁（validate-model 内嵌 three GLTFLoader 真实 parse）──────── */
+{
+  // 负例：库内资产复制后破坏其贴图 bufferView 的 buffer 字段（复现 56 资产当年缺陷形态）
+  // ——规格检查会过（自解析默认 buffer=0），但 three 加载必须 FAIL
+  const srcGlb = readdirSync(join(SKILL, 'assets', 'models')).find((f) => f.endsWith('.glb'));
+  const badDir = F('gate-bad');
+  mkdirSync(badDir, { recursive: true });
+  const glbBuf = readFileSync(join(SKILL, 'assets', 'models', srcGlb));
+  const jsonLen = glbBuf.readUInt32LE(12);
+  const json = JSON.parse(glbBuf.slice(20, 20 + jsonLen).toString('utf8'));
+  // 挑一个无 target 的 view（贴图类）剥掉 buffer 字段；全有 target 时剥第一个
+  const target = json.bufferViews.find((v) => v.target === undefined) ?? json.bufferViews[0];
+  delete target.buffer;
+  const jsonBuf2 = Buffer.from(JSON.stringify(json), 'utf8');
+  const binLen = glbBuf.readUInt32LE(20 + jsonLen);
+  const binData = glbBuf.slice(20 + jsonLen + 8, 20 + jsonLen + 8 + binLen);
+  const pad = (n) => (4 - (n % 4)) % 4;
+  const jp = Buffer.alloc(pad(jsonBuf2.length), 0x20);
+  const jsonChunk = jsonBuf2.length + jp.length;
+  const out = Buffer.alloc(12 + 8 + jsonChunk + 8 + binData.length);
+  out.writeUInt32LE(0x46546c67, 0); out.writeUInt32LE(2, 4); out.writeUInt32LE(out.length, 8);
+  out.writeUInt32LE(jsonChunk, 12); out.write('JSON', 16, 'ascii');
+  jsonBuf2.copy(out, 20); jp.copy(out, 20 + jsonBuf2.length);
+  out.writeUInt32LE(binData.length, 20 + jsonChunk); out.write('BIN\0', 20 + jsonChunk + 4, 'ascii');
+  binData.copy(out, 20 + jsonChunk + 8);
+  writeFileSync(join(badDir, 'bad-buffer.glb'), out);
+
+  const rBad = run('validate-model.mjs', [join(badDir, 'bad-buffer.glb')], false);
+  check('validate: 贴图 bufferView 缺 buffer 字段 → 消费端门禁阻断', rBad.ok && (/消费端加载失败|缺 buffer 字段/.test(rBad.out)), `status=${rBad.status} ${firstFail(rBad.out)}`);
+
+  // 正例：库内真实资产（含 Draco person 的规格豁免路径只取门禁项——person 因面数基线 FAIL
+  // 不适合当正例，用非 Draco 资产走完整 validate 含 three parse）
+  const okGlb = readdirSync(join(SKILL, 'assets', 'models'))
+    .filter((f) => f.endsWith('.glb') && !['person.glb'].includes(f))[0];
+  const rOk = run('validate-model.mjs', [join(SKILL, 'assets', 'models', okGlb)], true);
+  check('validate: 库内资产过消费端加载门禁（three 真实 parse）', rOk.ok, `status=${rOk.status} ${firstFail(rOk.out)}`);
+}
+
 /* ── 汇总 ─────────────────────────────────────────────────────────────────── */
 console.log(`\n=== ${results.length - results.filter((r) => !r.ok).length}/${results.length} PASS ===`);
 if (failed) {

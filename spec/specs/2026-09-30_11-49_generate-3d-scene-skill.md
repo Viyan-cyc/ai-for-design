@@ -621,6 +621,22 @@ S9 交付        strip-edit 出二开包 + INTEGRATION_GUIDE 校验 + 验证报�
 - **检索抽查方法论沉淀**：中文 miss 根因分两类——字典词缺口（补词即治）与**语料缺口**（词只存在于模型名，源 tags 没有；id 逐词补捞即治）。检索器 tokenize 为 CJK unigram+bigram，中文 tags 精确匹配权重最高
 - **残留**：`--ids` 名单 keep-ids.txt 落 .tmp-polyhaven/（数据非代码，不入 skill 仓库）；2 个 md5 失败资产（cannon_01/vintage_grandfather_clock_01）用户裁决不追查（首版 2k 跑的失败记录，1k 定制名单未含这俩）
 
+**批次 5A：import-assets 消费端加载门禁（2026-10-13 立项，2026-10-14 完成）**
+
+> 动因：修复轮十实证 56 资产「自解析 PASS 但 three 加载炸」——validate-model 检规格，不检「能否被消费端加载」。本批次在入库管线末端加一道真实加载验证。
+
+- [x] 5A.1 validate-model.mjs 增 `parseWithThree(model)`：Node 侧 GLTFLoader 真实 parse（three 从模板 node_modules 解析；Draco 模型挂 DRACOLoader 指向模板 public/assets/draco/），失败 → violations 加「消费端加载失败: <err>」
+- [x] 5A.2 import-assets.mjs 校验环节消费该结果（默认阻断；validate-model CLI 单跑也带此门禁）
+- [x] 5A.3 gates.mjs 增负/正用例各一（坏 bufferView 的 GLB 阻断；现库 59 资产全过）
+- [x] 5A.4 全库 59 资产实跑复验 + 三绿（template 无改动，仅 scripts）
+
+**批次 5A 执行记录（Reverse Sync，2026-10-14）**：
+
+- **parseWithThree 实现要点（三轮环境坑逐一排掉）**：① three 与 loader **必须同走 ESM**（three.module.js + examples/jsm 动态 import）——CJS(three.cjs)+ESM(GLTFLoader) 双实例导致 instanceof 断裂**静默挂起**（5s 超时，不报错）；② Node fetch 不支持 file://（'not implemented'）——Draco decoder 用 `setDecoderPath({js, wasm})` 对象形态传 **data: URI**；③ Node 无 ProgressEvent（FileLoader 进度路径）——极简 polyfill；④ **Draco worker 链完整垫片**：DRACOLoader 用 `new Worker(blobUrl)` 浏览器签名——SyncBlob（构造时同步缓存 body）+ createObjectURL 记映射 + Worker 垫类（body 落临时文件开 worker_threads）；**worker 源内适配层的关键坑：DRACOWorker 用裸 `onmessage = function...` 全局赋值（非 self.onmessage）**——`Object.defineProperty(globalThis, 'onmessage', {set/get})` 桥到 parentPort，`self = globalThis` 复用 postMessage 补丁。wasm 由主线程 fetch data: URI 后经 decoderConfig.wasmBinary 结构化克隆进 worker（隔离验证全链路：init → decode → 回包）。
+- **接口变更**：`validateModelFile` 与 `importPackage` 改 **async**（import-assets CLI main 同步适配；fetch-polyhaven 经 writeZip 产物走 import-assets，不受影响）。
+- **验证**：person（Draco）parse OK；全库 59 资产 CLI 全跑——唯一 FAIL 是 person 的既有基线（面数/节点超限，人工放行过，与消费端门禁无关）；好包端到端入库 PASS（seed-package 含索引重建冒烟）；gates **43/43**（新增两用例：负例=复制库资产剥贴图 bufferView 的 buffer 字段→阻断（复现 56 资产当年缺陷形态）；正例=库内非 Draco 资产过完整 validate 含 three parse）。
+- **教训**：Node 里跑 three 生态的完整加载链需要 5 个垫片（self/ProgressEvent/Blob/URL.createObjectURL/Worker），每个都有独立的静默失败形态（挂起/空对象/找不到文件）——**隔离验证（单 worker 文件直跑）是定位此类问题的唯一高效路径**；worker 源码的隐式全局依赖（裸 onmessage）是垫片最大陷阱。
+
 **批次 5：skill 大脑 + 收尾（2026-10-13 完成，含修复轮十；评审记录 11 Overall Verdict PASS）**
 - ~~5.1 install-blender.mjs（缓存探测/镜像拉取/解压登记/失败降级）~~ → **整项取消（2026-10-12 用户裁决「blender完全从这个skill里剔除出去吧」，§8.1）**——Blender 通道剔除，脚本不写；本机 `~/.gts3d/blender/` 已清理（2026-10-13）
 - [x] 5.4 ~~gen-component-catalog.mjs 跑通 → component-catalog.md 产出~~ → **由批次 C 接管**（sync-components.mjs，2026-10-09 终裁），提前完成

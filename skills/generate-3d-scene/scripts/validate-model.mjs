@@ -14,8 +14,10 @@
  * 作为模块被 import-assets.mjs 复用：validateModelFile / inspectModel / DEFAULT_LIMITS。
  */
 import { readFileSync } from 'node:fs';
-import { dirname, resolve, isAbsolute } from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { dirname, resolve, isAbsolute, join } from 'node:path';
+import { pathToFileURL, fileURLToPath } from 'node:url';
+import * as nodeModule from 'node:module';
+globalThis.__gts3d_node_module = nodeModule;
 
 /* ── 规格阈值（默认值 + 分级门禁裁决）──────────────────────────
  *
@@ -517,11 +519,182 @@ export const inspectModel = (model, opts = {}) => {
   };
 };
 
-/** 便捷入口：文件 → 报告。 */
-export const validateModelFile = (filePath, opts = {}) => {
+/** 便捷入口：文件 → 报告（含消费端加载门禁）。 */
+export const validateModelFile = async (filePath, opts = {}) => {
   const model = loadModel(filePath);
-  return inspectModel(model, opts);
+  const report = inspectModel(model, opts);
+  // 消费端加载门禁（同步检查全部通过后仍须 three 真实 parse——自解析通过 ≠ 运行时能加载，
+  // 56 资产 bufferView 缺字段实测漏检教训）。失败直接计 violations（阻断入库）。
+  if (report.passed) {
+    const parseError = await parseWithThree(model);
+    if (parseError) {
+      report.violations.push(`消费端加载失败（three GLTFLoader）: ${parseError}`);
+      report.passed = false;
+    }
+  }
+  return report;
 };
+
+/**
+ * three GLTFLoader 真实 parse（Node 侧）。返回 null = 加载成功；字符串 = 错误消息。
+ *
+ * Node 环境垫片（只在本函数内生效，不污染调用方）：
+ * - self：GLTFLoader 模块级引用
+ * - ProgressEvent：FileLoader 进度路径
+ * - Blob/URL.createObjectURL/Worker：DRACOLoader 的 worker 解码链（blob body 同步缓存 →
+ *   临时文件 + worker_threads + self 适配层）——浏览器 Worker 签名映射
+ * - Draco decoder 走 data: URI（Node fetch 不支持 file://）
+ * - three 与 loader 同走 ESM（CJS+ESM 双实例 instanceof 断裂静默挂起，实测教训）
+ */
+export const parseWithThree = async (model) => {
+  try {
+    installNodeShims();
+    const { GLTFLoader } = await import(pathToFileURL(gltfLoaderPath()).href);
+    const loader = new GLTFLoader();
+    const needsDraco = (model.json.extensionsRequired ?? []).includes('KHR_draco_mesh_compression');
+    if (needsDraco) {
+      const { DRACOLoader } = await import(pathToFileURL(dracoLoaderPath()).href);
+      const draco = new DRACOLoader();
+      draco.setDecoderPath(dracoDecoderUrls());
+      loader.setDRACOLoader(draco);
+    }
+    const data = model.bin ? toArrayBuffer(concatGlb(model)) : JSON.stringify(model.json);
+    const gltf = await loader.parseAsync(data, '');
+    let meshes = 0;
+    gltf?.scene?.traverse((c) => {
+      if (c.isMesh) meshes += 1;
+    });
+    return meshes > 0 ? null : '解析成功但场景内无 mesh';
+  } catch (err) {
+    return err?.message ?? String(err);
+  }
+};
+
+let nodeShimsInstalled = false;
+const installNodeShims = () => {
+  if (nodeShimsInstalled) {
+    return;
+  }
+  nodeShimsInstalled = true;
+  globalThis.self = globalThis.self ?? globalThis;
+  if (typeof globalThis.ProgressEvent === 'undefined') {
+    globalThis.ProgressEvent = class ProgressEvent extends Event {
+      constructor(type, init = {}) {
+        super(type);
+        this.lengthComputable = Boolean(init.lengthComputable);
+        this.loaded = init.loaded ?? 0;
+        this.total = init.total ?? 0;
+      }
+    };
+  }
+  // worker 链垫片（DRACOLoader 用）：SyncBlob 同步缓存 body → createObjectURL 记映射 →
+  // Worker 垫类把 body 落临时文件开 worker_threads。worker 源内嵌适配层：
+  // DRACOWorker 用**裸 onmessage 全局赋值**（非 self.onmessage）+ self.postMessage——
+  // defineProperty 桥 onmessage → parentPort；self = globalThis 复用 postMessage 补丁
+  if (typeof globalThis.Worker === 'undefined' && typeof process !== 'undefined' && process.versions?.node) {
+    const { Worker: NodeWorker } = requireNode('node:worker_threads');
+    const { writeFileSync, unlinkSync } = requireNode('node:fs');
+    const { tmpdir } = requireNode('node:os');
+    const { join } = requireNode('node:path');
+    class SyncBlob extends Blob {
+      constructor(parts) {
+        super(parts);
+        this._body = parts.join('');
+      }
+    }
+    globalThis.Blob = SyncBlob;
+    const urlToBlob = new Map();
+    const origCreate = URL.createObjectURL.bind(URL);
+    URL.createObjectURL = (blob) => {
+      const url = origCreate(blob);
+      urlToBlob.set(url, blob);
+      return url;
+    };
+    let seq = 0;
+    const tmpFiles = [];
+    const ADAPTER = [
+      'const { parentPort } = require("node:worker_threads");',
+      'let __onmessage = null;',
+      'Object.defineProperty(globalThis, "onmessage", {',
+      '  set(fn) { __onmessage = fn; },',
+      '  get() { return __onmessage; },',
+      '});',
+      'const self = globalThis;',
+      'self.postMessage = (m, transfer) => parentPort.postMessage(m, transfer ?? []);',
+      'parentPort.on("message", (d) => { if (__onmessage) __onmessage({ data: d }); });',
+    ].join('\n');
+    globalThis.Worker = class BrowserWorker {
+      constructor(url) {
+        const blob = urlToBlob.get(url);
+        if (!blob) {
+          throw new Error(`worker URL 无 blob 映射: ${url}`);
+        }
+        const file = join(tmpdir(), `gts3d-draco-${Date.now()}-${seq++}.cjs`);
+        writeFileSync(file, `${ADAPTER}\n${blob._body}`);
+        tmpFiles.push(file);
+        this._worker = new NodeWorker(file);
+        this._onmessage = null;
+        this._worker.on('message', (data) => this._onmessage?.({ data }));
+        this._worker.on('error', (e) => { throw e; });
+      }
+      set onmessage(fn) { this._onmessage = fn; }
+      get onmessage() { return this._onmessage; }
+      postMessage(msg) { this._worker.postMessage(msg); }
+      terminate() {
+        void this._worker.terminate();
+        for (const f of tmpFiles.splice(0)) {
+          try { unlinkSync(f); } catch { /* 尽力清理 */ }
+        }
+      }
+    };
+  }
+};
+
+const requireNode = (id) => {
+  const req = nodeModule.createRequire(import.meta.url);
+  return req(id);
+};
+
+/** three 解析路径：模板 node_modules（skill 脚本零依赖，three 是模板运行时依赖）。 */
+const gltfLoaderPath = () => join(SKILL_ROOT, 'template', 'node_modules', 'three', 'examples', 'jsm', 'loaders', 'GLTFLoader.js');
+const dracoLoaderPath = () => join(SKILL_ROOT, 'template', 'node_modules', 'three', 'examples', 'jsm', 'loaders', 'DRACOLoader.js');
+const dracoDecoderDir = () => join(SKILL_ROOT, 'template', 'public', 'assets', 'draco');
+const SKILL_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+
+/** Draco decoder 的 data: URI 形态（Node fetch 不支持 file://；浏览器路径不受影响——本函数只在 Node 门禁用）。 */
+const dracoDecoderUrls = () => {
+  const b64 = (name, mime) => `data:${mime};base64,${readFileSync(join(dracoDecoderDir(), name)).toString('base64')}`;
+  return {
+    js: b64('draco_wasm_wrapper.js', 'text/javascript'),
+    wasm: b64('draco_decoder.wasm', 'application/octet-stream'),
+  };
+};
+
+/** 拼回完整 GLB（inspectModel 拆开的 json/bin 重组——Bin 原样前置）。 */
+const concatGlb = (model) => {
+  const jsonBuf = Buffer.from(JSON.stringify(model.json), 'utf8');
+  const jsonPad = Buffer.alloc((4 - (jsonBuf.length % 4)) % 4, 0x20);
+  const bin = model.bin ?? Buffer.alloc(0);
+  const binPad = Buffer.alloc((4 - (bin.length % 4)) % 4, 0);
+  const jsonChunkLen = jsonBuf.length + jsonPad.length;
+  const binChunkLen = bin.length + binPad.length;
+  const out = Buffer.alloc(12 + 8 + jsonChunkLen + 8 + binChunkLen);
+  out.writeUInt32LE(0x46546c67, 0);
+  out.writeUInt32LE(2, 4);
+  out.writeUInt32LE(12 + 8 + jsonChunkLen + 8 + binChunkLen, 8);
+  out.writeUInt32LE(jsonChunkLen, 12);
+  out.write('JSON', 16, 'ascii');
+  jsonBuf.copy(out, 20);
+  jsonPad.copy(out, 20 + jsonBuf.length);
+  const bh = 20 + jsonChunkLen;
+  out.writeUInt32LE(binChunkLen, bh);
+  out.write('BIN\0', bh + 4, 'ascii');
+  bin.copy(out, bh + 8);
+  binPad.copy(out, bh + 8 + bin.length);
+  return out;
+};
+
+const toArrayBuffer = (buf) => buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength);
 
 /* ── CLI ─────────────────────────────────────────────────────────────────── */
 
@@ -587,7 +760,7 @@ const parseArgs = (argv) => {
   return { opts, files };
 };
 
-const main = () => {
+const main = async () => {
   const { opts, files } = parseArgs(process.argv.slice(2));
   if (opts.help || files.length === 0) {
     console.log(USAGE);
@@ -597,7 +770,7 @@ const main = () => {
   for (const file of files) {
     let report;
     try {
-      report = validateModelFile(file, opts);
+      report = await validateModelFile(file, opts);
     } catch (err) {
       console.error(`[validate-model] 解析失败 ${file}: ${err.message}`);
       process.exit(2);

@@ -307,7 +307,7 @@ const collectExistingIds = (libDir) => {
  * 入库：staging 包目录 → 资产库。
  * @returns {{entries: object[], warnings: string[]}}
  */
-export const importPackage = (staging, { libDir = DEFAULT_LIB, packageName, strict = false, profile = 'main', force = false } = {}) => {
+export const importPackage = async (staging, { libDir = DEFAULT_LIB, packageName, strict = false, profile = 'main', force = false } = {}) => {
   const manifestPath = join(staging, 'manifest.json');
   if (!existsSync(manifestPath)) {
     throw new Error('包内缺少 manifest.json');
@@ -352,8 +352,8 @@ export const importPackage = (staging, { libDir = DEFAULT_LIB, packageName, stri
       }
     }
 
-    // 规格门禁（从 staging 读，gltf 外部引用相对自洽）
-    const report = validateModelFile(srcModel, { assetId: id, strict, profile });
+    // 规格门禁（从 staging 读，gltf 外部引用相对自洽；含消费端 three 真实加载门禁）
+    const report = await validateModelFile(srcModel, { assetId: id, strict, profile });
     // 双形态入库判定：多状态资产（白模+贴图集）要求 UV 完好，缺 UV 即 FAIL
     if (e.textures && report.uvMissing) {
       const err = new Error(`规格门禁 FAIL（id=${id}）: 多状态资产（textures+states）要求白模 UV 完好，但 POSITION 网格缺 TEXCOORD_0`);
@@ -471,7 +471,7 @@ const parseArgs = (argv) => {
   return { opts, input: pos[0] };
 };
 
-const main = () => {
+const main = async () => {
   const { opts, input } = parseArgs(process.argv.slice(2));
   if (opts.help || !input) {
     console.log(USAGE);
@@ -492,7 +492,7 @@ const main = () => {
   }
   let result;
   try {
-    result = importPackage(staging, { libDir, packageName, strict: opts.strict, profile: opts.profile, force: opts.force });
+    result = await importPackage(staging, { libDir, packageName, strict: opts.strict, profile: opts.profile, force: opts.force });
   } catch (err) {
     console.error(`[import-assets] 入库失败: ${err.message}`);
     process.exit(1);
