@@ -148,6 +148,19 @@ const isCacheSharedMaterial = (m: THREE.Material): boolean =>
   (m.userData as { isCloneResource?: boolean }).isCloneResource === true;
 
 /**
+ * 库材质标记（P4-RR1）：appearance-runtime 的编译库共享实例。生命周期归库级
+ * teardown（引擎 dispose 一次释放），节点域收集跳过（同缓存根口径——节点退出
+ * 不触发释放，跨零引用窗口实例保持有效，重建/迟到引用者复用同一活实例）。
+ */
+export const markLibraryMaterial = (m: THREE.Material): void => {
+  (m.userData as { isLibraryMaterial?: boolean }).isLibraryMaterial = true;
+};
+
+/** 是否库共享材质（资源收集跳过用——释放责任在库级 teardown） */
+export const isLibraryMaterial = (m: THREE.Material): boolean =>
+  (m.userData as { isLibraryMaterial?: boolean }).isLibraryMaterial === true;
+
+/**
  * 收集对象的当前实际资源集（P3-RRRR1 节点边界感知）：
  * - geometry 按 mesh 级 isClone 跳过（clone 不产新 geometry）；材质按材质级
  *   isCloneResource 区分缓存共享（跳过）与节点私有（含被替换进 clone mesh 的新材质）。
@@ -186,7 +199,7 @@ const collectObjectResources = (
     }
     const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
     for (const m of mats) {
-      if (m && !isCacheSharedMaterial(m)) {
+      if (m && !isCacheSharedMaterial(m) && !isLibraryMaterial(m)) {
         out.add(m);
       }
     }

@@ -123,6 +123,15 @@ export class SceneEngine {
     }
   }
 
+  /**
+   * 外部触发的 updated 事件（P4-R1）：异步挂载完成（makeAssetNodeFactory）等
+   * 非引擎内部路径需要通知 updated 订阅者（appearance-runtime 的库材质重挂）。
+   * 与 emitNodeEvent('updated') 同语义，公开给 handlers 层。
+   */
+  emitExternalNodeUpdated(id: string): void {
+    this.emitNodeEvent('updated', id);
+  }
+
   constructor() {
     this.scene = new THREE.Scene();
   }

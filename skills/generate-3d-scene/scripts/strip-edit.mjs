@@ -1,27 +1,31 @@
 /**
- * strip-edit.mjs — 二开态交付导出（编辑态剥离 + 私有区剥离 + 转录清单 + 自检）
+ * strip-edit.mjs — 二开态交付导出（编辑态剥离 + 自动外观编译 + 原子发布 + 自检）
  *
  * 双模式交付的第二步：
- *   编辑期工程（core + edit，能调参）→ strip-edit → 二开包（纯 core + 定稿数据 + 转录清单）
+ *   编辑期工程（core + edit，能调参）→ strip-edit → 二开包（纯 core + 定稿数据 + 编译外观）
  *
- * 做四件事：
- *   ① 复制工程，剔除 edit 世界：src/edit/ 整目录；index.html 双入口改单入口；
- *      App.vue 去掉"打开编辑态"链接（二开者拿到的代码物理不含编辑态）
- *   ② 剥离编辑器私有区：scene-data.json 删 __visuals + __materialLib（双下划线族，交付不进）
- *   ③ 输出转录清单 TRANSCRIPTION.md：物体视觉 override 表 + 材质库表 + 引用表 + 转录指引
- *      （调参值不进数据、由 LLM 转录进 materials.ts / handler 默认值）
- *   ④ 自检铁律 3：对产物跑 build.mjs --stripped（src/edit 不存在 / 无 edit 引用 / 无私有区）
+ * 做五件事（P4：F08 自动转录 → 自动编译；V19 原子发布）：
+ *   ① 校验源快照：__visuals/__materialLib 的陈旧引用、缺失库条目报具体路径
+ *      （真实未支持 = FAIL，不删掉后 PASS）
+ *   ② 在临时目录完成全部产出：复制剔除 edit 世界 + 私有区剥离 + 编译
+ *      src/scene-core/generated/appearance.ts（运行包装配期由 appearance-runtime 应用）
+ *   ③ TRANSCRIPTION.md 改自动转换摘要（保留三类表作人类审计对照，不再是人工转录指令）
+ *   ④ 原子发布：临时目录过 checkProject --stripped 后才 rename 到 out；
+ *      失败清理临时目录——源工程与已存在的旧产物分毫不动
+ *   ⑤ 自检铁律 3：build.mjs --stripped（src/edit 不存在 / 无 edit 引用 / 无私有区 /
+ *      generated/appearance.ts 可审计）
  *
  * CLI：
- *   node strip-edit.mjs <src-project> --out <out-dir> [--force] [--json]
+ *   node strip-edit.mjs <src-project> --out <out-dir> [--force] [--json] [--legacy-transcription]
  *   退出码：0 成功 / 1 自检失败或工程非法 / 2 用法错误
  */
-import { readFileSync, writeFileSync, existsSync, mkdirSync, cpSync, rmSync, readdirSync } from 'node:fs';
-import { join, resolve, basename, relative } from 'node:path';
+import { readFileSync, writeFileSync, existsSync, mkdirSync, cpSync, rmSync, renameSync, realpathSync } from 'node:fs';
+import { join, resolve, basename, dirname } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { checkProject } from './build.mjs';
+import { compileAppearance } from './lib/compile-appearance.mjs';
 
-/** 复制时剔除的目录/文件（编辑态 + 构建残留 + 依赖） */
+/** 复制时剔除的目录/文件（编辑态 + 构建残留 + 依赖 + 临时目录族） */
 const EXCLUDE_DIRS = new Set(['node_modules', 'dist', '.git', '.smoke-r', '.smoke-vendor', '.tmp-a3d-verify']);
 const EXCLUDE_FILE_RE = /\.(log|local)$/;
 
@@ -40,6 +44,39 @@ const copyFilter = (src) => {
     return false;
   }
   return true;
+};
+
+/* ── 路径守卫（V19：case / realpath / 祖先关系三口径） ────────────────────── */
+
+/**
+ * out 是否会毁掉 src（同目录或 out 是 src 的祖先——rmSync(out) 会清掉 src）。
+ * 三层判定：字面相等 / realpath 相等（符号链接/大小写归一前）/ 前缀祖先。
+ * Windows 大小写不敏感：比较前统一 lower。
+ */
+const outWouldDestroySrc = (srcAbs, outAbs) => {
+  let srcReal = srcAbs;
+  let outReal = outAbs;
+  try {
+    srcReal = realpathSync(srcAbs);
+  } catch { /* src 存在性由调用方先验 */ }
+  try {
+    outReal = realpathSync(outAbs);
+  } catch { /* out 可能不存在（首次导出）——用字面路径判 */ }
+  const s = srcReal.toLowerCase();
+  const o = outReal.toLowerCase();
+  if (s === o) {
+    return true;
+  }
+  // out 是 src 的祖先（含 realpath 变体）：rmSync(out, recursive) 会连 src 一起删
+  if (s.startsWith(`${o}\\`) || s.startsWith(`${o}/`)) {
+    return true;
+  }
+  // src 是 out 的祖先（out 嵌在 src 里）：清空 out 不会删 src 本体，但产物工程嵌在
+  // 源工程内部（复制过滤器会漏掉它/dist 干扰自检），拒绝——要求导出到源外
+  if (o.startsWith(`${s}\\`) || o.startsWith(`${s}/`)) {
+    return 'nested';
+  }
+  return false;
 };
 
 /* ── entry.ts：双态分流 → 二开单入口（固定入口文件，P2.1）────────────────── */
@@ -73,13 +110,13 @@ const rewriteApp = (code) => code
   // 兜底：任何残留的 edit=1 链接
   .replace(/\s*<a\s+href="[^"]*\?edit=1[^"]*"[^>]*>[^<]*<\/a>/g, '');
 
-/* ── 转录清单生成 ─────────────────────────────────────────────────────────── */
+/* ── 自动转换摘要（P4：TRANSCRIPTION.md 从人工转录指令降级为审计对照） ─────── */
 
 /**
- * 不进 ① 物体视觉转录表的键：
+ * 不进 ① 物体视觉表的键（与 compile-appearance 口径一致）：
  * - libraryRef：只进 ③ 引用表
- * - locked：编辑器交互态（Spline 同款锁定），不影响渲染，转录无意义
- * materialType/castShadow/receiveShadow/visible 属个体视觉差异，保留在 ① 表转录。
+ * - locked：编辑器交互态，编译期剥离（运行包无编辑器）
+ * materialType/castShadow/receiveShadow/visible 属个体视觉差异，保留在 ① 表。
  */
 const VISUAL_META_KEYS = new Set(['libraryRef', 'locked', 'slots']);
 
@@ -87,20 +124,24 @@ const VISUAL_META_KEYS = new Set(['libraryRef', 'locked', 'slots']);
 const mdCell = (val) => `\`${String(val).replace(/\|/g, '\\|').replace(/`/g, '\\`')}\``;
 
 /**
- * 从私有区生成转录清单 markdown。
- * @param {object} visuals scene-data.__visuals
- * @param {object} materialLib scene-data.__materialLib
- * @param {Set<string>} liveNodeIds 当前 scene-data 里的物体 id（识别陈旧条目）
- * @returns {{ md: string, refs: Array<{nodeId,matId}>, libUsed: string[] }}
+ * 从私有区生成自动转换摘要 markdown（P4：审计对照，不再是人工转录指令）。
+ * 内容仍是三类表 + 陈旧告警，语义变化：这些数据已被自动编译进
+ * generated/appearance.ts，本文件供人工逐字段审计。
  */
-export const buildTranscription = (visuals, materialLib, liveNodeIds) => {
+export const buildTranscription = (visuals, materialLib, liveNodeIds, opts = {}) => {
   const vis = visuals ?? {};
   const lib = materialLib ?? {};
   const lines = [];
-  lines.push('# 转录清单（strip-edit 生成）');
+  lines.push('# 转录清单（strip-edit 生成 — 自动转换摘要）');
   lines.push('');
-  lines.push('> 本文件由 strip-edit.mjs 生成。编辑期用面板调出的视觉参数已从交付数据剥离，');
-  lines.push('> 需由 LLM 按下方指引转录进**代码**（materials.ts / handler 默认值），转录后本文件可留档或删除。');
+  if (opts.autoCompiled) {
+    lines.push('> 本文件由 strip-edit.mjs 生成。编辑期视觉已**自动编译**进');
+    lines.push('> `src/scene-core/generated/appearance.ts`（运行包装配期由 appearance-runtime 应用），');
+    lines.push('> **无需人工转录**——下方三类表是编译产物的审计对照，逐字段核对即可。');
+  } else {
+    lines.push('> 本文件由 strip-edit.mjs（--legacy-transcription 模式）生成。视觉参数未自动编译，');
+    lines.push('> 需由 LLM 按下方指引转录进**代码**（materials.ts / handler 默认值）。');
+  }
   lines.push('');
 
   // 引用表：nodeId → mat_id
@@ -113,14 +154,10 @@ export const buildTranscription = (visuals, materialLib, liveNodeIds) => {
   const libUsed = [...new Set(refs.map((r) => r.matId))];
 
   // ① 物体视觉 override（排除 libraryRef/slots）
-  lines.push('## ① 物体视觉 override（→ 转录进该 type 的 stateMaterials 条目 / handler 默认值）');
+  lines.push('## ① 物体视觉 override（→ 已编译进 generated/appearance.ts）');
   lines.push('');
   const visualRows = [];
-  const stale = [];
   for (const [nodeId, v] of Object.entries(vis)) {
-    if (liveNodeIds && !liveNodeIds.has(nodeId)) {
-      stale.push(nodeId);
-    }
     const fields = Object.entries(v ?? {}).filter(([k]) => !VISUAL_META_KEYS.has(k));
     for (const [k, val] of fields) {
       visualRows.push(`| ${mdCell(nodeId)} | ${mdCell(k)} | ${mdCell(JSON.stringify(val))} |`);
@@ -149,28 +186,22 @@ export const buildTranscription = (visuals, materialLib, liveNodeIds) => {
     }
   }
   if (slotRows.length) {
-    lines.push('## ①′ 槽位覆盖（GLB 子网格）（→ 转录进 handler：getObjectByName 定位 mesh 后赋值）');
+    lines.push('## ①′ 槽位覆盖（GLB 子网格）（→ 已编译进 generated/appearance.ts）');
     lines.push('');
     lines.push('| nodeId | slot（mesh 名称路径） | 字段 | 值 |');
     lines.push('|---|---|---|---|');
     lines.push(...slotRows);
     lines.push('');
-    lines.push('```ts');
-    lines.push('// 槽位转录样例（handler 装配处）');
-    lines.push("const mesh = obj.getObjectByName('<slot 末段名>');");
-    lines.push("mesh.material = libraryMaterials.<名>;  // 或 clone 后按字段调参");
-    lines.push('```');
-    lines.push('');
   }
 
   // ② 材质库条目（仅被引用者）
-  lines.push('## ② 材质库条目（仅列出被引用的）（→ 转录进 materials.ts 的 `libraryMaterials`）');
+  lines.push('## ② 材质库条目（仅列出被引用的）（→ 已编译进 generated/appearance.ts）');
   lines.push('');
   if (libUsed.length) {
     for (const matId of libUsed) {
       const entry = lib[matId];
       if (!entry) {
-        lines.push(`### \`${matId}\` · ⚠️ 引用缺失（__materialLib 无此条目）`);
+        lines.push(`### \`${matId}\` · ⚠️ 引用缺失（__materialLib 无此条目——编译会 FAIL）`);
         lines.push('');
         continue;
       }
@@ -187,7 +218,7 @@ export const buildTranscription = (visuals, materialLib, liveNodeIds) => {
   }
 
   // ③ 引用表
-  lines.push('## ③ 库引用表（→ 接线 `obj.material = libraryMaterials.<key>`）');
+  lines.push('## ③ 库引用表（→ 运行时共享实例由 appearance-runtime 挂载）');
   lines.push('');
   if (refs.length) {
     lines.push('| nodeId | mat_id | name |');
@@ -200,20 +231,14 @@ export const buildTranscription = (visuals, materialLib, liveNodeIds) => {
   }
   lines.push('');
 
-  if (stale.length) {
-    lines.push(`> ⚠️ 陈旧视觉条目（节点已不存在，已忽略）：${stale.join(', ')}`);
+  // 编译剥离说明
+  lines.push('> `locked`（编辑器交互态）未编译——运行包无编辑器，该字段无意义。');
+  lines.push('');
+
+  if (opts.staleList?.length) {
+    lines.push(`> ⚠️ 陈旧视觉条目（节点不存在）：${opts.staleList.map((s) => mdCell(s)).join(', ')}——编译 FAIL，须在编辑器清理后重新导出。`);
     lines.push('');
   }
-
-  // 转录指引
-  lines.push('## 转录指引');
-  lines.push('');
-  lines.push('1. **② 的每条** → `src/scene-core/materials.ts` 增 `export const libraryMaterials = { <snake_case 名>: { …spec } }`');
-  lines.push('   （与 `stateMaterials` 并存不合并：stateMaterials 管"业务类型→状态→视觉"，libraryMaterials 管"名字→材质"跨物体复用）');
-  lines.push('2. **③ 的每条** → 在对应 handler / 装配处接线 `mesh.material = libraryMaterials.<名>`');
-  lines.push('3. **① 的每条** → 该物体所属 type 的 `stateMaterials` 条目（若属状态视觉），或 handler 的默认值');
-  lines.push('');
-  lines.push('> 详见 `docs/INTEGRATION_GUIDE.md` 的 `__visuals` / `__materialLib` 转录章节。');
 
   return { md: lines.join('\n'), refs, libUsed };
 };
@@ -221,12 +246,14 @@ export const buildTranscription = (visuals, materialLib, liveNodeIds) => {
 /* ── 主流程 ──────────────────────────────────────────────────────────────── */
 
 /**
- * 导出二开包。
+ * 导出二开包（P4 原子发布）。
  * @param {string} srcProject 编辑态工程根
  * @param {string} outDir 输出目录
- * @param {object} [opts] { force }
+ * @param {object} [opts] { force, legacyTranscription, stagingRoot, slotContext }
+ *   slotContext 可注入（测试缝：runtimeSlotKeys/assetManifest）——缺省自动构建
+ * @returns {Promise<object>} 结果（async：P4-RR2 运行时槽位清单构建是异步 TS 转译）
  */
-export const stripEdit = (srcProject, outDir, opts = {}) => {
+export const stripEdit = async (srcProject, outDir, opts = {}) => {
   const src = resolve(srcProject);
   const out = resolve(outDir);
   const errors = [];
@@ -234,50 +261,36 @@ export const stripEdit = (srcProject, outDir, opts = {}) => {
   if (!existsSync(join(src, 'src', 'edit'))) {
     return { ok: false, errors: [`源工程不含 src/edit/（编辑态工程？）：${src}`], out };
   }
-  // 输出目录不得是源工程本身或其祖先（rmSync 清空时会毁掉源）
-  const relOutToSrc = relative(out, src);
-  if (relOutToSrc === '' || (!relOutToSrc.startsWith('..') && relOutToSrc !== '.')) {
+  // 路径守卫（V19）：out == src / out 是 src 祖先 → 拒绝（发布/清空会毁源）
+  const guard = outWouldDestroySrc(src, out);
+  if (guard === true) {
     return {
       ok: false,
       errors: [`输出目录不能是源工程或其父目录（会清空源工程）：${out}`],
       out,
     };
   }
-  if (existsSync(out) && readdirSync(out).length > 0) {
-    if (!opts.force) {
-      return { ok: false, errors: [`输出目录已存在且非空（用 --force 覆盖）：${out}`], out };
-    }
-    rmSync(out, { recursive: true, force: true });
-  }
-  mkdirSync(out, { recursive: true });
-
-  // ① 复制（剔除 edit 世界 + 依赖 + 残留）
-  cpSync(src, out, { recursive: true, filter: copyFilter });
-
-  // entry.ts 单入口化（固定入口文件，删除 edit 分支）+ App.vue 去链接
-  const entryPath = join(out, 'src', 'entry.ts');
-  if (existsSync(entryPath)) {
-    writeFileSync(entryPath, rewriteEntry(readFileSync(entryPath, 'utf8'), errors));
-  } else {
-    errors.push('缺 src/entry.ts（固定入口）');
-  }
-  const appPath = join(out, 'src', 'App.vue');
-  if (existsSync(appPath)) {
-    writeFileSync(appPath, rewriteApp(readFileSync(appPath, 'utf8')));
+  if (guard === 'nested') {
+    return {
+      ok: false,
+      errors: [`输出目录不能嵌在源工程内部（产物会污染源工程与自检）：${out}（源：${src}）`],
+      out,
+    };
   }
 
-  // ② 剥离私有区（双下划线族整体不进交付；转录只认两个已知键）+ ③ 转录清单
-  const dataPath = join(out, 'public', 'scene-data.json');
-  let transcription = null;
-  if (existsSync(dataPath)) {
-    let data;
+  // ② 源快照读取 + 引用一致性校验（P4.1 前置——编译 FAIL 在动任何文件之前）
+  const srcDataPath = join(src, 'public', 'scene-data.json');
+  let snapshot = null;
+  if (existsSync(srcDataPath)) {
     try {
-      data = JSON.parse(readFileSync(dataPath, 'utf8'));
+      snapshot = JSON.parse(readFileSync(srcDataPath, 'utf8'));
     } catch (err) {
       return { ok: false, errors: [`public/scene-data.json 解析失败：${err.message}`], out };
     }
-    const liveNodeIds = new Set();
-    for (const group of Object.values(data)) {
+  }
+  const liveNodeIds = new Set();
+  if (snapshot) {
+    for (const group of Object.values(snapshot)) {
       if (Array.isArray(group)) {
         for (const node of group) {
           if (node?.id) {
@@ -286,29 +299,182 @@ export const stripEdit = (srcProject, outDir, opts = {}) => {
         }
       }
     }
-    transcription = buildTranscription(data.__visuals, data.__materialLib, liveNodeIds);
-    for (const key of Object.keys(data)) {
-      if (key.startsWith('__')) {
-        delete data[key];
-      }
-    }
-    writeFileSync(dataPath, `${JSON.stringify(data, null, 2)}\n`);
-    writeFileSync(join(out, 'TRANSCRIPTION.md'), `${transcription.md}\n`);
   }
 
-  // ④ 自检铁律 3：对产物跑 build.mjs --stripped
-  const check = checkProject(out, { stripped: true });
+  // 编译外观（V19：陈旧/缺失引用报具体路径 → errors 硬失败，不删掉后 PASS）
+  // P4-R3：槽位存在性 fail-closed；RR2/RRR1：全量**运行时真值清单**——
+  // 程序化/图元经 headless 建树 listSubMeshes；GLB/glTF 经工程 three 的
+  // GLTFLoader 真实加载 + buildSlotKeysFromScene（无静态猜测）
+  const legacyMode = opts.legacyTranscription === true;
+  let compilation = null;
+  if (snapshot && !legacyMode) {
+    const nodeById = new Map();
+    for (const group of Object.values(snapshot)) {
+      if (Array.isArray(group)) {
+        for (const node of group) {
+          if (node?.id) {
+            nodeById.set(node.id, node);
+          }
+        }
+      }
+    }
+    // 运行时槽位清单（RR2/RRR1）。构建失败不静默——带 slots 的条目得到
+    // 「无法验证」错误（fail-closed）；无 slots 工程零影响
+    let runtimeSlotKeys = null;
+    if (opts.slotContext?.runtimeSlotKeys) {
+      runtimeSlotKeys = opts.slotContext.runtimeSlotKeys;
+    } else {
+      try {
+        const { buildRuntimeSlotKeys } = await import('./lib/runtime-slots.mjs');
+        runtimeSlotKeys = await buildRuntimeSlotKeys(src, snapshot);
+      } catch (err) {
+        runtimeSlotKeys = null; // 校验器对 slots 报「无法验证：无运行时清单」
+        if (process.env.GTS3D_STRIP_DEBUG) {
+          console.warn(`[strip-edit] 运行时槽位清单构建失败：${err.message}`);
+        }
+      }
+    }
+    compilation = compileAppearance(snapshot, {
+      liveNodeIds,
+      slotContext: {
+        nodeById,
+        runtimeSlotKeys,
+      },
+    });
+    errors.push(...compilation.errors);
+  }
+  if (errors.length > 0) {
+    return {
+      ok: false,
+      errors,
+      out,
+      // 编译失败时提供摘要预览（audit 用），但产物未发布
+      compilation: compilation
+        ? { stats: compilation.stats, errors: compilation.errors }
+        : null,
+    };
+  }
 
-  return {
-    ok: check.ok,
-    out,
-    errors: [...errors, ...check.errors],
-    warnings: check.warnings,
-    transcription: transcription
-      ? { refs: transcription.refs.length, libUsed: transcription.libUsed.length }
-      : null,
-    check: check.report,
-  };
+  // ── 原子发布：全部产出先落临时目录，校验通过才 rename ─────────────────────
+  const staging = opts.stagingRoot
+    ? join(resolve(opts.stagingRoot), `.tmp-strip-${process.pid}`)
+    : join(dirname(out), `.tmp-strip-${process.pid}-${Date.now()}`);
+  try {
+    if (existsSync(staging)) {
+      rmSync(staging, { recursive: true, force: true });
+    }
+    mkdirSync(staging, { recursive: true });
+
+    // ① 复制（剔除 edit 世界 + 依赖 + 残留）
+    cpSync(src, staging, { recursive: true, filter: copyFilter });
+
+    // entry.ts 单入口化 + App.vue 去链接
+    const entryPath = join(staging, 'src', 'entry.ts');
+    if (existsSync(entryPath)) {
+      writeFileSync(entryPath, rewriteEntry(readFileSync(entryPath, 'utf8'), errors));
+    } else {
+      errors.push('缺 src/entry.ts（固定入口）');
+    }
+    const appPath = join(staging, 'src', 'App.vue');
+    if (existsSync(appPath)) {
+      writeFileSync(appPath, rewriteApp(readFileSync(appPath, 'utf8')));
+    }
+
+    // ② 私有区剥离 + ③ 自动转换摘要 + 编译外观落盘
+    const dataPath = join(staging, 'public', 'scene-data.json');
+    let transcription = null;
+    if (existsSync(dataPath)) {
+      const data = snapshot;
+      const staleList = snapshot
+        ? Object.keys(snapshot.__visuals ?? {}).filter((id) => !liveNodeIds.has(id))
+        : [];
+      transcription = buildTranscription(
+        data?.__visuals, data?.__materialLib, liveNodeIds,
+        { autoCompiled: !legacyMode, staleList },
+      );
+      for (const key of Object.keys(data)) {
+        if (key.startsWith('__')) {
+          delete data[key];
+        }
+      }
+      writeFileSync(dataPath, `${JSON.stringify(data, null, 2)}\n`);
+      writeFileSync(join(staging, 'TRANSCRIPTION.md'), `${transcription.md}\n`);
+    }
+
+    // ③ 编译外观 → src/scene-core/generated/appearance.ts（整文件覆盖母版占位）
+    if (compilation) {
+      const generatedDir = join(staging, 'src', 'scene-core', 'generated');
+      mkdirSync(generatedDir, { recursive: true });
+      writeFileSync(join(generatedDir, 'appearance.ts'), compilation.code);
+    }
+
+    // ④ 自检铁律 3：对临时产物跑 build.mjs --stripped
+    const check = checkProject(staging, { stripped: true });
+
+    if (!check.ok || errors.length > 0) {
+      // 校验失败：清理临时目录，源与旧 out 分毫不动（V19）
+      return {
+        ok: false,
+        out,
+        errors: [...errors, ...check.errors],
+        warnings: check.warnings,
+        staged: staging,
+        check: check.report,
+      };
+    }
+
+    // ⑤ 发布：out 已存在则先移走旧产物，rename 临时目录到位（失败可回滚语义：
+    //    rename 同盘原子；跨盘 throw 由 catch 清理临时目录，旧产物未被动过）
+    if (existsSync(out)) {
+      if (!opts.force) {
+        return {
+          ok: false,
+          errors: [`输出目录已存在且非空（用 --force 覆盖）：${out}`],
+          out,
+          staged: staging,
+        };
+      }
+      const backup = join(dirname(out), `.tmp-old-out-${process.pid}-${Date.now()}`);
+      renameSync(out, backup);
+      try {
+        renameSync(staging, out);
+      } catch (err) {
+        // 发布失败：旧产物放回去，不丢用户已有交付物
+        renameSync(backup, out);
+        throw err;
+      }
+      rmSync(backup, { recursive: true, force: true });
+    } else {
+      mkdirSync(dirname(out), { recursive: true });
+      renameSync(staging, out);
+    }
+
+    return {
+      ok: true,
+      out,
+      errors: [],
+      warnings: check.warnings,
+      transcription: transcription
+        ? { refs: transcription.refs.length, libUsed: transcription.libUsed.length }
+        : null,
+      exportedVisuals: compilation ? compilation.stats.visualEntries : 0,
+      appearanceWritten: compilation ? compilation.stats : null,
+      check: check.report,
+    };
+  } catch (err) {
+    return {
+      ok: false,
+      out,
+      errors: [`导出失败（源与旧产物未受影响）：${err.message}`],
+      staged: staging,
+    };
+  } finally {
+    if (existsSync(staging)) {
+      // 发布成功：staging 已 rename 走（existsSync 为 false 时无操作）；
+      // 失败/异常：清理临时目录——源与旧 out 分毫不动
+      rmSync(staging, { recursive: true, force: true });
+    }
+  }
 };
 
 /* ── CLI ─────────────────────────────────────────────────────────────────── */
@@ -316,10 +482,11 @@ export const stripEdit = (srcProject, outDir, opts = {}) => {
 const USAGE = `用法: node strip-edit.mjs <src-project> --out <out-dir> [选项]
 
 选项:
-  --out <dir>   输出目录（必填）
-  --force       输出目录已存在时覆盖
-  --json        输出完整报告 JSON
-  --quiet       仅退出码`;
+  --out <dir>            输出目录（必填；不能是源工程/其父目录/嵌在源工程内）
+  --force                输出目录已存在时覆盖（旧产物在发布成功后才删除）
+  --legacy-transcription 旧模式：不编译 appearance，输出人工转录清单（声明未完成保真导出）
+  --json                 输出完整报告 JSON
+  --quiet                仅退出码`;
 
 const parseArgs = (argv) => {
   const opts = {};
@@ -331,6 +498,8 @@ const parseArgs = (argv) => {
       opts.out = next();
     } else if (a === '--force') {
       opts.force = true;
+    } else if (a === '--legacy-transcription') {
+      opts.legacyTranscription = true;
     } else if (a === '--json') {
       opts.json = true;
     } else if (a === '--quiet') {
@@ -346,7 +515,7 @@ const parseArgs = (argv) => {
   return { opts, positional };
 };
 
-const main = () => {
+const main = async () => {
   let parsed;
   try {
     parsed = parseArgs(process.argv.slice(2));
@@ -359,7 +528,7 @@ const main = () => {
     console.log(USAGE);
     process.exit(opts.help ? 0 : 2);
   }
-  const result = stripEdit(positional[0], opts.out, opts);
+  const result = await stripEdit(positional[0], opts.out, opts);
   if (opts.json) {
     console.log(JSON.stringify(result, null, 2));
   } else if (!opts.quiet) {
@@ -367,6 +536,9 @@ const main = () => {
     console.log(`[strip-edit/${mark}] ${result.out}`);
     if (result.transcription) {
       console.log(`  转录清单: TRANSCRIPTION.md（库引用 ${result.transcription.refs} 条 / 涉及材质 ${result.transcription.libUsed} 个）`);
+    }
+    if (result.appearanceWritten) {
+      console.log(`  编译外观: generated/appearance.ts（视觉 ${result.appearanceWritten.visualEntries} 条 / 材质库 ${result.appearanceWritten.materialLibEntries} 条）`);
     }
     for (const e of result.errors) {
       console.log(`  ✗ ${e}`);
@@ -379,5 +551,5 @@ const main = () => {
 };
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  main();
+  void main();
 }

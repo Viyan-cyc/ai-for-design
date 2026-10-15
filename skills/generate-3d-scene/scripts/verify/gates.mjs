@@ -249,6 +249,42 @@ rmSync(join(F('stripped'), 'src', 'edit'), { recursive: true, force: true });
   check('strip-edit: --out=源父目录 拒绝且源完好', r2.ok && /不能是源工程或其父目录/.test(r2.out) && srcIntact2, `status=${r2.status} srcIntact=${srcIntact2}`);
 }
 {
+  // V19 路径守卫补充：大小写变体 / out 嵌在源内 / 旧产物在失败时完好
+  const d = F('fx-p4-guard');
+  copy(F('tpl'), d);
+  // 大小写变体（Windows 大小写不敏感盘）：out 与 src 同路径仅大小写不同 → 拒绝
+  const lower = d.replace(/([A-Z]:\\|\\)/g, (m) => m).toLowerCase();
+  const rCase = run('strip-edit.mjs', [d, '--out', lower, '--force'], false);
+  const srcIntactCase = existsSync(join(d, 'src', 'edit', 'Bridge.ts'));
+  check(
+    'strip-edit: --out 大小写变体==源 拒绝且源完好（V19）',
+    rCase.ok && /不能是源工程/.test(rCase.out) && srcIntactCase,
+    `status=${rCase.status} srcIntact=${srcIntactCase} out=${lower}`,
+  );
+  // out 嵌在源工程内部 → 拒绝（产物会污染源工程）
+  const rNested = run('strip-edit.mjs', [d, '--out', join(d, 'nested-out'), '--force'], false);
+  const srcIntactNested = existsSync(join(d, 'src', 'edit', 'Bridge.ts')) && !existsSync(join(d, 'nested-out'));
+  check(
+    'strip-edit: --out 嵌在源工程内部 拒绝（V19）',
+    rNested.ok && /嵌在源工程内部/.test(rNested.out) && srcIntactNested,
+    `status=${rNested.status} srcIntact=${srcIntactNested}`,
+  );
+  // 失败不毁旧产物：先产出一个合法 out，再对坏源（陈旧引用）导出到同 out → out 完好
+  const out = F('fx-p4-guard-out');
+  const rOk = run('strip-edit.mjs', [d, '--out', out, '--force'], true);
+  const marker = existsSync(join(out, 'src', 'main.ts'));
+  const pData = JSON.parse(readFileSync(join(d, 'public/scene-data.json'), 'utf8'));
+  pData.__visuals = { ghost_404: { color: '#000000' } };
+  writeFileSync(join(d, 'public/scene-data.json'), JSON.stringify(pData, null, 2));
+  const rBad = run('strip-edit.mjs', [d, '--out', out, '--force'], false);
+  const outStillIntact = existsSync(join(out, 'src', 'main.ts')) && existsSync(join(out, 'public/scene-data.json'));
+  check(
+    'strip-edit: 编译失败不毁旧产物（V19 原子发布）',
+    rOk.ok && marker && rBad.ok && /ghost_404/.test(rBad.out) && outStillIntact,
+    `ok=${rOk.ok} bad=${rBad.status} intact=${outStillIntact}`,
+  );
+}
+{
   const d = F('fx-transcribe');
   copy(F('tpl'), d);
   const p = join(d, 'public/scene-data.json');
@@ -265,10 +301,26 @@ rmSync(join(F('stripped'), 'src', 'edit'), { recursive: true, force: true });
   data.__futureEditorKey = { secret: true };
   writeFileSync(p, `${JSON.stringify(data, null, 2)}\n`);
   const out = F('fx-transcribe-out');
-  const r = run('strip-edit.mjs', [d, '--out', out, '--force'], true);
+  // P4 契约更新：陈旧视觉条目（节点不存在）从 warn 升级为硬 FAIL（Spec §3.4——
+  // 真实未支持覆盖报具体路径，不删掉后 PASS）
+  const r = run('strip-edit.mjs', [d, '--out', out, '--force'], false);
+  check(
+    'strip-edit: 陈旧视觉条目硬 FAIL 且报具体路径（P4）',
+    r.ok && /__visuals\[\"ghost_99\"\]/.test(r.out) && !existsSync(join(out, 'public', 'scene-data.json')),
+    `status=${r.status} ${firstFail(r.out)}`,
+  );
+  check(
+    'strip-edit: 陈旧失败不产生部分产物（原子性）',
+    !existsSync(out) || readdirSync(out).length === 0,
+  );
+
+  // 清理陈旧条目 → PASS：自动编译 + 审计摘要
+  delete data.__visuals.ghost_99;
+  writeFileSync(p, `${JSON.stringify(data, null, 2)}\n`);
+  const r2 = run('strip-edit.mjs', [d, '--out', out, '--force'], true);
   const md = existsSync(join(out, 'TRANSCRIPTION.md')) ? readFileSync(join(out, 'TRANSCRIPTION.md'), 'utf8') : '';
   const cleaned = JSON.parse(readFileSync(join(out, 'public/scene-data.json'), 'utf8'));
-  check('strip-edit: 转录清单生成 PASS', r.ok, `status=${r.status}`);
+  check('strip-edit: 转录清单生成 PASS（自动转换摘要模式）', r2.ok, `status=${r2.status} ${firstFail(r2.out)}`);
   check(
     'strip-edit: ① 视觉 override 逐字段成行',
     md.includes('`car_01`') && md.includes('`color`') && md.includes('`"#ff8800"`')
@@ -278,14 +330,36 @@ rmSync(join(F('stripped'), 'src', 'edit'), { recursive: true, force: true });
     'strip-edit: ① 容纳个体渲染差异（visible/castShadow/materialType）',
     md.includes('`visible`') && md.includes('`castShadow`') && md.includes('`materialType`'),
   );
-  check('strip-edit: ① 排除编辑器私有键（locked）', !md.includes('`locked`'));
+  check('strip-edit: ① 排除编辑器私有键（locked）', !/\|\s*`[^`]*`\s*\|\s*`locked`/.test(md));
   check('strip-edit: ① libraryRef 不进物体视觉表', !/\|\s*`car_01`\s*\|\s*`libraryRef`/.test(md));
   check('strip-edit: ② 仅有被引用材质库条目', md.includes('`carpaint`') && !md.includes('`unused_seed`'));
   check('strip-edit: ③ 引用表 nodeId→mat_id', md.includes('| `car_01` | `carpaint` |'));
-  check('strip-edit: 陈旧条目 warn', /陈旧视觉条目.*ghost_99/.test(md));
   check('strip-edit: 私有区已剥离（双下划线族整体）',
     cleaned.__visuals === undefined && cleaned.__materialLib === undefined && cleaned.__futureEditorKey === undefined
-    && Object.keys(cleaned).every((k) => !k.startsWith('__')));
+      && Object.keys(cleaned).every((k) => !k.startsWith('__')));
+
+  // P4.1：编译外观产物（代码模块）内容断言
+  const appearanceCode = existsSync(join(out, 'src/scene-core/generated/appearance.ts'))
+    ? readFileSync(join(out, 'src/scene-core/generated/appearance.ts'), 'utf8') : '';
+  check(
+    'strip-edit: generated/appearance.ts 编译条目（视觉 + 材质库 + locked 剥离）',
+    appearanceCode.includes('"car_01"') && appearanceCode.includes('"#ff8800"')
+      && appearanceCode.includes('"car_02"') && appearanceCode.includes('"carpaint"')
+      && !/"locked"\s*:/.test(appearanceCode) && !appearanceCode.includes('ghost_99')
+      && !appearanceCode.includes('unused_seed'),
+  );
+  check(
+    'strip-edit: appearance.ts 不 import edit + 双常量导出（V18 可审计）',
+    !/from\s+['"].*edit/.test(appearanceCode)
+      && /export const compiledVisuals/.test(appearanceCode)
+      && /export const compiledMaterialLib/.test(appearanceCode),
+  );
+  check(
+    'strip-edit: TRANSCRIPTION.md 标注自动编译（非人工转录指令）',
+    md.includes('自动编译') && md.includes('appearance.ts'),
+  );
+  // 原子发布：产物在 out（staging 已 rename 走）
+  check('strip-edit: 原子发布产物落位', existsSync(join(out, 'src', 'main.ts')) && existsSync(join(out, 'TRANSCRIPTION.md')));
 }
 
 /* ── init.mjs ─────────────────────────────────────────────────────────────── */

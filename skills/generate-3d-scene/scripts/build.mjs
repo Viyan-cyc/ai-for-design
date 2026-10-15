@@ -237,6 +237,7 @@ export const checkProject = (dir, opts = {}) => {
     'src/scene-core/createScene.ts',
     'src/scene-core/types.ts', 'src/scene-core/index.ts',
     'src/scene-core/handlers/registry.ts', 'src/scene-core/cards/registry.ts',
+    'src/scene-core/generated/appearance.ts',
     'public/scene-data.json', 'docs/INTEGRATION_GUIDE.md',
   ];
   const missing = required.filter((p) => !existsSync(join(root, p)));
@@ -548,6 +549,18 @@ export const checkProject = (dir, opts = {}) => {
           stripped.violations.push(`scene-data.json 残留编辑器私有区 ${k}`);
         }
       } catch { /* JSON 错已在上方报过 */ }
+    }
+    // 编译外观模块（P4.1/V18）：必须存在且可审计（双常量导出 + 无 edit import）
+    const appearancePath = join(srcDir, 'scene-core', 'generated', 'appearance.ts');
+    if (existsSync(appearancePath)) {
+      const code = readFileSync(appearancePath, 'utf8');
+      if (!/export const compiledVisuals/.test(code) || !/export const compiledMaterialLib/.test(code)) {
+        stripped.ok = false;
+        stripped.violations.push('src/scene-core/generated/appearance.ts 缺 compiledVisuals/compiledMaterialLib 导出（可审计性）');
+      }
+    } else {
+      stripped.ok = false;
+      stripped.violations.push('缺 src/scene-core/generated/appearance.ts（strip-edit 产物或母版占位）');
     }
     if (!stripped.ok) {
       errors.push(`铁律 3 破裂（二开交付物残留 edit）：\n    ${stripped.violations.join('\n    ')}`);

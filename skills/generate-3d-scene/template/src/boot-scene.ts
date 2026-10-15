@@ -6,6 +6,7 @@
  * edit 移入三栏视口），装配链路不再重复。
  */
 import { createScene, type SceneHandle, type SceneOptions } from '@/scene-core';
+import { applyCompiledAppearance } from '@/scene-core/appearance-runtime';
 import { loadAssetManifest } from '@/scene-core/asset-manifest';
 import type { SceneData } from '@/scene-core/types';
 import { cardComponents, registerBusinessFactories } from './scene-profile';
@@ -42,6 +43,10 @@ export const bootScene = async (
     profile: registerBusinessFactories,
     ...options,
   });
+
+  // 编译外观应用（P4.1）：运行包（数据无私有区）时把 strip-edit 编译的视觉层/
+  // 材质库写进引擎；编辑态（数据带 __visuals）由 createScene 私有区回灌优先，跳过
+  applyCompiledAppearance(handle, data);
 
   return { handle, data, canvas };
 };

@@ -123,6 +123,14 @@ const collectMeshes = (root: THREE.Object3D): MeshSpecEntry[] => {
   return out;
 };
 
+/**
+ * 从已加载的场景根产出槽位 key 集（P4-RRR1 公开工具）：复用 collectMeshes 的
+ * 运行时口径（多 primitive 的 `_N` 命名、`#索引` 兜底都由真实 loader 产物
+ * 自然携带）——构建期校验器（strip-edit）与编辑器共用同一清单逻辑。
+ */
+export const buildSlotKeysFromScene = (root: THREE.Object3D): Set<string> =>
+  new Set(collectMeshes(root).map((m) => m.key));
+
 export class AssetEngine {
   private cache = new Map<string, CacheEntry>();
 

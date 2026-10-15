@@ -3,14 +3,14 @@
 ## 状态与最终目标
 
 - 日期：2026-10-15，Asia/Shanghai。
-- Phase：Review（P3 五审 PASS，P3-RRRR1 已关闭，本批次已报告阻塞项全部关闭；P4–P6 未开始）。
-- Approval：APPROVED（2026-10-14 用户指令「按此 Spec 分批实施，每次只完成一个批次」；2026-10-15 用户指令「仅实施 P3，完成后回填改动、验证结果及未验证项，不进入 P4，不自动提交」）。
+- Phase：Review（P4 五审 PASS，P4-RRRR1 已关闭，本批次已报告阻塞项全部关闭；P5–P6 未开始）。
+- Approval：APPROVED（2026-10-14 用户指令「按此 Spec 分批实施，每次只完成一个批次」；2026-10-15 用户指令「仅修 Spec §6 最新 P4-RR1/P4-RR2，补库材质跨零引用窗口的生命周期测试，以及符合真实运行时语义的槽位正负例。保持已通过项，回填 Spec，不进入 P5、不自动提交」）。
 - 唯一真相源：本文件。Codex outputs 中同名文档只是交付快照。
 - 项目根：`D:/cyc/project/octo/gts/test/ep-coder`。
 - 修改主体：`skills/generate-3d-scene/`，包括 skill 指令、references、脚手架/验证/导出脚本、母版 core 与 edit。
 - 最终目标：让此 skill 后续生成的场景更快获得可用预览，交付代码清晰、参数更新有效、编辑态可正确往返，正式运行包保持编辑后的视觉结果。
-- 当前任务单元：P3 生命周期/编辑批次（P3.1–P3.4）已全部实施完成；见 §5 P3 批次与 §10 Resume。
-- 执行前 checkpoint：以生产函数直跑验证（p1-fixtures 32/32）+ gates 84/84 + run/edit 双态冒烟 + eslint 0 error；浏览器交互级编辑回归与 GPU 长时观测按批次边界留给 P6。
+- 当前任务单元：P4 四审修复轮（P4-RRRR1）已实施完成；见 §5「P4 四审修复轮」与 §10 Resume。
+- 执行前 checkpoint：gates 92/92 + p1-fixtures 50/50（生产函数直跑：迟到 GLB 库材质/共享实例精确 dispose/重建重挂/贴图接线/槽位正负例）+ vue-tsc/vite build 0 错误 + 导出运行包完整 npm run build PASS + production preview 零错误截图目检 + run/edit 双态冒烟 PASS；贴图像素级与槽位级 libraryRef 的浏览器端到端按批次边界留给 P6。
 
 ## 0. Open Questions 与已定边界
 
@@ -227,8 +227,8 @@ F06/F08是Skill模板问题，不是仓库代码问题。仓库中重复rack_fra
 - [x] P3.2 资源和异步生命周期统一，缓存/GLB蒙皮/材质克隆不回归。（2026-10-15 完成，见 §5 P3 批次）
 - [x] P3.3 修复制视觉覆盖和编辑patch；历史差量恢复；保存重载、slot唯一性。（2026-10-15 完成，见 §5 P3 批次）
 - [x] P3.4 renderer环境复用、订阅清理、选择helper非必要重建优化。（2026-10-15 完成，见 §5 P3 批次）
-- [ ] P4.1 appearance自动编译+runtime应用；异步asset也保真。
-- [ ] P4.2 原子strip与入口固定；unsupported失败不毁源/旧包。
+- [x] P4.1 appearance自动编译+runtime应用；异步asset也保真。（2026-10-15 完成，见 §5 P4 批次）
+- [x] P4.2 原子strip与入口固定；unsupported失败不毁源/旧包。（2026-10-15 完成，见 §5 P4 批次）
 - [ ] P5.1 preview/standard/release策略和hash缓存，移除重复三绿及固定sleep。
 - [ ] P5.2 正确frame-time和resources指标，批量检索/基准记录。
 - [ ] P5.3 formatter与typed生成示例；资产运维必要修复与文档一致。
@@ -302,6 +302,265 @@ F06/F08是Skill模板问题，不是仓库代码问题。仓库中重复rack_fra
 Readiness Verdict：GO（建议），不等于实施授权。不能把历史Plan Approved当作本轮优化Plan Approved。
 
 ## 5. Execute Log / Validation
+
+### P4 四审修复轮（2026-10-15，P4-RRRR1 全修，待重审）
+
+**改动文件**（在三审修复轮基础上，仅 `scripts/lib/runtime-slots.mjs`）：
+
+| 修复点 | 内容 |
+|---|---|
+| 外部资源 URL（根因①） | `.gltf` parse 的 resourcePath 从 Windows 路径改为**带尾斜杠的 file:// URL**（`pathToFileURL(模型目录).href + '/'`）——loader 用 `new URL(uri, base)` 解析相对 URI，Windows 反斜杠/盘符破坏解析；百分号解码由 URL/fileURLToPath 语义承担（`data%20mesh.bin` → `data mesh.bin`，与浏览器 fetch 一致） |
+| 文件读取（根因②） | file:// fetch 拦截从「异步 readFile 当同步用（返回 Promise 冒充 body）」改为 `readFileSync` + Content-Type 分派；读失败以 `Promise.reject(TypeError)` 拒绝——loader 走 onError 保留失败原因 |
+| 失败与空清单区分（根因③） | headless 占位空 Set 不再留存：真实加载失败（缺外部依赖/解析错）→ **移除节点清单条目**（校验器报「无法验证」fail-closed）；成功加载的空集才是有效空清单（节点确实无 mesh）。缓存分支同步整理（同资产多实例共享；headless 已产出非空清单的程序化节点不重算） |
+| 杂项 | `requireFs` 死代码删除（nodeFsModule 统一 import）；debug warn 通道改可注入（lint no-console 0 error） |
+
+**验证证据**（全部 2026-10-15 实跑）：
+
+| 验证 | 命令/方式 | 结果 |
+|---|---|---|
+| 既有门禁 | `node scripts/verify/gates.mjs --quiet` | **92/92 PASS** |
+| 全量回归 | `node scripts/verify/p1-fixtures.mjs --node-only` | **55/55 PASS**（54 全保留含多 primitive/程序化/库生命周期/匿名路径 + RRRR1 新增） |
+| 类型/构建 | template 内 vue-tsc + vite build | 0 错误 / PASS |
+| run/edit 双态冒烟 | 模板 dev server + `scene.mjs --both` | SCENE PASS（首跑 edit mounted 超时 = vite 冷启动预编译偶发，预热后过——历轮已知口径非回归） |
+| Lint | runtime-slots.mjs | **0 error** |
+| **审稿反例复现→修复** | 合法最小 glTF（具名节点 part + 外部 data.bin） | 修复前：`Failed to load buffer "data%20mesh.bin"` + 清单空 Set → `part` 被误报陈旧；修复后：清单 = `["part"]` ✓ |
+
+**Review 验收逐条对账**（p1-fixtures「P4-RRRR1 external bin (encoded filename)」用例，经真实 strip 入口）：
+
+| Spec §6 验收 | 结果 |
+|---|---|
+| 外部 bin（含空格编码文件名 `data%20mesh.bin`→`data mesh.bin`）真实 slot → strip 成功保真 | **PASS**：`part` 槽位导出成功且编译进 appearance.ts（修复前误报陈旧） |
+| 缺依赖 → 失败保源保旧输出 | **PASS**：抽掉 data mesh.bin → FAIL 报「无法验证」（非「不存在」——区分加载失败与有效空清单）；源工程 Bridge.ts 完好、旧 out main.ts 逐字节一致 |
+| 保持多 primitive、程序化、生命周期测试通过 | 55/55 全量（P4-RRR1/P4-RR2/P4-RR1 用例全保留） |
+
+**未验证项（如实记录）**：
+
+1. 外部**贴图**（非 data URI 的 images[].uri）的 Node 读取走同一 fetch 拦截（逻辑覆盖），但 fixture 只验了外部 buffer；贴图字节进入 createImageBitmap 假位图（槽位清单不受贴图影响）——贴图像素级仍是 P6 边界。
+2. Draco + 外部 bin 组合（Draco 压缩且 buffer 外置）：Draco 路径走 emulateLoaderSlotKeys（JSON 级，不读 bin——命名/层级明文）——该组合下 bin 缺失**不会**触发清单失败（槽位校验不依赖几何数据；bin 存在性由 P2 的 build 闭包校验把守）。此为设计语义非缺口，记录备查。
+
+**Spec 偏差**：无。按四审修复要求逐条执行（URL 形态/文件读取/失败区分/外部 bin 编码文件名正负例/保持既有回归）。
+
+---
+
+### P4 三审修复轮（2026-10-15，P4-RRR1 全修，待重审）
+
+**改动文件**（在二审修复轮基础上）：
+
+| 文件 | 内容 |
+|---|---|
+| `template/src/scene-core/engine/AssetEngine.ts` | 新增公开 `buildSlotKeysFromScene(root)`：复用模块私有 `collectMeshes`（运行时资产报告同一清单函数）——构建期校验器与编辑器共用同一槽位解析逻辑（审稿「共用报告/槽位解析函数」） |
+| `scripts/lib/runtime-slots.mjs` | GLB/glTF 清单改**真实 loader**：`loadModelSlotKeys` 用工程 three 的 GLTFLoader.parse 读模型文件 → `buildSlotKeysFromScene`（多 primitive `_N` 命名、`#索引` 兜底、名称净化/去重全部由 loader 产物携带）。Draco 模型：DRACOLoader 依赖浏览器 Worker（Node 不可用）——JSON 级解析 + `emulateLoaderSlotKeys` 复刻 GLTFLoader 命名规则（PropertyBinding.sanitizeNodeName + createUniqueName 全局去重 + 多 primitive 同名 `_N` + 无名 Group 容器），复刻产物再走同一 buildSlotKeysFromScene。浏览器 polyfill（self/createImageBitmap/ProgressEvent + file:// fetch 拦截）最小集 |
+| `scripts/lib/compile-appearance.mjs` | `validateSlotsExistence` 收敛为**单一运行时清单数据源**（程序化 headless + GLB 真 loader 统一走 runtimeSlotKeys）；**collectStaticSlotKeys 静态清单整体删除**（无「证明等价」负担——不再存在静态路径）；loadModel import 删除 |
+| `scripts/strip-edit.mjs` | slotContext 收敛（projectRoot/assetManifest 不再传——清单构建由 runtime-slots 自含；nodeById 保留供节点类型判定） |
+| `scripts/verify/p1-fixtures.mjs` | 53→54：+RRR1 多 primitive 用例（数据 URI 嵌入模型：node part/mesh surface/2 primitive）；P4-R3 用例夹具改含 node_modules（GLB 槽位走真 loader 清单——原「无清单 fail-closed」段移除，该语义由 RR2 用例的 '#999/ghost' 段覆盖）；p1 钩子增裸 'three' 统一解析（template 前缀/p1-fixtures 自身 → template/node_modules；夹具放行——跨副本 THREE 实例隔离） |
+
+**验证证据**（全部 2026-10-15 实跑）：
+
+| 验证 | 命令/方式 | 结果 |
+|---|---|---|
+| 既有门禁 | `node scripts/verify/gates.mjs --quiet` | **92/92 PASS** |
+| 全量回归 | `node scripts/verify/p1-fixtures.mjs --node-only`（连续 3 轮） | **54/54 PASS ×3**（稳定；53 全保留 + RRR1 新增） |
+| 类型/构建 | template 内 vue-tsc + vite build | 0 错误 / PASS |
+| run/edit 双态冒烟 | 模板 dev server + `scene.mjs --both` | SCENE PASS |
+| Lint | 模板改动文件 + skill 侧脚本 | **0 error** |
+
+**Review 复现项对账**：
+
+| Spec §6 复现 | 修复后行为 | 证据 |
+|---|---|---|
+| 多 primitive 模型（node part/mesh surface/2 primitive）真实 loader 产 `part/surface`+`part/surface_1`，静态清单只产 `part` → 合法 slot 全被报「不存在」 | 同形态模型（数据 URI 嵌入，无网络替身）：生产加载产 2 槽位、strip **导出成功**且两槽位都编译进 appearance；**运行时命中**——findBySlotKey（运行时定位函数）两 key 均命中真实 mesh（surface/surface_1），applyCompiledAppearance 后材质分别生效（#00ff00/#0000ff） | p1-fixtures「P4-RRR1 multi-primitive model」 |
+| 篡改 key → 失败保源保旧输出 | `part/ghost` → FAIL 报 `slots["part/ghost"] 不存在`；源工程 Bridge.ts 完好、旧 out main.ts 逐字节一致 | 同用例负例段 |
+| 保持匿名/程序化槽位回归 | RR2 用例（'#999/ghost' FAIL + tree trunk/rack panel 正例）与 RR1 库生命周期用例全部保留通过 | 54/54 全量 |
+
+**实现过程中的实证发现（均已修正）**：
+
+1. **DRACOLoader 在 Node 不可用**：默认走 Worker（`new Worker(blobURL)`）——`worker_threads` 桥尝试（Blob shim + eval worker）可走到贴图阶段但 abortController/消息协议兼容成本过高。最终方案：Draco 只压几何、**命名/层级在 glTF JSON 明文**——JSON 级复刻 loader 命名链（sanitizeNodeName → createUniqueName 全局去重 → 多 primitive `_N`），产物走同一 buildSlotKeysFromScene；person.glb（Draco）复刻清单 `Armature/Ch23_*` 与运行时槽位形态一致（用例断言）。非 Draco 模型一律真 loader（无等价性假设）。
+2. **跨 node_modules 副本的 THREE 实例隔离**：p1-fixtures 进程内夹具（tmp 拷贝）的 GLTFLoader 产物与 template THREE 是不同实例（`Group.add` 拒绝 `not an instance`）。修法：p1 钩子的裸 'three' 只对 template 前缀/自身劫持，夹具内放行（Node 裸解析到夹具副本）；用例的运行时验证段全部在夹具源内加载（单实例链）。
+3. **lint 修复引入回归**：`for (const [key, nodes] of groups)` 改 `groups.values()` 时把数组当 Map——迭代出的是 `[key, nodes]` 对而非 nodes，GLB 清单补齐循环空转（全量从 54/54 掉 52/54，单用例 `got []` 暴露）。修正 `[, nodes]` 解构；**教训：lint 清理与语义改动混在同一步时，必须紧跟全量回归**（本轮 3 轮连跑稳定）。
+4. `loader.parse` resolve 的是 gltf 包装对象（`gltf.scene` 才是 Object3D）——用例首版直接把包装对象传 findBySlotKey 报 `children undefined`。
+
+**未验证项（如实记录）**：
+
+1. **Draco 复刻清单 vs 真 Draco loader 的直接全等断言未做**（Node 无 Draco 加载能力是前提）——等价性证据是间接的：命名规则复刻自 GLTFLoader 源码单点 + person.glb 复刻清单与运行时槽位形态（P3 编辑器记录的 Armature/Ch23_*）一致 + 非 Draco 多 primitive 正反例全过。若未来 Draco worker 在 Node 可用（worker_threads 桥成熟），可补直接对照。
+2. 与上轮一致的浏览器级端到端（多 primitive 视觉像素级）未重复——运行时命中已用真 findBySlotKey + 材质真值断言覆盖。
+3. `.gltf` 外部 bin/贴图（非 data URI）在 Node parse 的相对路径解析依赖 LoaderUtils 与运行时 fetch 语义的一致性——模型 fixture 用数据 URI 嵌入规避；外部依赖 .gltf 的清单构建走「加载失败→无法验证」fail-closed（P2 的 glTF 闭包校验仍管文件存在性）。
+
+**Spec 偏差**：
+
+- Draco 路径采用审稿给的第二选项（「证明等价」）而非第一选项（真 loader）：DRACOLoader 的 Worker 依赖在 Node 不可行（实证发现 1）；等价证明方式为「源码单点规则复刻 + 非 Draco 全等正反例 + Draco 形态对照」，非「单独拼接名称猜测」（命名链逐函数对应 GLTFLoader.js createUniqueName/loadMesh）。
+- 其余按裁决执行：真实多 primitive 模型经生产加载产 slotKey → strip 成功 + 运行时命中 mesh；错误 slot 失败保源保旧输出；匿名与程序化槽位回归全保留。
+
+---
+
+### P4 二审修复轮（2026-10-15，P4-RR1/RR2 全修，待重审）
+
+**改动文件**（在首审修复轮基础上）：
+
+| 文件 | 修复项 | 内容 |
+|---|---|---|
+| `template/src/scene-core/resources.ts` | RR1 | 新增 `markLibraryMaterial`/`isLibraryMaterial`（库材质标记——节点域收集器跳过，同 isCloneResource 口径） |
+| `template/src/scene-core/appearance-runtime.ts` | RR1 | 库级所有权重构：① `instantiateMaterialLib` 实例打库标记；② `attachLibraryRuntime` 用 `scope.onTeardown` 持有实例表到引擎销毁（恰好一次 dispose；releaseAll 跳过库材质、disposables 尾部执行无双释放）；③ `mountLibraryInstances` 删掉节点域 shared/cache 登记（收集器已跳过库材质，登记冗余且会被对账清除）——零引用窗口实例恒有效，不存在「边 dispose 边复用」 |
+| `scripts/lib/runtime-slots.mjs` | RR2 新增 | 运行时槽位真值清单：Node 转译加载**工程自身** handler/scene-profile（registerHooks + 工程节点 typescript；activeRoot 动态锚支持多工程串行），headless SceneEngine 建树（内建图元 + 业务 handler；GLB 占位），`listSubMeshes` 产出 nodeId→slotKey 集——与编辑器产出 slot key **同一代码路径** |
+| `scripts/lib/compile-appearance.mjs` | RR2 | `validateSlotsExistence` 双数据源：程序化/图元节点（无 assetId）用注入的 `runtimeSlotKeys` 真值清单（未命中报「运行时 mesh 清单中不存在」；无清单报「无法验证」fail-closed）；GLB 节点保持 loadModel 静态清单；**'#' 无条件放行删除**（匿名路径未命中静态清单即 FAIL） |
+| `scripts/strip-edit.mjs` | RR2 | `stripEdit` 改 async（运行时清单构建是异步 TS 转译）；编译前置自动构建清单（失败不静默——程序化 slots 得到「无法验证」错误；`opts.slotContext.runtimeSlotKeys` 测试缝可注入） |
+| `scripts/verify/p1-fixtures.mjs` | 回归 | 50→53：+RR1 两项（唯一 owner 连续 3 轮重建窗口零 dispose + 复用同活实例 + 最终一次；迟到 owner 晚于全部当前引用者退出→拿同一活实例）；+RR2 一项（程序化真实槽位正例 PASS 编译进 appearance / 陈旧程序化槽位负例报运行时清单路径 / '#999/ghost' 不再放行）；R3 用例断言更新（非 GLB 无清单场景 fail-closed 语义）；P4.2 原子用例 await 化 |
+
+**验证证据**（全部 2026-10-15 实跑）：
+
+| 验证 | 命令/方式 | 结果 |
+|---|---|---|
+| 既有门禁 | `node scripts/verify/gates.mjs --quiet` | **92/92 PASS**（全保留） |
+| 全量回归 | `node scripts/verify/p1-fixtures.mjs --node-only` | **53/53 PASS**（50 全保留 + 3 项新增） |
+| 类型/构建 | template 内 vue-tsc + vite build | 0 错误 / PASS |
+| run/edit 双态冒烟 | 模板 dev server + `scene.mjs --both` | SCENE PASS |
+| Lint | 模板改动文件 + skill 侧脚本（含新 runtime-slots.mjs） | **0 error**（runtime-slots 新文件 0 error 3 warning 风格类） |
+
+**Review 复现项逐条对账**：
+
+| Spec §6 复现 | 修复后行为 | 证据 |
+|---|---|---|
+| RR1：单节点 libraryRef params 重建 → reusesSameMaterial=true、disposesWhileReused=1、最终累计 dispose=2 | 唯一 owner 连续 3 轮重建：每轮窗口 dispose=0、复用同一活实例（颜色有效）；引擎销毁恰好 1 次 | p1-fixtures「P4-RR1 sole-owner rebuild window」 |
+| RR1：当前节点全删后重新创建 / 迟到 owner 晚于最后引用者退出 | 全删（零引用窗口）实例仍有效；重新创建复用同一活实例；迟到 GLB（同步引用者先全删）挂载拿到同一活实例非死实例 | 同上用例 +「P4-RR1 late owner」 |
+| RR2：匿名 '#999/ghost' → compileAppearance.errors=[]（静默放行） | '#999/ghost' 未命中静态清单 → FAIL 报具体路径 | p1-fixtures「P4-RR2 procedural slots」第三段 |
+| RR2：程序化模型 slots 一律拒「不支持，须清理」 | tree trunk / rack panel_side_l 等真实程序化槽位 → **导出成功且编译进 appearance.ts**；陈旧程序化槽位 → FAIL 报「运行时 mesh 清单中不存在」（真值清单来自 headless 建树 listSubMeshes——与编辑器同代码路径） | 同用例第一/二段（真实 strip 入口，夹具含 node_modules） |
+
+**实现过程中的实证发现（均已修正）**：
+
+1. 首版 RR1 用 cache 层登记（节点退出不释放）+ 库级 teardown——但 `syncResourcesFor` 对账的 `releaseExcept(nodeId, keep=当前收集集)` 会把 cache 登记解除（收集器跳过库材质 → keep 不含 → 登记被清）。结论：收集器跳过后节点域登记本身冗余，删除登记、所有权完全归库级 teardown——更简单且语义精确。
+2. runtime-slots 钩子首版按工程根闭包捕获，多工程串行调用时第二个工程的 TS 解析锚定已删除的旧目录（installTranspileHooks 的 installed 短路）。修正为 activeRoot 动态锚（钩子全局一次、buildRuntimeSlotKeys 进出切换、finally 复位）——p1-fixtures 全量串行场景暴露并修复。
+3. p1-fixtures 进程已装 template 锚钩子，与 runtime-slots 工程锚钩子**进程内共存**：前者 load 对非 template 前缀 TS 透传 next → 后者接管工程 src 转译，双链自然协作（已验证）。
+4. **误删事故（已恢复）**：清理早前误拷进 `template/scripts/` 的临时目录时 `rm -rf template/scripts` 误伤模板固有的 `smoke-r.mjs`（S1–S52 设施）。已 `git checkout --` 完整恢复并验证模块可加载（git status 无 D 项）。根因：临时目录拷贝进了模板固有目录。教训已记：临时文件永不进 template/。
+
+**未验证项（如实记录）**：
+
+1. **多 primitive GLB 的静态清单形态**：审稿提及「多 primitive 行为一致」——collectStaticSlotKeys 按 glTF 节点产出（多 primitive 共享节点名 → 同 key），与运行时 collectMeshes 的 mesh 节点粒度一致；但未构造多 primitive fixture 实测（现有 example.glb 单 primitive）。多 primitive 场景的槽位正负例属 P6 资产 fixture 扩展。
+2. **运行时清单对自定义业务 handler 的覆盖**：headless 建树跑的是**工程自身** scene-profile（测试夹具=模板 handler：tree/rack 已验）——二开者新增带 mesh 的自定义 handler 理论上同链路生效（registerBusinessFactories 原样执行），但未用第三方 handler fixture 验证。
+3. 与上轮口径一致的浏览器级端到端（贴图像素/槽位 libraryRef）未重复——本轮改动不影响浏览器链路（Node 侧校验器与所有权）。
+
+**Spec 偏差**：
+
+- RR1 选型：审稿给两条路（库级持有者至 teardown / 零引用后删表重建）——取**库级持有者**（onTeardown 一次释放），理由：删表重建需处理「重建实例时旧实例已挂到 mesh」的替换时序，库级持有语义最简且天然满足「最终有效实例恰好释放一次」。
+- RR2 运行时清单实现为「headless 建树 + listSubMeshes」而非「与编辑器共享序列化清单」——同一代码路径（collectInstanceMeshes）即「可证明等价的清单」，符合裁决「统一使用实际运行时 slot 语义或可证明等价的清单」。
+- 其余按裁决执行：'#' 放行删除、程序化槽位支持、真实 strip 正负例、失败保源保旧输出（P4.2 既有回归覆盖）全部落地。
+
+---
+
+### P4 首审修复轮（2026-10-15，P4-R1～R3 全修，待重审）
+
+**改动文件**（在 P4 批次基础上）：
+
+| 文件 | 修复项 | 内容 |
+|---|---|---|
+| `template/src/scene-core/appearance-runtime.ts` | R1/R2 | ① `instantiateMaterialLib` 补 `applyMaterialTextures`（标量+贴图完整应用——与 MaterialLibService 同口径，修复前库材质贴图丢失）；② 新增 `attachLibraryRuntime`：订阅 created（recreateNode 重建）/updated（异步挂载完成）事件重挂共享实例——boot 时一次挂载不再是唯一时点（修复前迟到 GLB 的库材质仍是白）；③ `mountLibraryInstances` 挂载后按 `ResourceScope.acquire(nodeId, mat, 'shared')` 登记（refcount 结算——最后引用者退出才释放）+ `syncResourcesFor` 对账（修复前 isTracked=false、dispose 事件=0）；④ 订阅句柄挂 `__handlerTeardowns`（引擎 dispose 回收）；⑤ 新增 `AppearanceSource` 测试缝（`applyCompiledAppearance(handle, snapshot, source?)` 第三参注入编译表，生产缺省读 generated 常量——Node 回归可用真模块直跑） |
+| `template/src/scene-core/handlers/registry.ts` | R1 | `makeAssetNodeFactory` 异步挂载 then 块在 `applyVisualIfAny` 后 emit `sceneEngine.emitExternalNodeUpdated(node.id)`——库材质在迟到资产挂载完成的统一重挂时点（applyVisualOverride refMode 不处理材质，此前无此钩子） |
+| `template/src/scene-core/engine/SceneEngine.ts` | R1 | 新增公开 `emitExternalNodeUpdated(id)`（与 emitNodeEvent('updated') 同语义，handlers 层外部触发用） |
+| `scripts/lib/compile-appearance.mjs` | R3 | ① 新增 `validateSlotsExistence`：槽位 fail-closed 校验——`params.assetId` → 工程 asset-manifest.json → 模型文件 `loadModel` 静态解析 → 收集可达 mesh 名称路径集（与运行时 collectMeshes 同口径：从 glTF scene 根节点名起算，不含 'Scene' 壳）→ slot key 未命中报具体路径 FAIL；② 不可判定形态（缺 assetId/无 manifest 条目/模型解析失败/无工程上下文）一律 FAIL——不把「不知道」当成功；③ 非 GLB 节点带 slots 报「不支持槽位」 |
+| `scripts/strip-edit.mjs` | R3 | 编译前置调用构造 `slotContext`（projectRoot + assetManifest + nodeById——从源工程读 manifest 与节点表传入编译器） |
+| `scripts/verify/p1-fixtures.mjs` | 回归 | 46→50：+R1/R2（迟到 GLB 库材质红+共享实例+refcount+精确 dispose、recreateNode 重建重挂、贴图接线计数——TextureLoader.loadAsync 拦截）；+R3（陈旧槽位 FAIL 报路径/真实槽位正例 PASS 编译进 appearance/非 GLB 槽位 FAIL）；P4.1 用例断言更新（无工程上下文的 slots fail-closed 是新契约语义） |
+| `scripts/verify/gates.mjs` | 无改动 | 92/92 全保留（fx-transcribe 夹具无 slots，不受 R3 影响） |
+
+**验证证据**（全部 2026-10-15 实跑）：
+
+| 验证 | 命令/方式 | 结果 |
+|---|---|---|
+| 既有门禁 | `node scripts/verify/gates.mjs --quiet` | **92/92 PASS**（全保留） |
+| 全量回归 | `node scripts/verify/p1-fixtures.mjs --node-only` | **50/50 PASS**（46 全保留含 P1–P3 全部反例 + 4 项修复轮新增） |
+| 类型/构建 | template 内 vue-tsc + vite build | 0 错误 / PASS |
+| run/edit 双态冒烟 | 模板 dev server + `scene.mjs --both` | SCENE PASS（ready succeeded=4 零错误） |
+| Lint | 改动 6 文件 eslint | **0 error** / 37 warning（既有风格类） |
+| **R1/R2 生产函数直跑** | p1-fixtures（真 makeAssetNodeFactory + 延迟 resolve 替身 AssetEngine + 真 SceneEngine/ResourceScope/appearance-runtime） | 迟到 GLB 挂载后活实例 `color=#ff0000`（修复前白）；a/b 共享同一实例；refCount=2；删一个引用者 dispose=0；最后退出恰好 1 次；整体销毁零重复；recreateNode 重建后重挂红（修复前默认灰）；库材质贴图加载被触发（修复前 instantiateMaterialLib 不调 applyMaterialTextures） |
+| **R3 经 strip 入口** | 真实可消费模型（example.glb 的 `node_damagedHelmet_-6514` 槽位）正例/负例 | 真实槽位+陈旧槽位混合 → FAIL 精确报 `slots["ghost/mesh"] 不存在`、真实槽位不误报；只留真实槽位 → PASS 且编译进 appearance.ts；非 GLB 节点带槽位 → FAIL 报「不支持槽位」 |
+| **导出运行包完整 production 构建**（V18） | 带编辑视觉工程（tree 内联改色+ground libraryRef+example 真实槽位改色）→ strip → 产物 `npm run build`（vue-tsc + vite） | **PASS**（2.21s；修复了构建期暴露的 VisualOverride 导入源与 Object.values 泛型推断两类类型错——见实证发现） |
+| **运行包 production preview 浏览器实测** | `vite preview` + CDP | **零页面错误、零 404**；全页截图目检：**地平面红色（redpaint 库材质 spec color=#cc0000 生效）**、绿树（内联改色）、主体可见——编辑器剥离后视觉保真在真实 production 渲染中成立 |
+| 失败保源保旧输出 | P4 批次既有回归（p1-fixtures P4.2 用例）+ R3 负例 | 陈旧槽位 FAIL 时源完好、旧 out 的 main.ts 逐字节一致、staging 无残留 |
+
+**Review 复现项逐条对账**：
+
+| Spec §6 复现 | 修复后行为 | 证据 |
+|---|---|---|
+| R1：boot 时加载未完成，加载后实际材质仍 ffffff | 迟到 GLB 挂载完成 emit updated → 库材质重挂 #ff0000 | p1-fixtures P4-R1/R2 用例（迟到释放 gate 后活实例红） |
+| R1：instantiateMaterialLib 只调 createMaterialFromSpec，贴图丢失 | 补 applyMaterialTextures（标量+贴图完整应用） | p1-fixtures 贴图接线用例（TextureLoader.loadAsync 被触发） |
+| R2：isTracked(mat)=false；dispose 后事件=0 | shared 登记 + refcount 结算：删一不释放、最后退出恰好 1 次、销毁零重复 | p1-fixtures P4-R1/R2 用例精确计数段 |
+| R3：slots['missing/mesh'] 编译 errors=[]，运行时静默忽略 | 静态槽位清单校验 FAIL 报具体路径；不可判定形态 fail-closed | p1-fixtures P4-R3 用例 + strip 入口正负例 |
+
+**实现过程中的实证发现（均已修正）**：
+
+1. 静态槽位 key 口径首版错误：把 glTF root-scene 节点名排除在路径外（`node_damagedHelmet_-6514` 是 'Scene' 的直接子 mesh 节点，运行时 key 含它）。修正为从 glTF scene 的根节点名起算（与运行时 collectMeshes/findBySlotKey 容器探层口径对齐），用真实 example.glb 验证正例不再误报。
+2. 导出包 production 构建暴露两类模板内类型错（dev 侧 vue-tsc 单文件检查漏网）：`VisualOverride` 从 types.ts 导入（该文件只是 import 非 re-export）→ 改从 materials.ts（源头）导入；`Object.values(visual.slots ?? {})` 推断为 `{}` → `Object.values<VisualOverride>(...)` 泛型显式化。**端到端完整构建是模板单文件类型检查的必要补充**（V18 不能用模板本体 build 替代——产物含编译生成的 appearance.ts 新代码路径）。
+3. libraryRef 与内联材质字段共存是运行时合法形态（refMode 短路忽略内联）——R3 校验对齐该语义不报错（编辑器数据可能残留）。
+
+**未验证项（如实记录）**：
+
+1. **贴图的像素级效果验证**：贴图应用验证到「TextureLoader.loadAsync 被触发」接线级（Node 无真实图像解码）；运行包 production 截图目检了库材质颜色/内联改色，未对贴图纹理做像素采样比对。审稿指出的「代码证据，未在浏览器测贴图」边界仍部分保留——贴图端到端像素验证属 P6 视觉回归。
+2. **槽位级 libraryRef 的浏览器端到端**：端到端夹具的 example 槽位用的是内联改色（非槽位 libraryRef）；槽位级共享实例挂载的 Node 级链路（findBySlotKey + material 赋值）已覆盖，浏览器级属 P6。
+3. **多迟到引用者的交错时序**（两个 GLB 不同时刻到达、中途 remove 一个再到达）：单迟到+删除+重建已覆盖，交错窗口组合未穷举。
+4. `emitExternalNodeUpdated` 只在 makeAssetNodeFactory 接线——业务 handler 自建异步挂载路径（不经 makeAssetNodeFactory）不会触发库材质重挂；当前模板无此形态（example 经共享构建器），未来 handler 指南需注明（P6 文档批次）。
+
+**Spec 偏差**：
+
+- R2 所有权实现选型：审稿建议「库级/节点级所有权与生命周期」——实施为**节点级 shared 登记**（ResourceScope 既有 shared 层：每引用节点 acquire、refcount、最后退出释放、releaseAll 兜底），未新建库级 ownership 类型。理由：P3 的 shared 语义（多 owner 引用计数）与库材质需求同构，复用避免第二套释放路径；「最后一个当前节点退出后复用已释放实例」由 refcount 天然防（实例只在无人引用时释放，重建节点重新挂载的是同一编译表实例化——注：引擎 dispose 后重新 createScene 会重新实例化，符合新会话语义）。
+- 其余按 §6 修复要求执行：异步/重建保真（created+updated 双订阅）、贴图完整应用、真实槽位正负例、完整 production 构建导出包、失败保源保旧输出全部落地。
+
+---
+
+### P4 批次（2026-10-15 完成执行，待用户 review）
+
+**改动文件**（均相对 `skills/generate-3d-scene/`）：
+
+| 文件 | 状态 | 内容 |
+|---|---|---|
+| `scripts/lib/compile-appearance.mjs` | 新增 | P4.1 编译器：`compileAppearance(snapshot, {liveNodeIds})` → `{code, exportedVisuals, exportedMaterialLib, errors, warnings, stats}`。引用一致性校验（陈旧 nodeId/物体级与槽位级 libraryRef 缺库条目——报具体路径硬 FAIL，不删掉后 PASS）；locked 编辑器交互态编译期剥离；未被引用的种子材质剔除；代码生成键序稳定（同输入产同输出） |
+| `template/src/scene-core/generated/appearance.ts` | 新增（占位） | 空表 `compiledVisuals`/`compiledMaterialLib`——母版自身零行为变化；strip 时整文件覆盖 |
+| `template/src/scene-core/appearance-runtime.ts` | 新增 | P4.1 运行时应用：`applyCompiledAppearance(handle, snapshot)`——内联视觉走 `sceneEngine.applyVisual`（底层 applyVisualOverride 复用材质克隆/贴图/阴影/显隐/槽位全链路，P3 资源所有权自动继承）；libraryRef 用 `createMaterialFromSpec` 建 mat_id→共享实例表挂到引用者（物体级整树+槽位级单 mesh，与编辑器 MaterialLibService 同语义）；数据带 `__visuals`（编辑态）跳过——编辑器私有区回灌优先 |
+| `template/src/boot-scene.ts` | 修改 | 建树后 `applyCompiledAppearance(handle, data)`（run/edit 共用单点接入） |
+| `template/src/scene-core/index.ts` | 修改 | 导出 `applyCompiledAppearance`/`hasCompiledAppearance`/`AppearanceApplyResult` |
+| `scripts/strip-edit.mjs` | 重构 | P4.2：① 源快照读取+编译前置（引用错误在动任何文件之前 FAIL）；② 全部产出先落 `.tmp-strip-*` staging 目录；③ `checkProject(staging, {stripped:true})` 通过才 rename 发布（out 已存在时旧产物先 rename 备份、发布失败回滚）；失败/异常清理 staging——源与旧 out 分毫不动；④ 路径守卫三口径（字面/realpath/前缀祖先 + Windows 大小写归一；out 嵌在源内拒绝）；⑤ TRANSCRIPTION.md 改自动转换摘要（保留三类表作审计对照，标注"已自动编译进 generated/appearance.ts"）；⑥ `--legacy-transcription` 显式旧模式（声明未完成保真导出） |
+| `scripts/build.mjs` | 修改 | required 文件表加 `src/scene-core/generated/appearance.ts`；`--stripped` 增断言：appearance.ts 存在且含 `compiledVisuals`/`compiledMaterialLib` 双常量导出（可审计性 V18） |
+| `scripts/verify/gates.mjs` | 修改 | 84→92 用例：strip 转录用例改两段式（陈旧 ghost_99 硬 FAIL 报路径+无部分产物 → 清理后 PASS 含编译断言）；appearance.ts 内容断言（条目/locked 剥离/未引用种子剔除/不 import edit/双常量）；V19 路径守卫（大小写变体拒绝/out 嵌源内拒绝/编译失败旧产物完好） |
+| `scripts/verify/p1-fixtures.mjs` | 修改 | +3 项 P4 回归（43 既有全保留）：compileAppearance 引用校验报路径+合法输入 locked 剥离/种子剔除/确定性；applyCompiledAppearance 真引擎视觉生效（显隐/阴影/内联改色）；stripEdit 原子发布（失败保源保旧产物/staging 无残留/嵌套拒绝） |
+
+**验证证据**（全部 2026-10-15 实跑）：
+
+| 验证 | 命令/方式 | 结果 |
+|---|---|---|
+| 既有门禁 | `node scripts/verify/gates.mjs --quiet` | **92/92 PASS**（84 既有全保留 + 8 项 P4；含 1 项用例语义按 §3.4 更新：陈旧条目 warn→硬 FAIL） |
+| 全量回归 | `node scripts/verify/p1-fixtures.mjs --node-only` | **46/46 PASS**（43 全保留含 P3 全部反例 + 3 项 P4 新增） |
+| 类型检查 | template 内 vue-tsc --noEmit | 0 错误 |
+| 生产构建 | template 内 vite build | PASS（既有大 chunk warning 保留） |
+| run/edit 双态冒烟 | 模板 dev server 5199 + `scene.mjs --both` | SCENE PASS（双态 ready succeeded=4、零页面错误、渲染活性——编译外观 skip=empty 对母版零行为变化） |
+| **运行包端到端**（F08 核心合同） | 带编辑视觉的工程（tree_01 内联改色 #ff0000/metalness 0.1；ground libraryRef=redpaint #cc0000/receiveShadow=false）→ strip → 产物 vite dev → CDP 读活实例真值 | `tree_01: color=#ff0000, metalness=0.1, visible=true`；`ground: libraryRef=redpaint, color=#cc0000, receiveShadow=false`；ready succeeded=4 零错误——**编辑器剥离后视觉不丢失，异步 GLB 挂载后视觉保真** |
+| Lint | 模板 TS 改动文件 eslint | **0 error** / 13 warning（既有风格类）；compile-appearance.mjs（新文件）0 error；与改动前基线逐 error diff 无新增（p1-fixtures 引入的 6 个 import-shadow 已修） |
+
+**关键行为变化（用户可见）**：
+
+1. `strip-edit` 默认自动编译编辑视觉进 `src/scene-core/generated/appearance.ts`——运行包视觉保真不再依赖 LLM 人工转录（F08 关闭）
+2. 陈旧视觉条目（节点已删除）从 warn 升级为硬 FAIL，错误报具体路径（§3.4 契约）
+3. strip 全程原子：编译失败/自检失败时源工程与旧产物分毫不动（旧实现直接 rmSync(out) 后写入——失败即毁旧产物）
+4. TRANSCRIPTION.md 从人工转录指令降级为审计对照（自动编译摘要）
+5. `--legacy-transcription` 提供显式旧模式（声明未完成保真导出）
+
+**实现过程中的实证发现（均已修正）**：
+
+1. 首版编译器把材质参数字段（color/metalness 等 MaterialSpec 全字段）当"未知结构键"硬 FAIL——白名单设计错误：材质参数是内联视觉的核心内容，运行时 applyVisualOverride 本就透传。修正为只校验结构键（libraryRef 引用存在性/对象形态），材质参数透传。
+2. 互斥校验过严：runtime 语义是 libraryRef 存在时内联材质字段被忽略（materials.ts refMode 短路），不是错误——编辑器数据可能合法残留两者。编译器对齐 runtime 语义（不报错，libraryRef 生效）。
+3. appearance.ts 头注释含"locked 已剥离"字样会撞"不含 locked"断言——断言改为只查数据键形态 `"locked":`。
+4. strip 产物 vite dev 下 `applyCompiledAppearance` 生效路径验证：编译视觉写进引擎视觉层后，`makeAssetNodeFactory` 异步挂载的 `applyVisualIfAny` 重挂天然覆盖迟到窗口——无需新增异步钩子（P4.1 设计决策被端到端证实：GLB ready succeeded=4 + 活实例颜色正确）。
+5. Windows 大小写路径：`out.toLowerCase() == src` 变体必须拒绝（rmSync 不区分大小写）——路径守卫比较前统一 lower + realpath 双口径。
+
+**未验证项（如实记录）**：
+
+1. **导出运行包的 production 构建**：端到端验证走 vite dev（含 vue-tsc 的 `npm run build` 在模板本体 PASS，strip 产物 node_modules 为拷贝、未重复完整 npm build）——gates 的 `build.mjs --stripped` 静态检查已覆盖结构面。若需完整构建证据属 P6 集成验收（V18 "runtime 可构建"完整形态）。
+2. **槽位级视觉的浏览器端到端**（GLB 子网格 slots 编辑往返）：Node 级 findBySlotKey/applyVisualOverride 槽位链路由 P3 既有回归覆盖；端到端夹具只验了物体级。槽位编辑器交互级验收属 P6（V17 完整形态）。
+3. **蒙皮模型（person）的编译视觉应用**：appearance-runtime 无蒙皮特判（走通用 applyVisual/材质挂载）；蒙皮 clone 链路 P3 已验证零回归，本轮结构冒烟 13 节点含 person 渲染正常，但未单独对蒙皮实例做编译视觉断言。
+4. `--legacy-transcription` 模式只验了 CLI 存在与语义保留（gates 用例走默认模式），旧转录清单完整内容回归未逐项重跑（buildTranscription 三类表逻辑同款保留，由改写用例覆盖主路径）。
+
+**Spec 偏差**：
+
+- §4.2 `compileAppearance(snapshot, registry)` 第二参实施为 `{liveNodeIds}`（registry 无消费场景——校验的是快照内部引用一致性，工厂表校验已由 build.mjs schema 承担）；返回结构含 `code/exportedVisuals/exportedMaterialLib/errors/warnings/stats`，公开语义（输出代码模块、覆盖清单、unsupported/errors）与 Spec 一致。
+- `stripEdit(src,out,opts)` 扩展按合同执行；旧返回字段全保留，新增 `exportedVisuals`/`appearanceWritten`。`TRANSCRIPTION.md` 按合同"改自动转换摘要"。
+- 陈旧条目从「TRANSCRIPTION 警告」升级为「硬 FAIL 报路径」是 §3.4 明文契约（"真实未支持覆盖为 FAIL，不得删掉后 PASS"），非偏差；gates 对应用例语义更新已在本节记录。
+
+---
 
 ### P3 四审修复轮（2026-10-15，P3-RRRR1 全修，待重审）
 
@@ -926,6 +1185,165 @@ Readiness Verdict：GO（建议），不等于实施授权。不能把历史Plan
 
 ## 6. Review Verdict
 
+### P4 第五次 Review（2026-10-15，Codex，最新裁决）
+
+结论：P4-RRRR1 通过并关闭；P4 已报告的阻塞项全部关闭，本批次 Review PASS。
+
+- 独立复跑原始多文件模型：m.gltf + data.bin，运行时槽位清单为 [part]，compileAppearance.errors=[]。
+- 补测中文及空格编码 URI：数据 mesh.bin，经百分号编码引用，真实加载及槽位编译通过。
+- 缺失外部 buffer：清单移除该节点（hasEntry=false），编译明确报告“无法验证”，不再把失败空集合当成陈旧槽位。
+- gates --quiet：92/92 PASS。
+- p1-fixtures --node-only：55/55 PASS，包含外部 bin 编码文件名经真实 strip 的成功/缺依赖失败保源保旧输出，以及多 primitive、程序化槽位、库材质生命周期等既有回归。
+- 实现检查：resourcePath 为带尾斜杠 file URL；本地文件读取正确；加载失败与有效空清单区分到位。
+
+验证边界：本轮未重复浏览器/GPU/production 构建。Draco 槽位仍走命名模拟、未与真实 Draco loader 做完整直接对照；贴图像素等 P6 验证仍保留，不能把本轮定向通过表述为全部场景已验收。本轮未修改实现、未暂存或提交。
+
+已回填同一 Spec。下一步可交实施 LLM：P4 已通过，请按同一 Spec 仅实施 P5，回填改动、验证与未验证项，不进入 P6、不自动提交。
+
+完成后发送：P5 已完成，Spec 已回填，请 review P5。
+
+
+
+### P4 第四次 Review（2026-10-15，Codex，最新裁决）
+
+结论：多 primitive 原反例通过；新增真实加载路径对外部文件 glTF 有回归，P4 暂不通过。
+
+#### P4-RRRR1（P1）：有效多文件 glTF 的槽位加载失败，且被误报为陈旧槽位
+
+位置：scripts/lib/runtime-slots.mjs，installBrowserPolyfills 的 file-fetch 分支、loadModelSlotKeys 的 loader.parse 资源基路径及失败处理。
+
+本轮创建合法最小 glTF（三角形，具名节点 part）与对应 data.bin，文件齐全。真实 buildRuntimeSlotKeys 返回 a→空集合，debug 报 Failed to load buffer data.bin；compileAppearance 随后把真实存在的 slots['part'] 报成不存在/陈旧。证据 P4-fourth-review-repro.json；模型 work/p4-external-review/public/assets/m.gltf 与 data.bin；脚本 work/p4-fourth-review.mjs。
+
+根因代码：parse 的 resourcePath 使用 Windows 文件系统路径，未转为带尾斜杠的可解析资源 URL；file:// fetch 分支即使被命中，调用 node:fs 的异步 readFile 却未提供 callback、也未 await Promise（将其当同步函数），无法正确返回文件内容。加载失败时又保留 headless 占位产生的空 Set，混淆“加载失败无法验证”和“成功加载但 key 不存在”。
+
+修复要求：工程内外部 buffer/texture URI 使用与浏览器一致的解析/百分号解码，正确读取本地文件并保留失败原因；未知清单不能冒充成功空清单。补真正外部 .bin（含空格/非 ASCII URI）、真实存在 slot 的正例，以及缺失依赖的负例，经 strip 入口验证成功保真与失败保源保旧输出。不能以“fail-closed 所以支持失败无害”代替合法资产支持，P2 已明确支持多文件 glTF。
+
+#### 验证与边界
+
+- 多 primitive 生产路径正负例/运行时命中回归通过（p1-fixtures P4-RRR1），原问题关闭。
+- gates --quiet：92/92 PASS；p1-fixtures --node-only：54/54 PASS，日志 outputs/P4-fourth-fixtures.log。
+- 新多文件反例在真实清单生成器复现；本轮未重复浏览器/GPU/production 构建。
+- Draco 路径仍是 emulateLoaderSlotKeys 命名模拟，并非真实 Draco 解码；实现方也记录未与真实 Draco loader 直接全等对照。该验证边界保留，不能宣称已完全消除静态猜测；本轮仅将已复现的多文件故障列为阻塞。
+- 未修改实现、未暂存/提交；已回填同一 Spec，其他已关闭项保留。
+
+#### 发给实施 LLM
+
+只修 Spec §6 最新 P4-RRRR1：修正真实 loader 的本地外部资源 URL/读取逻辑，并区分加载失败与有效空清单。补外部 bin（编码文件名）真实 slot→strip 成功及缺依赖→失败保源保旧输出的回归，保持多 primitive、程序化和生命周期测试通过。回填 Spec，不进入 P5、不自动提交。
+
+修复后发送：P4-RRRR1 多文件模型槽位加载已修复，Spec 已回填，请定向复核及相关回归。
+
+
+
+### P4 第三次 Review（2026-10-15，Codex，最新裁决）
+
+结论：P4-RR1 关闭；RR2 的匿名不存在槽位放行及程序化槽位支持已修复，但 GLB/glTF 清单仍与实际 loader 不一致，P4 暂不通过。
+
+#### P4-RRR1（P1，续 RR2）：多 primitive 模型的合法 slot 被误报陈旧
+
+位置：scripts/lib/compile-appearance.mjs，collectStaticSlotKeys / GLB 静态清单分支。
+
+真实可消费 glTF：节点 name=part、mesh name=surface，mesh 含两个三角形 primitive。用真实 AssetEngine/GLTFLoader 加载（嵌入数据 URI，无网络替身）后，资产报告产出两个合法槽位 part/surface 和 part/surface_1。逐一交给 compileAppearance，两个都被报“不存在”。静态函数只在 node.mesh 处生成 part，未复现 loader 为多 primitive 创建 Group 与命名子 mesh 的行为。Spec 关于“多 primitive 共享节点名→同 key，与 collectMeshes 一致”的说法已被该实证否定。
+
+这是上一轮已明确要求的真实运行时 slot 语义，不应推迟至 P6 后才保证。建议 GLB/glTF 同样使用真实 loader 及共用报告/槽位解析函数生成清单；若保留静态路径，必须证明匿名命名、名称净化/去重、多 primitive 与实际 loader 等价。禁止为本例单独拼接名称继续猜测。
+
+验收：真实模型经生产加载得到 slotKey，交给真实 strip 入口应成功，且运行时该 key 确实命中对应 mesh；篡改为不存在 key 应失败并保持源/旧输出完好。至少保留本多 primitive 正负例，以及此前匿名不存在路径、程序化槽位回归。
+
+#### 已验证
+
+- RR1 原反例：唯一 owner 重建 reusesSameMaterial=true、disposesWhileReused=0，最终 totalDisposes=1，关闭。
+- RR2 原匿名负例：#999/ghost 明确失败，关闭该子问题。
+- p1-fixtures --node-only 本轮 exit=0（53 项配置，含库级生命周期与程序化 strip 正负例）；gates --quiet 92/92 PASS。
+- 新反例证据：P4-third-review-repro.json；模型 work/p4-multi/public/assets/m.gltf；脚本 work/p4-third-review.mjs。原反例证据 P4-third-original.json。
+- 未重复浏览器/GPU/production 构建；未修改实现、未暂存或提交。已回填同一 Spec。其他已关闭项保留。
+
+#### 发给实施 LLM
+
+仅修 Spec §6 最新 P4-RRR1：GLB/glTF 槽位清单须与真实 loader 一致，优先真实加载并复用资产报告逻辑。补真实多 primitive 模型的运行时 slot→strip 成功及错误 slot→失败保源保旧输出回归，保持已有匿名和程序化槽位测试。回填 Spec，不进入 P5、不自动提交。
+
+修复后发送：P4-RRR1 模型槽位清单已修复，Spec 已回填，请定向复核及相关回归。
+
+
+
+### P4 第二次 Review（2026-10-15，Codex，最新裁决）
+
+结论：R1 原异步挂载与贴图接线问题通过；R2/R3 原反例已修复，但仍有两个缺口，P4 暂不通过。
+
+#### P4-RR1（P1，续 R2）：最后一个节点重建后复用已释放库材质
+
+位置：template/src/scene-core/appearance-runtime.ts，instantiateMaterialLib / attachLibraryRuntime / mountLibraryInstances。
+
+实例表跨节点重建长期保留，但材质只登记给当前节点，最后 owner 退出即 dispose。真实 SceneEngine 单节点 libraryRef，params 更新触发重建：旧节点 release 释放库材质，created 回调又从同一个 Map 取回同一已释放实例。实测 reusesSameMaterial=true、disposesWhileReused=1；最终引擎销毁同一材质累计 dispose=2。Spec 的“refcount 天然防止复用已释放实例”不成立：零 owner 间隙发生在同一引擎会话内，不必等新 createScene。
+
+修复要求：库级持有者维持实例有效至运行时 teardown，或零引用后从表删除并在后续使用时安全重建；必须同时覆盖唯一节点重建、当前节点全删后重新创建、延迟引用者晚于最后当前引用者退出的情况。补真实生命周期计数，不能只断言重建后颜色红。共享实例不得边 dispose 边复用，最终有效实例恰好释放一次。
+
+#### P4-RR2（P1，续 R3）：slot 校验仍有静默放行与合法形态误拒
+
+位置：scripts/lib/compile-appearance.mjs，collectStaticSlotKeys / validateSlotsExistence。
+
+代码明确在 hasUnnamed && slotKey.includes('#') 时无条件 continue。复现匿名 glTF 节点，视觉引用 '#999/ghost'，compileAppearance.errors=[]；该路径不存在，仍被当成成功。这与 fail-closed 合同直接冲突。不能以静态无法复刻为由把未知当成功。
+
+同一校验还一律拒绝无 params.assetId 的程序化模型 slots，而模板 tree/rack 提供命名子网格，编辑器与 findBySlotKey 支持它们；把这些现有合法编辑判为“不支持，须清理”不能满足自动保真导出。静态 glTF 名称路径也需与实际 loader 的命名/容器/多 primitive 行为一致，不能仅凭单个具名 example.glb 推断全覆盖。
+
+修复要求：统一使用实际运行时 slot 语义或可证明等价的清单，对匿名/重复名/多 primitive/程序化 mesh 给正确正负例；不可判定必须明确失败，禁止 '#' 放行。通过真实 strip 入口验证合法槽位导出成功、无效槽位失败且源/旧输出完好，不要求用户删除合法编辑。
+
+#### 验证与关闭项
+
+- 本轮原始反例：延迟资产颜色 ff0000；同步库材质 tracked=true，dispose=1；无 slot 上下文明确报路径。R1 关闭，R2/R3 仅原反例关闭。
+- gates --quiet：92/92 PASS；p1-fixtures --node-only：50/50 PASS（含贴图加载接线测试）。
+- 新反例证据：P4-rereview-repro.json；原反例 P4-rereview-original.json；脚本 work/p4-rereview.mjs。
+- 已读取实施方导出包 production build/preview 回填，本轮未独立重复浏览器/GPU/production 构建。贴图像素与 slot libraryRef 浏览器端到端仍是明确验证边界。
+- 未修改实现、未暂存/提交；已回填同一 Spec，不进入 P5。
+
+#### 发给实施 LLM
+
+只修 Spec §6 最新 P4-RR1/P4-RR2：修正库实例跨零引用窗口的生命周期；slot 校验必须与真实运行时一致，去掉匿名 '#' 无条件放行并支持现有程序化槽位。补唯一 owner 重建/迟到 owner 与真实 strip 槽位正负例，保持已通过项。回填 Spec，不进入 P5、不自动提交。
+
+修复后发送：P4-RR1/P4-RR2 已修复，Spec 已回填，请定向复核剩余两项及相关回归。
+
+
+
+### P4 首次 Review（2026-10-15，Codex，最新裁决）
+
+结论：FAIL。P4 默认导出不能保证材质库与槽位保真，存在三个阻塞项；不进入 P5。
+
+#### P4-R1（P1）：libraryRef 不支持迟到资产，库材质贴图也未应用
+
+位置：template/src/scene-core/appearance-runtime.ts，applyCompiledAppearance / instantiateMaterialLib / applyLibraryInstances。
+
+库材质仅在 boot 时对当时已有 mesh 挂一次。真实 makeAssetNodeFactory 延迟完成加载时，applyVisualIfAny 只调用 applyVisualOverride；该函数在 libraryRef 模式明确不处理材质，实例表也未接入加载回调。复现：编译表 a.libraryRef=red（spec.color=#ff0000），boot 时加载未完成，加载后实际材质仍 ffffff；同步对照为 ff0000。这是常规异步 GLB 路径，物体级与槽位级引用均受影响。
+此外 instantiateMaterialLib 只调用 createMaterialFromSpec，后者仅应用标量；编辑器 MaterialLibService 在创建后另调 applyMaterialTextures，运行包缺此调用，因此库材质贴图丢失（代码证据，未在浏览器测贴图）。
+修复：将库材质解析/挂载接入异步加载完成及节点重建生命周期，完整应用标量和贴图；验证物体级与 slot 级引用在延迟加载、重建后均保真。生产运行包完成真实构建与针对性验证，不能仅以模板 build 或内联改色冒烟替代。
+
+#### P4-R2（P1）：运行时库材质绕过 P3 资源所有权
+
+位置：appearance-runtime.ts，applyLibraryInstances 直接赋 mesh.material。
+
+先 se.applyVisual 对账，后直接换成共享实例，既没有 syncResourcesFor，也没有库级 owner/teardown。同步真实引擎复现：材质正确变红，但 ResourceScope.isTracked(mat)=false；engine.dispose 后该材质 dispose 事件=0。旧资源也可能被保留到节点结束，而新材质无人释放。不能仅补普通节点 acquire：库实例还须覆盖后续异步引用者及节点重建，避免最后一个当前节点退出后复用已释放实例。
+修复：明确库级/节点级所有权与生命周期，保证共享实例在使用期有效、最终恰好释放一次；补多个引用者、延迟引用者、重建/删除、整体销毁计数，并保持 P3 共享与动态资源回归。
+
+#### P4-R3（P1）：陈旧 slot / 不支持覆盖未实现 fail-closed 校验
+
+位置：scripts/lib/compile-appearance.mjs，validateVisualEntry / compileAppearance；strip-edit.mjs 编译前置调用。
+
+Spec §3.4 明确要求陈旧 node/slot/material 引用报告路径并失败。当前只检查 nodeId 和 libraryRef 是否有库条目，不校验 slot 是否真实存在，也未形成 unsupported 校验。复现 liveNodeIds={a}，视觉包含 slots['missing/mesh']，编译 errors=[]，运行时 findBySlotKey 找不到则静默忽略，导致有编辑结果未导出却报告成功。
+修复：在发布前取得/验证实际槽位清单（异步模型应等待可判定），对陈旧槽位与不支持形态明确路径失败；不能把“不知道”当成功。补真实可消费模型的有效槽位正例/不存在槽位负例，经 strip 入口验证失败时源与旧输出保持不变。
+
+#### 本轮验证与边界
+
+- gates --quiet：92/92 PASS；p1-fixtures --node-only：46/46 PASS。
+- 独立生产模块复现见 P4-review-repro.json；脚本 work/p4-review.mjs。异步使用真实 makeAssetNodeFactory 与延迟加载 Promise，网络层为测试替身；运行时/资源域为真实模块，未修改源实现。
+- 未重复浏览器/GPU；未执行导出产物的 production 构建。实施记录也明确仅对模板完整 build，不能据此关闭 V18 运行包可构建验收。
+- staging/rename 发布及已存在编译错误保护的现有回归通过；不将这部分通过泛化成所有 unsupported 输入已被阻断。
+- 已回填同一 Spec；未修改实现、未暂存/提交。
+
+#### 发给实施 LLM
+
+按 Spec §6 最新 P4 Review，仅修 P4-R1～R3：补异步/重建时库材质及贴图保真、库共享实例所有权、真实 slot/unsupported 发布前校验。增加生产路径正负例，完整构建导出运行包，验证失败保源保旧输出。保留 P1–P3 已通过回归，回填修改、验证和未验证项，不进入 P5、不自动提交。
+
+修复后发送：P4-R1～R3 已修复，Spec 已回填，请定向复核及相关回归。
+
+
+
 ### P3 第五次 Review（2026-10-15，Codex，最新裁决）
 
 结论：P3-RRRR1 通过并关闭，P3 已报告的阻塞项全部关闭，本批次 Review PASS。
@@ -1230,6 +1648,11 @@ Overall Verdict：P1 REVIEW FAIL。实施未验收，不进入P2。原§5中的�
 
 ## 7. Plan-Execution Diff / Reverse Sync
 
+- 2026-10-15 P4 四审修复轮完成：RRRR1 多文件 glTF 槽位加载——.gltf parse 的 resourcePath 改带尾斜杠 file:// URL（Windows 路径破坏 new URL(uri, base) 解析）；file:// fetch 拦截改 readFileSync（原异步 readFile 当同步用返回 Promise 冒充 body）+ 读失败 reject 保留原因；加载失败移除 headless 占位空 Set（区分「无法验证」与「有效空清单」，不冒充成功）。验证 gates 92/92、p1-fixtures 55/55（+外部 bin 编码文件名正例 part 导出成功/缺依赖负例 FAIL 保源保旧输出且报「无法验证」非「不存在」；多 primitive/程序化/库生命周期回归全保留）、双态冒烟 PASS、lint 0 error。详见 §5「P4 四审修复轮」。P5–P6 未开始。
+- 2026-10-15 P4 三审修复轮完成：RRR1 模型槽位清单与真实 loader 一致——AssetEngine 新公开 buildSlotKeysFromScene（复用 collectMeshes）；runtime-slots 的 GLB/glTF 清单改真 GLTFLoader.parse（工程 three；多 primitive _N/#索引/名称净化由 loader 产物携带）；Draco 模型（Node 无 Worker）走 JSON 级复刻 loader 命名链。静态清单 collectStaticSlotKeys 删除（单一数据源）。验证 gates 92/92、p1-fixtures 54/54×3 稳定（+数据 URI 多 primitive 模型正负例：真 loader 产 part/surface+part/surface_1 → strip 成功 + findBySlotKey 运行时命中 + 材质生效；篡改 FAIL 保源保旧输出；匿名/程序化槽位回归全保留）、双态冒烟 PASS、lint 0 error。详见 §5「P4 三审修复轮」。P5–P6 未开始。
+- 2026-10-15 P4 二审修复轮完成：RR1 库实例跨零引用窗口——库级所有权（onTeardown 持有到引擎销毁恰好一次释放；收集器 isLibraryMaterial 跳过节点域；删除节点域登记）。RR2 槽位校验运行时语义——新 runtime-slots.mjs（headless 建树 + listSubMeshes 真值清单，与编辑器同代码路径，程序化 tree/rack 槽位全支持）；'#' 无条件放行删除（匿名未命中即 FAIL）；stripEdit async 化。验证 gates 92/92、p1-fixtures 53/53（+唯一 owner 连续重建窗口零 dispose/迟到 owner 同活实例/程序化槽位正负例/'#' 不放行）、双态冒烟 PASS、lint 0 error。附带事故：template/scripts/smoke-r.mjs 被临时目录清理误删，已 git 完整恢复验证。详见 §5「P4 二审修复轮」。P5–P6 未开始。
+- 2026-10-15 P4 首审修复轮完成：R1 迟到资产/重建库材质保真——appearance-runtime 补 applyMaterialTextures（贴图完整应用）+ created/updated 生命周期订阅（makeAssetNodeFactory 异步挂载点 emitExternalNodeUpdated 新钩子）；R2 库材质接入 ResourceScope shared 登记（refcount 结算、最后退出恰好一次、syncResourcesFor 对账）；R3 槽位 fail-closed——编译期经 asset-manifest + loadModel 静态解析校验 slots 存在性（陈旧报路径 FAIL、不可判定 FAIL）。验证 gates 92/92、p1-fixtures 50/50（真 makeAssetNodeFactory 迟到 GLB 红/共享实例/精确 dispose/rebuild 重挂/贴图接线 + 槽位正负例）、导出运行包完整 npm run build PASS + production preview 零错误截图目检红色库材质生效、失败保源保旧输出。详见 §5「P4 首审修复轮」。P5–P6 未开始。
+- 2026-10-15 P4 完成：F08 关闭——compile-appearance.mjs（快照→代码模块编译器：陈旧/缺库引用报路径硬 FAIL、locked 剥离、未引用种子剔除、确定性生成）+ appearance-runtime.ts（内联视觉走 applyVisual 复用 P3 全链路；libraryRef 共享实例表；编辑器数据优先跳过）+ boot-scene 单点接入；strip-edit 原子发布重构（staging→checkProject→rename；失败保源保旧产物；路径守卫 case/realpath/嵌套三口径）；build.mjs --stripped 增 appearance.ts 可审计断言。验证 gates 92/92、p1-fixtures 46/46、双态冒烟 PASS、运行包端到端（strip 产物活实例颜色/材质/阴影真值 + 异步 GLB 视觉保真）PASS、lint 与基线无新增 error。详见 §5 P4 批次。P5–P6 未开始。
 - 2026-10-15 P3 四审修复轮完成：RRRR1 父子资源归属边界——collectObjectResources 增 isBoundary 节点边界（不深入业务子节点子树）；syncObjectResources 返回受影响后代根供逐个对账（父编辑递归改子材质时归属子的登记）；SceneEngine.syncResourcesFor 公共入口统一三动态入口 + createNode + 异步挂载。父编辑→父重建→子存活→删除/销毁精确计数用例（父重建子材质 dispose=0、删除子恰好 1、销毁零重复）。gates 84/84、p1-fixtures 43/43、双态+结构冒烟 PASS、build/lint 0 error。详见 §5「P3 四审修复轮」。P4–P6 未开始。
 - 2026-10-15 P3 三审修复轮完成：RRR1 动态资源登记同步——syncObjectResources 资源集对账接入 applyVisual（材质路径）/replaceVisual/definition.update 原地/makeAssetNodeFactory 异步挂载四入口；releaseExcept 解除被替换登记（不积累废弃资源）；材质级 isCloneResource 标记区分缓存共享与节点私有（含 Material.clone 深拷 userData 陷阱——三处克隆点统一 claimPrivateMaterial 清除）。连续编辑/替换/删除/整体销毁精确计数 2 项真实入口回归全过。gates 84/84、p1-fixtures 42/42、双态+结构冒烟 PASS、build/lint 0 error。详见 §5「P3 三审修复轮」。P4–P6 未开始。
 - 2026-10-15 P3 二审修复轮完成：RR1 资源所有权改实际资源粒度（geometry/material/texture 逐个登记；Object3D 根不登记、树遍历释放路径删除；releaseAll Map 去重恰好一次、cache 不越权）；RR2 Bridge.rebuild 字段级差量（两侧均缺省不带字段——缺省 params 未变节点保身份；引擎有值快照缺省才显式清默认；card:null 哨兵引擎归一）。真实引擎共享材质/父子整体 dispose 计数、真 Bridge 缺 params 身份回归全过。gates 84/84、p1-fixtures 40/40、双态+结构冒烟 PASS、build/lint 0 error。详见 §5「P3 二审修复轮」。P4–P6 未开始。
@@ -1263,7 +1686,17 @@ Overall Verdict：P1 REVIEW FAIL。实施未验收，不进入P2。原§5中的�
 
 ## 10. Resume / Handoff
 
-下一步：P3 已经第五次 Review 通过。按用户分批节奏实施 P4，完成后回填本 Spec 并单独 review；本轮不执行 P4。
+下一步：P4 已经第五次 Review 通过。按用户分批节奏实施 P5，完成后回填本 Spec 并单独 review；本轮不执行 P5。
+
+P4 四审修复轮改动（在三审修复轮基础上，仅 scripts/lib/runtime-slots.mjs）：.gltf parse resourcePath 改带尾斜杠 file:// URL；file:// fetch 拦截改 readFileSync + 失败 reject；加载失败移除占位空 Set（区分无法验证与有效空清单）；p1-fixtures 现 55 用例（+RRRR1 外部 bin 编码文件名正负例）。行为变化：多文件 glTF（外部 bin/贴图相对 URI）真实加载产清单（修复前一律失败冒充空清单）；缺外部依赖报「无法验证」而非误报槽位不存在。
+
+P4 三审修复轮改动（在二审修复轮基础上，交接勿遗漏）：改 template/src/scene-core/engine/AssetEngine.ts（新公开 buildSlotKeysFromScene——复用 collectMeshes）；scripts/lib/runtime-slots.mjs（GLB/glTF 真 GLTFLoader 清单 + Draco JSON 级命名规则复刻 emulateLoaderSlotKeys + 浏览器 polyfill）；scripts/lib/compile-appearance.mjs（validateSlotsExistence 单一运行时数据源；collectStaticSlotKeys 删除）；scripts/strip-edit.mjs（slotContext 收敛）；scripts/verify/p1-fixtures.mjs（现 54 用例：+RRR1 多 primitive 正负例；R3 用例改含 node_modules 夹具；p1 钩子裸 three 统一解析）。行为变化：多 primitive 模型的 surface_1 等合法槽位正确导出（修复前误报陈旧）；Draco 模型槽位清单可用（此前空集致合法槽位误报）。
+
+P4 二审修复轮改动（在首审修复轮基础上，交接勿遗漏）：改 `template/src/scene-core/resources.ts`（markLibraryMaterial/isLibraryMaterial 库材质标记——收集器跳过）、`template/src/scene-core/appearance-runtime.ts`（库级所有权：onTeardown 持有实例表恰好一次释放；节点域登记删除）；新增 `scripts/lib/runtime-slots.mjs`（headless 建树 listSubMeshes 运行时槽位真值清单，activeRoot 动态锚）；改 `scripts/lib/compile-appearance.mjs`（程序化节点走运行时清单；'#' 放行删除）、`scripts/strip-edit.mjs`（async 化 + 清单自动构建 + slotContext 测试缝）、`scripts/verify/p1-fixtures.mjs`（现 53 用例：+RR1 两项 +RR2 一项）。行为变化：① 库材质在引擎会话内恒有效（节点全删/重建窗口不释放），引擎销毁恰好一次；② 程序化模型（tree/rack 等）的命名子网格槽位合法可导出；③ 匿名 '#' 路径不再放行。
+
+P4 修复轮改动（在 P4 批次基础上，交接勿遗漏）：改 `template/src/scene-core/appearance-runtime.ts`（applyMaterialTextures 补齐 + attachLibraryRuntime created/updated 订阅 + mountLibraryInstances shared 登记与 syncResourcesFor 对账 + AppearanceSource 测试缝）、`handlers/registry.ts`（异步挂载点 emitExternalNodeUpdated）、`engine/SceneEngine.ts`（公开 emitExternalNodeUpdated）、`scripts/lib/compile-appearance.mjs`（validateSlotsExistence 槽位 fail-closed + collectStaticSlotKeys 静态清单）、`scripts/strip-edit.mjs`（slotContext 构造）、`scripts/verify/p1-fixtures.mjs`（现 50 用例：+R1/R2 三项 +R3 一项）。行为变化：① 迟到 GLB/节点重建后 libraryRef 材质自动重挂（物体级+槽位级）；② 库材质走 ResourceScope shared（最后引用者退出才释放）；③ 槽位校验 fail-closed（陈旧/不可判定均 FAIL 报路径）。
+
+P4 改动文件清单（交接勿遗漏）：新增 `scripts/lib/compile-appearance.mjs`、`template/src/scene-core/generated/appearance.ts`（空表占位）、`template/src/scene-core/appearance-runtime.ts`；修改 `scripts/strip-edit.mjs`（原子发布重构）、`scripts/build.mjs`（required 表 + --stripped appearance 断言）、`scripts/verify/gates.mjs`（84→92）、`scripts/verify/p1-fixtures.mjs`（43→50）、`template/src/boot-scene.ts`（建树后 applyCompiledAppearance）、`template/src/scene-core/index.ts`（导出 appearance-runtime API）。行为变化：① strip-edit 默认自动编译编辑视觉进 generated/appearance.ts（运行包保真不再人工转录）；② 陈旧视觉条目硬 FAIL 报路径；③ strip 全程原子（失败保源保旧产物）；④ out 嵌在源工程内/大小写变体拒绝；⑤ TRANSCRIPTION.md 为审计摘要（--legacy-transcription 取旧模式）。注意：P1–P4 的全部改动均未暂存、未提交。
 
 P3 四审修复轮改动（在三审修复轮基础上）：`scene-core/resources.ts`（collectObjectResources 增 isBoundary 节点边界参数——不深入业务子节点子树；syncObjectResources 返回受影响后代根；acquireObjectResources 透传）、`engine/SceneEngine.ts`（公共 syncResourcesFor：边界判定 + 本节点对账 + 受影响子节点逐个对账；三动态入口与 createNode 全部带边界）、`handlers/registry.ts`（异步挂载走 syncResourcesFor）、`scripts/verify/p1-fixtures.mjs`（现 43 用例：+RRRR1 父编辑→父重建→子存活→删除/销毁精确计数）。
 

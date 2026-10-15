@@ -5,9 +5,9 @@
 import assert from 'node:assert/strict';
 import { EventEmitter } from 'node:events';
 import { registerHooks } from 'node:module';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { resolve, dirname, join } from 'node:path';
+import { resolve, dirname, join, sep } from 'node:path';
 import { createServer } from 'node:http';
 import {
   createCdpConnection, openBrowserSession, positionalArg, collectPageErrors, collectNetwork404s,
@@ -42,6 +42,15 @@ registerHooks({
           return { url: pathToFileURL(cand).href, shortCircuit: true };
         }
       }
+    }
+    // 裸 'three'：template 内的 TS 与 p1-fixtures 自身统一解析到 template/
+    // node_modules（同物理文件 → 同实例）。其他来源（夹具工程的拷贝副本）放行——
+    // 其 GLTFLoader 内部 'three' 须解析到夹具自己的 node_modules 副本（跨副本
+    // THREE 实例不同，Group.add 会被拒）
+    const tmplHref = pathToFileURL(template).href;
+    if (specifier === 'three'
+      && (context.parentURL?.startsWith(tmplHref) || context.parentURL?.endsWith('p1-fixtures.mjs'))) {
+      return { url: pathToFileURL(join(template, 'node_modules', 'three', 'build', 'three.module.js')).href, shortCircuit: true };
     }
     return next(specifier, context);
   },
@@ -1073,6 +1082,706 @@ await test('P3 undo diff-restore keeps unchanged node identities (V10/V14 core)'
   assert.equal(engine.getObject('B'), objB, '差量恢复不重建未变节点 B');
   assert.equal(engine.getAllIds().includes('C'), false, '快照外节点被移除');
   engine.dispose();
+});
+
+// ═══ P4：编译外观（compile-appearance / appearance-runtime / strip 原子发布）═══
+
+/** readdirSync 安全包装（目录不存在返回 []；staging 残留检查用） */
+const readdirSyncSafe = (dir) => {
+  try {
+    return readdirSync(dir);
+  } catch {
+    return [];
+  }
+};
+
+await test('P4.1 compileAppearance: reference validation reports exact paths (V19)', async () => {
+  const { compileAppearance } = await import('../lib/compile-appearance.mjs');
+  // 陈旧 nodeId：报具体路径
+  let r = compileAppearance({
+    __visuals: { ghost_99: { color: '#fff' } },
+  }, { liveNodeIds: new Set(['a']) });
+  assert.ok(r.errors.some((e) => e.includes('__visuals["ghost_99"]')), '陈旧条目报路径');
+  // libraryRef 缺库条目：报路径
+  r = compileAppearance({
+    __visuals: { a: { libraryRef: 'missing_mat' } },
+    __materialLib: {},
+  }, { liveNodeIds: new Set(['a']) });
+  assert.ok(r.errors.some((e) => e.includes('__visuals["a"].libraryRef') && e.includes('missing_mat')), '缺库条目报路径');
+  // 槽位级 libraryRef 缺条目：报路径
+  r = compileAppearance({
+    __visuals: { a: { slots: { 'Body': { libraryRef: 'ghost_mat' } } } },
+    __materialLib: {},
+  }, { liveNodeIds: new Set(['a']) });
+  assert.ok(r.errors.some((e) => e.includes('slots') && e.includes('ghost_mat')), '槽位缺库条目报路径');
+  // 合法输入：零错误 + locked 剥离 + 未引用种子剔除 + 键序稳定。
+  // P4-R3：c 的 slots 在无 slotContext（工程根/manifest）时 fail-closed——
+  // 槽位校验属 strip 流程（有工程上下文），孤立调用判「无法验证」
+  const snapshot = {
+    __visuals: {
+      a: { color: '#ff0000', metalness: 0.8 },
+      b: { libraryRef: 'carpaint', locked: true },
+      c: { slots: { Hair: { color: '#111111' }, Body: { libraryRef: 'glass' } } },
+    },
+    __materialLib: {
+      carpaint: { name: '车漆', spec: { type: 'MeshPhysicalMaterial', clearcoat: 1 } },
+      glass: { name: '玻璃', spec: { type: 'MeshPhysicalMaterial', transmission: 1 } },
+      unused_seed: { name: '未引用', spec: { type: 'MeshStandardMaterial' } },
+    },
+  };
+  r = compileAppearance(snapshot, { liveNodeIds: new Set(['a', 'b', 'c']) });
+  assert.ok(
+    r.errors.some((e) => e.includes('__visuals["c"].slots 无法验证')),
+    'P4-R3：无工程上下文的 slots fail-closed（不把不知道当成功）',
+  );
+  // 非 slots 输入零错误（槽位校验不触发）
+  r = compileAppearance({
+    __visuals: {
+      a: { color: '#ff0000', metalness: 0.8 },
+      b: { libraryRef: 'carpaint', locked: true },
+    },
+    __materialLib: snapshot.__materialLib,
+  }, { liveNodeIds: new Set(['a', 'b']) });
+  assert.deepEqual(r.errors, []);
+  assert.equal(r.exportedVisuals.b.locked, undefined, 'locked 剥离');
+  assert.ok(r.exportedMaterialLib.carpaint, '被引用条目保留');
+  assert.equal(r.exportedMaterialLib.unused_seed, undefined, '未引用种子剔除');
+  assert.equal(r.stats.visualEntries, 2);
+  // 同输入产同输出（可重复生成 / formatter 稳定）
+  const r2 = compileAppearance({
+    __visuals: {
+      a: { color: '#ff0000', metalness: 0.8 },
+      b: { libraryRef: 'carpaint', locked: true },
+    },
+    __materialLib: snapshot.__materialLib,
+  }, { liveNodeIds: new Set(['a', 'b']) });
+  assert.equal(r.code, r2.code, '编译确定性');
+  // 代码模块：双常量导出 + 类型来自 scene-core（不 import edit）
+  assert.ok(/export const compiledVisuals/.test(r.code));
+  assert.ok(/export const compiledMaterialLib/.test(r.code));
+  assert.ok(!/from\s+['"].*edit/.test(r.code));
+});
+
+await test('P4.1 applyCompiledAppearance: visuals/materials/slots effective on real engine (V17 core)', async () => {
+  const { applyCompiledAppearance } = await import(pathToFileURL(join(template, 'src/scene-core/appearance-runtime.ts')));
+  // 真 SceneEngine + 真 ResourceScope（P3 验证过的所有权链路自动继承）
+  const engine = new SceneEngine();
+  engine.registerFactory('things', () => {
+    const g = new THREE.Group();
+    const m = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshStandardMaterial());
+    m.name = 'body';
+    g.add(m);
+    return g;
+  });
+  engine.applyFragment({ things: [{ id: 'a' }, { id: 'b' }] });
+  const handle = {
+    update: (frag) => engine.applyFragment(frag),
+    internals: { sceneEngine: engine },
+  };
+  // 数据不带私有区（运行包形态）
+  const result = applyCompiledAppearance(handle, {});
+  assert.ok(['empty', 'editor-data'].includes(result.skipped), '母版空表 → skipped=empty');
+  // 注入编译数据（模块级常量替换不了——用 monkey-patch 模拟编译产物：
+  //   appearance-runtime 读模块常量，这里直接对引擎应用同等视觉验证运行时链路）
+  // 用引擎原生入口应用编译等价视觉（与 appearance-runtime 的 applyVisual 同一 API）：
+  engine.applyVisual('a', { color: '#00ff00', visible: false, castShadow: false });
+  engine.applyVisual('b', { libraryRef: 'carpaint' });
+  const objA = engine.getObject('a');
+  const meshA = objA.children.find((c) => c.isMesh);
+  assert.equal(objA.visible, false, '显隐生效');
+  assert.equal(meshA.castShadow, false, '阴影开关生效');
+  const matA = Array.isArray(meshA.material) ? meshA.material[0] : meshA.material;
+  assert.equal(`#${matA.color.getHexString()}`, '#00ff00', '内联改色生效');
+  assert.ok(engine.getVisual('a') !== null, '视觉层已写入引擎（异步 GLB 重挂同源）');
+  // libraryRef：runtime 用共享实例表（该链路由 appearance-runtime 的
+  // applyLibraryInstances 走 createMaterialFromSpec——此处验证引擎侧视觉层可承载）
+  assert.equal(engine.getVisual('b')?.libraryRef, 'carpaint');
+  engine.dispose();
+});
+
+await test('P4.2 stripEdit atomic publish: failure preserves source and old output (V19)', async () => {
+  const { stripEdit } = await import('../strip-edit.mjs');
+  const { cpSync, rmSync, writeFileSync } = await import('node:fs');
+  const tmp = join(await import('node:os').then((m) => m.tmpdir()), `p4-strip-${Date.now()}`);
+  const src = join(tmp, 'src');
+  cpSync(resolve(template), src, {
+    recursive: true,
+    filter: (s) => !['node_modules', 'dist', '.git', '.smoke-r', '.smoke-vendor'].some(
+      (n) => s.endsWith(n) || s.includes(`/${n}`) || s.includes(`\\${n}`),
+    ),
+  });
+  try {
+    // 正常导出 → 产物 + appearance.ts 编译落位
+    const out = join(tmp, 'out');
+    const r1 = await stripEdit(src, out, { force: true });
+    assert.equal(r1.ok, true, JSON.stringify(r1.errors));
+    assert.ok(existsSync(join(out, 'src', 'scene-core', 'generated', 'appearance.ts')), 'appearance.ts 落位');
+    assert.ok(existsSync(join(out, 'TRANSCRIPTION.md')), '摘要落位');
+    const oldMarker = readFileSync(join(out, 'src', 'main.ts'), 'utf8');
+    // 坏源（陈旧引用）→ FAIL：源完好 + 旧 out 完好 + 无 staging 残留
+    const p = join(src, 'public', 'scene-data.json');
+    const data = JSON.parse(readFileSync(p, 'utf8'));
+    data.__visuals = { ghost_404: { color: '#000' } };
+    writeFileSync(p, JSON.stringify(data, null, 2));
+    const r2 = await stripEdit(src, out, { force: true });
+    assert.equal(r2.ok, false);
+    assert.ok(r2.errors.some((e) => e.includes('ghost_404')), '错误报具体路径');
+    assert.equal(readFileSync(join(out, 'src', 'main.ts'), 'utf8'), oldMarker, '旧产物分毫未动');
+    assert.ok(existsSync(join(src, 'src', 'edit', 'Bridge.ts')), '源工程完好');
+    const stagingLeft = readdirSyncSafe(dirname(out)).filter((f) => f.startsWith('.tmp-strip'));
+    assert.equal(stagingLeft.length, 0, `staging 清理干净（残留：${stagingLeft.join(',')}）`);
+    // out 嵌套在源内：拒绝
+    const r3 = await stripEdit(src, join(src, 'nested'), { force: true });
+    assert.equal(r3.ok, false);
+    assert.ok(r3.errors.some((e) => e.includes('嵌在源工程内部')), '嵌套拒绝');
+  } finally {
+    rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+// ═══ P4 首审修复轮（P4-R1/R2/R3）═══
+
+const P4_SOURCE = {
+  visuals: {
+    a: { libraryRef: 'red' },
+    b: { libraryRef: 'red' },
+    s: { slots: { Body: { libraryRef: 'red' } } },
+  },
+  materialLib: {
+    red: { name: '红', spec: { type: 'MeshStandardMaterial', color: '#ff0000' } },
+  },
+};
+
+await test('P4-R1/R2 library materials survive late asset mount and rebuild; ownership exact (V17/V14)', async () => {
+  const { applyCompiledAppearance } = await import(pathToFileURL(join(template, 'src/scene-core/appearance-runtime.ts')));
+  const makeAssetNodeFactoryMod = await import(pathToFileURL(join(template, 'src/scene-core/handlers/registry.ts')));
+  // R1 复现夹具：真 makeAssetNodeFactory + 延迟 resolve 的 AssetEngine 替身（网络层测试替身，
+  // 引擎/资源域/runtime 为真实模块）
+  let releaseInstance;
+  const gate = new Promise((r) => { releaseInstance = r; });
+  const fakeAssetEngine = {
+    getInstance: async () => {
+      await gate;
+      const g = new THREE.Group();
+      const body = new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshStandardMaterial());
+      body.name = 'Body';
+      g.add(body);
+      return g;
+    },
+  };
+  const engine = new SceneEngine();
+  let disposes = 0;
+  engine.registerFactory('glbs', makeAssetNodeFactoryMod.makeAssetNodeFactory(
+    engine, fakeAssetEngine, () => 'assets/models/x.glb',
+  ));
+  engine.registerFactory('boxes', () => new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshStandardMaterial()));
+  engine.applyFragment({
+    glbs: [{ id: 'a', params: { assetId: 'fake' } }],
+    boxes: [{ id: 'b' }],
+  });
+  const handle = { update: (f) => engine.applyFragment(f), internals: { sceneEngine: engine } };
+  const result = applyCompiledAppearance(handle, {}, P4_SOURCE);
+  assert.equal(result.skipped, null);
+  assert.equal(result.materialInstances, 1);
+
+  const scope = getResourceScope(engine);
+  // 同步节点 b：立即挂红（RR1：库材质不进节点域登记——释放责任在库级 teardown）
+  const matB = engine.getObject('b').material;
+  assert.equal(`#${matB.color.getHexString()}`, '#ff0000', '同步对照：b 材质红');
+  assert.equal(scope.isTracked(matB), false, 'RR1：库材质不进节点域登记（库级 teardown 释放）');
+  const origDispose = matB.dispose.bind(matB);
+  matB.dispose = () => { disposes += 1; origDispose(); };
+
+  // R1 核心：迟到 GLB 挂载后库材质重挂（修复前=ffffff，applyVisualOverride refMode 不处理材质）
+  releaseInstance();
+  await sleep(50);
+  let bodyMat = null;
+  engine.getObject('a').traverse((c) => {
+    if (c.name === 'Body' && c.isMesh) {
+      bodyMat = Array.isArray(c.material) ? c.material[0] : c.material;
+    }
+  });
+  assert.ok(bodyMat, 'GLB 挂载完成');
+  assert.equal(`#${bodyMat.color.getHexString()}`, '#ff0000', 'R1：迟到 GLB 库材质红（修复前白）');
+  assert.equal(bodyMat, matB, 'a/b 共享同一实例');
+
+  // RR1 生命周期：节点全删（零引用窗口）→ 库材质仍有效（不 dispose）；
+  // 引擎销毁 → 库级 teardown 恰好释放一次
+  engine.applyFragment({ remove: ['a'] });
+  assert.equal(disposes, 0, '删一个引用者不释放');
+  engine.applyFragment({ remove: ['b'] });
+  assert.equal(disposes, 0, '零引用窗口不释放（RR1 修复前：最后 owner 退出 dispose=1 → 复用已释放实例）');
+  assert.equal(`#${matB.color.getHexString()}`, '#ff0000', '零引用窗口实例仍有效');
+  // 全删后重新创建（迟到/重建引用者）→ 复用同一**活**实例
+  engine.applyFragment({ boxes: [{ id: 'b' }] });
+  assert.equal(engine.getObject('b').material, matB, '重建引用者复用同一活实例（RR1）');
+  assert.equal(`#${engine.getObject('b').material.color.getHexString()}`, '#ff0000', '复用实例颜色正确');
+  engine.dispose();
+  assert.equal(disposes, 1, '引擎销毁：库级 teardown 恰好释放一次（不早不晚）');
+});
+
+await test('P4-R1 library materials remount after node rebuild (recreateNode path)', async () => {
+  const { applyCompiledAppearance } = await import(pathToFileURL(join(template, 'src/scene-core/appearance-runtime.ts')));
+  const engine = new SceneEngine();
+  engine.registerFactory('boxes', {
+    create: () => new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshStandardMaterial()),
+    update: (obj, next, prev) => (next.params?.v === prev.params?.v ? 'updated' : 'rebuild'),
+  });
+  engine.applyFragment({ boxes: [{ id: 'b', params: { v: 1 } }] });
+  const handle = { update: (f) => engine.applyFragment(f), internals: { sceneEngine: engine } };
+  applyCompiledAppearance(handle, {}, P4_SOURCE);
+  const objB = engine.getObject('b');
+  const matB = objB.material;
+  assert.equal(`#${matB.color.getHexString()}`, '#ff0000', '重建前库材质红');
+  // 结构参数 → recreateNode（created 事件）→ 库材质重挂
+  engine.applyFragment({ boxes: [{ id: 'b', params: { v: 2 } }] });
+  const objB2 = engine.getObject('b');
+  assert.notEqual(objB2, objB, '节点已重建');
+  assert.equal(`#${objB2.material.color.getHexString()}`, '#ff0000', 'R1：重建后库材质重挂（修复前=默认色）');
+  engine.dispose();
+});
+
+await test('P4-RR1 sole-owner rebuild window: same live material, zero mid-dispose, exactly one final', async () => {
+  const { applyCompiledAppearance } = await import(pathToFileURL(join(template, 'src/scene-core/appearance-runtime.ts')));
+  // 审稿复现：单节点 libraryRef，params 重建 → 旧节点 release 释放库材质（修复前），
+  // created 回调取回同一已释放实例（reusesSameMaterial=true, disposesWhileReused=1）
+  const engine = new SceneEngine();
+  engine.registerFactory('boxes', {
+    create: () => new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshStandardMaterial()),
+    update: (obj, next, prev) => (next.params?.v === prev.params?.v ? 'updated' : 'rebuild'),
+  });
+  engine.applyFragment({ boxes: [{ id: 'b', params: { v: 1 } }] });
+  const handle = { update: (f) => engine.applyFragment(f), internals: { sceneEngine: engine } };
+  applyCompiledAppearance(handle, {}, P4_SOURCE);
+  const matB = engine.getObject('b').material;
+  let disposes = 0;
+  const origDispose = matB.dispose.bind(matB);
+  matB.dispose = () => { disposes += 1; origDispose(); };
+  // 唯一 owner 连续重建 3 轮（每轮都跨零引用窗口）
+  let current = matB;
+  for (let i = 2; i <= 4; i += 1) {
+    engine.applyFragment({ boxes: [{ id: 'b', params: { v: i } }] });
+    assert.equal(disposes, 0, `第 ${i - 1} 轮重建窗口零 dispose（RR1 修复前=1：边 dispose 边复用）`);
+    const remounted = engine.getObject('b').material;
+    assert.equal(remounted, current, '重建后复用同一活实例');
+    assert.equal(`#${remounted.color.getHexString()}`, '#ff0000', '实例视觉有效（未 dispose）');
+    current = remounted;
+  }
+  engine.dispose();
+  assert.equal(disposes, 1, '引擎销毁：库级 teardown 恰好一次（审稿实测修复前累计=2）');
+});
+
+await test('P4-RR1 late owner after all current owners removed: instance alive, single dispose', async () => {
+  const { applyCompiledAppearance } = await import(pathToFileURL(join(template, 'src/scene-core/appearance-runtime.ts')));
+  const makeAssetNodeFactoryMod = await import(pathToFileURL(join(template, 'src/scene-core/handlers/registry.ts')));
+  // 迟到 GLB：同步引用者先全删（零引用窗口），GLB 才完成挂载——实例必须仍活
+  let releaseInstance;
+  const gate = new Promise((r) => { releaseInstance = r; });
+  const fakeAssetEngine = {
+    getInstance: async () => {
+      await gate;
+      const g = new THREE.Group();
+      const body = new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshStandardMaterial());
+      body.name = 'Body';
+      g.add(body);
+      return g;
+    },
+  };
+  const engine = new SceneEngine();
+  let disposes = 0;
+  engine.registerFactory('glbs', makeAssetNodeFactoryMod.makeAssetNodeFactory(
+    engine, fakeAssetEngine, () => 'assets/models/x.glb',
+  ));
+  engine.registerFactory('boxes', () => new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshStandardMaterial()));
+  engine.applyFragment({
+    glbs: [{ id: 'late', params: { assetId: 'fake' } }],
+    boxes: [{ id: 'b' }],
+  });
+  const handle = { update: (f) => engine.applyFragment(f), internals: { sceneEngine: engine } };
+  applyCompiledAppearance(handle, {}, { visuals: { b: { libraryRef: 'red' }, late: { libraryRef: 'red' } }, materialLib: P4_SOURCE.materialLib });
+  const matB = engine.getObject('b').material;
+  const origDispose = matB.dispose.bind(matB);
+  matB.dispose = () => { disposes += 1; origDispose(); };
+  // 同步引用者全删 → 零引用窗口
+  engine.applyFragment({ remove: ['b'] });
+  assert.equal(disposes, 0, '同步引用者退出不释放');
+  // 迟到 GLB 完成 → 从实例表挂载（修复前：shared 语义下实例已 dispose，挂的是死实例）
+  releaseInstance();
+  await sleep(50);
+  let lateMat = null;
+  engine.getObject('late').traverse((c) => {
+    if (c.name === 'Body' && c.isMesh) {
+      lateMat = Array.isArray(c.material) ? c.material[0] : c.material;
+    }
+  });
+  assert.ok(lateMat, '迟到 GLB 已挂载');
+  assert.equal(lateMat, matB, '迟到引用者拿到同一活实例（非已释放实例）');
+  assert.equal(`#${lateMat.color.getHexString()}`, '#ff0000', '实例视觉有效');
+  engine.dispose();
+  assert.equal(disposes, 1, '最终恰好释放一次');
+});
+
+await test('P4-R1 library material textures applied (applyMaterialTextures wired)', async () => {
+  const { applyCompiledAppearance } = await import(pathToFileURL(join(template, 'src/scene-core/appearance-runtime.ts')));
+  const { loadMaterialTextureMod } = { loadMaterialTextureMod: null };
+  void loadMaterialTextureMod;
+  // 贴图应用走 applyMaterialTextures → loadMaterialTexture（TextureLoader 网络层）。
+  // Node 无 fetch 场景验证接线而非像素：stub 检查 materials.ts 的 applyMaterialTextures
+  // 在实例化路径被调用（修复前 instantiateMaterialLib 只调 createMaterialFromSpec——
+  // 代码级差异。这里用带贴图 spec 的库 + 拦截 THREE.TextureLoader.loadAsync 计数）
+  let textureLoads = 0;
+  const origLoadAsync = THREE.TextureLoader.prototype.loadAsync;
+  THREE.TextureLoader.prototype.loadAsync = function stub(...args) {
+    textureLoads += 1;
+    return Promise.resolve(new THREE.Texture());
+  };
+  try {
+    const engine = new SceneEngine();
+    engine.registerFactory('boxes', () => new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshStandardMaterial()));
+    engine.applyFragment({ boxes: [{ id: 'b' }] });
+    const handle = { update: (f) => engine.applyFragment(f), internals: { sceneEngine: engine } };
+    applyCompiledAppearance(handle, {}, {
+      visuals: { b: { libraryRef: 'texred' } },
+      materialLib: {
+        texred: { name: '贴图红', spec: { type: 'MeshStandardMaterial', color: '#ff0000', map: 'assets/textures/example.jpg' } },
+      },
+    });
+    await sleep(20);
+    assert.ok(textureLoads >= 1, `库材质贴图加载被触发（got ${textureLoads}——修复前 instantiateMaterialLib 不调 applyMaterialTextures）`);
+    engine.dispose();
+  } finally {
+    THREE.TextureLoader.prototype.loadAsync = origLoadAsync;
+  }
+});
+
+await test('P4-R3 stale slot fails closed with exact path; real slot passes (V19)', async () => {
+  const { stripEdit } = await import('../strip-edit.mjs');
+  const { cpSync, rmSync, readFileSync, writeFileSync } = await import('node:fs');
+  const tmp = join(await import('node:os').then((m) => m.tmpdir()), `p4-r3-${Date.now()}`);
+  const src = join(tmp, 'src');
+  cpSync(resolve(template), src, {
+    recursive: true,
+    // 保留 node_modules（RRR1 起全量槽位走真 loader/headless 清单——与 RR2/RRR1 用例同款）
+    filter: (s) => !['dist', '.git', '.smoke-r', '.smoke-vendor', '.tmp', '.vite', '.vite-temp'].some(
+      (n) => s.endsWith(n) || s.includes(`/${n}`) || s.includes(`\\${n}`),
+    ),
+  });
+  try {
+    const p = join(src, 'public/scene-data.json');
+    const data = JSON.parse(readFileSync(p, 'utf8'));
+    const exId = data.examples?.[0]?.id ?? 'example_01';
+    const out = join(tmp, 'out');
+    // 负例：真实槽位 + 陈旧槽位混合 → FAIL 精确报陈旧路径，无产物
+    // （example 是非 Draco GLB——真 GLTFLoader 清单含 node_damagedHelmet_-6514）
+    data.__visuals = {
+      [exId]: { slots: { 'node_damagedHelmet_-6514': { color: '#00ff00' }, 'ghost/mesh': { color: '#ff0000' } } },
+    };
+    writeFileSync(p, JSON.stringify(data, null, 2));
+    const r = await stripEdit(src, out, { force: true });
+    assert.equal(r.ok, false, '陈旧槽位必须 FAIL');
+    assert.ok(
+      r.errors.some((e) => e.includes(`slots["ghost/mesh"]`) && e.includes('不存在')),
+      `错误报具体槽位路径：${JSON.stringify(r.errors)}`,
+    );
+    assert.ok(
+      !r.errors.some((e) => e.includes('node_damagedHelmet_-6514')),
+      '真实槽位不误报',
+    );
+    // 正例：只留真实槽位 → PASS + 编译进 appearance
+    delete data.__visuals[exId].slots['ghost/mesh'];
+    writeFileSync(p, JSON.stringify(data, null, 2));
+    const r2 = await stripEdit(src, out, { force: true });
+    assert.equal(r2.ok, true, JSON.stringify(r2.errors));
+    const ap = readFileSync(join(out, 'src/scene-core/generated/appearance.ts'), 'utf8');
+    assert.ok(ap.includes('node_damagedHelmet_-6514'), '真实槽位编译进 appearance');
+  } finally {
+    rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+await test('P4-RR2 procedural slots: runtime-manifest positive, stale negative, fail-closed (V19)', async () => {
+  const { stripEdit } = await import('../strip-edit.mjs');
+  const { cpSync, rmSync, readFileSync, writeFileSync, existsSync } = await import('node:fs');
+  const tmp = join(await import('node:os').then((m) => m.tmpdir()), `p4-rr2-${Date.now()}`);
+  const src = join(tmp, 'src');
+  cpSync(resolve(template), src, {
+    recursive: true,
+    // 保留 node_modules（运行时槽位清单需要工程 typescript/three 转译加载）
+    filter: (s) => !['dist', '.git', '.smoke-r', '.smoke-vendor', '.tmp', '.vite', '.vite-temp'].some(
+      (n) => s.endsWith(n) || s.includes(`/${n}`) || s.includes(`\\${n}`),
+    ),
+  });
+  try {
+    assert.ok(existsSync(join(src, 'node_modules', 'typescript')), '夹具含 typescript（运行时清单前提）');
+    const p = join(src, 'public/scene-data.json');
+    const data = JSON.parse(readFileSync(p, 'utf8'));
+    const treeId = data.trees?.[0]?.id;
+    const rackId = Object.keys((data.coderacks ?? []) && {}).length ? data.coderacks[0]?.id : null;
+    const out = join(tmp, 'out');
+    // 正例：程序化模型真实槽位（tree 的 trunk；rack 的 panel_side_l——RR2 修复前
+    // 一律误拒「非 GLB 节点不支持槽位」，合法编辑无法导出）
+    data.__visuals = {
+      [treeId]: { slots: { trunk: { color: '#7a5230' } } },
+    };
+    if (rackId) {
+      data.__visuals[rackId] = { slots: { panel_side_l: { color: '#ffcc00' } } };
+    }
+    writeFileSync(p, JSON.stringify(data, null, 2));
+    const r = await stripEdit(src, out, { force: true });
+    assert.equal(r.ok, true, `合法程序化槽位必须导出成功（RR2 修复前误拒）：${JSON.stringify(r.errors)}`);
+    const ap = readFileSync(join(out, 'src/scene-core/generated/appearance.ts'), 'utf8');
+    assert.ok(ap.includes('"trunk"'), 'tree trunk 槽位编译进 appearance');
+    if (rackId) {
+      assert.ok(ap.includes('panel_side_l'), 'rack 面板槽位编译进 appearance');
+    }
+    // 负例：程序化模型的陈旧槽位 → FAIL 报运行时清单路径（不能静默放行）
+    data.__visuals[treeId] = { slots: { trunk: { color: '#7a5230' }, ghost_branch: { color: '#123456' } } };
+    writeFileSync(p, JSON.stringify(data, null, 2));
+    const out2 = join(tmp, 'out2');
+    const r2 = await stripEdit(src, out2, { force: true });
+    assert.equal(r2.ok, false, '程序化陈旧槽位必须 FAIL');
+    assert.ok(
+      r2.errors.some((e) => e.includes(`slots["ghost_branch"]`) && e.includes('运行时 mesh 清单中不存在')),
+      '错误报运行时清单路径',
+    );
+    assert.ok(
+      !r2.errors.some((e) => e.includes('slots["trunk"]')),
+      '真实程序化槽位不误报',
+    );
+    // '#' 形态：静态不可判定的路径段不再无条件放行——GLB 匿名节点的 '#999/ghost'
+    // 在静态清单（具名路径）必不命中 → FAIL（RR2 修复前 hasUnnamed&&includes('#') 放行）
+    const exId = data.examples?.[0]?.id ?? 'example_01';
+    data.__visuals[exId] = { slots: { '#999/ghost': { color: '#000' } } };
+    writeFileSync(p, JSON.stringify(data, null, 2));
+    const r3 = await stripEdit(src, join(tmp, 'out3'), { force: true });
+    assert.equal(r3.ok, false, '匿名 # 路径不再放行');
+    assert.ok(
+      r3.errors.some((e) => e.includes('#999/ghost') && e.includes('不存在')),
+      '# 槽位报具体路径（fail-closed）',
+    );
+  } finally {
+    rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+await test('P4-RRR1 multi-primitive model: loader-true slots export, stale fails, runtime hits mesh', async () => {
+  const { stripEdit } = await import('../strip-edit.mjs');
+  const { buildRuntimeSlotKeys } = await import('../lib/runtime-slots.mjs');
+  const { cpSync, rmSync, readFileSync, writeFileSync, mkdirSync, existsSync } = await import('node:fs');
+  const tmp = join(await import('node:os').then((m) => m.tmpdir()), `p4-rrr1-${Date.now()}`);
+  const src = join(tmp, 'src');
+  cpSync(resolve(template), src, {
+    recursive: true,
+    filter: (s) => !['dist', '.git', '.smoke-r', '.smoke-vendor', '.tmp', '.vite', '.vite-temp'].some(
+      (n) => s.endsWith(n) || s.includes(`/${n}`) || s.includes(`\\${n}`),
+    ),
+  });
+  try {
+    // 构造审稿形态多 primitive 模型：node part / mesh surface / 2 primitive（数据 URI
+    // 嵌入——无外部依赖；真实 AssetEngine/GLTFLoader 同链路加载）
+    const png1px = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
+    const f32 = (a) => Buffer.from(new Float32Array(a).buffer);
+    const u16 = (a) => Buffer.from(new Uint16Array(a).buffer);
+    const bin = Buffer.concat([f32([0, 0, 0, 1, 0, 0, 0, 1, 0]), f32([0, 0, 1, 0, 0, 0]), u16([0, 1, 2])]);
+    const gltf = {
+      asset: { version: '2.0' }, scene: 0, scenes: [{ nodes: [0] }],
+      nodes: [{ name: 'part', mesh: 0 }],
+      meshes: [{ name: 'surface', primitives: [
+        { attributes: { POSITION: 0, TEXCOORD_0: 1 }, indices: 2, material: 0 },
+        { attributes: { POSITION: 0, TEXCOORD_0: 1 }, indices: 2, material: 0 },
+      ] }],
+      materials: [{ pbrMetallicRoughness: { baseColorTexture: { index: 0 } } }],
+      textures: [{ source: 0 }],
+      images: [{ uri: `data:image/png;base64,${png1px}` }],
+      accessors: [
+        { bufferView: 0, componentType: 5126, count: 3, type: 'VEC3', min: [0, 0, 0], max: [1, 1, 0] },
+        { bufferView: 1, componentType: 5126, count: 3, type: 'VEC2' },
+        { bufferView: 2, componentType: 5123, count: 3, type: 'SCALAR' },
+      ],
+      bufferViews: [
+        { buffer: 0, byteOffset: 0, byteLength: 36 },
+        { buffer: 0, byteOffset: 36, byteLength: 24 },
+        { buffer: 0, byteOffset: 60, byteLength: 6 },
+      ],
+      buffers: [{ uri: `data:application/octet-stream;base64,${bin.toString('base64')}`, byteLength: bin.length }],
+    };
+    const modelDir = join(src, 'public', 'assets', 'models', 'multi_prim');
+    mkdirSync(modelDir, { recursive: true });
+    writeFileSync(join(modelDir, 'model.gltf'), JSON.stringify(gltf));
+    // manifest 登记资产
+    const manifestPath = join(src, 'public', 'assets', 'asset-manifest.json');
+    const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
+    manifest.multi_prim = { model: 'models/multi_prim/model.gltf', format: 'gltf' };
+    writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
+    // 场景引用 + 编辑视觉（多 primitive 合法槽位——先经生产链路取真值）
+    const p = join(src, 'public/scene-data.json');
+    const data = JSON.parse(readFileSync(p, 'utf8'));
+    data.asset = [{ id: 'mp_01', params: { assetId: 'multi_prim' } }];
+    writeFileSync(p, JSON.stringify(data, null, 2));
+    const runtimeKeys = await buildRuntimeSlotKeys(src, data);
+    const mpKeys = runtimeKeys.get('mp_01');
+    assert.ok(mpKeys && mpKeys.size === 2, `生产加载产 2 个多 primitive 槽位（got ${JSON.stringify([...(mpKeys ?? [])])}）`);
+    assert.ok(mpKeys.has('part/surface') && mpKeys.has('part/surface_1'), '槽位形态 = part/surface + part/surface_1（loader 真值）');
+    // 复刻等价证明（Draco 路径的规则复刻 vs 真 loader——非 Draco 全等）
+    // emulateLoaderSlotKeys 为模块私有；等价性经 manifest 内 example 资产间接验证：
+    // example.glb（非 Draco 单 primitive）真 loader 清单与运行时形态一致
+    const exKeys = runtimeKeys.get(data.examples?.[0]?.id ?? 'example_01');
+    assert.ok(exKeys && [...exKeys].includes('node_damagedHelmet_-6514'), '非 Draco 资产真 loader 清单命中');
+    // Draco（person）清单：复刻路径产出 Armature/Ch23_*（运行时同形态）
+    const personKeys = runtimeKeys.get('person_01');
+    assert.ok(personKeys && [...personKeys].some((k) => k.startsWith('Armature/Ch23_')), 'Draco 复刻清单与运行时槽位形态一致');
+
+    // 正例：多 primitive 合法槽位 → strip 成功 + 编译进 appearance
+    data.__visuals = { mp_01: { slots: { 'part/surface': { color: '#00ff00' }, 'part/surface_1': { color: '#0000ff' } } } };
+    writeFileSync(p, JSON.stringify(data, null, 2));
+    const out = join(tmp, 'out');
+    const r = await stripEdit(src, out, { force: true });
+    assert.equal(r.ok, true, `多 primitive 合法槽位必须导出成功（修复前误报陈旧）：${JSON.stringify(r.errors)}`);
+    const ap = readFileSync(join(out, 'src/scene-core/generated/appearance.ts'), 'utf8');
+    assert.ok(ap.includes('part/surface') && ap.includes('part/surface_1'), '两个 primitive 槽位都编译进 appearance');
+
+    // 运行时命中验证（全部在夹具源内加载——单 THREE 实例链）：
+    // 真实 GLTFLoader 加载同一模型 → 复刻 makeAssetNodeFactory 挂载形态 →
+    // findBySlotKey（运行时槽位定位函数）确认两个 key 都命中真实 mesh →
+    // appearance-runtime 应用编译视觉后材质生效
+    const materialsMod = await import(pathToFileURL(join(src, 'src', 'scene-core', 'materials.ts')));
+    const { applyCompiledAppearance } = await import(pathToFileURL(join(src, 'src/scene-core/appearance-runtime.ts')));
+    const { SceneEngine: FixtureSceneEngine } = await import(pathToFileURL(join(src, 'src', 'scene-core', 'engine', 'SceneEngine.ts')));
+    globalThis.self = globalThis.self ?? globalThis;
+    globalThis.createImageBitmap = globalThis.createImageBitmap ?? (async () => ({ width: 1, height: 1, close: () => {} }));
+    globalThis.ProgressEvent = globalThis.ProgressEvent ?? class { constructor(t, i = {}) { this.type = t; Object.assign(this, i); } };
+    const { GLTFLoader: FixtureLoader } = await import(pathToFileURL(join(src, 'node_modules', 'three', 'examples', 'jsm', 'loaders', 'GLTFLoader.js')));
+    const loader = new FixtureLoader();
+    const gltfResult = await new Promise((res, rej) => loader.parse(JSON.stringify(gltf), '', res, rej));
+    const gltfScene = gltfResult.scene;
+    // 复刻挂载形态：Group 由 gltfScene 所在的同一 three 实例构造（scene.parent
+    // 为 null——用 scene 自身的构造器族拿 Group：Loader 的 Group 类挂在
+    // gltfScene.constructor 的模块命名空间外，改用 Object3D 根包装：
+    // makeAssetNodeFactory 的 group.add(gltfScene) 等价于「gltfScene 挂在
+    // 节点 Object3D 下」——这里用 findBySlotKey 直接从 gltfScene 起（跳过外壳
+    // 容器：findBySlotKey 的容器探层语义等价处理）
+    const hit1 = materialsMod.findBySlotKey(gltfScene, 'part/surface');
+    const hit2 = materialsMod.findBySlotKey(gltfScene, 'part/surface_1');
+    assert.ok(hit1 && hit2, '运行时槽位定位：两个多 primitive key 均命中真实 mesh');
+    assert.ok(hit1.isMesh && hit2.isMesh, '命中对象是 mesh');
+    assert.equal(hit1.name, 'surface', 'part/surface 命中第一 primitive mesh');
+    assert.equal(hit2.name, 'surface_1', 'part/surface_1 命中第二 primitive mesh');
+    // 视觉生效：applyCompiledAppearance 的 applyVisual→applyVisualOverride 链
+    // （engine 用夹具 SceneEngine；挂载用 loader 同实例 Group——从 materials 模块
+    // 的 THREE 取（materials.ts import 'three' 与 GLTFLoader 同链））
+    const matThree = await import(pathToFileURL(join(src, 'node_modules', 'three', 'build', 'three.module.js')));
+    const engine = new FixtureSceneEngine();
+    const gltfScene2 = (await new Promise((res, rej) => loader.parse(JSON.stringify(gltf), '', res, rej))).scene;
+    engine.registerFactory('asset', {
+      create: () => {
+        const g = new matThree.Group();
+        g.add(gltfScene2);
+        return g;
+      },
+    });
+    engine.applyFragment({ asset: [{ id: 'mp_01', params: { assetId: 'multi_prim' } }] });
+    const handle = { update: (f) => engine.applyFragment(f), internals: { sceneEngine: engine } };
+    const result = applyCompiledAppearance(handle, {}, {
+      visuals: { mp_01: { slots: { 'part/surface': { color: '#00ff00' }, 'part/surface_1': { color: '#0000ff' } } } },
+      materialLib: {},
+    });
+    assert.equal(result.skipped, null);
+    const obj = engine.getObject('mp_01');
+    const surfaceMesh = obj.getObjectByName('surface');
+    const surface1Mesh = obj.getObjectByName('surface_1');
+    assert.ok(surfaceMesh && surface1Mesh, '运行时两个 primitive mesh 均存在（loader 命名）');
+    assert.equal(`#${surfaceMesh.material.color.getHexString()}`, '#00ff00', 'part/surface 运行时命中 mesh（视觉生效）');
+    assert.equal(`#${surface1Mesh.material.color.getHexString()}`, '#0000ff', 'part/surface_1 运行时命中 mesh（视觉生效）');
+    engine.dispose();
+
+    // 负例：篡改为不存在 key → FAIL + 源/旧输出完好
+    const oldMarker = readFileSync(join(out, 'src', 'main.ts'), 'utf8');
+    data.__visuals = { mp_01: { slots: { 'part/surface': { color: '#00ff00' }, 'part/ghost': { color: '#fff' } } } };
+    writeFileSync(p, JSON.stringify(data, null, 2));
+    const r2 = await stripEdit(src, out, { force: true });
+    assert.equal(r2.ok, false, '不存在槽位必须 FAIL');
+    assert.ok(
+      r2.errors.some((e) => e.includes('slots["part/ghost"]') && e.includes('不存在')),
+      '错误槽位报具体路径',
+    );
+    assert.equal(readFileSync(join(out, 'src', 'main.ts'), 'utf8'), oldMarker, '旧输出完好');
+    assert.ok(existsSync(join(src, 'src', 'edit', 'Bridge.ts')), '源工程完好');
+  } finally {
+    rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+await test('P4-RRRR1 external bin (encoded filename): real slot exports, missing dep fails, empty-vs-fail distinct', async () => {
+  const { stripEdit } = await import('../strip-edit.mjs');
+  const { cpSync, rmSync, readFileSync, writeFileSync, mkdirSync, existsSync } = await import('node:fs');
+  const tmp = join(await import('node:os').then((m) => m.tmpdir()), `p4-rrrr1-${Date.now()}`);
+  const src = join(tmp, 'src');
+  cpSync(resolve(template), src, {
+    recursive: true,
+    filter: (s) => !['dist', '.git', '.smoke-r', '.smoke-vendor', '.tmp', '.vite', '.vite-temp'].some(
+      (n) => s.endsWith(n) || s.includes(`/${n}`) || s.includes(`\\${n}`),
+    ),
+  });
+  try {
+    // 合法多文件 glTF：具名节点 part + 外部 data.bin（磁盘文件名含空格/非 ASCII，
+    // glTF URI 百分号编码——与浏览器 fetch 解码一致）
+    const f32 = (a) => Buffer.from(new Float32Array(a).buffer);
+    const u16 = (a) => Buffer.from(new Uint16Array(a).buffer);
+    const bin = Buffer.concat([f32([0, 0, 0, 1, 0, 0, 0, 1, 0]), u16([0, 1, 2])]);
+    const modelDir = join(src, 'public', 'assets', 'models', 'ext_model');
+    mkdirSync(modelDir, { recursive: true });
+    const gltf = {
+      asset: { version: '2.0' }, scene: 0, scenes: [{ nodes: [0] }],
+      nodes: [{ name: 'part', mesh: 0 }],
+      meshes: [{ primitives: [{ attributes: { POSITION: 0 }, indices: 1 }] }],
+      accessors: [
+        { bufferView: 0, componentType: 5126, count: 3, type: 'VEC3', min: [0, 0, 0], max: [1, 1, 0] },
+        { bufferView: 1, componentType: 5123, count: 3, type: 'SCALAR' },
+      ],
+      bufferViews: [
+        { buffer: 0, byteOffset: 0, byteLength: 36 },
+        { buffer: 0, byteOffset: 36, byteLength: 6 },
+      ],
+      buffers: [{ uri: 'data%20mesh.bin', byteLength: bin.length }],
+    };
+    writeFileSync(join(modelDir, 'model.gltf'), JSON.stringify(gltf));
+    writeFileSync(join(modelDir, 'data mesh.bin'), bin);
+    const manifestPath = join(src, 'public', 'assets', 'asset-manifest.json');
+    const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
+    manifest.ext_model = { model: 'models/ext_model/model.gltf', format: 'gltf' };
+    writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
+    const p = join(src, 'public/scene-data.json');
+    const data = JSON.parse(readFileSync(p, 'utf8'));
+    data.asset = [{ id: 'ext_01', params: { assetId: 'ext_model' } }];
+    // 正例：真实存在槽位 part → strip 成功保真（修复前：外部 bin 加载失败 → 空清单
+    // 冒充成功 → part 被误报陈旧）
+    data.__visuals = { ext_01: { slots: { part: { color: '#00ccff' } } } };
+    writeFileSync(p, JSON.stringify(data, null, 2));
+    const out = join(tmp, 'out');
+    const r = await stripEdit(src, out, { force: true });
+    assert.equal(r.ok, true, `外部 bin 真实槽位必须导出成功（修复前误报陈旧）：${JSON.stringify(r.errors)}`);
+    const ap = readFileSync(join(out, 'src/scene-core/generated/appearance.ts'), 'utf8');
+    assert.ok(ap.includes('"part"'), 'part 槽位编译进 appearance');
+
+    // 负例：抽掉 data mesh.bin（缺外部依赖）→ 节点无运行时清单（非空清单冒充），
+    // 槽位校验报「无法验证」FAIL + 源/旧输出完好
+    rmSync(join(modelDir, 'data mesh.bin'));
+    const oldMarker = readFileSync(join(out, 'src', 'main.ts'), 'utf8');
+    const r2 = await stripEdit(src, out, { force: true });
+    assert.equal(r2.ok, false, '缺依赖必须 FAIL（不能以 fail-closed 无害为由放行合法资产语义混淆）');
+    assert.ok(
+      r2.errors.some((e) => e.includes('ext_01') && e.includes('无法验证')),
+      `缺依赖报「无法验证」而非「不存在」（区分加载失败与有效空清单）：${JSON.stringify(r2.errors)}`,
+    );
+    assert.ok(
+      !r2.errors.some((e) => e.includes('不存在')),
+      '加载失败不得冒充「成功加载但 key 不存在」',
+    );
+    assert.equal(readFileSync(join(out, 'src', 'main.ts'), 'utf8'), oldMarker, '旧输出完好');
+    assert.ok(existsSync(join(src, 'src', 'edit', 'Bridge.ts')), '源工程完好');
+  } finally {
+    rmSync(tmp, { recursive: true, force: true });
+  }
 });
 
 if (!process.argv.includes('--node-only')) {

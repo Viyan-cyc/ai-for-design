@@ -122,6 +122,9 @@ export const makeAssetNodeFactory = (
       applyVisualIfAny(instance, node.id, (id) => sceneEngine.getVisual(id));
       group.add(instance);
       onLoaded?.(node, instance);
+      // P4-R1：异步挂载完成 emit updated——库材质（appearance-runtime 的共享实例）
+      // 在此重挂；applyVisualOverride 的 refMode 不处理材质，库视觉只有这个时点生效
+      sceneEngine.emitExternalNodeUpdated?.(node.id);
       // P3-RRR1：视觉层重挂/业务回调（applyState 等）会克隆替换 clone mesh 的材质——
       // 异步挂载点资源集对账（RRRR1：走引擎公共入口，带节点边界与受影响子节点同步）
       sceneEngine.syncResourcesFor(node.id, group);
