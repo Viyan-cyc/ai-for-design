@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 2,
+  "baseUrl": "https://octo.hdesign.huawei.com",
+  "mappingVersion": "1:bfdb2a09",
+  "provider": "iconplus",
+  "summary": {
+    "requested": 4,
+    "company": 0,
+    "fallback": 4,
+    "network": {
+      "configCalls": 1,
+      "searchCalls": 0,
+      "iconCalls": 0
+    },
+    "rewritten": 0
+  },
+  "items": [
+    {
+      "epName": "Delete",
+      "provider": "element-plus",
+      "companyIdentity": null,
+      "reason": "SERVICE_UNAVAILABLE",
+      "cacheStatus": "MISS"
+    },
+    {
+      "epName": "Edit",
+      "provider": "element-plus",
+      "companyIdentity": null,
+      "reason": "SERVICE_UNAVAILABLE",
+      "cacheStatus": "MISS"
+    },
+    {
+      "epName": "Plus",
+      "provider": "element-plus",
+      "companyIdentity": null,
+      "reason": "SERVICE_UNAVAILABLE",
+      "cacheStatus": "MISS"
+    },
+    {
+      "epName": "Search",
+      "provider": "element-plus",
+      "companyIdentity": null,
+      "reason": "SERVICE_UNAVAILABLE",
+      "cacheStatus": "MISS"
+    }
+  ]
+}

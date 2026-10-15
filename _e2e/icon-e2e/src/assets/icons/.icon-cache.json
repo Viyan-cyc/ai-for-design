@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 2,
+  "provider": "iconplus",
+  "baseUrl": "https://octo.hdesign.huawei.com",
+  "mappingVersion": "1:bfdb2a09",
+  "entries": {
+    "Delete": {
+      "provider": "iconplus",
+      "baseUrl": "https://octo.hdesign.huawei.com",
+      "mappingVersion": "1:bfdb2a09",
+      "reason": "SERVICE_UNAVAILABLE",
+      "transient": true
+    },
+    "Edit": {
+      "provider": "iconplus",
+      "baseUrl": "https://octo.hdesign.huawei.com",
+      "mappingVersion": "1:bfdb2a09",
+      "reason": "SERVICE_UNAVAILABLE",
+      "transient": true
+    },
+    "Plus": {
+      "provider": "iconplus",
+      "baseUrl": "https://octo.hdesign.huawei.com",
+      "mappingVersion": "1:bfdb2a09",
+      "reason": "SERVICE_UNAVAILABLE",
+      "transient": true
+    },
+    "Search": {
+      "provider": "iconplus",
+      "baseUrl": "https://octo.hdesign.huawei.com",
+      "mappingVersion": "1:bfdb2a09",
+      "reason": "SERVICE_UNAVAILABLE",
+      "transient": true
+    }
+  }
+}

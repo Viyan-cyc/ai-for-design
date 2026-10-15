@@ -1,0 +1,120 @@
+{
+  "mode": "dist",
+  "negative": true,
+  "status": "FAIL",
+  "requests": [
+    {
+      "url": "http://127.0.0.1:60003/",
+      "type": "Document"
+    },
+    {
+      "url": "http://127.0.0.1:60003/assets/index-BsB3iSBO.js",
+      "type": "Script"
+    },
+    {
+      "url": "http://127.0.0.1:60003/assets/index-DYQpodEr.css",
+      "type": "Stylesheet"
+    },
+    {
+      "url": "data:image/svg+xml,%3csvg%20width='1em'%20height='1em'%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%3e%3c!--%20@gts-ep-coder-owned%20--%3e%3cpath%20fill='%23222222'%20d='M4%204h16v16H4z'/%3e%3c/svg%3e",
+      "type": "Image"
+    },
+    {
+      "url": "data:image/svg+xml,%3csvg%20width='1em'%20height='1em'%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%3e%3c!--%20@gts-ep-coder-owned%20--%3e%3cpath%20fill='%23dddddd'%20d='M4%204h16v16H4z'/%3e%3c/svg%3e",
+      "type": "Image"
+    },
+    {
+      "url": "http://127.0.0.1:60003/favicon.ico",
+      "type": "Other"
+    }
+  ],
+  "responses": [
+    {
+      "url": "http://127.0.0.1:60003/",
+      "status": 200,
+      "mime": "text/html"
+    },
+    {
+      "url": "http://127.0.0.1:60003/assets/index-BsB3iSBO.js",
+      "status": 200,
+      "mime": "text/javascript"
+    },
+    {
+      "url": "data:image/svg+xml,%3csvg%20width='1em'%20height='1em'%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%3e%3c!--%20@gts-ep-coder-owned%20--%3e%3cpath%20fill='%23222222'%20d='M4%204h16v16H4z'/%3e%3c/svg%3e",
+      "status": 200,
+      "mime": "image/svg+xml"
+    },
+    {
+      "url": "data:image/svg+xml,%3csvg%20width='1em'%20height='1em'%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%3e%3c!--%20@gts-ep-coder-owned%20--%3e%3cpath%20fill='%23dddddd'%20d='M4%204h16v16H4z'/%3e%3c/svg%3e",
+      "status": 200,
+      "mime": "image/svg+xml"
+    },
+    {
+      "url": "http://127.0.0.1:60003/favicon.ico",
+      "status": 204,
+      "mime": "text/plain"
+    }
+  ],
+  "errors": [],
+  "exceptions": [],
+  "networkFailed": [
+    {
+      "requestId": "22152.3",
+      "timestamp": 91536.244194,
+      "type": "Stylesheet",
+      "errorText": "net::ERR_BLOCKED_BY_CLIENT.Inspector",
+      "canceled": false,
+      "blockedReason": "inspector"
+    }
+  ],
+  "shots": [
+    "D:\\cyc\\project\\octo\\gts\\test\\ep-coder\\_e2e\\browser-acceptance\\shots\\negative-dist\\dist-light.png"
+  ],
+  "url": "http://127.0.0.1:60003/",
+  "browser": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/155.0.0.0 Safari/537.36",
+  "light": {
+    "theme": "default",
+    "pairCount": 2,
+    "imgCount": 4,
+    "lightShown": 2,
+    "darkShown": 0,
+    "visibleImages": [
+      {
+        "src": "data:image/svg+xml,%3csvg%20width='1em'%20height='1em'%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%3e%3c!--%20@gts-ep-coder-owned%20--%3e%3cpath%20fill='%23222222'%20d='M4%204h16v16H4z'/%3e%3c/svg%3e",
+        "complete": true,
+        "naturalWidth": 16,
+        "width": 13.328125,
+        "height": 13.328125
+      },
+      {
+        "src": "data:image/svg+xml,%3csvg%20width='1em'%20height='1em'%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%3e%3c!--%20@gts-ep-coder-owned%20--%3e%3cpath%20fill='%23222222'%20d='M4%204h16v16H4z'/%3e%3c/svg%3e",
+        "complete": true,
+        "naturalWidth": 16,
+        "width": 13.328125,
+        "height": 13.328125
+      }
+    ],
+    "brokenImgs": 0,
+    "epIconCount": 5,
+    "tableRows": 10,
+    "buttons": [
+      "查询",
+      "新增",
+      "编辑",
+      "删除",
+      "导出"
+    ],
+    "tokenBackground": "",
+    "tokenFont": "",
+    "background": "rgba(0, 0, 0, 0)",
+    "color": "rgb(0, 0, 0)",
+    "fontFamily": "\"Noto Sans SC\"",
+    "buttonHeight": 25,
+    "buttonBackground": "rgb(240, 240, 240)",
+    "inputShadow": "none",
+    "pagePadding": "0px",
+    "tableHeaderBackground": "rgba(0, 0, 0, 0)",
+    "bootError": ""
+  },
+  "failure": "AssertionError [ERR_ASSERTION]: theme variables resolved\n    at validate (file:///D:/cyc/project/octo/gts/test/ep-coder/_e2e/browser-acceptance/runner.mjs:55:10)\n    at run (file:///D:/cyc/project/octo/gts/test/ep-coder/_e2e/browser-acceptance/runner.mjs:139:41)\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at async file:///D:/cyc/project/octo/gts/test/ep-coder/_e2e/browser-acceptance/accept-dist.mjs:3:1"
+}

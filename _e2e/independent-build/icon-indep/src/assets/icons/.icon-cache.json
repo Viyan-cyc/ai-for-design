@@ -1,0 +1,63 @@
+{
+  "schemaVersion": 2,
+  "provider": "iconplus",
+  "baseUrl": "http://127.0.0.1:8799",
+  "mappingVersion": "1:bfdb2a09",
+  "entries": {
+    "Delete": {
+      "provider": "iconplus",
+      "baseUrl": "http://127.0.0.1:8799",
+      "sourceId": 6,
+      "groupId": "74,77,93",
+      "mappingVersion": "1:bfdb2a09",
+      "reason": "NO_MATCH",
+      "until": 1792144288335
+    },
+    "Download": {
+      "provider": "iconplus",
+      "baseUrl": "http://127.0.0.1:8799",
+      "sourceId": 6,
+      "groupId": "74,77,93",
+      "mappingVersion": "1:bfdb2a09",
+      "reason": "NO_MATCH",
+      "until": 1792144288335
+    },
+    "Edit": {
+      "provider": "iconplus",
+      "baseUrl": "http://127.0.0.1:8799",
+      "sourceId": 6,
+      "groupId": "74,77,93",
+      "mappingVersion": "1:bfdb2a09",
+      "reason": "NO_MATCH",
+      "until": 1792144288335
+    },
+    "Plus": {
+      "provider": "iconplus",
+      "baseUrl": "http://127.0.0.1:8799",
+      "sourceId": 6,
+      "groupId": "74,77,93",
+      "mappingVersion": "1:bfdb2a09",
+      "identity": "id-Plus",
+      "url": "mock://Plus",
+      "themeMode": "paired",
+      "reason": "EXACT",
+      "sourceRef": "iconplus-search",
+      "lightHash": "4a7c498251df7c629fc781ceb3d698d8",
+      "darkHash": "580e7ceaa00577d720973bbfe8ee8f10"
+    },
+    "Search": {
+      "provider": "iconplus",
+      "baseUrl": "http://127.0.0.1:8799",
+      "sourceId": 6,
+      "groupId": "74,77,93",
+      "mappingVersion": "1:bfdb2a09",
+      "identity": "id-Search",
+      "url": "mock://Search",
+      "themeMode": "paired",
+      "reason": "EXACT",
+      "sourceRef": "iconplus-search",
+      "lightHash": "4a7c498251df7c629fc781ceb3d698d8",
+      "darkHash": "580e7ceaa00577d720973bbfe8ee8f10"
+    }
+  }
+}

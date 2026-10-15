@@ -1,0 +1,40 @@
+{
+  "url": "file:///D:/cyc/project/octo/gts/test/ep-coder/_e2e/independent-build/icon-indep/index.gts.html",
+  "browser": "Chrome/155.0.0.0",
+  "auditLight": {
+    "theme": "default",
+    "appMounted": true,
+    "tableRows": 10,
+    "btns": [
+      "查询",
+      "新增",
+      "编辑",
+      "删除",
+      "导出"
+    ],
+    "pairCount": 2,
+    "imgCount": 4,
+    "lightShown": 2,
+    "darkShown": 0,
+    "brokenImgs": 0,
+    "epIconCount": 5,
+    "bootErrorVisible": null,
+    "title": "UX Prototype Preview"
+  },
+  "auditDark": {
+    "theme": "dark",
+    "lightShown": 0,
+    "darkShown": 2,
+    "darkSrc": [
+      "file:///D:/cyc/project/octo/gts/test/ep-coder/_e2e/independent-build/i",
+      "file:///D:/cyc/project/octo/gts/test/ep-coder/_e2e/independent-build/i"
+    ]
+  },
+  "consoleErrors": [],
+  "exceptions": [],
+  "networkFailed": [],
+  "shots": [
+    "D:\\cyc\\project\\octo\\gts\\test\\ep-coder\\_e2e\\browser-acceptance\\shots\\preview-file-light.png",
+    "D:\\cyc\\project\\octo\\gts\\test\\ep-coder\\_e2e\\browser-acceptance\\shots\\preview-file-dark.png"
+  ]
+}

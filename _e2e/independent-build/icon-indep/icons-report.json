@@ -1,0 +1,68 @@
+{
+  "schemaVersion": 2,
+  "baseUrl": "http://127.0.0.1:8799",
+  "mappingVersion": "1:bfdb2a09",
+  "provider": "iconplus",
+  "summary": {
+    "requested": 5,
+    "company": 2,
+    "fallback": 3,
+    "network": {
+      "config": {
+        "attempts": 1
+      },
+      "search": {
+        "attempts": 1
+      },
+      "iconLight": {
+        "attempts": 1
+      },
+      "iconDark": {
+        "attempts": 1
+      },
+      "configCalls": 1,
+      "configMs": 47,
+      "searchCalls": 1,
+      "iconCalls": null,
+      "networkMs": 62
+    },
+    "rewritten": 0
+  },
+  "items": [
+    {
+      "epName": "Delete",
+      "provider": "element-plus",
+      "companyIdentity": null,
+      "reason": "NO_MATCH",
+      "cacheStatus": "MISS"
+    },
+    {
+      "epName": "Download",
+      "provider": "element-plus",
+      "companyIdentity": null,
+      "reason": "NO_MATCH",
+      "cacheStatus": "MISS"
+    },
+    {
+      "epName": "Edit",
+      "provider": "element-plus",
+      "companyIdentity": null,
+      "reason": "NO_MATCH",
+      "cacheStatus": "MISS"
+    },
+    {
+      "epName": "Plus",
+      "provider": "iconplus",
+      "companyIdentity": "id-Plus",
+      "reason": "EXACT",
+      "cacheStatus": "REFRESHED"
+    },
+    {
+      "epName": "Search",
+      "provider": "iconplus",
+      "companyIdentity": "id-Search",
+      "reason": "EXACT",
+      "cacheStatus": "REFRESHED"
+    }
+  ]
+}

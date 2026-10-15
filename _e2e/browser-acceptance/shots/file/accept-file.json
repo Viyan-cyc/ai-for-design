@@ -1,0 +1,278 @@
+{
+  "mode": "file",
+  "negative": false,
+  "status": "PASS",
+  "requests": [
+    {
+      "url": "file:///D:/cyc/project/octo/gts/test/ep-coder/_e2e/independent-build/icon-indep/index.gts.html",
+      "type": "Document"
+    },
+    {
+      "url": "file:///D:/cyc/project/octo/gts/test/ep-coder/_e2e/independent-build/icon-indep/public/library/vue.global.prod.js",
+      "type": "Script"
+    },
+    {
+      "url": "file:///D:/cyc/project/octo/gts/test/ep-coder/_e2e/independent-build/icon-indep/public/library/dayjs.min.js",
+      "type": "Script"
+    },
+    {
+      "url": "file:///D:/cyc/project/octo/gts/test/ep-coder/_e2e/independent-build/icon-indep/public/library/element-plus.full.min.js",
+      "type": "Script"
+    },
+    {
+      "url": "file:///D:/cyc/project/octo/gts/test/ep-coder/_e2e/independent-build/icon-indep/public/library/element-plus-icons-vue.iife.min.js",
+      "type": "Script"
+    },
+    {
+      "url": "file:///D:/cyc/project/octo/gts/test/ep-coder/_e2e/independent-build/icon-indep/public/library/element-plus-locale-zh-cn.min.js",
+      "type": "Script"
+    },
+    {
+      "url": "file:///D:/cyc/project/octo/gts/test/ep-coder/_e2e/independent-build/icon-indep/public/library/element-plus-locale-en.min.js",
+      "type": "Script"
+    },
+    {
+      "url": "file:///D:/cyc/project/octo/gts/test/ep-coder/_e2e/independent-build/icon-indep/public/library/vue-i18n.global.prod.js",
+      "type": "Script"
+    },
+    {
+      "url": "file:///D:/cyc/project/octo/gts/test/ep-coder/_e2e/independent-build/icon-indep/public/library/echarts.min.js",
+      "type": "Script"
+    },
+    {
+      "url": "file:///D:/cyc/project/octo/gts/test/ep-coder/_e2e/independent-build/icon-indep/public/library/vue-echarts.iife.min.js",
+      "type": "Script"
+    },
+    {
+      "url": "file:///D:/cyc/project/octo/gts/test/ep-coder/_e2e/independent-build/icon-indep/public/library/less.min.js",
+      "type": "Script"
+    },
+    {
+      "url": "file:///D:/cyc/project/octo/gts/test/ep-coder/_e2e/independent-build/icon-indep/public/library/vue3-sfc-loader.js",
+      "type": "Script"
+    },
+    {
+      "url": "file:///D:/cyc/project/octo/gts/test/ep-coder/_e2e/independent-build/icon-indep/public/library/element-plus.index.css",
+      "type": "Stylesheet"
+    },
+    {
+      "url": "file:///D:/cyc/project/octo/gts/test/ep-coder/_e2e/independent-build/icon-indep/public/library/vue-echarts.style.css",
+      "type": "Stylesheet"
+    },
+    {
+      "url": "file:///D:/cyc/project/octo/gts/test/ep-coder/_e2e/independent-build/icon-indep/preview-data.js",
+      "type": "Script"
+    },
+    {
+      "url": "file:///D:/cyc/project/octo/gts/test/ep-coder/_e2e/independent-build/icon-indep/src/assets/icons/Search.light.svg",
+      "type": "Image"
+    },
+    {
+      "url": "file:///D:/cyc/project/octo/gts/test/ep-coder/_e2e/independent-build/icon-indep/src/assets/icons/Search.dark.svg",
+      "type": "Image"
+    },
+    {
+      "url": "file:///D:/cyc/project/octo/gts/test/ep-coder/_e2e/independent-build/icon-indep/src/assets/icons/Plus.light.svg",
+      "type": "Image"
+    },
+    {
+      "url": "file:///D:/cyc/project/octo/gts/test/ep-coder/_e2e/independent-build/icon-indep/src/assets/icons/Plus.dark.svg",
+      "type": "Image"
+    }
+  ],
+  "responses": [
+    {
+      "url": "file:///D:/cyc/project/octo/gts/test/ep-coder/_e2e/independent-build/icon-indep/index.gts.html",
+      "status": 200,
+      "mime": "text/html"
+    },
+    {
+      "url": "file:///D:/cyc/project/octo/gts/test/ep-coder/_e2e/independent-build/icon-indep/public/library/vue.global.prod.js",
+      "status": 200,
+      "mime": "text/javascript"
+    },
+    {
+      "url": "file:///D:/cyc/project/octo/gts/test/ep-coder/_e2e/independent-build/icon-indep/public/library/dayjs.min.js",
+      "status": 200,
+      "mime": "text/javascript"
+    },
+    {
+      "url": "file:///D:/cyc/project/octo/gts/test/ep-coder/_e2e/independent-build/icon-indep/public/library/element-plus.full.min.js",
+      "status": 200,
+      "mime": "text/javascript"
+    },
+    {
+      "url": "file:///D:/cyc/project/octo/gts/test/ep-coder/_e2e/independent-build/icon-indep/public/library/element-plus-icons-vue.iife.min.js",
+      "status": 200,
+      "mime": "text/javascript"
+    },
+    {
+      "url": "file:///D:/cyc/project/octo/gts/test/ep-coder/_e2e/independent-build/icon-indep/public/library/element-plus-locale-zh-cn.min.js",
+      "status": 200,
+      "mime": "text/javascript"
+    },
+    {
+      "url": "file:///D:/cyc/project/octo/gts/test/ep-coder/_e2e/independent-build/icon-indep/public/library/element-plus-locale-en.min.js",
+      "status": 200,
+      "mime": "text/javascript"
+    },
+    {
+      "url": "file:///D:/cyc/project/octo/gts/test/ep-coder/_e2e/independent-build/icon-indep/public/library/vue-i18n.global.prod.js",
+      "status": 200,
+      "mime": "text/javascript"
+    },
+    {
+      "url": "file:///D:/cyc/project/octo/gts/test/ep-coder/_e2e/independent-build/icon-indep/public/library/echarts.min.js",
+      "status": 200,
+      "mime": "text/javascript"
+    },
+    {
+      "url": "file:///D:/cyc/project/octo/gts/test/ep-coder/_e2e/independent-build/icon-indep/public/library/vue-echarts.iife.min.js",
+      "status": 200,
+      "mime": "text/javascript"
+    },
+    {
+      "url": "file:///D:/cyc/project/octo/gts/test/ep-coder/_e2e/independent-build/icon-indep/public/library/less.min.js",
+      "status": 200,
+      "mime": "text/javascript"
+    },
+    {
+      "url": "file:///D:/cyc/project/octo/gts/test/ep-coder/_e2e/independent-build/icon-indep/public/library/vue3-sfc-loader.js",
+      "status": 200,
+      "mime": "text/javascript"
+    },
+    {
+      "url": "file:///D:/cyc/project/octo/gts/test/ep-coder/_e2e/independent-build/icon-indep/public/library/element-plus.index.css",
+      "status": 200,
+      "mime": "text/css"
+    },
+    {
+      "url": "file:///D:/cyc/project/octo/gts/test/ep-coder/_e2e/independent-build/icon-indep/public/library/vue-echarts.style.css",
+      "status": 200,
+      "mime": "text/css"
+    },
+    {
+      "url": "file:///D:/cyc/project/octo/gts/test/ep-coder/_e2e/independent-build/icon-indep/preview-data.js",
+      "status": 200,
+      "mime": "text/javascript"
+    },
+    {
+      "url": "file:///D:/cyc/project/octo/gts/test/ep-coder/_e2e/independent-build/icon-indep/src/assets/icons/Search.light.svg",
+      "status": 200,
+      "mime": "image/svg+xml"
+    },
+    {
+      "url": "file:///D:/cyc/project/octo/gts/test/ep-coder/_e2e/independent-build/icon-indep/src/assets/icons/Search.dark.svg",
+      "status": 200,
+      "mime": "image/svg+xml"
+    },
+    {
+      "url": "file:///D:/cyc/project/octo/gts/test/ep-coder/_e2e/independent-build/icon-indep/src/assets/icons/Plus.light.svg",
+      "status": 200,
+      "mime": "image/svg+xml"
+    },
+    {
+      "url": "file:///D:/cyc/project/octo/gts/test/ep-coder/_e2e/independent-build/icon-indep/src/assets/icons/Plus.dark.svg",
+      "status": 200,
+      "mime": "image/svg+xml"
+    }
+  ],
+  "errors": [],
+  "exceptions": [],
+  "networkFailed": [],
+  "shots": [
+    "D:\\cyc\\project\\octo\\gts\\test\\ep-coder\\_e2e\\browser-acceptance\\shots\\file\\file-light.png",
+    "D:\\cyc\\project\\octo\\gts\\test\\ep-coder\\_e2e\\browser-acceptance\\shots\\file\\file-dark.png"
+  ],
+  "url": "file:///D:/cyc/project/octo/gts/test/ep-coder/_e2e/independent-build/icon-indep/index.gts.html",
+  "offlinePolicy": "block all HTTP(S) before navigation; cache disabled; default file permissions",
+  "browser": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/155.0.0.0 Safari/537.36",
+  "light": {
+    "theme": "default",
+    "pairCount": 2,
+    "imgCount": 4,
+    "lightShown": 2,
+    "darkShown": 0,
+    "visibleImages": [
+      {
+        "src": "file:///D:/cyc/project/octo/gts/test/ep-coder/_e2e/independent-build/icon-indep/src/assets/icons/Search.light.svg",
+        "complete": true,
+        "naturalWidth": 16,
+        "width": 14,
+        "height": 14
+      },
+      {
+        "src": "file:///D:/cyc/project/octo/gts/test/ep-coder/_e2e/independent-build/icon-indep/src/assets/icons/Plus.light.svg",
+        "complete": true,
+        "naturalWidth": 16,
+        "width": 14,
+        "height": 14
+      }
+    ],
+    "brokenImgs": 0,
+    "epIconCount": 5,
+    "tableRows": 10,
+    "buttons": [
+      "查询",
+      "新增",
+      "编辑",
+      "删除",
+      "导出"
+    ],
+    "tokenBackground": "#f3f3f3",
+    "tokenFont": "14px",
+    "background": "rgb(243, 243, 243)",
+    "color": "rgb(25, 25, 25)",
+    "fontFamily": "Arial, \"Microsoft YaHei\", \"PingFang SC\", \"HarmonyOS Sans\", sans-serif",
+    "buttonHeight": 32,
+    "buttonBackground": "rgb(0, 103, 209)",
+    "inputShadow": "rgb(201, 201, 201) 0px 0px 0px 1px inset",
+    "pagePadding": "24px",
+    "tableHeaderBackground": "rgb(255, 255, 255)",
+    "bootError": ""
+  },
+  "dark": {
+    "theme": "dark",
+    "pairCount": 2,
+    "imgCount": 4,
+    "lightShown": 0,
+    "darkShown": 2,
+    "visibleImages": [
+      {
+        "src": "file:///D:/cyc/project/octo/gts/test/ep-coder/_e2e/independent-build/icon-indep/src/assets/icons/Search.dark.svg",
+        "complete": true,
+        "naturalWidth": 16,
+        "width": 14,
+        "height": 14
+      },
+      {
+        "src": "file:///D:/cyc/project/octo/gts/test/ep-coder/_e2e/independent-build/icon-indep/src/assets/icons/Plus.dark.svg",
+        "complete": true,
+        "naturalWidth": 16,
+        "width": 14,
+        "height": 14
+      }
+    ],
+    "brokenImgs": 0,
+    "epIconCount": 5,
+    "tableRows": 10,
+    "buttons": [
+      "查询",
+      "新增",
+      "编辑",
+      "删除",
+      "导出"
+    ],
+    "tokenBackground": "#000000",
+    "tokenFont": "14px",
+    "background": "rgb(0, 0, 0)",
+    "color": "rgb(255, 255, 255)",
+    "fontFamily": "Arial, \"Microsoft YaHei\", \"PingFang SC\", \"HarmonyOS Sans\", sans-serif",
+    "buttonHeight": 32,
+    "buttonBackground": "rgb(0, 103, 209)",
+    "inputShadow": "rgb(119, 119, 119) 0px 0px 0px 1px inset",
+    "pagePadding": "24px",
+    "tableHeaderBackground": "rgb(42, 42, 42)",
+    "bootError": ""
+  }
+}

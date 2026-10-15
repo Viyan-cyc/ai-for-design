@@ -1,0 +1,43 @@
+{
+  "url": "http://127.0.0.1:8801/",
+  "browser": "Chrome/155.0.0.0",
+  "auditLight": {
+    "theme": "light",
+    "pairCount": 2,
+    "imgCount": 4,
+    "lightShown": 2,
+    "darkShown": 0,
+    "brokenImgs": 0,
+    "sizes": [
+      "14x14",
+      "0x0"
+    ],
+    "epIconCount": 5,
+    "btns": [
+      "查询",
+      "新增",
+      "编辑",
+      "删除",
+      "导出"
+    ],
+    "tableRows": 10,
+    "title": "icon-indep — 独立 Vite 构建"
+  },
+  "auditDark": {
+    "theme": "dark",
+    "lightShown": 0,
+    "darkShown": 2,
+    "lightSrc": [],
+    "darkSrc": [
+      "data:image/svg+xml,%3csvg%20width='1em'%20height='1em'%20xml",
+      "data:image/svg+xml,%3csvg%20width='1em'%20height='1em'%20xml"
+    ]
+  },
+  "consoleErrors": [],
+  "exceptions": [],
+  "networkFailed": [],
+  "shots": [
+    "D:\\cyc\\project\\octo\\gts\\test\\ep-coder\\_e2e\\browser-acceptance\\shots\\dist-light.png",
+    "D:\\cyc\\project\\octo\\gts\\test\\ep-coder\\_e2e\\browser-acceptance\\shots\\dist-dark.png"
+  ]
+}

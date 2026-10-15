@@ -1,0 +1,29 @@
+{
+  "status": "PASS",
+  "comparedThemes": [
+    "light",
+    "dark"
+  ],
+  "fields": [
+    "pairCount",
+    "imgCount",
+    "lightShown",
+    "darkShown",
+    "brokenImgs",
+    "epIconCount",
+    "tableRows",
+    "buttons",
+    "tokenBackground",
+    "tokenFont",
+    "background",
+    "color",
+    "fontFamily",
+    "buttonHeight",
+    "buttonBackground",
+    "inputShadow",
+    "pagePadding",
+    "tableHeaderBackground"
+  ],
+  "fileReport": "file/accept-file.json",
+  "distReport": "dist/accept-dist.json"
+}
