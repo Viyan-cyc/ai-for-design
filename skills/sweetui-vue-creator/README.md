@@ -1,7 +1,7 @@
 # sweetui-vue-creator
 
 根据自然语言需求生成 Vue 3 + SweetUI（`@hw-seq/sweet-ui-base@5.6.5`）页面的 skill。
-与 `../generate-ux-prototype`（Element Plus 版）功能对等：同样产出离线双击即看的预览 HTML
+与 `../gts-ep-coder`（Element Plus 版）功能对等：同样产出离线双击即看的预览 HTML
 与可拷入真实工程的 `src/` 源码，样式严格走 design-language token 体系。
 
 ## 目录职责
@@ -16,7 +16,7 @@
 | `vendor/` | 生成参考资产（只读）：组件索引、代码规则、错误清单、页面模板、整页示例 |
 | `HANDOFF.md` | **内网交接清单**：骨架 → 可用 skill 的剩余工作，逐项打勾推进 |
 
-## 与 EP 版（generate-ux-prototype）的关键差异
+## 与 EP 版（gts-ep-coder）的关键差异
 
 - **组件库**：Element Plus → SweetUI 5.6.5（140 组件，`sweet-*` kebab 标签），
   白名单与导出表见 `scripts/verify/whitelists/`；

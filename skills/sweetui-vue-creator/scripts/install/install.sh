@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# generate-ux-prototype env install (macOS)
+# sweetui-vue-creator env install (macOS)
 #
 # Does ONE thing: get a working node.
 # Reuse an existing node when `node -v` works (any major version); only

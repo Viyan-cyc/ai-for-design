@@ -7,7 +7,7 @@
 
 1. 对照内网 SweetUI 官方文档 + 包内 `es/components/*/src/props.mjs` 逐个编写
    `Sweet{Component}.vue`（文件名 PascalCase）；
-2. 示例形态对拍 EP 版（`generate-ux-prototype/vendor/vue-skill/components/El*.vue`）：
+2. 示例形态对拍 EP 版（`gts-ep-coder/vendor/vue-skill/components/El*.vue`）：
    一文件一组件、多状态并列展示、可独立运行；
 3. 写法纪律：按需 import、kebab 模板标签、icon-plus 图标、Token 样式、less scoped、
    无静态内联 style、无规范引用注释；

@@ -6,7 +6,7 @@
 
 ## 内网重写流程（HANDOFF 驱动）
 
-1. 以 EP 版（`generate-ux-prototype/vendor/code-example/`）的 7 个示例为形态蓝本
+1. 以 EP 版（`gts-ep-coder/vendor/code-example/`）的 7 个示例为形态蓝本
    （见其 `references/README.md`：001–007 的用途/结构/通用规则说明仍然有效）；
 2. 逐个以 SweetUI 组件重写并**实跑验证**（`scripts/preview/` 环境或真实工程）：
    - 001 table-search-drawer：El* → sweet-*（表格/分页/抽屉/标签/表单），

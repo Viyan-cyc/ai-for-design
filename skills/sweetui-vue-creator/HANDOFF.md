@@ -91,7 +91,7 @@
       sweet-select-tree（探针 1.4 的 defaultProps `{children, label:"text"}`）、
       sweet-table `v-model:selection`、图表组件 data/option 注入口；
 - [ ] `vendor/vue-skill/components/`：按其 README 内网补全流程生成 21 个高频组件示例 SFC
-      （形态对拍 EP 版 `generate-ux-prototype/vendor/vue-skill/components/El*.vue`）；
+      （形态对拍 EP 版 `gts-ep-coder/vendor/vue-skill/components/El*.vue`）；
 - [ ] `vendor/code-example/`：按其 SKILL.md 内网重写流程把 001–007 示例以 SweetUI 实跑重写，
       更新 `references/README.md` 索引并删占位提示。
 
