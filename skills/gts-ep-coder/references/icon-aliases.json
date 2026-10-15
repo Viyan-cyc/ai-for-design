@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "mappingVersion": "1",
+  "_note": "Reviewed EP-name -> company (IconPlus) aliases. The maintainer confirms these once; pages reuse them. The model must NOT invent assetId/url entries. mappingVersion is combined with a content hash of this file, so editing aliases automatically invalidates the icon cache. themeMode: 'paired' (default; needs light+dark) or 'shared' (theme-independent / currentColor asset verified to serve both themes).",
+  "config": {
+    "provider": "iconplus",
+    "baseUrl": "https://octo.hdesign.huawei.com",
+    "sourceId": 6,
+    "groupId": "74,77,93",
+    "negativeCacheHours": 24
+  },
+  "aliases": {}
+}

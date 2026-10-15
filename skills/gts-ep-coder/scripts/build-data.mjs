@@ -28,13 +28,12 @@ export function collectSources(srcDir) {
   const files = [];
   (function walk(dir) {
     for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      // skip node_modules and dotfiles/dot-dirs (e.g. .icon-cache.json metadata),
+      // matching build.mjs / fetch-icons.mjs — dotfiles are internal, not sources
+      if (entry.name === 'node_modules' || entry.name.startsWith('.')) continue;
       const full = join(dir, entry.name);
-      if (entry.isDirectory()) {
-        if (entry.name === 'node_modules' || entry.name.startsWith('.')) continue;
-        walk(full);
-      } else if (TEXT_EXT.has(extname(entry.name))) {
-        files.push(full);
-      }
+      if (entry.isDirectory()) walk(full);
+      else if (TEXT_EXT.has(extname(entry.name))) files.push(full);
     }
   })(srcDir);
   const map = {};

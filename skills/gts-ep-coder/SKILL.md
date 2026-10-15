@@ -25,7 +25,8 @@ version: 0.1.0
                                                 └── build 验证未过 ─┘  循环至通过
 ```
 
-> fetch-icons 只跑一次，不参与循环；build 失败回到 ③ 改代码，重跑 ④。
+> fetch-icons 在页面图标 import 变化时执行（增量：只处理新出现的名字，已确认的图标零网络）；
+> build 失败回到 ③ 改代码，重跑 ④。
 
 脚本都在本 skill 的 `scripts/` 下，**除 ⓪ 的安装脚本外都要 node 才能跑**。
 所有脚本的输出都是固定格式，**先读 `RESULT:` 那一行再决定下一步**：
@@ -166,32 +167,50 @@ main.js、api 服务层示例、主题三件套、starter 页面）。
   `references/design-language.md` §3.3。
 - 交付前自查：1280 与 1024 视口下无横向溢出、无内容裁切（预览窗口缩到该宽度看一眼）。
 
-### ③.5 `fetch-icons.mjs` —— 图标检索替换（③ 之后、④ 之前必跑）
+### ③.5 `fetch-icons.mjs` —— 图标解析（③ 之后、④ 之前必跑）
 
 ```bash
-node scripts/fetch-icons.mjs --dir "<工程目录>" [--base-url <url>] [--timeout <ms>]
+node scripts/fetch-icons.mjs --dir "<工程目录>" [--base-url <url>] [--timeout <ms>] [--refresh]
 ```
 
 **这一步是必跑的，不是可选的。** 写完页面代码后必须执行，不能跳过。
 
-扫描 `src/` 下所有 `.vue`/`.js` 中 `@element-plus/icons-vue` 的实际 import，去重后批量请求
-IconPlus API（探测即取配置，再 `getIconInfo → getIcon×2` 并行拉深浅两套），命中的图标生成深浅
-两套 SVG 文件 + barrel `src/assets/icons/index.js`。预览 moduleCache 自动合并 barrel 与 EP 图标：
-**命中 → 公司 SVG（data-theme 纯 CSS 切换深浅），未命中 → EP 原样**。
-**重跑是增量的**：图标名对应的双文件（`.light.svg` + `.dark.svg`）已落盘即跳过网络、文件原封
-不动——已确认的图标不会被后续轮次改写；只检索新出现的名字。
+**页面照常按 EP 名写**：`import { Search } from '@element-plus/icons-vue'`。fetch-icons 用
+Vue SFC/Babel AST 采集实际 import（支持 alias；default/namespace import 无法静态解析会报错），
+逐个名字解析后**把页面 import 重写成统一入口** `src/assets/icons/index.js`（相对路径，alias 保留，
+不改业务逻辑、不做字符串替换）。
+
+**统一入口 barrel** 同时导出：命中的公司图标（生成双主题 SVG，data-theme 纯 CSS 切换深浅）+
+未命中的 EP 图标（从原包 re-export）。**预览与真实工程都从这一个模块取图标，不存在预览专属覆盖。**
+
+**匹配规则（§5.2）**：先查人工确认别名 `references/icon-aliases.json` → 否则检索 IconPlus，
+候选须在配置 source/group 范围内且规范化 englishName **精确相等** → 否则 / 多资产重名(AMBIGUOUS) /
+主题单边缺失(INCOMPLETE_THEME) / 歧义，**一律回退 EP**。**分数从不参与选择**（模糊分只进维护报告），
+不需要询问用户。**回退 EP 是正常设计策略，不是失败。**
+
+**缓存与增量**：命中项写 `.icon-cache.json`（含 provider/baseUrl/source/group/themeMode/资产身份/
+SVG hash/解析原因），有效缓存命中**零网络且不改文件**；旧双文件无 metadata 属 legacy-unverified，
+会重解析，不把旧的最高分误选永久锁死。NO_MATCH 短期负缓存（默认 24h，`negativeCacheHours` 可配）；
+SERVICE_UNAVAILABLE/TIMEOUT 不记为业务未命中。`--refresh` 显式刷新。重跑只处理请求集合的变化。
 
 - **执行时机**：③ 写完页面代码后、④ build 前必须执行，**不可跳过**
-- 页面照常写 `import { Search } from '@element-plus/icons-vue'`，
-  fetch-icons 负责把命中的图标替换为公司图标，源码零改动
 - **默认 base-url**：`https://octo.hdesign.huawei.com`（可通过 `--base-url` 覆盖）
-- **默认超时**：10s（单轮批量，超时整体 FAIL 不重试，已落盘的命中文件保留）
-- `RESULT: OK` + `RESOLVED: <n>, MISSED: <m>, CACHED: <c>` → 继续走 ④ build
-  （CACHED 是其中来自缓存、未发网络请求的图标数；`CACHED: n` 且全量命中时本轮零请求）
-- `RESULT: FAIL |` → 报给用户（服务异常）。已落盘的命中文件仍有效，不影响 build
-- **IconPlus 不可达时**：脚本输出 `RESOLVED: 0, MISSED: <n>` 正常退出（全部用 EP 原样），不是 FAIL
-- **miss 是正常的**：不是所有 EP 图标名都能在公司库命中，未命中的保持 EP 原样，页面天然完整
-- **即使页面没有用 EP 图标也要跑**（脚本会输出 `RESOLVED: 0, MISSED: 0` 正常退出）
+- **默认超时**：10s；瞬态网络故障有限重试一次，不无限等待
+- **即使页面没有用 EP 图标也要跑**（输出 `RESOLVED: 0, MISSED: 0` 正常退出）
+
+输出协议（§5.4）：
+
+| 输出 | 含义 | 下一步 |
+|---|---|---|
+| `RESULT: OK` + `STATUS: COMPLETE` | IconPlus 全命中 | 走 ④ build |
+| `RESULT: OK` + `STATUS: FALLBACK` | 部分回退 EP（无匹配/歧义/主题不全/服务不可达），EP 均有效 | **属已完成**，走 ④ build，不打扰用户 |
+| `RESULT: FAIL` + `STATUS: FAILED` | 源码不合法、未知 EP 名、本地写入失败、barrel 无法生成 | 按 `ERROR:` 修源码或报用户 |
+
+- `RESOLVED: <n>, MISSED: <m>, CACHED: <c>`：公司命中数 / 回退 EP 数 / 其中走缓存零请求数
+- 诊断明细落 `icons-report.json`（每项 epName/provider/companyIdentity/reason/cacheStatus +
+  请求数与耗时）；reason ∈ EXACT/ALIAS/NO_MATCH/AMBIGUOUS/SERVICE_UNAVAILABLE/TIMEOUT/INCOMPLETE_THEME/INVALID_SVG
+- **服务不可达**：允许复用仍有效的公司缓存，其余用 EP；成功但报告故障原因（不记为 NO_MATCH）
+- **普通 fallback 不打扰用户**；服务异常只简短说明"部分图标已使用 Element Plus"，详情留报告
 
 ### ④ `build.mjs` —— 编译门禁（真实编译，不是 lint）
 
@@ -271,15 +290,19 @@ build 的编译/token 错误是你自己的代码问题，修完重跑，不转�
 **这是最重要的一条。** 不允许在 `build.mjs` 没有 `RESULT: OK` 的情况下告诉用户"做好了"。
 编译失败就读错误、改代码、重跑 build，直到通过。
 
-### 2. 只碰 `src/` 下与 App.vue
+### 2. 编辑边界（一张权限表）
 
 | 允许 | 路径 |
 |---|---|
 | ✅ 新建/修改 | `src/pages/{Page}/` 下的任何文件 |
 | ✅ 修改 | `src/App.vue`（挂载页面组件） |
-| ❌ 不动 | `index.gts.html`、`public/library/`、`src/main.js`、`src/assets/themes/*.less`（交付骨架，改了换肤/预览体系就散了） |
+| ✅ 新建/修改 | `src/api/`（业务模块与 mock，见 ③ 数据走服务层） |
+| ✅ 新建/修改 | `src/i18n/`（仅启用国际化时，见 ③） |
+| 🔒 脚本写 | `src/assets/icons/`（fetch-icons 生成，勿手改；页面从 barrel 取图标） |
+| 🔒 按需追加 | `src/assets/themes/*.less`（换肤走 `themes/README.md` 协议**追加**皮肤文件） |
+| ❌ 不动 | `index.gts.html`、`public/library/`、`src/main.js`、`src/assets/themes/` 既有三件套（交付骨架，改了换肤/预览体系就散了） |
 
-换肤需求走 `src/assets/themes/README.md` 协议**追加**皮肤文件，不动既有三件套。
+按依赖变化执行：图标 import 变了跑 ③.5，`src/` 任何改动后跑 ④ build 刷预览。
 
 ### 3. 页面代码规范（design-language）
 
