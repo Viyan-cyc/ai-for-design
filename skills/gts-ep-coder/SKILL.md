@@ -1,10 +1,10 @@
 ---
-name: generate-ux-prototype
+name: gts-ep-coder
 description: 根据用户需求生成 Vue 3 + Element Plus 2.13.5 页面（.vue SFC），样式严格遵循 design-language 设计 token；输出离线可开的双击即看 HTML 预览与可拷入真实工程的 src/ 源码。做页面、改页面、看效果时使用。
 version: 0.1.0
 ---
 
-# generate-ux-prototype
+# gts-ep-coder
 
 把自然语言需求变成 Vue 3 + Element Plus 2.13.5 的 `.vue` 页面，样式严格走 design-language token 体系（见 `references/design-language.md`）。
 
