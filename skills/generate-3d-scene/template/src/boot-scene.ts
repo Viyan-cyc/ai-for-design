@@ -21,10 +21,7 @@ export interface BootResult {
  * 场景装配（两态共用）。
  * @param host canvas 宿主元素（run 态 body / edit 态视口栏）
  */
-export const bootScene = async (
-  host: HTMLElement,
-  options: SceneOptions = {},
-): Promise<BootResult> => {
+export const bootScene = async (host: HTMLElement, options: SceneOptions = {}): Promise<BootResult> => {
   const res = await fetch('/scene-data.json');
   if (!res.ok) {
     throw new Error(`[boot] scene-data.json 加载失败: ${res.status}`);

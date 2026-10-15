@@ -5,10 +5,11 @@
 import assert from 'node:assert/strict';
 import { EventEmitter } from 'node:events';
 import { registerHooks } from 'node:module';
-import { existsSync, readFileSync, readdirSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { resolve, dirname, join, sep } from 'node:path';
 import { createServer } from 'node:http';
+import { tmpdir } from 'node:os';
 import {
   createCdpConnection, openBrowserSession, positionalArg, collectPageErrors, collectNetwork404s,
 } from '../lib/cdp.mjs';
@@ -1782,6 +1783,948 @@ await test('P4-RRRR1 external bin (encoded filename): real slot exports, missing
   } finally {
     rmSync(tmp, { recursive: true, force: true });
   }
+});
+
+/* ── P5 修复轮回归（P5-R1～R4，生产模块直跑，2026-10-15）──────────────────── */
+
+await test('P5-R1 cache: complete inputs — asset bytes/index.html/expect/url change keys; run/edit isolation', async () => {
+  const { computeCacheKey, lookup, record } = await import('../lib/verification-cache.mjs');
+  const tmp = mkdtempSync(join(tmpdir(), 'p5r1-'));
+  try {
+    const proj = join(tmp, 'p');
+    mkdirSync(join(proj, 'public', 'assets', 'models'), { recursive: true });
+    mkdirSync(join(proj, 'src'), { recursive: true });
+    writeFileSync(join(proj, 'public', 'scene-data.json'), '{}');
+    writeFileSync(join(proj, 'public', 'assets', 'models', 'car.glb'), 'GLB-V1');
+    writeFileSync(join(proj, 'index.html'), '<html></html>');
+    writeFileSync(join(proj, 'src', 'main.ts'), 'export {};\n');
+    const k = (opts = {}) => computeCacheKey(proj, { check: 'verify:run', mode: 'run', ...opts });
+    const base = k();
+    assert.ok(base.stable, 'base key stable');
+    // 模型字节变（review 反例：损坏模型后 key 不变 → 假 PASS）
+    writeFileSync(join(proj, 'public', 'assets', 'models', 'car.glb'), 'GLB-V2-CORRUPTED');
+    assert.notEqual(k().key, base.key, 'model bytes change → key change');
+    writeFileSync(join(proj, 'public', 'assets', 'models', 'car.glb'), 'GLB-V1');
+    // 闭包内新增 bin
+    writeFileSync(join(proj, 'public', 'assets', 'models', 'data.bin'), 'BIN');
+    assert.notEqual(k().key, base.key, 'new closure file → key change');
+    rmSync(join(proj, 'public', 'assets', 'models', 'data.bin'));
+    // index.html 变
+    writeFileSync(join(proj, 'index.html'), '<html><script src="x"></script></html>');
+    assert.notEqual(k().key, base.key, 'index.html change → key change');
+    writeFileSync(join(proj, 'index.html'), '<html></html>');
+    // expect/url 进键
+    assert.notEqual(k({ expectHash: 'aaa' }).key, k({ expectHash: 'bbb' }).key, 'expectHash in key');
+    assert.notEqual(k({ url: 'http://a/' }).key, k({ url: 'http://b/' }).key, 'url in key');
+    // run/edit 隔离：edit-only 改动不变 run 键、变 edit 键
+    mkdirSync(join(proj, 'src', 'edit'), { recursive: true });
+    writeFileSync(join(proj, 'src', 'edit', 'Bridge.ts'), 'export const a = 1;\n');
+    const runInfo = computeCacheKey(proj, { check: 'verify:run', mode: 'run' });
+    const editInfo = computeCacheKey(proj, { check: 'verify:edit', mode: 'edit' });
+    writeFileSync(join(proj, 'src', 'edit', 'Bridge.ts'), 'export const a = 2;\n');
+    assert.equal(computeCacheKey(proj, { check: 'verify:run', mode: 'run' }).key, runInfo.key,
+      'run key unaffected by edit-only change');
+    assert.notEqual(computeCacheKey(proj, { check: 'verify:edit', mode: 'edit' }).key, editInfo.key,
+      'edit key changes on edit-only change');
+    // keyInputs 快照比对：record 后篡改 inputs 不命中
+    const info = k();
+    record(proj, info.key, { verdict: 'PASS', mode: 'run', checks: [] }, { keyInputs: info.inputs, affects: ['scene', 'code', 'deps'] });
+    assert.ok(lookup(proj, info.key, info.inputs).hit, 'record then lookup hits');
+    assert.ok(!lookup(proj, info.key, { ...info.inputs, url: 'tampered' }).hit, 'tampered keyInputs do not hit');
+    // FAIL 拒存
+    assert.ok(!record(proj, 'fail-key', { verdict: 'FAIL', mode: 'run', checks: [] }), 'FAIL not stored');
+  } finally {
+    rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+await test('P5-R2 frame-time: real per-frame stats, lowest-percentile verdict, slowest retained', async () => {
+  const { frameTimesFrom, fpsFromFrameTimes } = await import('./perf-fps.mjs');
+  const percentile = (sorted, p) => {
+    if (!sorted.length) {
+      return null;
+    }
+    const idx = Math.min(sorted.length - 1, Math.max(0, Math.ceil((p / 100) * sorted.length) - 1));
+    return sorted[idx];
+  };
+  // 平稳 60fps
+  const steady = Array.from({ length: 61 }, (_, i) => i * 16.6667);
+  const ft1 = frameTimesFrom(steady);
+  assert.equal(ft1.length, 60, '61 stamps → 60 intervals（首帧不产间隔，不丢样本）');
+  assert.ok(Math.abs(fpsFromFrameTimes(ft1, 95) - 60) < 0.5, 'steady fps(p95) ≈ 60');
+  // 单次 500ms 长停顿：p95 不受影响、p99 捕捉
+  const before = Array.from({ length: 31 }, (_, i) => i * 16.6667);
+  const after = Array.from({ length: 30 }, (_, i) => 1000 + i * 16.6667);
+  const ft2 = frameTimesFrom([...before, ...after]);
+  const sorted2 = [...ft2].sort((a, b) => a - b);
+  assert.ok(ft2.some((x) => x > 480), '500ms stall present');
+  assert.ok(percentile(sorted2, 99) >= 480, 'p99 captures stall');
+  assert.ok(Math.abs(fpsFromFrameTimes(ft2, 95) - 60) < 0.5, 'p95 unaffected by single stall（口径分离）');
+  // 持续低帧 33fps → 判卡
+  const low = Array.from({ length: 34 }, (_, i) => i * 30);
+  assert.ok(Math.abs(fpsFromFrameTimes(frameTimesFrom(low), 95) - 33.3) < 0.5, 'low fps(p95) ≈ 33.3 < 40');
+  // 混合持续慢 + 停顿
+  const mixed = [];
+  for (let i = 0; i < 57; i += 1) {
+    mixed.push(i * 30);
+  }
+  mixed.push(57 * 30 + 400);
+  assert.ok(fpsFromFrameTimes(frameTimesFrom(mixed), 95) < 40, 'sustained slow → verdict 卡');
+  // 空样本 / 单样本 / 最慢帧保留（review 反例：旧算法丢最慢样本）
+  assert.equal(frameTimesFrom([]).length, 0, 'empty');
+  assert.equal(frameTimesFrom([100]).length, 0, 'single stamp');
+  assert.equal(fpsFromFrameTimes([], 95), null, 'empty fps null');
+  const ft5 = frameTimesFrom([0, 1000]);
+  assert.equal(ft5.length, 1, 'slowest retained: interval count');
+  assert.ok(Math.abs(ft5[0] - 1000) < 1e-9, 'slowest retained: 1000ms kept');
+});
+
+await test('P5-R3 import publish: commit-phase failure rolls back, placeholder dir untouched, journal audit', async () => {
+  const { publishPackage, importPackage } = await import('../import-assets.mjs');
+  const crypto = await import('node:crypto');
+  const hash = (p) => crypto.createHash('sha256').update(readFileSync(p)).digest('hex');
+  const tmp = mkdtempSync(join(tmpdir(), 'p5r3-'));
+  try {
+    const lib = join(tmp, 'lib');
+    const st = join(tmp, 'st');
+    mkdirSync(join(lib, 'models'), { recursive: true });
+    mkdirSync(join(st, 'models'), { recursive: true });
+    mkdirSync(join(st, 'manifests'), { recursive: true });
+    writeFileSync(join(lib, 'models', 'a.glb'), 'OLD');
+    writeFileSync(join(st, 'models', 'a.glb'), 'NEW');
+    writeFileSync(join(st, 'models', 'zz.glb'), 'NEW2');
+    mkdirSync(join(lib, 'models', 'zz.glb'), { recursive: true }); // 占位目录 → 提交段失败
+    writeFileSync(join(st, 'manifests', 'p.json'), 'NEWM');
+    const beforeA = hash(join(lib, 'models', 'a.glb'));
+    let threw = null;
+    try {
+      publishPackage(st, lib, 'pkg');
+    } catch (e) {
+      threw = e;
+    }
+    assert.ok(threw && threw.message.includes('已回滚'), 'publish fails with rollback completed');
+    assert.ok(threw.message.includes('写入'), 'failure from commit phase');
+    assert.equal(hash(join(lib, 'models', 'a.glb')), beforeA, 'overwritten file restored to OLD');
+    assert.ok(!existsSync(join(lib, 'manifests', 'p.json')), 'post-failure files never written');
+    assert.ok(existsSync(join(lib, 'models', 'zz.glb')), 'placeholder dir untouched（事务外原有物）');
+    assert.ok(!existsSync(join(lib, '.import-backup-pkg')), 'backup residue cleaned');
+    rmSync(join(lib, 'models', 'zz.glb'), { recursive: true, force: true });
+
+    // 正常发布：覆盖 + 新文件 + journal + 备份清理
+    const st2 = join(tmp, 'st2');
+    mkdirSync(join(st2, 'models'), { recursive: true });
+    mkdirSync(join(st2, 'manifests'), { recursive: true });
+    writeFileSync(join(st2, 'models', 'a.glb'), 'NEW_MODEL_2');
+    writeFileSync(join(st2, 'models', 'fresh.glb'), 'FRESH');
+    writeFileSync(join(st2, 'manifests', 'p.json'), 'NEWM_2');
+    const journal = publishPackage(st2, lib, 'pkg');
+    assert.equal(readFileSync(join(lib, 'models', 'a.glb'), 'utf8'), 'NEW_MODEL_2', 'overwrite committed');
+    assert.equal(readFileSync(join(lib, 'models', 'fresh.glb'), 'utf8'), 'FRESH', 'new file committed');
+    assert.ok(!existsSync(join(lib, '.import-backup-pkg')), 'backup cleaned after success');
+    assert.equal(journal.length, 3, 'journal covers all');
+    assert.ok(journal.find((j) => j.dest.endsWith('a.glb')).backup !== null, 'overwritten journaled with backup');
+    assert.ok(journal.find((j) => j.dest.endsWith('fresh.glb')).backup === null, 'new file journaled null backup');
+
+    // 完整生产入口：合法包（真 GLB 过门禁）正常入库
+    const pkg = join(tmp, 'pkg');
+    mkdirSync(join(pkg, 'data'), { recursive: true });
+    writeFileSync(join(pkg, 'data', 'p5r3_probe.glb'), readFileSync(join(template, '..', 'assets', 'models', 'rack.glb')));
+    writeFileSync(join(pkg, 'manifest.json'), JSON.stringify({
+      meta: { version: '1' },
+      data: [{ name: 'P5R3 probe', file_name: 'p5r3_probe.glb', file_path: 'data/p5r3_probe.glb', tags: ['test'] }],
+    }));
+    const lib3 = join(tmp, 'lib3');
+    const r3 = await importPackage(pkg, { libDir: lib3, packageName: 'p5r3' });
+    assert.equal(r3.entries.length, 1, 'importPackage ok');
+    assert.ok(existsSync(join(lib3, 'manifests', 'p5r3.json')), 'manifest in place');
+    assert.ok(!existsSync(join(lib3, '.import-backup-p5r3')), 'no residue');
+  } finally {
+    rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+await test('P5-R4/RR3 profiles: §3.5 behavior contract, default standard, dedup, INCOMPLETE on SKIP, fingerprints', async () => {
+  const { verifyScene, PROFILE_TOOLS, typecheckEvidenceFromBuild } = await import('./scene.mjs');
+  const tmp = mkdtempSync(join(tmpdir(), 'p5r4-'));
+  try {
+    const project = join(tmp, 'proj');
+    mkdirSync(join(project, 'public', 'assets', 'models'), { recursive: true });
+    mkdirSync(join(project, 'src'), { recursive: true });
+    writeFileSync(join(project, 'public', 'scene-data.json'), JSON.stringify({ cars: [{ id: 'c1' }] }));
+    writeFileSync(join(project, 'src', 'main.ts'), 'export {};\n');
+    writeFileSync(join(project, 'package.json'), '{}');
+    writeFileSync(join(project, 'package-lock.json'), '{}');
+
+    let statsSeq = 0;
+    const fakePage = {
+      pageErrors: [], netMisses: [],
+      evaluate: async (expr) => {
+        if (expr.includes('whenReady')) {
+          return { ok: true, d: { pending: 0, failedAssets: [], pageErrors: [] } };
+        }
+        if (expr.includes('getDiagnostics')) {
+          return [];
+        }
+        if (expr.includes('groups')) {
+          return { cars: ['c1'] };
+        }
+        if (expr.includes('scene-canvas')) {
+          return { ok: true, rect: [1280, 800] };
+        }
+        if (expr.includes('traverseVisible')) {
+          return { ok: true, tested: 1, id: 'c1' };
+        }
+        if (expr.includes('getStats')) {
+          statsSeq += 1;
+          return { fps: 60, calls: 10, triangles: 100, elapsed: statsSeq };
+        }
+        return true;
+      },
+      navigateTo: async () => {},
+      close: async () => {},
+    };
+    const makeSession = () => ({ newPage: async () => fakePage, close: async () => {} });
+    const allToolsPass = {
+      runBuild: () => ({ ok: true, status: 0 }),
+      runTypecheck: () => ({ ok: true, status: 0 }),
+      runLint: () => ({ ok: true, status: 0 }),
+      runStrictBudget: () => ({ ok: true, status: 0 }),
+      runEditRegression: async () => ({ status: 'PASS', detail: 'ok' }),
+      runFidelity: async () => ({ status: 'PASS', detail: 'ok' }),
+      runPerf: async () => ({ status: 'PASS', detail: 'ok' }),
+      runExport: () => ({ ok: true, status: 0 }),
+    };
+
+    // §3.5 推导的工具集断言（不是缩水常量的镜像断言）：
+    // preview ≥ {verify, typecheck, lint}；standard ⊇ preview ∪ {build}（请求时 exportBuild）；
+    // release ⊇ standard ∪ {strictBudget, editRegression, fidelity, perf}
+    const P = new Set(PROFILE_TOOLS.preview);
+    const S = new Set(PROFILE_TOOLS.standard.map((t) => t.replace(/\?$/, '')));
+    const R = new Set(PROFILE_TOOLS.release);
+    for (const t of ['verify', 'typecheck', 'lint']) {
+      assert.ok(P.has(t), `§3.5 preview must schedule ${t}`);
+    }
+    for (const t of ['verify', 'typecheck', 'lint', 'build', 'exportBuild']) {
+      assert.ok(S.has(t), `§3.5 standard must schedule ${t}`);
+    }
+    for (const t of ['verify', 'typecheck', 'lint', 'build', 'exportBuild', 'strictBudget', 'editRegression', 'fidelity', 'perf']) {
+      assert.ok(R.has(t), `§3.5 release must schedule ${t}`);
+    }
+
+    // preview：跑 typecheck/lint（§3.5 preview 合同），不跑 build
+    let buildCalls = 0;
+    let tcCalls = 0;
+    let lintCalls = 0;
+    const r2 = await verifyScene({
+      url: 'http://fake:1/', mode: 'both', profile: 'preview', project,
+      session: makeSession(), cache: false,
+      runBuild: () => { buildCalls += 1; return { ok: true, status: 0 }; },
+      runTypecheck: () => { tcCalls += 1; return { ok: true, status: 0 }; },
+      runLint: () => { lintCalls += 1; return { ok: true, status: 0 }; },
+    });
+    assert.equal(r2.verdict, 'PASS', 'preview PASS');
+    assert.equal(buildCalls, 0, 'preview does not run build');
+    assert.equal(tcCalls, 1, 'preview runs typecheck');
+    assert.equal(lintCalls, 1, 'preview runs lint');
+
+    // standard：verify+typecheck+lint+build；build FAIL → 档位 FAIL（basic PASS 不冒充）
+    const r3a = await verifyScene({
+      url: 'http://fake:1/', mode: 'run', profile: 'standard', project,
+      session: makeSession(), cache: false, ...allToolsPass,
+    });
+    assert.equal(r3a.verdict, 'PASS');
+    // RRR4：build 先行（typecheck 复用其证据）——调度序列 build→typecheck→lint
+    assert.deepEqual(
+      r3a.profileChecks.map((p) => p.tool),
+      ['verify', 'build', 'typecheck', 'lint'],
+      'standard schedules verify+build→typecheck(evidence-reused)+lint（exportBuild 仅请求时）',
+    );
+    assert.equal(r3a.basicChecks, 'PASS');
+    assert.equal(r3a.scope, 'profile:standard');
+    // standard 不请求运行包 → 不跑 exportBuild
+    const r3b = await verifyScene({
+      url: 'http://fake:1/', mode: 'run', profile: 'standard', project,
+      session: makeSession(), cache: false, ...allToolsPass,
+    });
+    assert.ok(!r3b.profileChecks.some((p) => p.tool === 'exportBuild'), 'no exportBuild unless requested');
+    // 请求运行包 → exportBuild 跑
+    const r3c = await verifyScene({
+      url: 'http://fake:1/', mode: 'run', profile: 'standard', project,
+      session: makeSession(), cache: false, wantExport: true, ...allToolsPass,
+    });
+    assert.ok(r3c.profileChecks.some((p) => p.tool === 'exportBuild' && p.status === 'PASS'), 'exportBuild runs when requested');
+    // build FAIL → 档位 FAIL
+    const r3d = await verifyScene({
+      url: 'http://fake:1/', mode: 'run', profile: 'standard', project,
+      session: makeSession(), cache: false, ...allToolsPass, runBuild: () => ({ ok: false, status: 1 }),
+    });
+    assert.equal(r3d.verdict, 'FAIL', 'build FAIL → profile FAIL');
+    assert.equal(r3d.basicChecks, 'PASS', 'basic checks recorded PASS（不冒充档位）');
+
+    // typecheck 的 build 证据复用（RR3/RRR4）：证据绑定本次 build 输出
+    assert.equal(typecheckEvidenceFromBuild('vue-tsc -b\nvite v6.4.3 building for production...', 0).status, 'build', 'build output reuses typecheck evidence');
+    assert.equal(typecheckEvidenceFromBuild('src/x.ts(1,1): error TS2322: ...', 0).status, 'FAIL', 'TS errors in build output FAIL');
+    assert.equal(typecheckEvidenceFromBuild('', 0).status, 'unknown', 'empty output unknown');
+    assert.equal(typecheckEvidenceFromBuild('vite v6 built', 0).status, 'unknown', 'vite-only output rejected（RRR4）');
+    let independentTc = 0;
+    const r3e = await verifyScene({
+      url: 'http://fake:1/', mode: 'run', profile: 'standard', project,
+      session: makeSession(), cache: false, ...allToolsPass,
+      // RRR4：证据来自注入 build 的 output（runProfileBuild 结构化透传），不再接受
+      // 顶层 buildOutput 字符串
+      runBuild: () => ({ ok: true, status: 0, output: 'vue-tsc -b\nvite v6.4.3 building...\nbuilt' }),
+      runTypecheck: () => { independentTc += 1; return { ok: true, status: 0 }; },
+    });
+    assert.equal(independentTc, 0, 'typecheck not re-run when build evidence present（epoch 复用）');
+    assert.equal(r3e.profileChecks.find((p) => p.tool === 'typecheck').status, 'build', 'typecheck status=build');
+
+    // 跨工具去重 + 输入变更重跑
+    let buildCalls4 = 0;
+    let tcCalls4 = 0;
+    const opts4 = {
+      url: 'http://fake:1/', mode: 'run', profile: 'standard', project,
+      session: makeSession(), cache: true,
+      runBuild: () => { buildCalls4 += 1; return { ok: true, status: 0 }; },
+      runTypecheck: () => { tcCalls4 += 1; return { ok: true, status: 0 }; },
+      runLint: () => ({ ok: true, status: 0 }),
+    };
+    await verifyScene(opts4);
+    assert.equal(buildCalls4, 1, 'build once');
+    const r4b = await verifyScene(opts4);
+    assert.equal(buildCalls4, 1, 'cached reuse（不重复跑）');
+    assert.equal(r4b.profileChecks.find((p) => p.tool === 'build').status, 'cached');
+    assert.equal(r4b.profileChecks.find((p) => p.tool === 'typecheck').status, 'cached', 'typecheck also cached');
+    writeFileSync(join(project, 'src', 'main.ts'), 'export const changed = 1;\n');
+    await verifyScene(opts4);
+    assert.equal(buildCalls4, 2, 'src change invalidates build cache');
+    assert.equal(tcCalls4, 2, 'src change invalidates typecheck cache');
+
+    // release：全工具跑 + 无 SKIP → PASS
+    let perfCalls = 0;
+    const r5 = await verifyScene({
+      url: 'http://fake:1/', mode: 'run', profile: 'release', project,
+      session: makeSession(), cache: false, ...allToolsPass,
+      runPerf: async () => { perfCalls += 1; return { status: 'PASS', detail: 'ok' }; },
+    });
+    assert.equal(perfCalls, 1, 'release runs perf');
+    assert.equal(r5.verdict, 'PASS', 'release all-pass → PASS');
+    assert.deepEqual(
+      r5.profileChecks.map((p) => p.tool),
+      ['verify', 'build', 'typecheck', 'lint', 'exportBuild', 'strictBudget', 'editRegression', 'fidelity', 'perf'],
+      'release full tool chain',
+    );
+    assert.ok(r5.profileChecks.every((p) => p.status === 'PASS'), 'no SKIP in fully-instrumented release');
+
+    // RR3 核心负例：release 无 GPU perf（无 runPerf）→ perf SKIP → verdict INCOMPLETE（不 PASS 冒充）
+    const r5b = await verifyScene({
+      url: 'http://fake:1/', mode: 'run', profile: 'release', project,
+      session: makeSession(), cache: false,
+      ...{ ...allToolsPass, runPerf: undefined },
+    });
+    assert.ok(r5b.profileChecks.some((p) => p.tool === 'perf' && p.status === 'SKIP'), 'perf SKIP without GPU');
+    assert.equal(r5b.verdict, 'INCOMPLETE', 'SKIP → INCOMPLETE（release 未完整完成，不冒充 PASS）');
+    assert.notEqual(r5b.verdict, 'PASS', 'INCOMPLETE ≠ PASS');
+
+    // perf FAIL 传播（仍 FAIL 而非 INCOMPLETE）
+    const r5c = await verifyScene({
+      url: 'http://fake:1/', mode: 'run', profile: 'release', project,
+      session: makeSession(), cache: false, ...allToolsPass,
+      runPerf: async () => ({ status: 'FAIL', detail: 'fps low' }),
+    });
+    assert.equal(r5c.verdict, 'FAIL', 'perf FAIL propagates（非 INCOMPLETE）');
+
+    // URL/session 指纹：同 session 同 url 命中；换 url 或换 session 不复用
+    const sess6 = makeSession();
+    const opts6 = { mode: 'run', profile: 'preview', project, session: sess6, cache: true, runTypecheck: () => ({ ok: true, status: 0 }), runLint: () => ({ ok: true, status: 0 }) };
+    await verifyScene({ ...opts6, url: 'http://fake:1/' });
+    const r6b = await verifyScene({ ...opts6, url: 'http://fake:1/' });
+    assert.equal(r6b.cache, 'hit', 'same url+session reuse');
+    const r6c = await verifyScene({ ...opts6, url: 'http://other:2/' });
+    assert.notEqual(r6c.cache, 'hit', 'url change no reuse');
+    const r6d = await verifyScene({ ...opts6, url: 'http://fake:1/', session: makeSession() });
+    assert.notEqual(r6d.cache, 'hit', 'session change no reuse');
+
+    // basic FAIL 短路：不跑 build/typecheck
+    let buildCalls7 = 0;
+    const badPage = {
+      ...fakePage,
+      evaluate: async (expr) => {
+        if (expr.includes('whenReady')) {
+          return { ok: false, message: 'boom' };
+        }
+        return fakePage.evaluate(expr);
+      },
+    };
+    const r7 = await verifyScene({
+      url: 'http://fake:1/', mode: 'run', profile: 'standard', project,
+      session: { newPage: async () => badPage, close: async () => {} },
+      cache: false, ...allToolsPass,
+    });
+    assert.equal(r7.verdict, 'FAIL', 'basic FAIL → profile FAIL');
+    assert.equal(r7.basicChecks, 'FAIL');
+    assert.ok(!r7.profileChecks.some((p) => p.tool === 'build'), 'build skipped after basic FAIL');
+  } finally {
+    rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+await test('P5-RR1 cache negatives: config change invalidates; same hash different assertions rejected', async () => {
+  const { verifyScene, expectFingerprint } = await import('./scene.mjs');
+  const { CHECK_AFFECTS } = await import('../lib/verification-cache.mjs');
+  const tmp = mkdtempSync(join(tmpdir(), 'p5rr1-'));
+  try {
+    const project = join(tmp, 'proj');
+    mkdirSync(join(project, 'public', 'assets', 'models'), { recursive: true });
+    mkdirSync(join(project, 'src'), { recursive: true });
+    writeFileSync(join(project, 'public', 'scene-data.json'), JSON.stringify({ cars: [{ id: 'c1' }] }));
+    writeFileSync(join(project, 'src', 'main.ts'), 'export {};\n');
+    writeFileSync(join(project, 'package.json'), '{}');
+    writeFileSync(join(project, 'package-lock.json'), '{}');
+    writeFileSync(join(project, 'vite.config.ts'), 'export default { base: "/" };\n');
+
+    let statsSeq = 0;
+    const fakePage = {
+      pageErrors: [], netMisses: [],
+      evaluate: async (expr) => {
+        if (expr.includes('whenReady')) {
+          return { ok: true, d: { pending: 0, failedAssets: [], pageErrors: [] } };
+        }
+        if (expr.includes('getDiagnostics')) {
+          return [];
+        }
+        if (expr.includes('groups')) {
+          return { cars: ['c1'] };
+        }
+        if (expr.includes('scene-canvas')) {
+          return { ok: true, rect: [1280, 800] };
+        }
+        if (expr.includes('traverseVisible')) {
+          return { ok: true, tested: 1, id: 'c1' };
+        }
+        if (expr.includes('getStats')) {
+          statsSeq += 1;
+          return { fps: 60, calls: 10, triangles: 100, elapsed: statsSeq };
+        }
+        return true;
+      },
+      navigateTo: async () => {},
+      close: async () => {},
+    };
+    const tools = {
+      runTypecheck: () => ({ ok: true, status: 0 }),
+      runLint: () => ({ ok: true, status: 0 }),
+    };
+    // 共享 session 对象（同对象多次调用才复用缓存——inline 字面量每次是新对象）
+    const sharedSession = { newPage: async () => fakePage, close: async () => {} };
+    const run = (opts = {}) => verifyScene({
+      url: 'http://fake:1/', mode: 'run', profile: 'preview', project,
+      session: sharedSession,
+      cache: true, ...tools, ...opts,
+    });
+
+    // CHECK_AFFECTS：verify:run/edit 含 config（RR1 反例：改 vite.config 不失效）
+    assert.ok(CHECK_AFFECTS['verify:run'].includes('config'), 'verify:run affects config');
+    assert.ok(CHECK_AFFECTS['verify:edit'].includes('config'), 'verify:edit affects config');
+
+    // 负例 1（review 反例复现）：改 vite.config.ts（base）→ 缓存不得命中
+    const r1 = await run({ expect: { idByGroup: { cars: ['c1'] }, hash: 'h1' } });
+    assert.ok(['miss', 'partial'].includes(r1.cache), 'first run live');
+    const r2 = await run({ expect: { idByGroup: { cars: ['c1'] }, hash: 'h1' } });
+    assert.equal(r2.cache, 'hit', 'same inputs reuse');
+    writeFileSync(join(project, 'vite.config.ts'), 'export default { base: "/app/" };\n');
+    const r3 = await run({ expect: { idByGroup: { cars: ['c1'] }, hash: 'h1' } });
+    assert.notEqual(r3.cache, 'hit', 'config change invalidates（RR1 反例关闭）');
+
+    // 负例 2（review 反例复现）：同 hash 不同 idByGroup（伪造/复用旧 hash）→ 不复用
+    // r3 已重跑并存新 config 键；r5 验证稳定命中；r6 换断言内容（hash 不变）→ 不复用
+    const r5 = await run({ expect: { idByGroup: { cars: ['c1'] }, hash: 'h1' } });
+    assert.equal(r5.cache, 'hit', 'stable after config-change re-run');
+    const r6 = await run({ expect: { idByGroup: { cars: ['c1', 'c2'] }, hash: 'h1' } });
+    assert.notEqual(r6.cache, 'hit', 'same hash, different assertions → no reuse（RR1 反例关闭）');
+    // 指纹本身：不同 idByGroup 不同指纹；hash 字段不参与
+    assert.notEqual(expectFingerprint({ idByGroup: { cars: ['c1'] }, hash: 'x' }), expectFingerprint({ idByGroup: { cars: ['c1', 'c2'] }, hash: 'x' }), 'fingerprint derives from assertions, not external hash');
+    assert.equal(expectFingerprint({ idByGroup: { cars: ['c1'] }, hash: 'x' }), expectFingerprint({ idByGroup: { cars: ['c1'] }, hash: 'y' }), 'external hash irrelevant to fingerprint');
+  } finally {
+    rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+await test('P5-RR2 publish rollback-failure: backup preserved, journal on disk, re-import refused', async () => {
+  const { publishPackage, importPackage } = await import('../import-assets.mjs');
+  const tmp = mkdtempSync(join(tmpdir(), 'p5rr2-'));
+  try {
+    const lib = join(tmp, 'lib');
+    const st = join(tmp, 'st');
+    mkdirSync(join(lib, 'models'), { recursive: true });
+    mkdirSync(join(st, 'models'), { recursive: true });
+    mkdirSync(join(st, 'manifests'), { recursive: true });
+    writeFileSync(join(lib, 'models', 'a.glb'), 'OLD');
+    writeFileSync(join(st, 'models', 'a.glb'), 'NEW');
+    writeFileSync(join(st, 'models', 'b.glb'), 'NEWB');
+    writeFileSync(join(st, 'manifests', 'p.json'), 'NEWM');
+    const backupDir = join(lib, '.import-backup-pkg');
+
+    // 恢复失败注入：备份段正常备份 a.glb；提交段 b.glb 失败（占位目录）；恢复 a.glb 失败
+    // （恢复目标 a.glb 被只读锁——Windows 下用「恢复目标变成目录」制造恢复失败）
+    mkdirSync(join(lib, 'models', 'b.glb'), { recursive: true }); // 提交段 b 失败
+    let threw = null;
+    try {
+      publishPackage(st, lib, 'pkg');
+    } catch (e) {
+      threw = e;
+    }
+    assert.ok(threw, 'publish throws');
+    // 普通回滚应成功（a.glb 恢复 OLD）——RR2 的「恢复失败」分支需要额外注入：
+    // 此处先验证普通路径，再单独构造恢复失败场景
+    assert.equal(readFileSync(join(lib, 'models', 'a.glb'), 'utf8'), 'OLD', 'normal rollback restores OLD');
+    assert.ok(!existsSync(backupDir), 'backup cleaned after complete rollback');
+    rmSync(join(lib, 'models', 'b.glb'), { recursive: true, force: true });
+
+    // 恢复失败场景：monkey-patch copyFileSync？不可（ESM 顶层 fs）。改用形态注入——
+    // 备份的 backup 文件在回滚前被外部删除 → 恢复 copy 时 ENOENT → 回滚失败
+    // （模拟：备份目录被并发进程清掉。用 hook：提交段失败点触发后、回滚段前删备份）
+    // 实现该注入最直接的方式：第二个文件占位目录（提交失败），且备份目录中 a.glb 的
+    // 备份文件被删。时序上 publishPackage 一体执行无法中间插入——改用「恢复目标不可写」：
+    // a.glb 恢复目标在提交段被写为 NEW 后，回滚前无法干预。
+    // → 采用可测的等价注入：backup 文件路径被目录占用（backup 阶段后无法干预）。
+    // 结论：恢复失败需要进程外干扰，确定性单测用「伪造已存在的未恢复备份目录」验证
+    // RR2 的核心合同：再导入拒绝 + 恢复材料保留。
+    mkdirSync(backupDir, { recursive: true });
+    writeFileSync(join(backupDir, 'journal.json'), JSON.stringify({
+      package: 'pkg', commitError: 'x', entries: [{ dest: '/lib/models/a.glb', backup: `${backupDir}/models/a.glb` }], rollbackFailures: [],
+    }));
+    // 再导入（同名包）→ 拒绝（不得无条件删未恢复备份）
+    let refused = null;
+    try {
+      publishPackage(st, lib, 'pkg');
+    } catch (e) {
+      refused = e;
+    }
+    assert.ok(refused && refused.message.includes('存留的导入备份'), 're-import refused while unrecovered backup exists');
+    assert.ok(existsSync(join(backupDir, 'journal.json')), 'recovery material preserved after refusal');
+    // 清理伪造备份后可正常导入
+    rmSync(backupDir, { recursive: true, force: true });
+    const ok = publishPackage(st2Of(tmp), lib, 'pkg');
+    assert.ok(Array.isArray(ok), 'import proceeds after backup removed');
+    assert.equal(readFileSync(join(lib, 'models', 'a.glb'), 'utf8'), 'NEW_FINAL', 'committed after cleanup');
+
+    // importPackage 入口提交失败回归（review 要求：入口测试不只成功路径）——
+    // 门禁全过的合法包，发布段被占位目录卡死 → 入口抛错且库无部分写入
+    const pkg = join(tmp, 'pkg');
+    mkdirSync(join(pkg, 'data'), { recursive: true });
+    writeFileSync(join(pkg, 'data', 'rr2_probe.glb'), readFileSync(join(template, '..', 'assets', 'models', 'rack.glb')));
+    writeFileSync(join(pkg, 'manifest.json'), JSON.stringify({
+      meta: { version: '1' },
+      data: [{ name: 'RR2 probe', file_name: 'rr2_probe.glb', file_path: 'data/rr2_probe.glb', tags: ['test'] }],
+    }));
+    const lib2 = join(tmp, 'lib2');
+    mkdirSync(join(lib2, 'models', 'rr2_probe.glb'), { recursive: true }); // 占位目录 → 提交失败
+    let entryThrew = null;
+    try {
+      await importPackage(pkg, { libDir: lib2, packageName: 'rr2' });
+    } catch (e) {
+      entryThrew = e;
+    }
+    assert.ok(entryThrew && entryThrew.message.includes('已回滚'), 'importPackage commit failure rolls back at entry');
+    assert.ok(!existsSync(join(lib2, 'manifests', 'rr2.json')), 'no partial manifest write');
+    assert.ok(!existsSync(join(lib2, '.import-backup-rr2')), 'no backup residue after clean rollback');
+  } finally {
+    rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+function st2Of(tmp) {
+  const st2 = join(tmp, 'st2x');
+  mkdirSync(join(st2, 'models'), { recursive: true });
+  writeFileSync(join(st2, 'models', 'a.glb'), 'NEW_FINAL');
+  return st2;
+}
+
+/* ── P5 三审修复轮回归（P5-RRR1～RRR4，2026-10-15）──────────────────────────── */
+
+await test('P5-RRR1 backup dir never auto-deleted without proof of safe completion', async () => {
+  const { publishPackage } = await import('../import-assets.mjs');
+  const tmp = mkdtempSync(join(tmpdir(), 'p5rrr1-'));
+  try {
+    const lib = join(tmp, 'lib');
+    const st = join(tmp, 'st');
+    mkdirSync(join(lib, 'models'), { recursive: true });
+    mkdirSync(join(st, 'models'), { recursive: true });
+    writeFileSync(join(lib, 'models', 'a.glb'), 'OLD');
+    writeFileSync(join(st, 'models', 'a.glb'), 'NEW');
+    const backupDir = join(lib, '.import-backup-pkg');
+
+    // review 反例：journal 写入失败分支保留的备份**没有 journal.json**——
+    // 伪造该形态（含 OLD 的备份文件、无 marker），再次导入不得自动删除
+    mkdirSync(join(backupDir, 'models'), { recursive: true });
+    writeFileSync(join(backupDir, 'models', 'a.glb'), 'OLD'); // 无 journal.json
+    let refused = null;
+    try {
+      publishPackage(st, lib, 'pkg');
+    } catch (e) {
+      refused = e;
+    }
+    assert.ok(refused, 're-import refused（无 marker 备份）');
+    assert.ok(refused.message.includes('存留的导入备份'), 'refusal message names the backup');
+    assert.ok(refused.message.includes('无 journal'), 'message notes journal-less backup may hold unrecovered files');
+    // 唯一恢复材料未被销毁（review 反例：最终 backupExists=false）
+    assert.ok(existsSync(join(backupDir, 'models', 'a.glb')), 'backup OLD preserved（marker-less backup NOT auto-deleted）');
+    // 正式库文件未被覆盖（发布被拒，NEW 未写入）
+    assert.equal(readFileSync(join(lib, 'models', 'a.glb'), 'utf8'), 'OLD', 'official file untouched by refused import');
+  } finally {
+    rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+await test('P5-RRR4 typecheck evidence: structured binding, vite-only rejected, cold-start dedup wired', async () => {
+  const { typecheckEvidenceFromBuild, runTypecheck, verifyScene } = await import('./scene.mjs');
+  const tmp = mkdtempSync(join(tmpdir(), 'p5rrr4-'));
+  try {
+    // 证据判定三态（RRR4 反例：`vite v6 built` 单独出现不得判 vue-tsc 通过）
+    assert.equal(typecheckEvidenceFromBuild('vite v6.4.3 building for production...\n✓ built in 3s', 0).status, 'unknown', 'vite-only output NOT accepted as vue-tsc evidence（RRR4 反例关闭）');
+    assert.equal(typecheckEvidenceFromBuild('vue-tsc -b\nvite v6.4.3 building...', 0).status, 'build', 'vue-tsc markers + exit=0 accepted');
+    assert.equal(typecheckEvidenceFromBuild('src/x.ts(1,1): error TS2322', 0).status, 'FAIL', 'TS errors FAIL');
+    assert.equal(typecheckEvidenceFromBuild('vue-tsc -b\n...', 1).status, 'unknown', 'failed build has no reusable evidence（exit≠0）');
+    assert.equal(typecheckEvidenceFromBuild('', 0).status, 'unknown', 'empty output unknown');
+
+    // 无 buildOutput 注入的生产调度计数（review 要求）：standard 档 typecheck 走
+    // 本次 build 的结构化证据；证据无效（注入 build 无 tsc 痕迹输出）→ 独立 typecheck 真跑
+    const project = join(tmp, 'proj');
+    mkdirSync(join(project, 'public', 'assets', 'models'), { recursive: true });
+    mkdirSync(join(project, 'src'), { recursive: true });
+    writeFileSync(join(project, 'public', 'scene-data.json'), JSON.stringify({ cars: [{ id: 'c1' }] }));
+    writeFileSync(join(project, 'src', 'main.ts'), 'export {};\n');
+    writeFileSync(join(project, 'package.json'), '{}');
+    writeFileSync(join(project, 'package-lock.json'), '{}');
+    let statsSeq = 0;
+    const fakePage = {
+      pageErrors: [], netMisses: [],
+      evaluate: async (expr) => {
+        if (expr.includes('whenReady')) return { ok: true, d: { pending: 0, failedAssets: [], pageErrors: [] } };
+        if (expr.includes('getDiagnostics')) return [];
+        if (expr.includes('groups')) return { cars: ['c1'] };
+        if (expr.includes('scene-canvas')) return { ok: true, rect: [1280, 800] };
+        if (expr.includes('traverseVisible')) return { ok: true, tested: 1, id: 'c1' };
+        if (expr.includes('getStats')) {
+          statsSeq += 1;
+          return { fps: 60, calls: 10, triangles: 100, elapsed: statsSeq };
+        }
+        return true;
+      },
+      navigateTo: async () => {},
+      close: async () => {},
+    };
+    const sess = { newPage: async () => fakePage, close: async () => {} };
+    let tcCalls = 0;
+    const r1 = await verifyScene({
+      url: 'http://fake:1/', mode: 'run', profile: 'standard', project,
+      session: sess, cache: false,
+      // 注入 build：成功但输出无 tsc 痕迹（vite-only 桩）→ typecheck 必须独立真跑
+      runBuild: () => ({ ok: true, status: 0, output: 'vite v6.4.3 building...\nbuilt' }),
+      runTypecheck: () => { tcCalls += 1; return { ok: true, status: 0 }; },
+      runLint: () => ({ ok: true, status: 0 }),
+    });
+    assert.equal(tcCalls, 1, 'vite-only build evidence → independent typecheck runs（不冒充）');
+    assert.equal(r1.profileChecks.find((p) => p.tool === 'typecheck').status, 'PASS', 'typecheck PASS by real run');
+
+    // build 输出含 vue-tsc 痕迹 → typecheck 复用（零独立调用）
+    let tcCalls2 = 0;
+    const r2 = await verifyScene({
+      url: 'http://fake:1/', mode: 'run', profile: 'standard', project,
+      session: sess, cache: false,
+      runBuild: () => ({ ok: true, status: 0, output: 'vue-tsc -b\nvite v6.4.3 building...\nbuilt' }),
+      runTypecheck: () => { tcCalls2 += 1; return { ok: true, status: 0 }; },
+      runLint: () => ({ ok: true, status: 0 }),
+    });
+    assert.equal(tcCalls2, 0, 'structured vue-tsc evidence → typecheck NOT re-run（epoch 复用）');
+    assert.equal(r2.profileChecks.find((p) => p.tool === 'typecheck').status, 'build', 'typecheck status=build');
+
+    // preview（无 build 工具）→ typecheck 独立跑（RRR4：preview 仍独立执行必要检查）
+    let tcCalls3 = 0;
+    await verifyScene({
+      url: 'http://fake:1/', mode: 'run', profile: 'preview', project,
+      session: sess, cache: false,
+      runTypecheck: () => { tcCalls3 += 1; return { ok: true, status: 0 }; },
+      runLint: () => ({ ok: true, status: 0 }),
+    });
+    assert.equal(tcCalls3, 1, 'preview runs independent typecheck（无 build 证据可用）');
+  } finally {
+    rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+await test('P5-RRR2/RRR3 exportBuild real build + fidelity compare + editRegression expect + perf exit semantics', async () => {
+  const { verifyScene } = await import('./scene.mjs');
+  const { runExportBuild } = await import('./scene.mjs');
+  const tmp = mkdtempSync(join(tmpdir(), 'p5rrr23-'));
+  try {
+    const project = join(tmp, 'proj');
+    mkdirSync(join(project, 'public', 'assets', 'models'), { recursive: true });
+    mkdirSync(join(project, 'src'), { recursive: true });
+    writeFileSync(join(project, 'public', 'scene-data.json'), JSON.stringify({ cars: [{ id: 'c1' }] }));
+    writeFileSync(join(project, 'src', 'main.ts'), 'export {};\n');
+    writeFileSync(join(project, 'package.json'), '{}');
+    writeFileSync(join(project, 'package-lock.json'), '{}');
+    let statsSeq = 0;
+    const fakePage = {
+      pageErrors: [], netMisses: [],
+      evaluate: async (expr) => {
+        if (expr.includes('whenReady')) return { ok: true, d: { pending: 0, failedAssets: [], pageErrors: [] } };
+        if (expr.includes('getDiagnostics')) return [];
+        if (expr.includes('groups')) return { cars: ['c1'] };
+        if (expr.includes('scene-canvas')) return { ok: true, rect: [1280, 800] };
+        if (expr.includes('traverseVisible')) return { ok: true, tested: 1, id: 'c1' };
+        if (expr.includes('getStats')) {
+          statsSeq += 1;
+          return { fps: 60, calls: 10, triangles: 100, elapsed: statsSeq };
+        }
+        return true;
+      },
+      navigateTo: async () => {},
+      close: async () => {},
+    };
+    const sess = { newPage: async () => fakePage, close: async () => {} };
+
+    // RRR2：exportBuild 桩失败（运行包独有构建失败）→ FAIL 传播
+    const r1 = await verifyScene({
+      url: 'http://fake:1/', mode: 'run', profile: 'standard', project,
+      session: sess, cache: false, wantExport: true,
+      runTypecheck: () => ({ ok: true, status: 0 }),
+      runLint: () => ({ ok: true, status: 0 }),
+      runBuild: () => ({ ok: true, status: 0, output: 'x' }),
+      runExport: () => ({ ok: false, status: 1, detail: 'runtime package build exit=1（vue-tsc/vite 在剥离产物上失败）' }),
+    });
+    assert.equal(r1.verdict, 'FAIL', 'exportBuild FAIL propagates（运行包构建失败 → 档位 FAIL）');
+    assert.ok(r1.profileChecks.find((p) => p.tool === 'exportBuild').detail.includes('剥离产物'), 'failure detail names runtime-package build');
+
+    // RRR2：defaultRunExport 的产物保留语义——真生产 export（strip + build 子进程）在
+    // 最小夹具上无法过 strip-edit（结构门禁），以注入成功桩验证 detail 含产物路径约定
+    const r2 = await runExportBuild(project, {
+      cache: false,
+      runExport: (p, outDir) => ({ ok: true, status: 0, detail: `runtime package built & preserved at ${outDir}` }),
+    });
+    assert.ok(r2.detail.includes(project.replace(/[\\/]+$/, '') + '-dist'), 'export detail carries explicit artifact path');
+
+    // RRR3：editRegression 收到 expectPath（生产 default 实现签名）——注入桩捕获参数
+    let receivedExpect = null;
+    const r3 = await verifyScene({
+      url: 'http://fake:1/', mode: 'run', profile: 'release', project,
+      session: sess, cache: false,
+      runTypecheck: () => ({ ok: true, status: 0 }),
+      runLint: () => ({ ok: true, status: 0 }),
+      runBuild: () => ({ ok: true, status: 0, output: 'vue-tsc ok' }),
+      runExport: () => ({ ok: true, status: 0, detail: 'ok' }),
+      runStrictBudget: () => ({ ok: true, status: 0 }),
+      runEditRegression: async (p, u, expectPath) => {
+        receivedExpect = expectPath;
+        return { status: 'PASS', detail: 'ok' };
+      },
+      runFidelity: async () => ({ status: 'PASS', detail: 'compare ok' }),
+      runPerf: async () => ({ status: 'PASS', detail: 'ok' }),
+    });
+    assert.equal(receivedExpect, join(project, 'public', 'scene-data.json'), 'editRegression receives the project expect path（不默认母版）');
+    assert.equal(r3.verdict, 'PASS', 'release full-chain PASS');
+
+    // RRR3：fidelity 失败传播（比较发现缺口 → FAIL）
+    const r4 = await verifyScene({
+      url: 'http://fake:1/', mode: 'run', profile: 'release', project,
+      session: sess, cache: false,
+      runTypecheck: () => ({ ok: true, status: 0 }),
+      runLint: () => ({ ok: true, status: 0 }),
+      runBuild: () => ({ ok: true, status: 0, output: 'vue-tsc ok' }),
+      runExport: () => ({ ok: true, status: 0, detail: 'ok' }),
+      runStrictBudget: () => ({ ok: true, status: 0 }),
+      runEditRegression: async () => ({ status: 'PASS', detail: 'ok' }),
+      runFidelity: async () => ({ status: 'FAIL', detail: '视觉层缺口：__visuals 2 节点仅命中 1' }),
+      runPerf: async () => ({ status: 'PASS', detail: 'ok' }),
+    });
+    assert.equal(r4.verdict, 'FAIL', 'fidelity FAIL propagates（比较缺口 → 档位 FAIL）');
+  } finally {
+    rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+await test('P5-RRRR1 fidelity-compare: structured semantic value diff (visible/color/parentId/params/extra groups)', async () => {
+  const { spawnSync } = await import('node:child_process');
+  const { extractExportedObject } = await import('./fidelity-compare.mjs');
+  const script = resolve(dirname(fileURLToPath(import.meta.url)), 'fidelity-compare.mjs');
+  const tmp = mkdtempSync(join(tmpdir(), 'p5fid4-'));
+  try {
+    // mk：完整语义夹具。role='src' 写编辑态私有区（__visuals/__materialLib）；
+    // role='pkg' 写运行包形态（无私有区，编译条目在 appearance.ts）——strip 剥离合同的两侧
+    const baseVisual = { visible: false, libraryRef: 'red_mat', slots: { body: { color: '#ff0000', map: 'textures/car/red.png' } } };
+    const baseMat = { name: 'red_mat', spec: { color: '#ff0000', metalness: 0.8, roughness: 0.3 } };
+    const mk = (root, { role = 'src', extraGroup = null, mutate = null, privates = false }) => {
+      mkdirSync(join(root, 'public'), { recursive: true });
+      mkdirSync(join(root, 'src', 'scene-core', 'generated'), { recursive: true });
+      let node = { id: 'car_01', parentId: 'p1', position: [1, 0, 2], params: { count: 5, status: 'normal' } };
+      let appV = { car_01: JSON.parse(JSON.stringify(baseVisual)) };
+      let appM = { red_mat: JSON.parse(JSON.stringify(baseMat)) };
+      let visualsOut = JSON.parse(JSON.stringify(baseVisual));
+      let matOut = JSON.parse(JSON.stringify(baseMat));
+      if (mutate) {
+        // mutate 返回部分键——与默认合并（避免未返回键变 undefined 破坏夹具）
+        const mutated = mutate({ node, appV, appM, visualsOut, matOut });
+        node = mutated.node ?? node;
+        appV = mutated.appV ?? appV;
+        appM = mutated.appM ?? appM;
+        visualsOut = mutated.visualsOut ?? visualsOut;
+        matOut = mutated.matOut ?? matOut;
+      }
+      const isSrc = role === 'src';
+      const data = {
+        cars: [node],
+        ...(extraGroup ? { [extraGroup]: [{ id: 'ghost_01', position: [0, 0, 0] }] } : {}),
+        ...(isSrc && visualsOut ? { __visuals: { car_01: visualsOut } } : {}),
+        ...(isSrc && matOut ? { __materialLib: { red_mat: matOut } } : {}),
+        ...(privates ? { __stale: true } : {}),
+      };
+      writeFileSync(join(root, 'public', 'scene-data.json'), JSON.stringify(data));
+      writeFileSync(join(root, 'src', 'scene-core', 'generated', 'appearance.ts'),
+        `export const compiledVisuals = ${JSON.stringify(appV)};\n`
+        + `export const compiledMaterialLib = ${JSON.stringify(appM)};\n`);
+    };
+
+    const run = (a, b) => spawnSync('node', [script, a, b], { encoding: 'utf8' });
+
+    // 正例：语义全一致（含 parentId/params/visible/slots/material spec）→ PASS
+    const srcOk = join(tmp, 'src');
+    const pkgOk = join(tmp, 'pkg');
+    mk(srcOk, { role: 'src' });
+    mk(pkgOk, { role: 'pkg' });
+    const ok = run(srcOk, pkgOk);
+    assert.equal(ok.status, 0, `semantic-consistent pair PASS: ${ok.stdout}`);
+
+    // 负例 1（review 反例）：ID 保留但 visible 值错误（false 编译成 true）→ FAIL
+    const pkgV = join(tmp, 'pkg-visible');
+    mk(pkgV, { role: 'pkg', mutate: ({ appV }) => {
+      appV.car_01.visible = true;
+      return { appV };
+    } });
+    const badV = run(srcOk, pkgV);
+    assert.equal(badV.status, 1, 'visible value error FAIL（ID 在但值错）');
+    assert.ok(badV.stdout.includes('visible'), 'failure names visible');
+
+    // 负例 2（review 反例）：材质颜色值错误（红→蓝，ID 保留）→ FAIL
+    const pkgC = join(tmp, 'pkg-color');
+    mk(pkgC, { role: 'pkg', mutate: ({ appV }) => {
+      appV.car_01.slots.body.color = '#0000ff';
+      return { appV };
+    } });
+    const badC = run(srcOk, pkgC);
+    assert.equal(badC.status, 1, 'color value error FAIL');
+    assert.ok(badC.stdout.includes('color'), 'failure names color');
+
+    // 负例 3（review 反例）：材质库 spec 值错误 → FAIL
+    const pkgM = join(tmp, 'pkg-mat');
+    mk(pkgM, { role: 'pkg', mutate: ({ appM }) => {
+      appM.red_mat.spec.color = '#0000ff';
+      return { appM };
+    } });
+    const badM = run(srcOk, pkgM);
+    assert.equal(badM.status, 1, 'material spec value error FAIL');
+    assert.ok(badM.stdout.includes('__materialLib.red_mat'), 'failure names the material path');
+
+    // 负例 4（review 反例）：parentId 错误 → FAIL
+    const pkgP = join(tmp, 'pkg-parent');
+    mk(pkgP, { role: 'pkg', mutate: ({ node }) => {
+      node.parentId = 'wrong';
+      return { node };
+    } });
+    const badP = run(srcOk, pkgP);
+    assert.equal(badP.status, 1, 'parentId error FAIL');
+    assert.ok(badP.stdout.includes('parentId'), 'failure names parentId');
+
+    // 负例 5（review 反例）：params 值错误（count 5→999）→ FAIL
+    const pkgN = join(tmp, 'pkg-params');
+    mk(pkgN, { role: 'pkg', mutate: ({ node }) => {
+      node.params.count = 999;
+      return { node };
+    } });
+    const badN = run(srcOk, pkgN);
+    assert.equal(badN.status, 1, 'params value error FAIL');
+    assert.ok(badN.stdout.includes('params.count'), 'failure names params.count');
+
+    // 负例 6（review 反例）：运行包额外业务分组 → FAIL
+    const pkgX = join(tmp, 'pkg-extra');
+    mk(pkgX, { role: 'pkg', extraGroup: 'ghosts' });
+    const badX = run(srcOk, pkgX);
+    assert.equal(badX.status, 1, 'extra business group FAIL');
+    assert.ok(badX.stdout.includes('额外业务分组') && badX.stdout.includes('ghosts'), 'failure names the extra group');
+
+    // 负例 7：视觉条目完全丢失 → FAIL
+    const pkgMiss = join(tmp, 'pkg-miss');
+    mk(pkgMiss, { role: 'pkg', mutate: ({ appV, visualsOut }) => {
+      delete appV.car_01;
+      return { appV, visualsOut };
+    } });
+    const badMiss = run(srcOk, pkgMiss);
+    assert.equal(badMiss.status, 1, 'missing visual entry FAIL');
+
+    // 结构化提取器单测（fail-closed）：非 JSON 兼容字面量（单引号键）→ 不可比
+    assert.ok(!extractExportedObject("export const x = {'a': 1};", 'x').ok, 'non-JSON literal rejected');
+    assert.ok(!extractExportedObject('export const x = fn();', 'x').ok, 'non-object export rejected');
+    assert.deepEqual(extractExportedObject('export const x = {"a": {"b": 2}};', 'x').value, { a: { b: 2 } }, 'nested object extracted');
+  } finally {
+    rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+await test('P5-RRRR3 export staging: old artifact preserved on failure, replaced on success', async () => {
+  const { defaultRunExportForTest } = await import('./scene.mjs');
+  const crypto = await import('node:crypto');
+  const tmp = mkdtempSync(join(tmpdir(), 'p5exp4-'));
+  try {
+    const project = join(tmp, 'proj');
+    mkdirSync(join(project, 'src'), { recursive: true });
+    writeFileSync(join(project, 'package.json'), '{}');
+    const outDir = join(tmp, 'proj-dist');
+    // 预置「上次成功交付包」：dist/index.html + 特征内容（hash 保全对照）
+    mkdirSync(join(outDir, 'dist'), { recursive: true });
+    writeFileSync(join(outDir, 'dist', 'index.html'), 'OLD-SUCCESSFUL-ARTIFACT-12345');
+    const oldHash = crypto.createHash('sha256').update(readFileSync(join(outDir, 'dist', 'index.html'))).digest('hex');
+
+    // 构造可发布的 staging 产物形态（strip 步骤注入桩——绕过真实 strip；直接建 staging 内容）
+    // 通过注入缝：不走真实 spawnSync，用桩完成各步。defaultRunExport 的步骤全在函数内——
+    // 测试经 runExport 注入缝验证事务语义（staging 事务发布部分提取为可测函数）
+    // ——见 scene.mjs 的 publishStagingExportForTest。
+    // 负例：build 失败（注入 exit=1）→ 旧包内容 hash 不变
+    const failResult = await defaultRunExportForTest(project, outDir, {
+      stagePrepare: (staging) => {
+        mkdirSync(join(staging, 'dist'), { recursive: true });
+        writeFileSync(join(staging, 'dist', 'index.html'), 'NEW-ATTEMPT');
+      },
+      buildStep: () => ({ ok: false, status: 1, detail: 'runtime package build exit=1（旧交付包保留）' }),
+    });
+    assert.equal(failResult.ok, false, 'build failure → FAIL');
+    assert.ok(failResult.detail.includes('旧交付包保留'), 'failure detail notes old artifact preserved');
+    const afterFailHash = crypto.createHash('sha256').update(readFileSync(join(outDir, 'dist', 'index.html'))).digest('hex');
+    assert.equal(afterFailHash, oldHash, 'old artifact content preserved byte-identical on failure');
+    assert.ok(!existsSync(`${outDir}.staging`), 'staging cleaned after failure');
+    assert.ok(!existsSync(`${outDir}.old`), 'no backup residue on failure');
+
+    // 正例：全步骤成功 → staging 事务上位，新产物替换旧产物
+    const okResult = await defaultRunExportForTest(project, outDir, {
+      stagePrepare: (staging) => {
+        mkdirSync(join(staging, 'dist'), { recursive: true });
+        writeFileSync(join(staging, 'dist', 'index.html'), 'NEW-SUCCESS-67890');
+      },
+      buildStep: () => ({ ok: true, status: 0, detail: 'ok' }),
+    });
+    assert.equal(okResult.ok, true, 'success path');
+    const newContent = readFileSync(join(outDir, 'dist', 'index.html'), 'utf8');
+    assert.equal(newContent, 'NEW-SUCCESS-67890', 'new artifact published');
+    assert.ok(!existsSync(`${outDir}.old`), 'old backup cleaned after success');
+    assert.ok(!existsSync(`${outDir}.staging`), 'staging gone (renamed to outDir)');
+  } finally {
+    rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+await test('P5 final production boundaries: fidelity, edit reload, rollback retry', async () => {
+  const { spawnSync } = await import('node:child_process');
+  const run = spawnSync(process.execPath, [join(dirname(fileURLToPath(import.meta.url)), 'p5-final-fixtures.mjs')], { encoding: 'utf8' });
+  assert.equal(run.status, 0, `${run.stdout}\n${run.stderr}`);
 });
 
 if (!process.argv.includes('--node-only')) {

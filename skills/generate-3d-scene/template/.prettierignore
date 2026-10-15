@@ -1,0 +1,51 @@
+# 存量偏离声明（Spec §4.1 P5：不全库盲目格式重写——大 diff 淹没真实变更）
+# 基线按「改动哪个格式化哪个」收敛；format:check 只对未忽略文件生效。
+# 存量文件改动手动跑 npx prettier --write <file> 后可从下方豁免清单删除
+# （渐进收敛，不一次性重写）。
+
+# 二进制/产物/依赖
+dist/
+node_modules/
+public/assets/
+vendor/
+
+# 生成物（appearance.ts 是确定性生成的审计产物，格式化会破坏"同输入同输出"对照）
+src/scene-core/generated/
+
+# 锁文件与缓存（npm/验证工具管理，不重排）
+package-lock.json
+.verification-cache.json
+
+# JSON 数据文件（scene-data/scenes 有既有缩进口径，重排会产生无意义大 diff）
+*.json
+!package.json
+
+# 文档（存量基线，渐进收敛）
+docs/
+*.md
+
+# 存量脚本/配置（改动时逐文件收敛，收敛后从此清单删除）
+tsconfig.json
+tsconfig.app.json
+tsconfig.node.json
+vite.config.ts
+eslint.config.mjs
+scripts/
+
+# 存量引擎/编辑器/示例源码（改动时逐文件收敛，收敛后从此清单删除）
+src/scene-core/engine/
+src/scene-core/edit/
+src/scene-core/cards/
+src/scene-core/handlers/
+src/scene-core/appearance-runtime.ts
+src/scene-core/asset-manifest.ts
+src/scene-core/diagnostics.ts
+src/scene-core/materials.ts
+src/scene-core/primitives.ts
+src/scene-core/resources.ts
+src/scene-core/types.ts
+src/scene-core/index.ts
+src/scene-core/createScene.ts
+src/scene-profile.ts
+src/edit/
+index.html

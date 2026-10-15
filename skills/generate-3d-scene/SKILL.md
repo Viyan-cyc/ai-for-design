@@ -133,16 +133,20 @@ S9 交付 ← S8 编辑调优 ← S7 交互联调 ←──── 修复循环�
 |---|---|
 | 会话开头环境预检 | `node scripts/ensure-env.mjs [--multimodal]` |
 | 检索资产 | `node scripts/search-assets.mjs <query> [--top N]` |
+| 批量检索（S2 一次出全） | `node scripts/search-assets.mjs --batch <queries.txt> [--top N]` |
 | 校验模型（入库门禁） | `node scripts/validate-model.mjs <model> [--strict] [--profile main\|prop]` |
 | 建工程 | `node scripts/init.mjs <target-dir> [--assets referenced\|all\|id1,id2] [--with-components] [--deps skip\|copy\|install]` |
 | 构建门禁 | `node scripts/build.mjs <project-dir> [--strict]` |
 | 结构冒烟 | `node scripts/verify/smoke-structural.mjs <url> [--edit] [--expect <scene-data.json>]` |
 | 视觉冒烟（截图） | `node scripts/verify/smoke-visual.mjs <url> [--out <dir>]` |
-| 性能观测 | `node scripts/verify/perf-fps.mjs <url> [--duration 20] [--gpu] [--strict]` |
+| 性能观测（frame-time 分布 + resources） | `node scripts/verify/perf-fps.mjs <url> [--duration 20] [--gpu] [--strict]` |
+| 场景验证（档位+缓存） | `node scripts/verify/scene.mjs <url> [--both] [--profile preview\|standard\|release] [--no-cache]` |
+| 工具时序基准 | `node scripts/benchmark.mjs --project <dir> [--runs 3] [--with-export]` |
 | 出二开包 | `node scripts/strip-edit.mjs <src> --out <dir> [--force]` |
-| 资产入库（运维） | `node scripts/import-assets.mjs <package.zip\|dir> [--name <pkg>] [--strict]` |
+| 资产入库（运维，事务性） | `node scripts/import-assets.mjs <package.zip\|dir> [--name <pkg>] [--strict]` |
 | 重建索引（运维） | `node scripts/build-search-index.mjs` |
 | Poly Haven 扩库（运维） | `node scripts/fetch-polyhaven.mjs [--ids <名单文件>] [--res 1k\|2k] [--resume]` |
+| 组件文档重生成（运维） | `node scripts/sync-components.mjs --src <3d-components> [--docs-only]` |
 | 冒烟全量/分段（开发期） | `node template/scripts/smoke-r.mjs <url> [--edit] [--only S49] [--from S45]` |
 
 退出码约定：`0` 通过 / `1` 校验失败 / `2` 用法或环境错误（`search-assets` 的 `3` = 无结果）。脚本输出固定格式，先读 `RESULT:` / `PASS|FAIL` 行再决定下一步。

@@ -42,11 +42,12 @@
 ## 写法纪律
 
 1. **handler 内建，不产 GLB**——过程化产物走 build.mjs 场景预算；只有当模型要入库复用时才导出实体 GLB 过 `validate-model --strict`；
-2. 常量全部顶部集中（轮廓点表/比例表/颜色），body 一处；
-3. `handlerUtils.applyTransform(group, node)` 先行（读节点 transform）；
-4. `node.params` 读业务字段（颜色/状态），**渲染默认值写在代码**（`applyShadowDefaults` 模式）；
-5. 面数自检：`setDebug(true)` 看 tris——精模单件目标 ≤2k（strict 档口径）；
-6. 产出后必须 `smoke-visual` 截图自查（多模态档）或人工验证清单（非多模态档）——比例失调/漂浮是代码建模第一风险，**不要凭「代码写对了」宣布完成**。
+2. **typed definition 注册**（P3 起标准形态，参照 `procedural/tree.ts`）：`create` 建树 + `update` params 响应（结构参数返回 `'rebuild'`、原地参数返回 `'updated'`）+ `dispose` 可选——旧 function 形态仍兼容但 params 变化走重建兜底；
+3. 常量全部顶部集中（轮廓点表/比例表/颜色），body 一处；
+4. `handlerUtils.applyTransform(group, node)` 先行（读节点 transform）；
+5. `node.params` 读业务字段（颜色/状态），**渲染默认值写在代码**（`applyShadowDefaults` 模式）；
+6. 面数自检：`setDebug(true)` 看 tris——精模单件目标 ≤2k（strict 档口径）；
+7. 产出后必须 `smoke-visual` 截图自查（多模态档）或人工验证清单（非多模态档）——比例失调/漂浮是代码建模第一风险，**不要凭「代码写对了」宣布完成**。
 
 ## 已否决方案（防回潮）
 

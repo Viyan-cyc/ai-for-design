@@ -19,10 +19,18 @@
 | 脚本 | 断言 | 退出码 |
 |---|---|---|
 | `build.mjs` | 结构完整 + 三条铁律 + import 白名单 + 预算静态估算（重类 WARN / `--strict` 阻断） | 0 / 1 / 2 |
-| `smoke-structural.mjs` | 场景图分组对齐 + 渲染活性（fps>0）+ 零 rejection（**坏类的机器判定**） | 0 PASS / 1 FAIL / 2 环境不可用 |
+| `smoke-structural.mjs` | 场景图分组对齐 + 渲染活性 + 零 rejection（**坏类的机器判定**；GLB 收敛 whenReady 终态驱动，无固定 sleep） | 0 PASS / 1 FAIL / 2 环境不可用 |
+| `scene.mjs` | run/edit 双态基础检查（ready/groups/canvas/subject/render/errors/assets）+ `--profile preview\|standard\|release` 档位标签 + 内容 hash 缓存（PASS-only，`--no-cache` 强制重跑） | 0 / 1 / 2 |
 | `smoke-visual.mjs` | 四视口截图产出（全景/frameObject/推近/wireframe）——**只产出，看图判定归多模态 LLM** | 0 / 1 / 2 |
-| `perf-fps.mjs` | 预算三项运行直读 + fps 采样（`--gpu` 真机）——全 WARN | 0（WARN 不改退出码）/ `--strict` 1 / 2 |
+| `perf-fps.mjs` | 预算三项（materials 与 programs 独立计）+ GPU resources（geometries/textures）+ fps 采样与 frame-time 分布（p50/p95/p99，`--gpu` 真机）——全 WARN | 0（WARN 不改退出码）/ `--strict` 1 / 2 |
+| `benchmark.mjs` | 工具链时序基准（dev.server/browser.ready/verify/build/export 各 stage wall time，median 聚合）——非门禁，供提速对照 | 0 / 2 |
 | `smoke-r.mjs`（开发期） | S1–S52 引擎/编辑器全量断言（`--only`/`--from` 分段） | 冒烟设施，不随工程交付 |
+
+### 验证缓存（P5.1 / V22）
+
+- `scene.mjs` 的 PASS 结论按**内容 hash** 缓存（scene-data/src/lock/vendor/检查器版本/mode/profile/viewport）；同 hash 复跑零浏览器开销，报告标 `source='cache'`；
+- 改 scene-data → verify 结论失效；改 src → verify/typecheck/lint 失效；改 lock/vendor → 全失效；**未知改动全失效**（保守）；
+- 只有 PASS 进缓存——FAIL/WARN/SKIP 修复后必须真跑，不冒充命中。
 
 ## 视觉判定清单（多模态档，读四张截图时逐项过）
 
@@ -36,7 +44,6 @@
 | 6 | 配色协调 | 材质基调统一，无刺眼失真 |
 | 7 | 推近特写 | 主视角细节经得起看（无明显破面/法线错误） |
 | 8 | wireframe 合理性 | 线框视图密度符合面数预期（肉眼复核预算） |
-
 ## 非多模态档
 
 - 跳过看图；结论标注 **「结构验证通过，未经视觉确认」**；

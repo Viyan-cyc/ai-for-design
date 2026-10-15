@@ -55,19 +55,37 @@ src/
 
 ## handler 契约（业务行为）
 
+**typed definition（推荐，P3 起新业务一律用这个）**：
+
 ```ts
-sceneEngine.registerFactory('pumps', (node) => {
-  const group = new THREE.Group();
-  handlerUtils.applyTransform(group, node);          // 先读节点 transform
-  // …业务：读 node.params、组合几何/挂 GLB
-  return group;
-});
+// 参照 handlers/procedural/tree.ts / rack.ts
+const definition: NodeFactoryDefinition = {
+  create(node) {                       // 建树（含视觉默认值）
+    const group = new THREE.Group();
+    handlerUtils.applyTransform(group, node);
+    // …业务：读 node.params、组合几何/挂 GLB
+    return group;
+  },
+  update(obj, next, previous) {        // params 响应（可选；不提供则 params 变化走局部重建兜底）
+    if (structuralChanged(next, previous)) return 'rebuild';  // 结构参数 → 局部重建
+    applyInPlace(obj, next);           // 原地参数（颜色/状态）→ 保实例保视觉层
+    return 'updated';
+  },
+  dispose(obj) { /* 释放 handler 私有资源（可选） */ },
+};
+sceneEngine.registerFactory('pumps', definition);
 ```
 
+- **params 契约**（引擎保证）：同值重推幂等零开销；值变化走 `update`；transform 永远引擎处理；
+- **结构参数 vs 原地参数**：几何随它变的（层数/尺寸）返回 `'rebuild'`；只改材质/状态的原地重放；
+- 旧 `registerFactory('pumps', (node) => obj)` function 形态仍兼容（params 变化 → 局部重建兜底，不再是静默只存数据）。
+
+**通用规则**：
 - **异步 GLB 一律 `makeAssetNodeFactory`**（`handlers/registry.ts` 导出）——过期守卫/阴影默认/视觉层重挂/加载计数徽标集中一处；业务逻辑挂 `onLoaded` 回调。**禁止自己写 GLTFLoader**；
-- mesh 必须具名 snake_case（槽位编辑的 key）；
+- mesh 必须具名 snake_case（槽位编辑的 key；同父层唯一）；
 - 渲染默认值写在代码（`applyShadowDefaults` 模式）；个体差异由编辑态调参后转录（见下）；
-- 多状态资产：`AssetEngine.registerAssetStates`（manifest.states）+ `applyState`。
+- 多状态资产：`AssetEngine.registerAssetStates`（manifest.states）+ `applyState`；
+- 订阅（帧回调/节点事件）用 `subscribeNodeEvent` / `onFrame` 返回的退订函数，存入 teardown 清单——不覆写全局回调。
 
 ## 状态视觉：materials.ts
 

@@ -88,7 +88,18 @@ const main = async () => {
       process.exitCode = 1;
       return;
     }
-    await sleep(2500); // GLB 加载余量
+    // P5.1：GLB 收敛改 whenReady 终态驱动（新模板）；旧模板回退徽标轮询
+    //   ——固定 sleep(2500) 在快加载场景白等、慢加载场景不够，两头都不是正确口径
+    const hasReady = await evaluate('typeof window.__gts3d?.whenReady === "function"');
+    if (hasReady) {
+      const ready = await evaluate('window.__gts3d.whenReady({timeoutMs:15000})'
+        + '.then(d=>({ok:true,pending:d.pending,failed:d.failedAssets.length})).catch(e=>({ok:false,message:String(e?.message??e)}))');
+      if (!ready.ok || ready.pending > 0 || ready.failed > 0) {
+        console.log(`STRUCT FAIL: 加载未收敛（${ready.message ?? `pending=${ready.pending} failed=${ready.failed}`}）`);
+        process.exitCode = 1;
+        return;
+      }
+    }
 
     // ① 场景图 JSON 断言
     const graph = await evaluate(`(() => {

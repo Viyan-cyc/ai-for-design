@@ -25,6 +25,8 @@ export const findEdge = () => [
 
 export const positionalArg = (argv, valueFlags = [
   '--out', '--expect', '--url', '--duration', '--max-calls', '--max-triangles', '--max-materials',
+  '--profile', '--project', '--top', '--lib', '--name', '--scene', '--assets', '--components-version',
+  '--deps', '--validate', '--cache', '--quota', '--res', '--ids', '--out-dir',
 ]) => {
   for (let i = 0; i < argv.length; i += 1) {
     if (valueFlags.includes(argv[i])) {

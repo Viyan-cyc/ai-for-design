@@ -72,7 +72,19 @@ const main = async () => {
       process.exitCode = 1;
       return;
     }
-    await sleep(3000);
+    // P5.1：GLB 收敛改 whenReady 终态驱动（新模板）；旧模板回退轻量等待
+    const hasReady = await evaluate('typeof window.__gts3d?.whenReady === "function"');
+    if (hasReady) {
+      const ready = await evaluate('window.__gts3d.whenReady({timeoutMs:15000})'
+        + '.then(d=>({ok:true,pending:d.pending})).catch(e=>({ok:false,message:String(e?.message??e)}))');
+      if (!ready.ok || ready.pending > 0) {
+        console.log(`VISUAL FAIL: 加载未收敛（${ready.message ?? `pending=${ready.pending}`}）`);
+        process.exitCode = 1;
+        return;
+      }
+    } else {
+      await sleep(1500); // 旧模板无 ready API：保守短等待
+    }
 
     // ① 全景
     await shot('1-overview');

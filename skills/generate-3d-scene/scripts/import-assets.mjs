@@ -1,3 +1,4 @@
+/* eslint-disable no-console -- CLI 输出接口 */
 /**
  * import-assets.mjs — 资产入库管线（解压 / manifest 校验 / 规格门禁 / 落库 / 建索引）
  *
@@ -305,6 +306,10 @@ const collectExistingIds = (libDir) => {
 
 /**
  * 入库：staging 包目录 → 资产库。
+ *
+ * P5.3（F18 事务性）：全部文件先落 staging 库目录（libDir 下 .staging-import-*），
+ * 全部条目门禁通过 + manifest 写完后才原子发布（rename 到正式目录）。
+ * 任一失败 → staging 清理，正式库分毫不动（不再出现"逐项落库后才失败，留下部分写入"）。
  * @returns {{entries: object[], warnings: string[]}}
  */
 export const importPackage = async (staging, { libDir = DEFAULT_LIB, packageName, strict = false, profile = 'main', force = false } = {}) => {
@@ -322,110 +327,281 @@ export const importPackage = async (staging, { libDir = DEFAULT_LIB, packageName
 
   const existing = collectExistingIds(libDir);
   const pkgName = packageName ?? 'package';
-  const outModels = join(libDir, 'models');
-  const outThumbs = join(libDir, 'thumbnails');
-  const outTex = join(libDir, 'textures');
-  const outManifests = join(libDir, 'manifests');
+  // P5.3：先写 staging 库目录（libDir/.staging-import-<pkg>），成功后统一 rename 发布
+  const stagingLib = join(libDir, `.staging-import-${pkgName}`);
+  rmSync(stagingLib, { recursive: true, force: true });
+  const outModels = join(stagingLib, 'models');
+  const outThumbs = join(stagingLib, 'thumbnails');
+  const outTex = join(stagingLib, 'textures');
+  const outManifests = join(stagingLib, 'manifests');
   for (const d of [outModels, outThumbs, outTex, outManifests]) {
     mkdirSync(d, { recursive: true });
   }
 
   const entries = [];
   const gateReports = [];
-  for (const e of manifest.data) {
-    const id = deriveId(e);
-    const owner = existing.get(id);
-    if (owner && owner !== `${pkgName}.json` && !force) {
-      throw new Error(`资产 id "${id}" 已被包 ${owner} 占用（--force 可覆盖）`);
-    }
-    const srcModel = join(staging, e.file_path);
-    if (!existsSync(srcModel)) {
-      throw new Error(`data id=${id} 的模型文件缺失: ${e.file_path}`);
-    }
-    // 跨文件校验：缩略图 / 贴图集
-    if (e.thumbnail_path && !existsSync(join(staging, e.thumbnail_path))) {
-      throw new Error(`data id=${id} 的缩略图缺失: ${e.thumbnail_path}`);
-    }
-    for (const [key, rel] of Object.entries(e.textures ?? {})) {
-      if (!existsSync(join(staging, rel))) {
-        throw new Error(`data id=${id} 的贴图 "${key}" 缺失: ${rel}`);
+  try {
+    for (const e of manifest.data) {
+      const id = deriveId(e);
+      const owner = existing.get(id);
+      if (owner && owner !== `${pkgName}.json` && !force) {
+        throw new Error(`资产 id "${id}" 已被包 ${owner} 占用（--force 可覆盖）`);
       }
-    }
-
-    // 规格门禁（从 staging 读，gltf 外部引用相对自洽；含消费端 three 真实加载门禁）
-    const report = await validateModelFile(srcModel, { assetId: id, strict, profile });
-    // 双形态入库判定：多状态资产（白模+贴图集）要求 UV 完好，缺 UV 即 FAIL
-    if (e.textures && report.uvMissing) {
-      const err = new Error(`规格门禁 FAIL（id=${id}）: 多状态资产（textures+states）要求白模 UV 完好，但 POSITION 网格缺 TEXCOORD_0`);
-      err.details = { gateReports: [{ id, passed: false, violations: [err.message], warnings: [] }] };
-      throw err;
-    }
-    gateReports.push({ id, passed: report.passed, violations: report.violations, warnings: report.warnings });
-    if (!report.passed) {
-      const err = new Error(`规格门禁 FAIL（id=${id}）:\n  ${report.violations.join('\n  ')}`);
-      err.details = { gateReports };
-      throw err;
-    }
-
-    const ext = extname(e.file_name).toLowerCase();
-    const format = ext === '.glb' ? 'glb' : 'gltf';
-    let modelDest;
-    if (format === 'glb') {
-      modelDest = join(outModels, `${id}.glb`);
-      copyFileSync(srcModel, modelDest);
-    } else {
-      // gltf 多文件：连同其所在目录子树复制到 models/<id>/
-      const subDir = dirname(e.file_path);
-      modelDest = join(outModels, id);
-      copyTree(join(staging, subDir === '.' ? '' : subDir), modelDest);
-    }
-
-    let thumbnail;
-    if (e.thumbnail_path) {
-      const tExt = extname(e.thumbnail_path);
-      thumbnail = libRel('thumbnails', `${id}${tExt}`);
-      copyFileSync(join(staging, e.thumbnail_path), join(outThumbs, `${id}${tExt}`));
-    }
-
-    let textures;
-    if (e.textures) {
-      textures = {};
-      for (const [key, rel] of Object.entries(e.textures)) {
-        const tExt = extname(rel);
-        const dest = join(outTex, id, `${key}${tExt}`);
-        mkdirSync(dirname(dest), { recursive: true });
-        copyFileSync(join(staging, rel), dest);
-        textures[key] = libRel('textures', id, `${key}${tExt}`);
+      const srcModel = join(staging, e.file_path);
+      if (!existsSync(srcModel)) {
+        throw new Error(`data id=${id} 的模型文件缺失: ${e.file_path}`);
       }
+      // 跨文件校验：缩略图 / 贴图集
+      if (e.thumbnail_path && !existsSync(join(staging, e.thumbnail_path))) {
+        throw new Error(`data id=${id} 的缩略图缺失: ${e.thumbnail_path}`);
+      }
+      for (const [key, rel] of Object.entries(e.textures ?? {})) {
+        if (!existsSync(join(staging, rel))) {
+          throw new Error(`data id=${id} 的贴图 "${key}" 缺失: ${rel}`);
+        }
+      }
+
+      // 规格门禁（从 staging 读，gltf 外部引用相对自洽；含消费端 three 真实加载门禁）
+      const report = await validateModelFile(srcModel, { assetId: id, strict, profile });
+      // 双形态入库判定：多状态资产（白模+贴图集）要求 UV 完好，缺 UV 即 FAIL
+      if (e.textures && report.uvMissing) {
+        const err = new Error(`规格门禁 FAIL（id=${id}): 多状态资产（textures+states）要求白模 UV 完好，但 POSITION 网格缺 TEXCOORD_0`);
+        err.details = { gateReports: [{ id, passed: false, violations: [err.message], warnings: [] }] };
+        throw err;
+      }
+      gateReports.push({ id, passed: report.passed, violations: report.violations, warnings: report.warnings });
+      if (!report.passed) {
+        const err = new Error(`规格门禁 FAIL（id=${id}）:\n  ${report.violations.join('\n  ')}`);
+        err.details = { gateReports };
+        throw err;
+      }
+
+      const ext = extname(e.file_name).toLowerCase();
+      const format = ext === '.glb' ? 'glb' : 'gltf';
+      if (format === 'glb') {
+        copyFileSync(srcModel, join(outModels, `${id}.glb`));
+      } else {
+        // gltf 多文件：连同其所在目录子树复制到 models/<id>/
+        const subDir = dirname(e.file_path);
+        copyTree(join(staging, subDir === '.' ? '' : subDir), join(outModels, id));
+      }
+
+      let thumbnail;
+      if (e.thumbnail_path) {
+        const tExt = extname(e.thumbnail_path);
+        thumbnail = libRel('thumbnails', `${id}${tExt}`);
+        copyFileSync(join(staging, e.thumbnail_path), join(outThumbs, `${id}${tExt}`));
+      }
+
+      let textures;
+      if (e.textures) {
+        textures = {};
+        for (const [key, rel] of Object.entries(e.textures)) {
+          const tExt = extname(rel);
+          const dest = join(outTex, id, `${key}${tExt}`);
+          mkdirSync(dirname(dest), { recursive: true });
+          copyFileSync(join(staging, rel), dest);
+          textures[key] = libRel('textures', id, `${key}${tExt}`);
+        }
+      }
+
+      entries.push({
+        id,
+        name: e.name,
+        file: e.file_name,
+        format,
+        modelPath: format === 'glb' ? libRel('models', `${id}.glb`) : libRel('models', id, basename(e.file_path)),
+        category: e.category ?? '',
+        tags: e.tags ?? [],
+        description: e.description ?? '',
+        search_text: e.search_text ?? '',
+        thumbnail,
+        polycount: report.triangles,
+        textures,
+        states: e.states,
+        gate: { tier: report.tier, conventionsOk: report.conventionsOk, deviations: report.warnings },
+        report,
+      });
     }
 
-    entries.push({
-      id,
-      name: e.name,
-      file: e.file_name,
-      format,
-      modelPath: format === 'glb' ? libRel('models', `${id}.glb`) : libRel('models', id, basename(e.file_path)),
-      category: e.category ?? '',
-      tags: e.tags ?? [],
-      description: e.description ?? '',
-      search_text: e.search_text ?? '',
-      thumbnail,
-      polycount: report.triangles,
-      textures,
-      states: e.states,
-      gate: { tier: report.tier, conventionsOk: report.conventionsOk, deviations: report.warnings },
-      report,
-    });
+    // 写包 manifest（用户元数据 + 解析结果，供 build-search-index 消费）——staging 内
+    writeFileSync(
+      join(outManifests, `${pkgName}.json`),
+      `${JSON.stringify({ package: pkgName, importedAt: new Date().toISOString(), meta: manifest.meta, entries }, null, 2)}\n`,
+    );
+
+    // 发布（P5-R3 事务化）：journal 记录每个已动过的正式文件（新写入/被覆盖原内容），
+    // 全部成功才提交；任一步失败 → 按 journal 逆序回滚（恢复原内容/删除新文件），
+    // 正式库回到发布前状态。「任一失败正式库分毫不动」由回滚保证，而非不做。
+    // journal 本身不外露（audit 信息在成功路径无用；失败路径由异常消息携带）。
+    publishPackage(stagingLib, libDir, pkgName);
+  } finally {
+    rmSync(stagingLib, { recursive: true, force: true });
   }
-
-  // 写包 manifest（用户元数据 + 解析结果，供 build-search-index 消费）
-  writeFileSync(
-    join(outManifests, `${pkgName}.json`),
-    `${JSON.stringify({ package: pkgName, importedAt: new Date().toISOString(), meta: manifest.meta, entries }, null, 2)}\n`,
-  );
 
   const devWarnings = gateReports.flatMap((g) => g.warnings.map((w) => `id=${g.id}: ${w}`));
   return { entries, warnings: [...warnings, ...devWarnings] };
+};
+
+/**
+ * P5-R3 + P5-RR2：发布事务（journal + 回滚 + 恢复失败材料保全）。
+ *
+ * 三段式（严格单向控制流，rollback 在 try 外 throw，不嵌套再捕获）：
+ *   1. 备份段：目标是普通文件的先备份到 <libDir>/.import-backup-<pkg>/（journal 记
+ *      {dest, backup}）；目标不存在/病态形态 → journal 记 {dest, backup:null}。
+ *      备份段失败：尚无任何写入——清理本事务已建的备份目录后抛（无需恢复材料）。
+ *   2. 提交段：逐文件 mkdir 目标目录 + copyFileSync。任一失败 → rollback：
+ *      逆序遍历 journal——backup 非空恢复原内容；backup 空且目标当前是**普通文件**
+ *      才删除（目标是目录 = 本事务外的原有物，不是我们写的，不删）。
+ *   3. 全部成功 → 删备份目录，返回 journal。
+ *
+ * P5-RR2 恢复失败语义：回滚全部完成 → 删备份（原行为）。回滚有失败条目 →
+ * **保留备份目录与 journal 落盘**（.import-backup-<pkg>/ + 其内 journal.json），
+ * 异常消息带可恢复路径与逐文件恢复指引——不得删除唯一恢复材料。后续同名
+ * 导入开头的 rmSync 只清**已恢复完成**的旧备份？不：未恢复备份存在时**拒绝
+ * 新导入**（不能无条件删掉上一轮的恢复材料），要求先人工恢复或显式清理。
+ *
+ * 覆盖点（review 反例）：已有文件被覆盖后提交段中途失败（回滚恢复 OLD）、
+ * 目标被目录占位（提交失败 + 回滚不误删目录）、manifest 写入失败（同事务）、
+ * 备份段失败（清理后抛）、**回滚自身失败（备份保留 + 再导入拒绝）**。
+ *
+ * @returns {Array<{dest: string, backup: string|null}>} 提交成功的 journal（审计用）
+ * @throws 发布失败：回滚完成后「发布失败已回滚（正式库未变更）：…」；
+ *         回滚部分失败「发布失败（…）且回滚不完整：…（恢复材料保留在 …，恢复指引 …）」；
+ *         存在未恢复备份「检测到未恢复的导入备份 …：先完成恢复或人工删除该目录后重试」。
+ */
+export const publishPackage = (stagingLib, libDir, pkgName) => {
+  const backupDir = join(libDir, `.import-backup-${pkgName}`);
+
+  // P5-RRR1：备份目录保护**不依赖 marker**。正常成功路径备份目录必被删除、
+  // 完整回滚后也删除——**任何存留的备份目录都无法证明「已安全完成」**
+  // （journal 写入失败分支保留的备份恰恰没有 journal.json）。存在即拒绝，
+  // 绝不自动删除：上一轮的恢复材料由人工恢复或显式废弃后才能继续。
+  if (existsSync(backupDir)) {
+    const hasJournal = existsSync(join(backupDir, 'journal.json'));
+    throw new Error(
+      `检测到存留的导入备份 ${ backupDir}${ hasJournal ? '（含 journal.json 恢复指引）' : '（无 journal——可能是回滚不完整且 journal 落盘失败的残留，内含未恢复的原文件）' }:`
+      + `先恢复正式库文件（journal.json 存在时按其指引；不存在时按目录内文件相对路径），`
+      + `或人工确认废弃后删除该目录，再重试导入`,
+    );
+  }
+
+  const journal = [];
+
+  /** 收集 staging → 正式的扁平文件清单（保留相对路径）。 */
+  const collect = (src, dest, rel = []) => {
+    const files = [];
+    for (const ent of readdirSync(src, { withFileTypes: true })) {
+      const s = join(src, ent.name);
+      const d = join(dest, ent.name);
+      const r = [...rel, ent.name];
+      if (ent.isDirectory()) {
+        files.push(...collect(s, d, r));
+      } else {
+        files.push({ src: s, dest: d, rel: r });
+      }
+    }
+    return files;
+  };
+
+  const allFiles = [];
+  for (const sub of ['models', 'thumbnails', 'textures', 'manifests']) {
+    const subDir = join(stagingLib, sub);
+    if (existsSync(subDir)) {
+      allFiles.push(...collect(subDir, join(libDir, sub), [sub]));
+    }
+  }
+
+  /** 目标当前是否普通文件（目录/不存在/不可访问 → false）。 */
+  const isRegularFile = (p) => {
+    try {
+      return existsSync(p) && statSync(p).isFile();
+    } catch {
+      return false;
+    }
+  };
+
+  // 备份段（失败 = 尚无写入：清理半建备份目录后抛——无恢复材料需求）
+  for (const f of allFiles) {
+    if (isRegularFile(f.dest)) {
+      const backupPath = join(backupDir, ...f.rel);
+      try {
+        mkdirSync(dirname(backupPath), { recursive: true });
+        copyFileSync(f.dest, backupPath);
+        journal.push({ dest: f.dest, backup: backupPath });
+      } catch (err) {
+        rmSync(backupDir, { recursive: true, force: true });
+        throw new Error(`发布失败（备份阶段，正式库未变更）：备份 ${f.dest} → ${backupPath}: ${err.message}`, { cause: err });
+      }
+    } else {
+      journal.push({ dest: f.dest, backup: null });
+    }
+  }
+
+  // 提交段：逐文件写入；失败收集后统一回滚（rollback 在 try 外 throw，不嵌套）
+  let commitError = null;
+  for (const f of allFiles) {
+    try {
+      mkdirSync(dirname(f.dest), { recursive: true });
+      copyFileSync(f.src, f.dest);
+    } catch (err) {
+      commitError = `写入 ${f.dest}: ${err.message}`;
+      break;
+    }
+  }
+
+  if (commitError === null) {
+    // 提交成功：清理备份
+    rmSync(backupDir, { recursive: true, force: true });
+    return journal;
+  }
+
+  // 回滚：逆序（后写的先恢复）。单条失败继续回滚其余条目，最后汇总处理。
+  const rollbackFailures = [];
+  for (let i = journal.length - 1; i >= 0; i -= 1) {
+    const { dest, backup } = journal[i];
+    try {
+      if (backup) {
+        copyFileSync(backup, dest);
+      } else if (isRegularFile(dest)) {
+        // 本事务新写入的普通文件 → 删除。目标是目录 = 事务外原有物（如占位目录），不删。
+        rmSync(dest, { force: true });
+      }
+    } catch (rollbackErr) {
+      rollbackFailures.push({ dest, backup, error: rollbackErr.message });
+    }
+  }
+
+  if (rollbackFailures.length === 0) {
+    // 回滚全部完成 → 备份使命结束，清理
+    rmSync(backupDir, { recursive: true, force: true });
+    throw new Error(`发布失败已回滚（正式库未变更）：${commitError}`);
+  }
+
+  // P5-RR2：回滚不完整 → 保留备份目录 + journal 落盘（唯一恢复材料不得删除）。
+  // journal.json 含全部条目与失败明细；运维按它恢复（backup 非空 = copy 回 dest）。
+  const journalPath = join(backupDir, 'journal.json');
+  try {
+    writeFileSync(journalPath, `${JSON.stringify({
+      package: pkgName,
+      commitError,
+      failedAt: new Date().toISOString(),
+      entries: journal,
+      rollbackFailures,
+      recovery: '对每个 entries 条目：backup 非空则 copy backup → dest；backup 为空且 dest 仍存在则删除 dest。完成后删除本目录。',
+    }, null, 2)}\n`);
+  } catch (journalErr) {
+    // journal 落盘也失败：备份文件本身还在（copy 出来的），只报路径让运维直接看目录
+    throw new Error(
+      `发布失败（${commitError}）且回滚不完整：${rollbackFailures.map((f) => `${f.dest}: ${f.error}`).join('; ')}`
+      + `；备份目录 ${backupDir} 保留（journal.json 写入失败：${journalErr.message}——按目录内文件相对路径手工恢复）`,
+      { cause: journalErr },
+    );
+  }
+  throw new Error(
+    `发布失败（${commitError}）且回滚不完整：${rollbackFailures.map((f) => `${f.dest}: ${f.error}`).join('; ')}`
+    + `。恢复材料保留在 ${backupDir}（journal.json 含逐文件恢复指引）；恢复完成后删除该目录再重试导入`,
+  );
 };
 
 /* ── CLI ─────────────────────────────────────────────────────────────────── */

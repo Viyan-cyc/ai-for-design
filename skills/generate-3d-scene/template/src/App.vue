@@ -1,5 +1,5 @@
 <script setup lang="ts">
-
+// eslint-disable-next-line lines-around-comment -- 文件首部文档注释与 prettier 输出冲突
 /**
  * App.vue — 二开态页面壳（3D 视口全屏 + 业务 UI 挂载点）
  *

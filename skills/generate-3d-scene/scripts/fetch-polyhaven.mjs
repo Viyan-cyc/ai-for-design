@@ -176,12 +176,29 @@ export const selectAssets = (models, quota = 108) => {
 
 const md5Of = (buf) => createHash('md5').update(buf).digest('hex');
 
+/** 单请求超时（F18：有界网络——挂起的下载不无限等待）。 */
+const FETCH_TIMEOUT_MS = 60_000;
+
 const fetchBuffer = async (url) => {
-  const res = await fetch(url, { headers: { 'User-Agent': 'gts3d-fetch/1.0' } });
+  const res = await fetch(url, {
+    headers: { 'User-Agent': 'gts3d-fetch/1.0' },
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+  });
   if (!res.ok) {
     throw new Error(`HTTP ${res.status} ${url}`);
   }
   return Buffer.from(await res.arrayBuffer());
+};
+
+const fetchJson = async (url) => {
+  const res = await fetch(url, {
+    headers: { 'User-Agent': 'gts3d-fetch/1.0' },
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+  });
+  if (!res.ok) {
+    throw new Error(`HTTP ${res.status} ${url}`);
+  }
+  return res.json();
 };
 
 const sleep = (ms) => new Promise((r) => { setTimeout(r, ms); });
@@ -192,7 +209,7 @@ const sleep = (ms) => new Promise((r) => { setTimeout(r, ms); });
  * @throws md5 不符 / HTTP 失败
  */
 export const fetchAsset = async (id, cacheDir, { resume = false, res = '2k' } = {}) => {
-  const files = await (await fetch(FILES_API + id, { headers: { 'User-Agent': 'gts3d-fetch/1.0' } })).json();
+  const files = await fetchJson(FILES_API + id);
   const g2k = files?.gltf?.[res]?.gltf;
   if (!g2k || !g2k.url) {
     throw new Error(`files API 无 gltf ${res} 档: ${id}`);

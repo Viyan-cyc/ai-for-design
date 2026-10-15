@@ -90,7 +90,6 @@ export const applyCompiledAppearance = (
   }
 
   const se = handle.internals.sceneEngine;
-  const scope = getResourceScope(se);
   const visuals = src.visuals;
   const materialLib = src.materialLib;
 

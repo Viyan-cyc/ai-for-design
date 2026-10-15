@@ -68,6 +68,28 @@ const run = (label, cmd, args, cwd) => {
 };
 
 // ── 步骤 1：源仓构建 ────────────────────────────────────────────────────────
+// P5.3 --docs-only：只重跑文档生成（typedoc 提取 + 两级 md），跳过源仓 build/pack/tgz。
+// 语义：TSDoc 改了但 API 面没变时，不必重打 tgz——消费 vendor/ 现有 tgz 的版本元数据。
+const DOCS_ONLY = process.argv.includes('--docs-only');
+
+let tgzName;
+let pkgVersion;
+
+if (DOCS_ONLY) {
+  const tgzFiles = existsSync(VENDOR_DIR)
+    ? require_('fs').readdirSync(VENDOR_DIR).filter((f) => f.endsWith('.tgz'))
+    : [];
+  if (tgzFiles.length === 0) {
+    fail('--docs-only 需要 vendor/ 已有 tgz（先跑一次完整同步）');
+  }
+  if (tgzFiles.length > 1) {
+    fail(`--docs-only 无法在多 tgz 中选择（${tgzFiles.join(', ')}）——先清理或跑完整同步`);
+  }
+  tgzName = tgzFiles[0];
+  const m = tgzName.match(/(\d+\.\d+\.\d+(?:-[\w.]+)?)\.tgz$/);
+  pkgVersion = m ? m[1] : 'unknown';
+  console.log(`[sync-components] docs-only 模式：vendor 现有 ${tgzName}（v${pkgVersion}），跳过源仓 build/pack`);
+} else {
 run('build', 'npm', ['run', 'build'], srcRoot);
 
 // ── 步骤 2：npm pack ───────────────────────────────────────────────────────
@@ -90,21 +112,22 @@ try {
   }
 }
 if (!packInfo || !packInfo.filename) fail(`npm pack 输出无法解析:\n${raw.slice(0, 400)}`);
-const tgzName = packInfo.filename;              // a3d-a3d-components-0.1.0.tgz
-const tgzPath = join(srcRoot, tgzName);
-const pkgVersion = packInfo.version;
+  tgzName = packInfo.filename;              // a3d-a3d-components-0.1.0.tgz
+  const tgzPath = join(srcRoot, tgzName);
+  pkgVersion = packInfo.version;
 console.log(`[pack] ${tgzName} (v${pkgVersion})`);
 
 // ── 步骤 3：拷入 skill vendor/ ─────────────────────────────────────────────
 mkdirSync(VENDOR_DIR, { recursive: true });
 // 清理旧版本 tgz（同名不同版本不残留）
 for (const f of existsSync(VENDOR_DIR) ? require_('fs').readdirSync(VENDOR_DIR) : []) {
-  if (f.endsWith('.tgz')) rmSync(join(VENDOR_DIR, f));
+  if (f.endsWith('.tgz') && f !== tgzName) rmSync(join(VENDOR_DIR, f));
 }
 const tgzDest = join(VENDOR_DIR, tgzName);
 copyFileSync(tgzPath, tgzDest);
 rmSync(tgzPath); // 源仓不留副本
 console.log(`[vendor] ${relative(SKILL_ROOT, tgzDest)}`);
+}
 
 // ── 步骤 4：typedoc 提取 + 两级 md 生成 ────────────────────────────────────
 console.log('[typedoc] 提取中…');
