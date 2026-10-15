@@ -3,13 +3,13 @@
 ## 状态与最终目标
 
 - 日期：2026-10-15，Asia/Shanghai。
-- Phase：Review（P5 第五次定向复核 FAIL，剩余 P5-RRRRR1～RRRRR3；P6 未开始）。
+- Phase：Review PASS（P5 已完成，P5-RRRRR1～RRRRR3 已关闭；P6 未开始）。
 - Approval：APPROVED（2026-10-14 用户指令「按此 Spec 分批实施，每次只完成一个批次」；2026-10-15 用户指令「按 Spec §6 最新审核，仅修 P5-RRRR1～RRRR3，补真实行为及失败保全的正负例，保留已通过部分。回填实跑证据和未验证项，不进入 P6、不自动提交」）。
 - 唯一真相源：本文件。Codex outputs 中同名文档只是交付快照。
 - 项目根：`D:/cyc/project/octo/gts/test/ep-coder`。
 - 修改主体：`skills/generate-3d-scene/`，包括 skill 指令、references、脚手架/验证/导出脚本、母版 core 与 edit。
 - 最终目标：让此 skill 后续生成的场景更快获得可用预览，交付代码清晰、参数更新有效、编辑态可正确往返，正式运行包保持编辑后的视觉结果。
-- 当前任务单元：P5 四审修复轮（RRRR1 fidelity 语义值比较 / RRRR2 edit-contract 真实编辑往返 / RRRR3 exportBuild staging 事务发布）已实施完成；见 §5「P5 四审修复轮」与 §10 Resume。
+- 当前任务单元：P5 收尾完成；真实构建/保真、浏览器编辑往返、67/67 回归及 92/92 门禁通过，详见 §6 最新结论。
 - 执行前 checkpoint：gates 92/92 + p1-fixtures 65/65（三审修复轮后基线）→ 修复后 gates 92/92 + p1-fixtures **67/67**（65 保留 + RRRR2/RRRR3 新增；fidelity 用例替换为值级七负例）+ build/check exit 0 + 真机三组（edit-contract 真实往返 PASS + no-op sabotage FAIL、exportBuild 全链成功含旧包事务替换 + build 失败旧包 hash 逐字节保全、fidelity 对真实构建产物值级对照 PASS）+ 改动文件 lint 0 error；fidelity 与 exportBuild 产物字面同源化留待 P6（见 §5 未验证项）。
 
 ## 0. Open Questions 与已定边界
@@ -1428,6 +1428,27 @@ Readiness Verdict：GO（建议），不等于实施授权。不能把历史Plan
 
 ## 6. Review Verdict
 
+### P5 收尾完成（2026-10-15）：PASS，RRRRR1～RRRRR3 关闭
+
+用户明确授权 Codex 直接修复并完成 P5；本次只完成 P5，不进入 P6、不创建提交。此前 FAIL/待同步记录保留为历史，不代表当前结论。
+
+实现：
+- fidelity-compare 支持真实编译器尾逗号（字符串感知扫描，不 eval）；按编译语义剥 locked、裁剪未引用材质并补默认材质名。生产 fidelity 直接比较实际 `<project>-dist`，不再重建另一份临时包。
+- 新增 edit-contract-core，CLI 与执行型测试共用：修改 visual/transform，核对真实对象 visible/position；调用 handle.serialize 检查保存字段，清空节点后用快照恢复并重新核对，finally 恢复原始场景。ready/serialize/恢复异常均失败。删除原来只审查字符串的 no-op 测试，改为真实执行核心的故障回归。
+- export 发布增加独占 lock 与唯一 staging；存在 .old 时拒绝启动并保留恢复材料。发布及回滚都失败后保留 .old，后续重试不会删除；finally 只清理本次 staging/锁。
+- p5-final-fixtures 覆盖真实 compiler→compare、实际交付包篡改、编辑 no-op/对象不同步/serialize 抛错与丢字段/恢复损坏、真实 fs rename 故障与重试；由 p1-fixtures 以独立子进程执行，隔离内置 fs 注入。
+
+验证证据：
+1. 完整 `node scripts/verify/p1-fixtures.mjs --node-only`：**67/67 PASS**（替换一项静态测试并增加一项生产边界执行组，组内覆盖多种故障）。日志：C:/Users/Tony/Documents/Codex/2026-10-13/zuo/outputs/P5-final-regression.log。
+2. `node scripts/verify/gates.mjs --quiet`：**92/92 PASS**。
+3. 真实浏览器 edit-contract：母版 13 节点，visible/position 修改→serialize→清空→恢复通过；结果 `EDIT-CONTRACT PASS ... serialize/clear/reload verified`。
+4. 真实运行包全链：production staging 准备、依赖拷贝、npm run build、stripped 静态门禁、产物验证和发布均 PASS；对实际产物保真比较 PASS（13 节点）。日志 outputs/P5-delivery-check.log；独立交付物 C:/Users/Tony/Documents/Codex/2026-10-13/zuo/work/p5-delivery-TvTJqR/runtime。
+5. 五个本轮生产/新增测试文件使用显式 template/eslint.config.mjs：**0 error**（warning 不作为本合同阻断）；格式化后执行型故障测试再次通过。p1-fixtures 既有全文件 lint 仍有历史 no-shadow/unused 等问题，本次未扩大范围清理，新增组已执行通过。
+
+边界：本轮未做真实 GPU 性能基线、完整 release 全链实机场景/同相机像素比较、warm median 提速量化；这些属于 P6 集成验收，不作为本次已完成的证据。P5 三项剩余问题已关闭，可按原分批计划进入 P6，无需再安排形式性审核轮次。
+
+
+
 实施 checkpoint：用户已明确授权本助手直接修复 P5-RRRRR1～RRRRR3；仅修三项及执行型回归，保留其他工作区变更、不进入 P6、不提交。
 
 
@@ -2072,6 +2093,9 @@ Overall Verdict：P1 REVIEW FAIL。实施未验收，不进入P2。原§5中的�
 未写AGENTS/CLAUDE等默认提示词文件。本项目未发现AGENTS入口；不因本轮写Spec而自动安装sdd规则。实施通过后再按项目既有文档落点建议同步。
 
 ## 10. Resume / Handoff
+
+最新交接（2026-10-15）：P5 PASS；RRRRR1～RRRRR3 全部关闭，详见 §6「P5 收尾完成」。下一批为 P6 集成验收，本轮未执行。以下 FAIL/待同步交接仅为历史记录。
+
 
 最新审核交接（2026-10-15，第五次定向复核）：以 §6 最新结论为准，P5 FAIL，仅修 P5-RRRRR1～RRRRR3；67/67 fixtures、92/92 gates 通过，独立生产边界反例仍失败。保留已通过部分，不进入 P6。下方全修待审状态为历史实施记录。
 

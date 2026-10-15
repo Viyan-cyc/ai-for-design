@@ -30,33 +30,61 @@
  *   PASS/FAIL/SKIP/cached so "basic checks passed" is never conflated with
  *   "profile satisfied".
  */
-import { spawnSync } from 'node:child_process';
-import { readFileSync, rmSync, existsSync, cpSync, renameSync, mkdtempSync, openSync, closeSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { dirname, join, resolve } from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
-import { createHash } from 'node:crypto';
-import { openBrowserSession, positionalArg, CdpEnvironmentError } from '../lib/cdp.mjs';
-import { computeCacheKey, lookup, record, affectsFromChanges, invalidate } from '../lib/verification-cache.mjs';
+import { spawnSync } from "node:child_process";
 import {
-  compareGroups, intersectsFrustumBox, inspectSubject, inspectCanvas,
-} from './scene-checks.mjs';
+  readFileSync,
+  rmSync,
+  existsSync,
+  cpSync,
+  renameSync,
+  mkdtempSync,
+  openSync,
+  closeSync,
+} from "node:fs";
+import { dirname, join, resolve } from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
+import { createHash } from "node:crypto";
+import {
+  openBrowserSession,
+  positionalArg,
+  CdpEnvironmentError,
+} from "../lib/cdp.mjs";
+import {
+  computeCacheKey,
+  lookup,
+  record,
+  affectsFromChanges,
+  invalidate,
+} from "../lib/verification-cache.mjs";
+import {
+  compareGroups,
+  intersectsFrustumBox,
+  inspectSubject,
+  inspectCanvas,
+} from "./scene-checks.mjs";
 
-const SKILL_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
-const SCENE_KEYS = new Set(['lights', 'camera', 'controls', 'renderer', 'environment', 'remove']);
-export const PROFILES = new Set(['preview', 'standard', 'release']);
+const SKILL_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
+const SCENE_KEYS = new Set([
+  "lights",
+  "camera",
+  "controls",
+  "renderer",
+  "environment",
+  "remove",
+]);
+export const PROFILES = new Set(["preview", "standard", "release"]);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 export const readExpect = (path) => {
-  const text = readFileSync(path, 'utf8');
+  const text = readFileSync(path, "utf8");
   const data = JSON.parse(text);
   const idByGroup = {};
   for (const [key, value] of Object.entries(data)) {
-    if (Array.isArray(value) && !SCENE_KEYS.has(key) && !key.startsWith('__')) {
+    if (Array.isArray(value) && !SCENE_KEYS.has(key) && !key.startsWith("__")) {
       idByGroup[key] = value.map((node) => node.id);
     }
   }
-  return { idByGroup, hash: createHash('sha256').update(text).digest('hex') };
+  return { idByGroup, hash: createHash("sha256").update(text).digest("hex") };
 };
 
 /**
@@ -65,27 +93,41 @@ export const readExpect = (path) => {
  * 伪造/复用旧 hash）也不得复用缓存。文件文本 hash 仍作 sceneData 键成分
  * （scene-data.json 整体变了 verify 重跑），但断言语义绑定走本指纹。
  */
-export const expectFingerprint = (expect) => createHash('sha256')
-  .update(JSON.stringify(expect?.idByGroup ?? null))
-  .digest('hex');
+export const expectFingerprint = (expect) =>
+  createHash("sha256")
+    .update(JSON.stringify(expect?.idByGroup ?? null))
+    .digest("hex");
 
 export const waitReady = async (evaluate, timeoutMs = 15000) => {
-  if (!await evaluate('typeof window.__gts3d?.whenReady === "function"')) {
-    return { status: 'SKIP', detail: 'legacy template has no strict ready API; manual verification required' };
+  if (!(await evaluate('typeof window.__gts3d?.whenReady === "function"'))) {
+    return {
+      status: "SKIP",
+      detail:
+        "legacy template has no strict ready API; manual verification required",
+    };
   }
-  const result = await evaluate(`window.__gts3d.whenReady({timeoutMs:${ timeoutMs }})`
-    + '.then(d=>({ok:true,d})).catch(e=>({ok:false,message:String(e?.message??e)}))');
-  return result.ok && result.d.pending === 0 && result.d.failedAssets.length === 0
-    ? { status: 'PASS', detail: JSON.stringify(result.d) }
-    : { status: 'FAIL', detail: result.message ?? JSON.stringify(result.d) };
+  const result = await evaluate(
+    `window.__gts3d.whenReady({timeoutMs:${timeoutMs}})` +
+      ".then(d=>({ok:true,d})).catch(e=>({ok:false,message:String(e?.message??e)}))",
+  );
+  return result.ok &&
+    result.d.pending === 0 &&
+    result.d.failedAssets.length === 0
+    ? { status: "PASS", detail: JSON.stringify(result.d) }
+    : { status: "FAIL", detail: result.message ?? JSON.stringify(result.d) };
 };
 
-export const summarize = (checks) => checks.some((c) => c.status === 'FAIL') ? 'FAIL'
-  : checks.some((c) => c.status === 'SKIP') ? 'INCONCLUSIVE' : 'PASS';
+export const summarize = (checks) =>
+  checks.some((c) => c.status === "FAIL")
+    ? "FAIL"
+    : checks.some((c) => c.status === "SKIP")
+      ? "INCONCLUSIVE"
+      : "PASS";
 
-export const verifyPage = async (page, {
-  mode, expect, mountTimeoutMs = 7000, readyTimeoutMs = 15000,
-}) => {
+export const verifyPage = async (
+  page,
+  { mode, expect, mountTimeoutMs = 7000, readyTimeoutMs = 15000 },
+) => {
   const checks = [];
   let last = performance.now();
   const pushCheck = (id, status, evidence) => {
@@ -93,11 +135,11 @@ export const verifyPage = async (page, {
     checks.push({
       id,
       status,
-      pass: status === 'PASS',
+      pass: status === "PASS",
       evidence,
       duration: now - last,
       hash: expect.hash,
-      source: 'live',
+      source: "live",
       mode,
     });
     last = now;
@@ -106,48 +148,73 @@ export const verifyPage = async (page, {
   const deadline = Date.now() + mountTimeoutMs;
   let mounted = false;
   do {
-    mounted = await evaluate(`!!window.__gts3d${ mode === 'edit' ? ' && !!window.__gts3dEdit' : ''}`);
+    mounted = await evaluate(
+      `!!window.__gts3d${mode === "edit" ? " && !!window.__gts3dEdit" : ""}`,
+    );
     if (mounted) {
       break;
     }
     await sleep(Math.min(100, Math.max(1, deadline - Date.now())));
   } while (Date.now() < deadline);
-  pushCheck('mounted', mounted ? 'PASS' : 'FAIL', mounted ? 'ok' : 'mount deadline exceeded');
+  pushCheck(
+    "mounted",
+    mounted ? "PASS" : "FAIL",
+    mounted ? "ok" : "mount deadline exceeded",
+  );
   if (mounted) {
     const ready = await waitReady(evaluate, readyTimeoutMs);
-    pushCheck('ready', ready.status, ready.detail);
-    const graph = await evaluate('(()=>{const s=window.__gts3d.internals.sceneEngine; const groups={};'
-      + 'for(const id of s.getAllIds()){(groups[s.getNodeType(id)]??=[]).push(id);}return groups;})()');
+    pushCheck("ready", ready.status, ready.detail);
+    const graph = await evaluate(
+      "(()=>{const s=window.__gts3d.internals.sceneEngine; const groups={};" +
+        "for(const id of s.getAllIds()){(groups[s.getNodeType(id)]??=[]).push(id);}return groups;})()",
+    );
     const groups = compareGroups(expect.idByGroup, graph);
-    pushCheck('groups', groups.ok ? 'PASS' : 'FAIL', JSON.stringify(groups.mismatches));
-    const camera = await evaluate('!!window.__gts3d.internals.camera');
-    pushCheck('camera', camera ? 'PASS' : 'FAIL', String(camera));
-    const canvas = await evaluate(`(${ inspectCanvas.toString() })()`);
-    pushCheck('canvas', canvas.ok ? 'PASS' : 'FAIL', JSON.stringify(canvas));
-    const subject = await evaluate(`(${ inspectSubject.toString() })(window.__gts3d,${
-      intersectsFrustumBox.toString() })`);
-    pushCheck('subject', subject.ok ? 'PASS' : 'FAIL', JSON.stringify(subject));
+    pushCheck(
+      "groups",
+      groups.ok ? "PASS" : "FAIL",
+      JSON.stringify(groups.mismatches),
+    );
+    const camera = await evaluate("!!window.__gts3d.internals.camera");
+    pushCheck("camera", camera ? "PASS" : "FAIL", String(camera));
+    const canvas = await evaluate(`(${inspectCanvas.toString()})()`);
+    pushCheck("canvas", canvas.ok ? "PASS" : "FAIL", JSON.stringify(canvas));
+    const subject = await evaluate(
+      `(${inspectSubject.toString()})(window.__gts3d,${intersectsFrustumBox.toString()})`,
+    );
+    pushCheck("subject", subject.ok ? "PASS" : "FAIL", JSON.stringify(subject));
     // Require a fresh successful frame, not stale nonzero statistics from a stopped loop.
     const renderDeadline = Date.now() + 1500;
-    const before = await evaluate('window.__gts3d.internals.renderLoop.getStats()');
-    let stats; let active = false;
+    const before = await evaluate(
+      "window.__gts3d.internals.renderLoop.getStats()",
+    );
+    let stats;
+    let active = false;
     do {
       await sleep(50);
-      stats = await evaluate('window.__gts3d.internals.renderLoop.getStats()');
-      active = stats.fps > 0 && stats.calls > 0 && stats.elapsed > before.elapsed;
+      stats = await evaluate("window.__gts3d.internals.renderLoop.getStats()");
+      active =
+        stats.fps > 0 && stats.calls > 0 && stats.elapsed > before.elapsed;
       if (active) {
         break;
       }
     } while (Date.now() < renderDeadline);
-    pushCheck('render', active ? 'PASS' : 'FAIL', JSON.stringify(stats));
+    pushCheck("render", active ? "PASS" : "FAIL", JSON.stringify(stats));
   }
-  const diagErrors = mounted ? await evaluate('window.__gts3d.getDiagnostics?.().pageErrors ?? []') : [];
+  const diagErrors = mounted
+    ? await evaluate("window.__gts3d.getDiagnostics?.().pageErrors ?? []")
+    : [];
   const errors = [...new Set([...page.pageErrors, ...diagErrors])];
-  pushCheck('errors', errors.length ? 'FAIL' : 'PASS', errors);
-  const misses = page.netMisses.filter((m) => !/\/favicon\.ico(?:[?#\s]|$)/i.test(m));
-  pushCheck('assets', misses.length ? 'FAIL' : 'PASS', misses);
+  pushCheck("errors", errors.length ? "FAIL" : "PASS", errors);
+  const misses = page.netMisses.filter(
+    (m) => !/\/favicon\.ico(?:[?#\s]|$)/i.test(m),
+  );
+  pushCheck("assets", misses.length ? "FAIL" : "PASS", misses);
   return {
-    mode, verdict: summarize(checks), checks, pageErrors: errors, netMisses: misses,
+    mode,
+    verdict: summarize(checks),
+    checks,
+    pageErrors: errors,
+    netMisses: misses,
   };
 };
 
@@ -161,42 +228,78 @@ export const verifyPage = async (page, {
  * @returns {{ status: 'PASS'|'FAIL'|'SKIP'|'cached', detail: string, output?: string, evidence?: object }}
  */
 export const runProfileBuild = (project, { cache = true, runBuild } = {}) => {
-  const keyInfo = computeCacheKey(project, { check: 'build', mode: 'run', profile: 'standard' });
+  const keyInfo = computeCacheKey(project, {
+    check: "build",
+    mode: "run",
+    profile: "standard",
+  });
   if (cache && keyInfo.stable) {
     const hit = lookup(project, keyInfo.key, keyInfo.inputs);
     if (hit.hit) {
-      return { status: 'cached', detail: 'production build PASS reused (inputs unchanged)' };
+      return {
+        status: "cached",
+        detail: "production build PASS reused (inputs unchanged)",
+      };
     }
   }
   const run = (runBuild ?? defaultRunBuild)(project);
   if (run.ok) {
     if (cache && keyInfo.stable) {
-      record(project, keyInfo.key, { verdict: 'PASS', mode: 'run', profile: 'standard', checks: [] }, {
-        check: 'build', keyInputs: keyInfo.inputs, affects: ['scene', 'code', 'edit', 'deps', 'config'],
-      });
+      record(
+        project,
+        keyInfo.key,
+        { verdict: "PASS", mode: "run", profile: "standard", checks: [] },
+        {
+          check: "build",
+          keyInputs: keyInfo.inputs,
+          affects: ["scene", "code", "edit", "deps", "config"],
+        },
+      );
     }
     return {
-      status: 'PASS', detail: `exit=${ run.status}`,
+      status: "PASS",
+      detail: `exit=${run.status}`,
       output: run.output,
       // RRR4：结构化成功证据——exit=0 + 本次 stdout（vue-tsc 判定须来自这份输出，
       // 与本次产物绑定；不含 vite-only 冒充）
-      evidence: run.output != null ? { exit: run.status, outputHash: createHash('sha256').update(run.output).digest('hex') } : null,
+      evidence:
+        run.output != null
+          ? {
+              exit: run.status,
+              outputHash: createHash("sha256").update(run.output).digest("hex"),
+            }
+          : null,
     };
   }
-  return { status: 'FAIL', detail: `exit=${ run.status}`, output: run.output };
+  return { status: "FAIL", detail: `exit=${run.status}`, output: run.output };
 };
 
 const defaultRunBuild = (projectRoot) => {
-  const r = spawnSync('npm', ['run', 'build'], {
-    cwd: projectRoot, encoding: 'utf8', shell: process.platform === 'win32',
+  const r = spawnSync("npm", ["run", "build"], {
+    cwd: projectRoot,
+    encoding: "utf8",
+    shell: process.platform === "win32",
     maxBuffer: 64 * 1024 * 1024,
   });
-  return { ok: r.status === 0, status: r.status, output: `${r.stdout ?? ''}${r.stderr ?? ''}` };
+  return {
+    ok: r.status === 0,
+    status: r.status,
+    output: `${r.stdout ?? ""}${r.stderr ?? ""}`,
+  };
 };
 
 /** release 档的 strict 预算门禁（build.mjs --strict；注入缝供测试）。 */
 const defaultRunStrictBudget = (projectRoot) => {
-  const r = spawnSync('node', [join(SKILL_ROOT, 'scripts', 'build.mjs'), projectRoot, '--strict', '--quiet'], { encoding: 'utf8' });
+  const r = spawnSync(
+    "node",
+    [
+      join(SKILL_ROOT, "scripts", "build.mjs"),
+      projectRoot,
+      "--strict",
+      "--quiet",
+    ],
+    { encoding: "utf8" },
+  );
   return { ok: r.status === 0, status: r.status };
 };
 
@@ -216,20 +319,30 @@ const defaultRunStrictBudget = (projectRoot) => {
  */
 export const typecheckEvidenceFromBuild = (buildOutput, buildExit = 0) => {
   if (buildExit !== 0) {
-    return { status: 'unknown', detail: 'build not successful — no reusable typecheck evidence' };
+    return {
+      status: "unknown",
+      detail: "build not successful — no reusable typecheck evidence",
+    };
   }
-  if (typeof buildOutput !== 'string' || buildOutput.length === 0) {
-    return { status: 'unknown', detail: 'no build output captured' };
+  if (typeof buildOutput !== "string" || buildOutput.length === 0) {
+    return { status: "unknown", detail: "no build output captured" };
   }
   if (/\berror TS\d+/.test(buildOutput)) {
-    return { status: 'FAIL', detail: 'build output contains TS errors' };
+    return { status: "FAIL", detail: "build output contains TS errors" };
   }
   // 必须有 tsc 执行痕迹（npm run build = vue-tsc -b && vite build 的标准链路输出
   // 两者都有；纯 vite 输出不算）
   if (/vue-tsc|(?<![a-z-])tsc\b/i.test(buildOutput)) {
-    return { status: 'build', detail: 'vue-tsc passed within this build (exit=0 + tsc markers + no TS errors)' };
+    return {
+      status: "build",
+      detail:
+        "vue-tsc passed within this build (exit=0 + tsc markers + no TS errors)",
+    };
   }
-  return { status: 'unknown', detail: 'build output has vite-only markers — tsc execution not evidenced' };
+  return {
+    status: "unknown",
+    detail: "build output has vite-only markers — tsc execution not evidenced",
+  };
 };
 
 /**
@@ -239,58 +352,98 @@ export const typecheckEvidenceFromBuild = (buildOutput, buildExit = 0) => {
  *   无有效证据才独立跑 vue-tsc --noEmit；
  * - lint 跑 eslint（warn 不阻断——0 error 即 PASS，既有口径）。
  */
-export const runTypecheck = (project, { cache = true, runTypecheck: runTypecheckImpl, buildEvidence } = {}) => {
-  const keyInfo = computeCacheKey(project, { check: 'typecheck', mode: 'run', profile: 'standard' });
+export const runTypecheck = (
+  project,
+  { cache = true, runTypecheck: runTypecheckImpl, buildEvidence } = {},
+) => {
+  const keyInfo = computeCacheKey(project, {
+    check: "typecheck",
+    mode: "run",
+    profile: "standard",
+  });
   if (cache && keyInfo.stable) {
     const hit = lookup(project, keyInfo.key, keyInfo.inputs);
     if (hit.hit) {
-      return { status: 'cached', detail: 'typecheck PASS reused' };
+      return { status: "cached", detail: "typecheck PASS reused" };
     }
   }
   // build 证据复用（RRR4：证据来自本次 build 的结构化结果）
-  const fromBuild = typecheckEvidenceFromBuild(buildEvidence?.output, buildEvidence?.exit ?? -1);
-  if (fromBuild.status === 'build') {
+  const fromBuild = typecheckEvidenceFromBuild(
+    buildEvidence?.output,
+    buildEvidence?.exit ?? -1,
+  );
+  if (fromBuild.status === "build") {
     if (cache && keyInfo.stable) {
-      record(project, keyInfo.key, { verdict: 'PASS', mode: 'run', profile: 'standard', checks: [] }, { check: 'typecheck', keyInputs: keyInfo.inputs });
+      record(
+        project,
+        keyInfo.key,
+        { verdict: "PASS", mode: "run", profile: "standard", checks: [] },
+        { check: "typecheck", keyInputs: keyInfo.inputs },
+      );
     }
     return fromBuild;
   }
-  if (fromBuild.status === 'FAIL') {
+  if (fromBuild.status === "FAIL") {
     return fromBuild;
   }
   const run = (runTypecheckImpl ?? defaultRunTypecheck)(project);
   if (run.ok && cache && keyInfo.stable) {
-    record(project, keyInfo.key, { verdict: 'PASS', mode: 'run', profile: 'standard', checks: [] }, { check: 'typecheck', keyInputs: keyInfo.inputs });
+    record(
+      project,
+      keyInfo.key,
+      { verdict: "PASS", mode: "run", profile: "standard", checks: [] },
+      { check: "typecheck", keyInputs: keyInfo.inputs },
+    );
   }
-  return run.ok ? { status: 'PASS', detail: `exit=${run.status}` } : { status: 'FAIL', detail: `exit=${run.status}` };
+  return run.ok
+    ? { status: "PASS", detail: `exit=${run.status}` }
+    : { status: "FAIL", detail: `exit=${run.status}` };
 };
 
 const defaultRunTypecheck = (projectRoot) => {
-  const r = spawnSync('npm', ['run', 'typecheck'], {
-    cwd: projectRoot, encoding: 'utf8', shell: process.platform === 'win32',
+  const r = spawnSync("npm", ["run", "typecheck"], {
+    cwd: projectRoot,
+    encoding: "utf8",
+    shell: process.platform === "win32",
     maxBuffer: 64 * 1024 * 1024,
   });
   return { ok: r.status === 0, status: r.status };
 };
 
-export const runLint = (project, { cache = true, runLint: runLintImpl } = {}) => {
-  const keyInfo = computeCacheKey(project, { check: 'lint', mode: 'run', profile: 'standard' });
+export const runLint = (
+  project,
+  { cache = true, runLint: runLintImpl } = {},
+) => {
+  const keyInfo = computeCacheKey(project, {
+    check: "lint",
+    mode: "run",
+    profile: "standard",
+  });
   if (cache && keyInfo.stable) {
     const hit = lookup(project, keyInfo.key, keyInfo.inputs);
     if (hit.hit) {
-      return { status: 'cached', detail: 'lint PASS reused' };
+      return { status: "cached", detail: "lint PASS reused" };
     }
   }
   const run = (runLintImpl ?? defaultRunLint)(project);
   if (run.ok && cache && keyInfo.stable) {
-    record(project, keyInfo.key, { verdict: 'PASS', mode: 'run', profile: 'standard', checks: [] }, { check: 'lint', keyInputs: keyInfo.inputs });
+    record(
+      project,
+      keyInfo.key,
+      { verdict: "PASS", mode: "run", profile: "standard", checks: [] },
+      { check: "lint", keyInputs: keyInfo.inputs },
+    );
   }
-  return run.ok ? { status: 'PASS', detail: `exit=${run.status}` } : { status: 'FAIL', detail: `exit=${run.status}` };
+  return run.ok
+    ? { status: "PASS", detail: `exit=${run.status}` }
+    : { status: "FAIL", detail: `exit=${run.status}` };
 };
 
 const defaultRunLint = (projectRoot) => {
-  const r = spawnSync('npm', ['run', 'lint'], {
-    cwd: projectRoot, encoding: 'utf8', shell: process.platform === 'win32',
+  const r = spawnSync("npm", ["run", "lint"], {
+    cwd: projectRoot,
+    encoding: "utf8",
+    shell: process.platform === "win32",
     maxBuffer: 64 * 1024 * 1024,
   });
   return { ok: r.status === 0, status: r.status };
@@ -311,20 +464,38 @@ const defaultRunLint = (projectRoot) => {
  * （dist/index.html）——不存在视为未命中重跑。
  */
 export const runExportBuild = (project, { cache = true, runExport } = {}) => {
-  const keyInfo = computeCacheKey(project, { check: 'exportBuild', mode: 'run', profile: 'standard' });
-  const outDir = `${ project.replace(/[\\/]+$/, '') }-dist`;
+  const keyInfo = computeCacheKey(project, {
+    check: "exportBuild",
+    mode: "run",
+    profile: "standard",
+  });
+  const outDir = `${project.replace(/[\\/]+$/, "")}-dist`;
   if (cache && keyInfo.stable) {
     const hit = lookup(project, keyInfo.key, keyInfo.inputs);
     // RRR2：缓存命中须核实产物存在（dist/index.html + assets）——被删的产物不可复用
-    if (hit.hit && existsSync(join(outDir, 'dist', 'index.html'))) {
-      return { status: 'cached', detail: `export build PASS reused — artifact at ${outDir}` };
+    if (hit.hit && existsSync(join(outDir, "dist", "index.html"))) {
+      return {
+        status: "cached",
+        detail: `export build PASS reused — artifact at ${outDir}`,
+      };
     }
   }
   const run = (runExport ?? defaultRunExport)(project, outDir);
   if (run.ok && cache && keyInfo.stable) {
-    record(project, keyInfo.key, { verdict: 'PASS', mode: 'run', profile: 'standard', checks: [] }, { check: 'exportBuild', keyInputs: keyInfo.inputs, affects: ['scene', 'code', 'deps', 'config'] });
+    record(
+      project,
+      keyInfo.key,
+      { verdict: "PASS", mode: "run", profile: "standard", checks: [] },
+      {
+        check: "exportBuild",
+        keyInputs: keyInfo.inputs,
+        affects: ["scene", "code", "deps", "config"],
+      },
+    );
   }
-  return run.ok ? { status: 'PASS', detail: run.detail ?? 'ok' } : { status: 'FAIL', detail: run.detail ?? 'export failed' };
+  return run.ok
+    ? { status: "PASS", detail: run.detail ?? "ok" }
+    : { status: "FAIL", detail: run.detail ?? "export failed" };
 };
 
 /**
@@ -338,60 +509,80 @@ export const defaultRunExportForTest = (projectRoot, outDir, hooks = {}) => {
   const oldBackup = `${outDir}.old`;
   const lock = `${outDir}.publish-lock`;
   let fd;
-  try { fd = openSync(lock, 'wx'); }
-  catch (error) { return { ok: false, detail: `发布被锁定：${lock}: ${error.message}` }; }
+  try {
+    fd = openSync(lock, "wx");
+  } catch (error) {
+    return { ok: false, detail: `发布被锁定：${lock}: ${error.message}` };
+  }
   let staging;
   try {
-  if (existsSync(oldBackup)) return { ok: false, detail: `存在未恢复备份 ${oldBackup}，拒绝覆盖；请先恢复` };
-  staging = mkdtempSync(`${outDir}.staging-`);
-  const fail = (detail) => {
-    // 失败清理：staging 弃；旧交付目录（若有）原位保留——分毫不动
-    rmSync(staging, { recursive: true, force: true });
-    return { ok: false, detail };
-  };
-
-  // 步骤 1：staging 就绪（生产：strip-edit → staging + 依赖准备）
-  const stage = hooks.stagePrepare
-    ? hooks.stagePrepare(staging)
-    : productionStagePrepare(projectRoot, staging);
-  if (stage && stage.ok === false) {
-    return fail(`${stage.detail}（旧交付包保留）`);
-  }
-
-  // 步骤 2：build + 静态门禁 + 产物核验（生产：npm run build → build.mjs --stripped → dist/index.html）
-  const build = hooks.buildStep
-    ? hooks.buildStep(staging)
-    : productionBuildStep(staging);
-  if (build && build.ok === false) {
-    return fail(`${build.detail}（旧交付包保留）`);
-  }
-
-  // 步骤 3：事务发布（staging 全部通过才动交付目录）
-  const hadOld = existsSync(outDir);
-  if (hadOld) {
-    try {
-      renameSync(outDir, oldBackup);
-    } catch (err) {
-      return fail(`发布失败：旧交付包移备份出错 ${err.message}（旧包原位保留）`);
+    if (existsSync(oldBackup)) {
+      return {
+        ok: false,
+        detail: `存在未恢复备份 ${oldBackup}，拒绝覆盖；请先恢复`,
+      };
     }
-  }
-  try {
-    renameSync(staging, outDir);
-  } catch (err) {
-    // 回滚：备份还原
+    staging = mkdtempSync(`${outDir}.staging-`);
+    const fail = (detail) => {
+      // 失败清理：staging 弃；旧交付目录（若有）原位保留——分毫不动
+      rmSync(staging, { recursive: true, force: true });
+      return { ok: false, detail };
+    };
+
+    // 步骤 1：staging 就绪（生产：strip-edit → staging + 依赖准备）
+    const stage = hooks.stagePrepare
+      ? hooks.stagePrepare(staging)
+      : productionStagePrepare(projectRoot, staging);
+    if (stage && stage.ok === false) {
+      return fail(`${stage.detail}（旧交付包保留）`);
+    }
+
+    // 步骤 2：build + 静态门禁 + 产物核验（生产：npm run build → build.mjs --stripped → dist/index.html）
+    const build = hooks.buildStep
+      ? hooks.buildStep(staging)
+      : productionBuildStep(staging);
+    if (build && build.ok === false) {
+      return fail(`${build.detail}（旧交付包保留）`);
+    }
+
+    // 步骤 3：事务发布（staging 全部通过才动交付目录）
+    const hadOld = existsSync(outDir);
     if (hadOld) {
       try {
-        renameSync(oldBackup, outDir);
-      } catch (rbErr) {
-        return { ok: false, detail: `发布失败且回滚失败：staging 上位出错 ${err.message}，旧包备份在 ${oldBackup} 待人工恢复（${rbErr.message}）` };
+        renameSync(outDir, oldBackup);
+      } catch (err) {
+        return fail(
+          `发布失败：旧交付包移备份出错 ${err.message}（旧包原位保留）`,
+        );
       }
     }
-    return fail(`发布失败：staging 上位出错 ${err.message}（旧交付包原位保留）`);
-  }
-  rmSync(oldBackup, { recursive: true, force: true });
-  return { ok: true, detail: `runtime package built & preserved at ${outDir}` };
+    try {
+      renameSync(staging, outDir);
+    } catch (err) {
+      // 回滚：备份还原
+      if (hadOld) {
+        try {
+          renameSync(oldBackup, outDir);
+        } catch (rbErr) {
+          return {
+            ok: false,
+            detail: `发布失败且回滚失败：staging 上位出错 ${err.message}，旧包备份在 ${oldBackup} 待人工恢复（${rbErr.message}）`,
+          };
+        }
+      }
+      return fail(
+        `发布失败：staging 上位出错 ${err.message}（旧交付包原位保留）`,
+      );
+    }
+    rmSync(oldBackup, { recursive: true, force: true });
+    return {
+      ok: true,
+      detail: `runtime package built & preserved at ${outDir}`,
+    };
   } finally {
-    if (staging) rmSync(staging, { recursive: true, force: true });
+    if (staging) {
+      rmSync(staging, { recursive: true, force: true });
+    }
     closeSync(fd);
     rmSync(lock, { force: true });
   }
@@ -399,22 +590,48 @@ export const defaultRunExportForTest = (projectRoot, outDir, hooks = {}) => {
 
 /** 生产步骤 1：strip-edit → staging + 依赖准备（源 node_modules 拷贝 / npm install）。 */
 const productionStagePrepare = (projectRoot, staging) => {
-  const strip = spawnSync('node', [join(SKILL_ROOT, 'scripts', 'strip-edit.mjs'), projectRoot, '--out', staging, '--force'], { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
+  const strip = spawnSync(
+    "node",
+    [
+      join(SKILL_ROOT, "scripts", "strip-edit.mjs"),
+      projectRoot,
+      "--out",
+      staging,
+      "--force",
+    ],
+    { encoding: "utf8", maxBuffer: 64 * 1024 * 1024 },
+  );
   if (strip.status !== 0) {
     return { ok: false, detail: `strip-edit exit=${strip.status}` };
   }
-  const srcModules = join(projectRoot, 'node_modules');
+  const srcModules = join(projectRoot, "node_modules");
   if (existsSync(srcModules)) {
-    const CACHE = new Set(['.tmp', '.vite', '.vite-temp', '.package-lock.json']);
+    const CACHE = new Set([
+      ".tmp",
+      ".vite",
+      ".vite-temp",
+      ".package-lock.json",
+    ]);
     try {
-      cpSync(srcModules, join(staging, 'node_modules'), { recursive: true, filter: (s) => !CACHE.has(basenameOf(s)) });
+      cpSync(srcModules, join(staging, "node_modules"), {
+        recursive: true,
+        filter: (s) => !CACHE.has(basenameOf(s)),
+      });
     } catch (err) {
       return { ok: false, detail: `依赖拷贝失败：${err.message}` };
     }
   } else {
-    const inst = spawnSync('npm', ['install', '--no-audit', '--no-fund'], { cwd: staging, encoding: 'utf8', shell: process.platform === 'win32', maxBuffer: 64 * 1024 * 1024 });
+    const inst = spawnSync("npm", ["install", "--no-audit", "--no-fund"], {
+      cwd: staging,
+      encoding: "utf8",
+      shell: process.platform === "win32",
+      maxBuffer: 64 * 1024 * 1024,
+    });
     if (inst.status !== 0) {
-      return { ok: false, detail: `dependency install exit=${inst.status}（剥离产物依赖准备失败）` };
+      return {
+        ok: false,
+        detail: `dependency install exit=${inst.status}（剥离产物依赖准备失败）`,
+      };
     }
   }
   return { ok: true };
@@ -422,25 +639,45 @@ const productionStagePrepare = (projectRoot, staging) => {
 
 /** 生产步骤 2：真实 production build + 静态门禁 + 产物核验。 */
 const productionBuildStep = (staging) => {
-  const build = spawnSync('npm', ['run', 'build'], { cwd: staging, encoding: 'utf8', shell: process.platform === 'win32', maxBuffer: 64 * 1024 * 1024 });
+  const build = spawnSync("npm", ["run", "build"], {
+    cwd: staging,
+    encoding: "utf8",
+    shell: process.platform === "win32",
+    maxBuffer: 64 * 1024 * 1024,
+  });
   if (build.status !== 0) {
-    return { ok: false, detail: `runtime package build exit=${build.status}（vue-tsc/vite 在剥离产物上失败）` };
+    return {
+      ok: false,
+      detail: `runtime package build exit=${build.status}（vue-tsc/vite 在剥离产物上失败）`,
+    };
   }
-  const check = spawnSync('node', [join(SKILL_ROOT, 'scripts', 'build.mjs'), staging, '--stripped', '--quiet'], { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
+  const check = spawnSync(
+    "node",
+    [
+      join(SKILL_ROOT, "scripts", "build.mjs"),
+      staging,
+      "--stripped",
+      "--quiet",
+    ],
+    { encoding: "utf8", maxBuffer: 64 * 1024 * 1024 },
+  );
   if (check.status !== 0) {
     return { ok: false, detail: `stripped static gate exit=${check.status}` };
   }
-  if (!existsSync(join(staging, 'dist', 'index.html'))) {
-    return { ok: false, detail: 'runtime package build reported success but dist/index.html missing' };
+  if (!existsSync(join(staging, "dist", "index.html"))) {
+    return {
+      ok: false,
+      detail:
+        "runtime package build reported success but dist/index.html missing",
+    };
   }
   return { ok: true };
 };
 
-const defaultRunExport = (projectRoot, outDir) => defaultRunExportForTest(projectRoot, outDir);
+const defaultRunExport = (projectRoot, outDir) =>
+  defaultRunExportForTest(projectRoot, outDir);
 
 const basenameOf = (p) => p.split(/[\\/]/).pop();
-
-const tmpdirPath = () => tmpdir();
 
 /**
  * P5-RRR3：release 编辑回归——两段：
@@ -452,26 +689,49 @@ const tmpdirPath = () => tmpdir();
  *      行为级；生产实现覆盖结构面 + 编辑往返核心契约。
  */
 const defaultRunEditRegression = async (projectRoot, url, expectPath) => {
-  const r = spawnSync('node', [
-    join(SKILL_ROOT, 'scripts', 'verify', 'smoke-structural.mjs'), url, '--edit',
-    ...(expectPath ? ['--expect', expectPath] : []),
-  ], { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
+  const r = spawnSync(
+    "node",
+    [
+      join(SKILL_ROOT, "scripts", "verify", "smoke-structural.mjs"),
+      url,
+      "--edit",
+      ...(expectPath ? ["--expect", expectPath] : []),
+    ],
+    { encoding: "utf8", maxBuffer: 64 * 1024 * 1024 },
+  );
   if (r.status !== 0) {
-    return { status: 'FAIL', detail: `smoke-structural --edit exit=${r.status}` };
+    return {
+      status: "FAIL",
+      detail: `smoke-structural --edit exit=${r.status}`,
+    };
   }
   // 编辑行为契约：对运行中场景做编辑往返（经 verifyScene 的 session 在上层做更自然；
   // 子进程内无法复用 session——这里以 CDP 独立页执行最小编辑往返）
-  const editRoundTrip = spawnSync('node', [
-    join(SKILL_ROOT, 'scripts', 'verify', 'edit-contract.mjs'), url,
-    ...(expectPath ? ['--expect', expectPath] : []),
-  ], { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
+  const editRoundTrip = spawnSync(
+    "node",
+    [
+      join(SKILL_ROOT, "scripts", "verify", "edit-contract.mjs"),
+      url,
+      ...(expectPath ? ["--expect", expectPath] : []),
+    ],
+    { encoding: "utf8", maxBuffer: 64 * 1024 * 1024 },
+  );
   if (editRoundTrip.status === 2) {
     // 环境不可用（CDP 起不来等）→ SKIP（INCOMPLETE 语义），不冒充 PASS
-    return { status: 'SKIP', detail: `edit contract env unavailable: ${editRoundTrip.stderr?.slice(0, 120)}` };
+    return {
+      status: "SKIP",
+      detail: `edit contract env unavailable: ${editRoundTrip.stderr?.slice(0, 120)}`,
+    };
   }
   return editRoundTrip.status === 0
-    ? { status: 'PASS', detail: 'smoke-structural --edit + edit round-trip PASS' }
-    : { status: 'FAIL', detail: `edit round-trip exit=${editRoundTrip.status}: ${editRoundTrip.stdout?.slice(-200)}` };
+    ? {
+        status: "PASS",
+        detail: "smoke-structural --edit + edit round-trip PASS",
+      }
+    : {
+        status: "FAIL",
+        detail: `edit round-trip exit=${editRoundTrip.status}: ${editRoundTrip.stdout?.slice(-200)}`,
+      };
 };
 
 /**
@@ -484,9 +744,20 @@ const defaultRunEditRegression = async (projectRoot, url, expectPath) => {
  * 数据级保真合同。注入缝 runFidelity 覆盖。
  */
 export const defaultRunFidelity = async (projectRoot) => {
-  const out = `${projectRoot.replace(/[\\/]+$/, '')}-dist`;
-  const cmp = spawnSync('node', [join(SKILL_ROOT, 'scripts', 'verify', 'fidelity-compare.mjs'), projectRoot, out], { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
-  return { status: cmp.status === 0 ? 'PASS' : 'FAIL', detail: `delivery fidelity exit=${cmp.status}: ${(cmp.stdout || cmp.stderr || '').slice(-500)}` };
+  const out = `${projectRoot.replace(/[\\/]+$/, "")}-dist`;
+  const cmp = spawnSync(
+    "node",
+    [
+      join(SKILL_ROOT, "scripts", "verify", "fidelity-compare.mjs"),
+      projectRoot,
+      out,
+    ],
+    { encoding: "utf8", maxBuffer: 64 * 1024 * 1024 },
+  );
+  return {
+    status: cmp.status === 0 ? "PASS" : "FAIL",
+    detail: `delivery fidelity exit=${cmp.status}: ${(cmp.stdout || cmp.stderr || "").slice(-500)}`,
+  };
 };
 
 /**
@@ -500,9 +771,19 @@ export const defaultRunFidelity = async (projectRoot) => {
  *   表达 INCOMPLETE，不 PASS 冒充完整 release）。
  */
 export const PROFILE_TOOLS = {
-  preview: ['verify', 'typecheck', 'lint'],
-  standard: ['verify', 'typecheck', 'lint', 'build', 'exportBuild?'],
-  release: ['verify', 'typecheck', 'lint', 'build', 'exportBuild', 'strictBudget', 'editRegression', 'fidelity', 'perf'],
+  preview: ["verify", "typecheck", "lint"],
+  standard: ["verify", "typecheck", "lint", "build", "exportBuild?"],
+  release: [
+    "verify",
+    "typecheck",
+    "lint",
+    "build",
+    "exportBuild",
+    "strictBudget",
+    "editRegression",
+    "fidelity",
+    "perf",
+  ],
 };
 
 // 注入 session 的指纹（WeakMap 按对象身份派生：同一 session 对象的多次调用
@@ -522,16 +803,25 @@ const fingerprintOf = (session, explicit) => {
 /** No global argv or process.exit in the reusable API. Caller may supply an already-owned session. */
 export const verifyScene = async (options = {}) => {
   const {
-    url = 'http://localhost:5199/', mode = 'run', project = join(SKILL_ROOT, 'template'),
-    viewport = { width: 1280, height: 800 }, profile = 'standard',
+    url = "http://localhost:5199/",
+    mode = "run",
+    project = join(SKILL_ROOT, "template"),
+    viewport = { width: 1280, height: 800 },
+    profile = "standard",
   } = options;
-  if (!['run', 'edit', 'both'].includes(mode)) {
-    throw new Error(`Unsupported mode: ${ mode}`);
+  if (!["run", "edit", "both"].includes(mode)) {
+    throw new Error(`Unsupported mode: ${mode}`);
   }
   if (!PROFILES.has(profile)) {
-    throw new Error(`Unsupported profile: ${ profile} (preview|standard|release)`);
+    throw new Error(
+      `Unsupported profile: ${profile} (preview|standard|release)`,
+    );
   }
-  const expect = options.expect ?? readExpect(options.expectPath ?? join(project, 'public', 'scene-data.json'));
+  const expect =
+    options.expect ??
+    readExpect(
+      options.expectPath ?? join(project, "public", "scene-data.json"),
+    );
   const useCache = options.cache !== false;
 
   // P5-R1：changeSet 接入运行路径——已知变更定向失效，未知变更全失效
@@ -549,17 +839,23 @@ export const verifyScene = async (options = {}) => {
   // 不信任外部 expect.hash——同 hash 不同断言不复用。
   const sessionFingerprint = options.session
     ? fingerprintOf(options.session, options.sessionFingerprint)
-    : 'owned';
+    : "owned";
   const assertionFingerprint = expectFingerprint(expect);
-  const cacheKeyOf = (m) => computeCacheKey(project, {
-    check: `verify:${ m}`, mode: m, profile,
-    viewport: `${viewport.width}x${viewport.height}`,
-    browser: 'edge-headless', gpu: 'swiftshader',
-    url, expectHash: assertionFingerprint, sessionFingerprint,
-  });
+  const cacheKeyOf = (m) =>
+    computeCacheKey(project, {
+      check: `verify:${m}`,
+      mode: m,
+      profile,
+      viewport: `${viewport.width}x${viewport.height}`,
+      browser: "edge-headless",
+      gpu: "swiftshader",
+      url,
+      expectHash: assertionFingerprint,
+      sessionFingerprint,
+    });
 
   const profileChecks = [];
-  const modes = mode === 'both' ? ['run', 'edit'] : [mode];
+  const modes = mode === "both" ? ["run", "edit"] : [mode];
   let allModesCached = false;
 
   // P5-R1：逐 mode 查缓存——任一 mode 未命中则该 mode 真跑（另一 mode 命中仍复用）
@@ -575,40 +871,66 @@ export const verifyScene = async (options = {}) => {
       }
     }
     if (modes.every((m) => cachedByMode.has(m))) {
-      profileChecks.push({ tool: 'verify', status: 'cached', detail: 'all modes reused' });
+      profileChecks.push({
+        tool: "verify",
+        status: "cached",
+        detail: "all modes reused",
+      });
       // P5-RR3：preview 全缓存命中也不直接返回——typecheck/lint 工具段照跑
       // （§3.5 preview 合同含「typecheck+生成侧lint」；缓存去重在工具层各自实现）。
       allModesCached = true;
     }
   }
 
-  const session = options.session ?? await openBrowserSession({ port: options.port ?? 9271, windowSize: `${viewport.width },${viewport.height}` });
+  const session =
+    options.session ??
+    (await openBrowserSession({
+      port: options.port ?? 9271,
+      windowSize: `${viewport.width},${viewport.height}`,
+    }));
   const reports = [];
   const started = performance.now();
   try {
     for (const current of modes) {
       // P5-R1：该 mode 已命中缓存 → 跳过浏览器 page（另一 mode 仍真跑）
       if (cachedByMode.has(current)) {
-        reports.push({ mode: current, verdict: 'PASS', checks: cachedByMode.get(current).checks, cached: true });
+        reports.push({
+          mode: current,
+          verdict: "PASS",
+          checks: cachedByMode.get(current).checks,
+          cached: true,
+        });
         continue;
       }
       const target = new URL(url);
-      if (current === 'edit') {
-        target.searchParams.set('edit', '1');
+      if (current === "edit") {
+        target.searchParams.set("edit", "1");
       } else {
-        target.searchParams.delete('edit');
+        target.searchParams.delete("edit");
       }
       const page = await session.newPage();
       try {
         await page.navigateTo(target.href);
-        const report = await verifyPage(page, { ...options, mode: current, expect });
+        const report = await verifyPage(page, {
+          ...options,
+          mode: current,
+          expect,
+        });
         reports.push(report);
         // Cache each mode's PASS conclusion as it completes (partial progress survives later failures).
-        if (useCache && report.verdict === 'PASS') {
+        if (useCache && report.verdict === "PASS") {
           const info = cacheKeyOf(current);
           if (info.stable) {
             record(project, info.key, report, {
-              check: `verify:${ current}`, keyInputs: info.inputs, affects: ['scene', 'code', 'deps', 'config', ...(current === 'edit' ? ['edit'] : [])],
+              check: `verify:${current}`,
+              keyInputs: info.inputs,
+              affects: [
+                "scene",
+                "code",
+                "deps",
+                "config",
+                ...(current === "edit" ? ["edit"] : []),
+              ],
             });
           }
         }
@@ -625,17 +947,23 @@ export const verifyScene = async (options = {}) => {
   const checks = reports.flatMap((r) => r.checks);
   const basicVerdict = summarize(checks);
   profileChecks.push({
-    tool: 'verify',
-    status: basicVerdict === 'PASS' ? 'PASS' : basicVerdict,
-    detail: `${reports.filter((r) => !r.cached).length } live / ${ reports.filter((r) => r.cached).length } cached`,
+    tool: "verify",
+    status: basicVerdict === "PASS" ? "PASS" : basicVerdict,
+    detail: `${reports.filter((r) => !r.cached).length} live / ${reports.filter((r) => r.cached).length} cached`,
   });
 
   // P5-RR3：standard/release 的工具段。基础检查 FAIL → 档位直接 FAIL（不跑后续工具）。
-  if (basicVerdict === 'FAIL') {
+  if (basicVerdict === "FAIL") {
     return {
-      verdict: 'FAIL', profile, scope: `profile:${ profile}`, checks, reports,
-      duration: performance.now() - started, cache: allModesCached ? 'hit' : cachedByMode.size ? 'partial' : 'miss',
-      profileChecks, changeSet: options.changeSet ?? null,
+      verdict: "FAIL",
+      profile,
+      scope: `profile:${profile}`,
+      checks,
+      reports,
+      duration: performance.now() - started,
+      cache: allModesCached ? "hit" : cachedByMode.size ? "partial" : "miss",
+      profileChecks,
+      changeSet: options.changeSet ?? null,
       basicChecks: basicVerdict,
     };
   }
@@ -643,11 +971,17 @@ export const verifyScene = async (options = {}) => {
   /** 通用工具执行器：status FAIL → 档位 FAIL 短路返回；SKIP 记入（末尾汇总 INCOMPLETE）。 */
   const runTool = (name, status, detail) => {
     profileChecks.push({ tool: name, status, detail });
-    if (status === 'FAIL') {
+    if (status === "FAIL") {
       return {
-        verdict: 'FAIL', profile, scope: `profile:${ profile}`, checks, reports,
-        duration: performance.now() - started, cache: allModesCached ? 'hit' : cachedByMode.size ? 'partial' : 'miss',
-        profileChecks, changeSet: options.changeSet ?? null,
+        verdict: "FAIL",
+        profile,
+        scope: `profile:${profile}`,
+        checks,
+        reports,
+        duration: performance.now() - started,
+        cache: allModesCached ? "hit" : cachedByMode.size ? "partial" : "miss",
+        profileChecks,
+        changeSet: options.changeSet ?? null,
         basicChecks: basicVerdict,
       };
     }
@@ -659,51 +993,68 @@ export const verifyScene = async (options = {}) => {
   // 不再先跑 typecheck 再 build 造成冷启动重复类型检查）。preview 无 build 工具
   // → typecheck 独立跑（buildEvidence 为空 → unknown → 真跑）。
   let buildResult = null;
-  if (tools.includes('build')) {
-    buildResult = runProfileBuild(project, { cache: useCache, runBuild: options.runBuild });
-    const failed = runTool('build', buildResult.status, buildResult.detail);
+  if (tools.includes("build")) {
+    buildResult = runProfileBuild(project, {
+      cache: useCache,
+      runBuild: options.runBuild,
+    });
+    const failed = runTool("build", buildResult.status, buildResult.detail);
     if (failed) {
       return failed;
     }
   }
 
-  if (tools.includes('typecheck')) {
+  if (tools.includes("typecheck")) {
     const tc = runTypecheck(project, {
       cache: useCache,
       runTypecheck: options.runTypecheck,
       // RRR4：buildEvidence 只来自本次 runProfileBuild 结果（{exit, output}）；
       // options.buildOutput（调用方注入字符串）不再被接受为证据
-      buildEvidence: buildResult?.status === 'PASS' && buildResult.evidence
-        ? { exit: buildResult.evidence.exit, output: buildResult.output }
-        : null,
+      buildEvidence:
+        buildResult?.status === "PASS" && buildResult.evidence
+          ? { exit: buildResult.evidence.exit, output: buildResult.output }
+          : null,
     });
-    const failed = runTool('typecheck', tc.status, tc.detail);
+    const failed = runTool("typecheck", tc.status, tc.detail);
     if (failed) {
       return failed;
     }
   }
-  if (tools.includes('lint')) {
-    const lint = runLint(project, { cache: useCache, runLint: options.runLint });
-    const failed = runTool('lint', lint.status, lint.detail);
+  if (tools.includes("lint")) {
+    const lint = runLint(project, {
+      cache: useCache,
+      runLint: options.runLint,
+    });
+    const failed = runTool("lint", lint.status, lint.detail);
     if (failed) {
       return failed;
     }
   }
 
   // standard「已请求运行包则导出并build一次」（options.wantExport / CLI --with-export）
-  if (tools.includes('exportBuild') || (tools.includes('exportBuild?') && options.wantExport)) {
-    const exp = runExportBuild(project, { cache: useCache, runExport: options.runExport });
-    const failed = runTool('exportBuild', exp.status, exp.detail);
+  if (
+    tools.includes("exportBuild") ||
+    (tools.includes("exportBuild?") && options.wantExport)
+  ) {
+    const exp = runExportBuild(project, {
+      cache: useCache,
+      runExport: options.runExport,
+    });
+    const failed = runTool("exportBuild", exp.status, exp.detail);
     if (failed) {
       return failed;
     }
   }
 
-  if (tools.includes('strictBudget')) {
+  if (tools.includes("strictBudget")) {
     // release 附加：build.mjs --strict（预算超限升阻断）。runStrictBudget 注入缝供测试。
     const run = options.runStrictBudget ?? defaultRunStrictBudget;
     const r = run(project);
-    const failed = runTool('strictBudget', r.ok ? 'PASS' : 'FAIL', `exit=${ r.status}`);
+    const failed = runTool(
+      "strictBudget",
+      r.ok ? "PASS" : "FAIL",
+      `exit=${r.status}`,
+    );
     if (failed) {
       return failed;
     }
@@ -711,10 +1062,14 @@ export const verifyScene = async (options = {}) => {
 
   // P5-RRR3：release 编辑回归——smoke-structural --edit **传工程自身 expect** +
   // edit-contract 行为契约（patchVisual/update/serialize 往返）。注入缝可覆盖。
-  if (tools.includes('editRegression')) {
+  if (tools.includes("editRegression")) {
     const run = options.runEditRegression ?? defaultRunEditRegression;
-    const r = await run(project, url, options.expectPath ?? join(project, 'public', 'scene-data.json'));
-    const failed = runTool('editRegression', r.status, r.detail);
+    const r = await run(
+      project,
+      url,
+      options.expectPath ?? join(project, "public", "scene-data.json"),
+    );
+    const failed = runTool("editRegression", r.status, r.detail);
     if (failed) {
       return failed;
     }
@@ -722,10 +1077,10 @@ export const verifyScene = async (options = {}) => {
 
   // P5-RRR3：release 运行包保真比较——fidelity-compare **实际对照**编辑态与导出包
   // （节点/transform/视觉/材质库数据级 diff），非重跑 strip 冒充。注入缝可覆盖。
-  if (tools.includes('fidelity')) {
+  if (tools.includes("fidelity")) {
     const run = options.runFidelity ?? defaultRunFidelity;
     const r = await run(project, url);
-    const failed = runTool('fidelity', r.status, r.detail);
+    const failed = runTool("fidelity", r.status, r.detail);
     if (failed) {
       return failed;
     }
@@ -734,31 +1089,33 @@ export const verifyScene = async (options = {}) => {
   // P5-RR3：release GPU 性能基线。环境不可用 → SKIP + 人工清单，**总 verdict
   // 表达 INCOMPLETE**（不能 PASS 冒充完整 release——§6 重审反例）。CLI --gpu
   // 时接真机采样（runPerf 注入缝）。
-  if (tools.includes('perf')) {
+  if (tools.includes("perf")) {
     if (options.runPerf) {
       const perf = await options.runPerf(project, url);
-      const failed = runTool('perf', perf.status, perf.detail);
+      const failed = runTool("perf", perf.status, perf.detail);
       if (failed) {
         return failed;
       }
     } else {
       profileChecks.push({
-        tool: 'perf', status: 'SKIP',
-        detail: 'GPU perf baseline not run in this environment — run perf-fps --gpu on real GPU; release incomplete until sampled',
+        tool: "perf",
+        status: "SKIP",
+        detail:
+          "GPU perf baseline not run in this environment — run perf-fps --gpu on real GPU; release incomplete until sampled",
       });
     }
   }
 
   // P5-RR3：SKIP 汇总 → INCOMPLETE（有 SKIP 的档位不宣称完整 PASS）
-  const hasSkip = profileChecks.some((p) => p.status === 'SKIP');
+  const hasSkip = profileChecks.some((p) => p.status === "SKIP");
   return {
-    verdict: hasSkip ? 'INCOMPLETE' : summarize(checks),
+    verdict: hasSkip ? "INCOMPLETE" : summarize(checks),
     profile,
-    scope: `profile:${ profile}`,
+    scope: `profile:${profile}`,
     checks,
     reports,
     duration: performance.now() - started,
-    cache: allModesCached ? 'hit' : cachedByMode.size ? 'partial' : 'miss',
+    cache: allModesCached ? "hit" : cachedByMode.size ? "partial" : "miss",
     profileChecks,
     changeSet: options.changeSet ?? null,
     basicChecks: basicVerdict,
@@ -767,76 +1124,114 @@ export const verifyScene = async (options = {}) => {
 
 const main = async () => {
   const argv = process.argv.slice(2);
-  const idx = argv.indexOf('--expect');
+  const idx = argv.indexOf("--expect");
   const flag = (name) => argv.includes(name);
   const value = (name) => {
     const i = argv.indexOf(name);
     return i >= 0 ? argv[i + 1] : undefined;
   };
-  const profileArg = value('--profile') ?? 'standard';
+  const profileArg = value("--profile") ?? "standard";
   if (!PROFILES.has(profileArg)) {
-    console.error(`SCENE ERROR: unsupported profile ${profileArg} (preview|standard|release)`);
+    console.error(
+      `SCENE ERROR: unsupported profile ${profileArg} (preview|standard|release)`,
+    );
     process.exitCode = 2;
     return;
   }
-  const project = value('--project') ? resolve(value('--project')) : join(SKILL_ROOT, 'template');
+  const project = value("--project")
+    ? resolve(value("--project"))
+    : join(SKILL_ROOT, "template");
   const changeSet = [];
   for (let i = 0; i < argv.length; i += 1) {
-    if (argv[i] === '--change') {
+    if (argv[i] === "--change") {
       changeSet.push(argv[i + 1]);
       i += 1;
     }
   }
   const report = await verifyScene({
-    url: positionalArg(argv) ?? 'http://localhost:5199/',
-    mode: flag('--both') ? 'both' : flag('--edit') ? 'edit' : 'run',
+    url: positionalArg(argv) ?? "http://localhost:5199/",
+    mode: flag("--both") ? "both" : flag("--edit") ? "edit" : "run",
     expectPath: idx >= 0 ? argv[idx + 1] : undefined,
     profile: profileArg,
     project,
-    cache: !flag('--no-cache'),
+    cache: !flag("--no-cache"),
     changeSet,
     // P5-RR3：standard 已请求运行包 → 导出并独立 build；--gpu 接真机 perf 采样
-    wantExport: flag('--with-export'),
-    runPerf: flag('--gpu')
+    wantExport: flag("--with-export"),
+    runPerf: flag("--gpu")
       ? async (projectRoot, targetUrl) => {
-        const r = spawnSync('node', [join(SKILL_ROOT, 'scripts', 'verify', 'perf-fps.mjs'), targetUrl, '--gpu', '--duration', '20', '--json'], { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
-        // RRR3：perf-fps 退出码语义（脚本头部合同）——
-        //   0 = 无坏项（性能 WARN 不改退出码）；1 = 坏项硬 FAIL（未挂载/未就绪/异常——
-        //   正确性/采样执行失败，不能吞成 WARN）；2 = CDP 环境不可用。
-        if (r.status === 2) {
-          return { status: 'SKIP', detail: 'GPU 环境不可用（perf-fps exit=2）——转人工清单' };
+          const r = spawnSync(
+            "node",
+            [
+              join(SKILL_ROOT, "scripts", "verify", "perf-fps.mjs"),
+              targetUrl,
+              "--gpu",
+              "--duration",
+              "20",
+              "--json",
+            ],
+            { encoding: "utf8", maxBuffer: 64 * 1024 * 1024 },
+          );
+          // RRR3：perf-fps 退出码语义（脚本头部合同）——
+          //   0 = 无坏项（性能 WARN 不改退出码）；1 = 坏项硬 FAIL（未挂载/未就绪/异常——
+          //   正确性/采样执行失败，不能吞成 WARN）；2 = CDP 环境不可用。
+          if (r.status === 2) {
+            return {
+              status: "SKIP",
+              detail: "GPU 环境不可用（perf-fps exit=2）——转人工清单",
+            };
+          }
+          if (r.status === 1) {
+            return {
+              status: "FAIL",
+              detail: `perf-fps exit=1（正确性/采样执行失败）：${(r.stdout ?? r.stderr ?? "").slice(-160)}`,
+            };
+          }
+          return r.status === 0
+            ? {
+                status: "PASS",
+                detail: `perf-fps --gpu PASS（${(r.stdout ?? "").includes('"warnings":null') ? "零性能告警" : "含性能 WARN 观测值——须在验证报告回应"}）`,
+              }
+            : { status: "FAIL", detail: `perf-fps 异常退出 exit=${r.status}` };
         }
-        if (r.status === 1) {
-          return { status: 'FAIL', detail: `perf-fps exit=1（正确性/采样执行失败）：${(r.stdout ?? r.stderr ?? '').slice(-160)}` };
-        }
-        return r.status === 0
-          ? { status: 'PASS', detail: `perf-fps --gpu PASS（${(r.stdout ?? '').includes('"warnings":null') ? '零性能告警' : '含性能 WARN 观测值——须在验证报告回应'}）` }
-          : { status: 'FAIL', detail: `perf-fps 异常退出 exit=${r.status}` };
-      }
       : undefined,
   });
-  if (flag('--json')) {
+  if (flag("--json")) {
     console.log(JSON.stringify(report, null, 2));
   } else {
-    const cacheTag = report.cache === 'hit' ? '（缓存命中——输入未变，复用上轮 PASS）'
-      : report.cache === 'partial' ? '（部分缓存命中）' : '';
+    const cacheTag =
+      report.cache === "hit"
+        ? "（缓存命中——输入未变，复用上轮 PASS）"
+        : report.cache === "partial"
+          ? "（部分缓存命中）"
+          : "";
     for (const c of report.checks) {
-      console.log(`${c.mode } ${ c.status } ${ c.id } — ${ JSON.stringify(c.evidence)}`);
+      console.log(
+        `${c.mode} ${c.status} ${c.id} — ${JSON.stringify(c.evidence)}`,
+      );
     }
     for (const pc of report.profileChecks ?? []) {
-      console.log(`profile ${ pc.status } ${ pc.tool } — ${ pc.detail }`);
+      console.log(`profile ${pc.status} ${pc.tool} — ${pc.detail}`);
     }
-    const incompleteNote = report.verdict === 'INCOMPLETE'
-      ? '（档位含 SKIP 项——release 未完整完成，不冒充 PASS）' : '';
-    console.log(`SCENE ${ report.verdict } [profile=${ report.profile }, scope=${ report.scope }]${ cacheTag }${ incompleteNote }`);
+    const incompleteNote =
+      report.verdict === "INCOMPLETE"
+        ? "（档位含 SKIP 项——release 未完整完成，不冒充 PASS）"
+        : "";
+    console.log(
+      `SCENE ${report.verdict} [profile=${report.profile}, scope=${report.scope}]${cacheTag}${incompleteNote}`,
+    );
   }
   // P5-RR3：INCOMPLETE 不算失败（已完成的检查都过），但退出码区分（3）——
   // 调度方/用户能看到「未完整」而不与干净 PASS 混淆
-  process.exitCode = report.verdict === 'FAIL' ? 1 : report.verdict === 'INCOMPLETE' ? 3 : 0;
+  process.exitCode =
+    report.verdict === "FAIL" ? 1 : report.verdict === "INCOMPLETE" ? 3 : 0;
 };
-if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
+if (
+  process.argv[1] &&
+  import.meta.url === pathToFileURL(resolve(process.argv[1])).href
+) {
   main().catch((error) => {
-    console.error('SCENE ERROR:', error.message);
+    console.error("SCENE ERROR:", error.message);
     process.exitCode = error instanceof CdpEnvironmentError ? 2 : 1;
   });
 }

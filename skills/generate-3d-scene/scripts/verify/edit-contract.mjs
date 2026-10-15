@@ -11,45 +11,64 @@
  *   ④ **序列化**：真实调用 handle.serialize()（编辑态保存链路），核对序列化结果
  *      含修改后的值（丢字段在此暴露）；
  *   ⑤ **恢复往返**：以序列化结果回灌（模拟保存/重载语义的核心——数据出引擎再
- *      进引擎），在新引擎实例上核对节点与视觉值一致。
+ *      进引擎），清空节点后回灌快照，核对节点与实际对象状态一致。
  * 失败不可吞掉：任一步异常/值不符 → exit 1（带哪一步失败的明细）。
  *
  * 用法：node edit-contract.mjs <url> [--expect <scene-data.json>]
  *   退出码：0 PASS / 1 契约失败 / 2 环境不可用（CDP/挂载）
  */
-import { verifyEditRoundTrip } from './edit-contract-core.mjs';
-import { readFileSync, existsSync } from 'node:fs';
-import { resolve, dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { openBrowserSession, positionalArg, CdpEnvironmentError } from '../lib/cdp.mjs';
+import { verifyEditRoundTrip } from "./edit-contract-core.mjs";
+import { readFileSync, existsSync } from "node:fs";
+import { resolve, dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+import {
+  openBrowserSession,
+  positionalArg,
+  CdpEnvironmentError,
+} from "../lib/cdp.mjs";
 
-const SKILL_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
-const SCENE_KEYS = new Set(['lights', 'camera', 'controls', 'renderer', 'environment', 'remove']);
+const SKILL_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
+const SCENE_KEYS = new Set([
+  "lights",
+  "camera",
+  "controls",
+  "renderer",
+  "environment",
+  "remove",
+]);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 const argv = process.argv.slice(2);
-const URL_ARG = positionalArg(argv) ?? 'http://localhost:5199/';
-const expectIdx = argv.indexOf('--expect');
-const EXPECT_PATH = expectIdx >= 0 ? argv[expectIdx + 1] : join(SKILL_ROOT, 'template', 'public', 'scene-data.json');
+const URL_ARG = positionalArg(argv) ?? "http://localhost:5199/";
+const expectIdx = argv.indexOf("--expect");
+const EXPECT_PATH =
+  expectIdx >= 0
+    ? argv[expectIdx + 1]
+    : join(SKILL_ROOT, "template", "public", "scene-data.json");
 
 const main = async () => {
   if (!existsSync(EXPECT_PATH)) {
     console.error(`[edit-contract] expect 文件不存在: ${EXPECT_PATH}`);
     process.exit(2);
   }
-  const data = JSON.parse(readFileSync(EXPECT_PATH, 'utf8'));
-  const groups = Object.entries(data).filter(([k, v]) => Array.isArray(v) && !SCENE_KEYS.has(k) && !k.startsWith('__'));
+  const data = JSON.parse(readFileSync(EXPECT_PATH, "utf8"));
+  const groups = Object.entries(data).filter(
+    ([k, v]) => Array.isArray(v) && !SCENE_KEYS.has(k) && !k.startsWith("__"),
+  );
   if (groups.length === 0) {
-    console.error('[edit-contract] 场景无业务分组（空场景无编辑契约可验）');
+    console.error("[edit-contract] 场景无业务分组（空场景无编辑契约可验）");
     process.exit(2);
   }
 
   let session;
   try {
-    session = await openBrowserSession({ url: `${URL_ARG}?edit=1`, port: 9237 });
+    session = await openBrowserSession({
+      url: `${URL_ARG}?edit=1`,
+      port: 9237,
+    });
   } catch (e) {
     if (e instanceof CdpEnvironmentError) {
-      console.error('CDP 不可用 → 编辑契约转人工');
+      console.error("CDP 不可用 → 编辑契约转人工");
       process.exit(2);
     }
     throw e;
@@ -61,19 +80,23 @@ const main = async () => {
     const deadline = Date.now() + 10000;
     let mounted = false;
     do {
-      mounted = await evaluate('!!window.__gts3d && !!window.__gts3dEdit');
+      mounted = await evaluate("!!window.__gts3d && !!window.__gts3dEdit");
       if (mounted) {
         break;
       }
       await sleep(200);
     } while (Date.now() < deadline);
     if (!mounted) {
-      console.log('EDIT-CONTRACT FAIL [mount]: 编辑态未挂载');
+      console.log("EDIT-CONTRACT FAIL [mount]: 编辑态未挂载");
       process.exitCode = 1;
       return;
     }
-    const result = await evaluate(`(${verifyEditRoundTrip.toString()})(window.__gts3d)`);
-    console.log(`EDIT-CONTRACT PASS: ${JSON.stringify(result)}; serialize/clear/reload verified`);
+    const result = await evaluate(
+      `(${verifyEditRoundTrip.toString()})(window.__gts3d)`,
+    );
+    console.log(
+      `EDIT-CONTRACT PASS: ${JSON.stringify(result)}; serialize/clear/reload verified`,
+    );
     process.exitCode = 0;
   } finally {
     await session.close();
@@ -81,6 +104,6 @@ const main = async () => {
 };
 
 main().catch((e) => {
-  console.error('EDIT-CONTRACT ERROR:', e.message);
+  console.error("EDIT-CONTRACT ERROR:", e.message);
   process.exit(1);
 });
