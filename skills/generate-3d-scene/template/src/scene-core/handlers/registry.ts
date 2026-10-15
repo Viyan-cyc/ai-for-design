@@ -122,6 +122,9 @@ export const makeAssetNodeFactory = (
       applyVisualIfAny(instance, node.id, (id) => sceneEngine.getVisual(id));
       group.add(instance);
       onLoaded?.(node, instance);
+      // P3-RRR1：视觉层重挂/业务回调（applyState 等）会克隆替换 clone mesh 的材质——
+      // 异步挂载点资源集对账（RRRR1：走引擎公共入口，带节点边界与受影响子节点同步）
+      sceneEngine.syncResourcesFor(node.id, group);
       tracker?.settle(token!, 'succeeded');
       report();
     })

@@ -9,15 +9,25 @@
  * 不负责：渲染（RenderLoop）、加载（AssetEngine）、交互（RaycastEngine）
  */
 import * as THREE from 'three';
-import type { MeshSpecEntry, ModelSpecReport, SceneData, SceneNode, TreeSceneFragment, UpdateStats, Vec3, MaterialLibEntry } from '../types';
-import { RESERVED_KEYS } from '../types';
+import type {
+  FactoryContext, LegacyFactory, MaterialLibEntry, MeshSpecEntry, ModelSpecReport,
+  NodeFactoryDefinition, SceneData, SceneNode, TreeSceneFragment, UpdateStats, Vec3,
+} from '../types';
+import { RESERVED_KEYS, paramsEqual } from '../types';
 import { applyVisualOverride, findBySlotKey, NON_MATERIAL_VISUAL_KEYS, unnamedChildIndex, type VisualOverride } from '../materials';
+import { getResourceScope, acquireObjectResources, syncObjectResources } from '../resources';
 
 /** 引擎内部节点记录（索引项） */
 interface NodeEntry {
   obj: THREE.Object3D;
   node: SceneNode;
   type: string;
+}
+
+/** 工厂登记项：definition（typed create/update/dispose）或旧 function */
+interface FactoryEntry {
+  definition: NodeFactoryDefinition | null;
+  legacy: LegacyFactory | null;
 }
 
 /** 从片段提取 type 分组（跳过保留 key 与非数组值） */
@@ -34,27 +44,22 @@ const extractGroups = (frag: TreeSceneFragment): Array<[string, SceneNode[]]> =>
   return groups;
 };
 
-/**
- * 释放节点实例的非共享 GPU 资源。GLB 实例是缓存根的 clone（geometry/material
- * 与源共享，AssetEngine.dispose 统一释放）——按 userData.isClone 标记跳过；
- * handler 每节点新建的独立 geometry/material 在此释放（编辑器反复增删不漏）。
- */
-const disposeInstance = (root: THREE.Object3D): void => {
-  root.traverse((child) => {
-    const mesh = child as THREE.Mesh;
-    if (!mesh.isMesh) {
-      return;
+/** 剔除 undefined 字段（片段展开合并用——undefined 会覆盖原值，违反「缺的不动」） */
+const stripUndefined = (o: object): Record<string, unknown> => {
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(o)) {
+    if (v !== undefined) {
+      out[k] = v;
     }
-    if ((mesh.userData as { isClone?: boolean }).isClone) {
-      return;
-    }
-    mesh.geometry?.dispose();
-    const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
-    mats.forEach((m) => {
-      m?.dispose();
-    });
-  });
+  }
+  return out;
 };
+
+/**
+ * 节点实例的 GPU 资源释放统一在 ResourceScope.disposeResource（resources.ts）：
+ * 整树遍历 + isClone 跳过守卫 + geometry/material dispose。SceneEngine 不再
+ * 保留第二条释放路径（P3-R3：双 dispose 消除）。
+ */
 
 export class SceneEngine {
   readonly scene: THREE.Scene;
@@ -63,7 +68,10 @@ export class SceneEngine {
   private entries = new Map<string, NodeEntry>();
 
   /** 物体创建工厂（handler 层注册，按 type 分发；type=分组 key） */
-  private factories = new Map<string, (node: SceneNode) => THREE.Object3D | null>();
+  private factories = new Map<string, FactoryEntry>();
+
+  /** 工厂上下文（definition 的 create/update/dispose 回调参数；registerFactory 时定型） */
+  private factoryContext: FactoryContext | null = null;
 
   /** 编辑器私有视觉层（id → override；serialize 进 __visuals，交付剥离） */
   private visuals = new Map<string, VisualOverride>();
@@ -137,9 +145,34 @@ export class SceneEngine {
     }
   }
 
-  /** 注册 type → 工厂（handler 层在启动时调用） */
-  registerFactory(type: string, factory: (node: SceneNode) => THREE.Object3D | null): void {
-    this.factories.set(type, factory);
+  /**
+   * 设置工厂上下文（P3.1）：definition 工厂的 create/update/dispose 回调参数。
+   * createScene 装配期在 profile 注册前调用；测试/独立使用可省略（defaultFactoryContext 兜底）。
+   */
+  registerFactoryContext(context: FactoryContext): void {
+    this.factoryContext = context;
+  }
+
+  /**
+   * 注册 type → 工厂（handler 层在启动时调用）。
+   * 兼容两种形态（P3.1）：
+   * - 旧 function：等价 { create: (node) => fn(node) }，无 update（params 变化走重建兜底）
+   * - NodeFactoryDefinition：typed create/update/dispose 契约
+   * @param context definition 形态需要（create/update/dispose 回调参数）；function 形态可缺省
+   */
+  registerFactory(
+    type: string,
+    factory: LegacyFactory | NodeFactoryDefinition,
+    context?: FactoryContext,
+  ): void {
+    if (typeof factory === 'function') {
+      this.factories.set(type, { definition: null, legacy: factory });
+      return;
+    }
+    if (context) {
+      this.factoryContext = context;
+    }
+    this.factories.set(type, { definition: factory, legacy: null });
   }
 
   /** 工厂是否已注册（更新 vs 创建的判定依赖它） */
@@ -298,6 +331,43 @@ export class SceneEngine {
   assetReportProvider: ((assetId: string) => ModelSpecReport | null) | null = null;
 
   /**
+   * 子网格槽位唯一性校验（V13）：同一父节点直接子级中同名 mesh（稳定 slotKey 冲突）。
+   * 返回冲突的 slotKey 列表（空 = 通过）。生成侧新程序化模型用——命名纪律：
+   * 同父层子 mesh 名必须唯一（跨父层允许同名，路径含父段自然区分）。
+   */
+  findDuplicateSlotKeys(nodeId: string): string[] {
+    const entry = this.entries.get(nodeId);
+    if (!entry) {
+      return [];
+    }
+    const dupes: string[] = [];
+    const walk = (parent: THREE.Object3D): void => {
+      const names = new Map<string, number>();
+      const unnamed = new Map<number, number>();
+      for (const child of parent.children) {
+        if (child.name) {
+          const n = (names.get(child.name) ?? 0) + 1;
+          names.set(child.name, n);
+          if (n === 2) {
+            dupes.push(child.name);
+          }
+        } else {
+          const idx = Number(unnamedChildIndex(child).slice(1));
+          const n = (unnamed.get(idx) ?? 0) + 1;
+          unnamed.set(idx, n);
+        }
+      }
+      parent.children.forEach((child) => {
+        if ((child as THREE.Mesh).isMesh || child.children.length > 0) {
+          walk(child);
+        }
+      });
+    };
+    walk(entry.obj);
+    return dupes;
+  }
+
+  /**
    * 蒙皮感知包围盒（静态/蒙皮统一入口）。
    * SkinnedMesh 的 geometry 盒是 bind-pose（未蒙皮），Box3.setFromObject 的 coarse
    * 口径读不到真实渲染形状——蒙皮网格先 computeBoundingBox()（蒙皮采样）再乘
@@ -423,6 +493,30 @@ export class SceneEngine {
       || Object.entries(visual).some(([k, v]) => v !== undefined && !NON_MATERIAL_VISUAL_KEYS.has(k));
     this.visuals.set(id, merged);
     applyVisualOverride(obj, merged, hasMaterialField ? 'full' : 'switches');
+    // P3-RRR1：材质路径会 clone/替换 mesh.material——资源集对账（新材质登记、
+    // 被替换旧独占材质解除；开关路径不改资源集，跳过省一次遍历）
+    if (hasMaterialField) {
+      this.syncResourcesFor(id, obj);
+    }
+  }
+
+  /**
+   * 资源集对账（P3-RRRR1 节点边界）：本节点收集时跳过独立业务子节点子树
+   * （其资源归各自登记——父重建/删除时子仍存活，不得随父释放）；父级编辑
+   * 递归修改了子树内材质时（applyVisualOverride traverse 全树），对每个
+   * 受影响子节点也做一次对账。异步挂载点（registry）也走本公共入口。
+   */
+  syncResourcesFor(id: string, obj: THREE.Object3D): void {
+    const scope = getResourceScope(this);
+    const isBusinessNode = (o: THREE.Object3D): boolean => this.entries.get(o.name)?.obj === o;
+    const affected = syncObjectResources(scope, id, obj, isBusinessNode);
+    // 受影响后代业务子节点：归属各自的登记同步（父编辑可能递归换了它们的材质）
+    for (const childRoot of affected) {
+      const childId = childRoot.name;
+      if (childId && this.entries.has(childId)) {
+        syncObjectResources(scope, childId, childRoot, isBusinessNode);
+      }
+    }
   }
 
   /** 覆盖式写入视觉层（整条替换，不合并）——材料库链接/断开需清理互斥字段时用 */
@@ -433,6 +527,17 @@ export class SceneEngine {
     }
     this.visuals.set(id, { ...visual });
     applyVisualOverride(obj, this.visuals.get(id));
+    // P3-RRR1：整条替换可能切材质（libraryRef↔inline）——资源集对账
+    this.syncResourcesFor(id, obj);
+  }
+
+  /**
+   * 单节点视觉层 patch（P3.1 优化 Spec §4.2）：局部 merge 只影响目标节点，
+   * 其他节点的视觉层不动。与 update({__visuals}) 的整表替换语义并存——
+   * 复制（duplicateObject）/局部操作必须走本入口，禁止混用整表（F06）。
+   */
+  patchVisual(nodeId: string, patch: VisualOverride): void {
+    this.applyVisual(nodeId, patch);
   }
 
   /** 读编辑器视觉层 */
@@ -477,18 +582,39 @@ export class SceneEngine {
 
   /** 单节点创建（工厂分发 + 挂树 + 视觉层重挂） */
   private createNode(type: string, node: SceneNode): THREE.Object3D | null {
-    const factory = this.factories.get(type);
-    if (!factory) {
+    const entry = this.factories.get(type);
+    if (!entry) {
       console.warn(`[SceneEngine] 未注册的物体类型: ${type}（id=${node.id}），跳过`);
       return null;
     }
-    const obj = factory(node);
+    const obj = entry.definition
+      ? entry.definition.create(node, this.factoryContext ?? this.defaultFactoryContext())
+      : entry.legacy!(node);
     if (!obj) {
       return null;
     }
     obj.name = node.id;
+    // 资源登记（P3-RR1/RRRR1）：按实际资源粒度 exclusive 登记；recreate 时子节点
+    // 实体先重挂到新实例（recreateNode），收集须跳过业务子节点子树（归各自登记）
+    acquireObjectResources(
+      getResourceScope(this), node.id, obj,
+      (o) => o !== obj && this.entries.get(o.name)?.obj === o,
+    );
     this.attachObject(type, node, obj);
     return obj;
+  }
+
+  /** definition 回调上下文兜底（未显式传入时按引擎自身构造） */
+  private defaultFactoryContext(): FactoryContext {
+    if (!this.factoryContext) {
+      // 弱依赖循环导入规避：edit 侧装配时总会传入；独立使用（测试）给最小面
+      this.factoryContext = {
+        sceneEngine: this,
+        assetEngine: null as unknown as FactoryContext['assetEngine'],
+        renderLoop: null as unknown as FactoryContext['renderLoop'],
+      };
+    }
+    return this.factoryContext;
   }
 
   /** 挂到父节点（或场景根）并登记索引 */
@@ -503,7 +629,13 @@ export class SceneEngine {
     this.emitNodeEvent('created', node.id);
   }
 
-  /** 重建节点（视觉清除/结构性变化时：同 id 重建实例）。子节点实体重挂到新实例下，不留孤儿 */
+  /**
+   * 重建节点（视觉清除/结构性变化时：同 id 重建实例）。子节点实体重挂到新实例下，不留孤儿。
+   * P3-R2：node 必须是**完整节点**（片段语义「缺的不动」已由调用方合成——
+   * updateNodeInPlace 合并原 node 后才进来；applyFragment 的类型变化路径同样先合并）。
+   * P3-R3：子节点实体先脱离旧树再释放旧实例——release/dispose 的整树遍历
+   * 不得触及仍存活的子节点（其资源归子节点自己的登记，随父重建保留）。
+   */
   private recreateNode(type: string, node: SceneNode): void {
     const old = this.entries.get(node.id);
     if (!old) {
@@ -517,15 +649,28 @@ export class SceneEngine {
         childObjs.push(e.obj);
       }
     });
+    // P3-R3：先脱离——子节点实体从旧树解挂后再释放旧实例，dispose 遍历不再命中它们
+    childObjs.forEach((child) => {
+      child.removeFromParent();
+    });
     old.obj.removeFromParent();
     this.entries.delete(node.id);
     this.emitNodeEvent('removed', node.id);
+    // 旧实例资源结算（P3-R3：唯一释放路径 = ResourceScope.release；definition.dispose
+    // 先跑工厂私有清理；disposeInstance 已由 scope 的 disposeResource 等价覆盖，不再双调）
+    this.disposeFactoryObject(type, old.obj);
+    getResourceScope(this).release(node.id);
     const obj = this.createNode(type, node);
     if (obj) {
       childObjs.forEach((child) => {
         obj.add(child);
       });
     }
+  }
+
+  /** definition.dispose 回调（factory 持有的闭包表/帧回调等非 GPU 资源） */
+  private disposeFactoryObject(type: string, obj: THREE.Object3D): void {
+    this.factories.get(type)?.definition?.dispose?.(obj, this.factoryContext ?? this.defaultFactoryContext());
   }
 
   /** 全量建树（初始化时一次），按 parentId 依赖序排布创建 */
@@ -569,7 +714,7 @@ export class SceneEngine {
    * 3. params 整块替换；__visuals 应用编辑器视觉层
    */
   applyFragment(frag: TreeSceneFragment): UpdateStats {
-    const stats: UpdateStats = { created: [], updated: [], removed: [] };
+    const stats: UpdateStats = { created: [], updated: [], removed: [], rebuilt: [] };
 
     // 1. remove 先行
     if (frag.remove?.length) {
@@ -600,11 +745,17 @@ export class SceneEngine {
         visit(pending.get(parentId)!);
       }
       if (this.entries.get(incoming.id)?.type === item.type) {
-        this.updateNodeInPlace(this.entries.get(incoming.id)!, incoming);
-        stats.updated.push(incoming.id);
+        const verdict = this.updateNodeInPlace(this.entries.get(incoming.id)!, incoming);
+        if (verdict === 'rebuild') {
+          stats.rebuilt.push(incoming.id);
+        } else {
+          stats.updated.push(incoming.id);
+        }
       } else if (this.entries.has(incoming.id)) {
-        this.recreateNode(item.type, incoming);
-        stats.updated.push(incoming.id);
+        // P3-R2：类型变化重建——同样先合成完整节点（片段未提交字段沿用原值）
+        const cur = this.entries.get(incoming.id)!.node;
+        this.recreateNode(item.type, { ...cur, ...stripUndefined(incoming) });
+        stats.rebuilt.push(incoming.id);
       } else if (this.createNode(item.type, incoming)) {
         stats.created.push(incoming.id);
       }
@@ -644,30 +795,57 @@ export class SceneEngine {
    * 契约（types.ts TreeSceneFragment）：节点字段全部可选，**缺的不动**——
    * 编辑器片段（Gizmo/对齐只发 transform）不得抹掉业务 params/card。
    * params/card 显式给值才替换（整块替换语义只对「给了数据」生效）。
+   *
+   * params 变化走 factory 契约（P3.1）：
+   * - JSON 值相同（键序无关）→ 不重放不重建（幂等）
+   * - definition.update 存在 → 调用；'updated' 保实例，'rebuild' 局部重建
+   * - 旧 function / 无 update → 局部重建兜底（不再是静默只存数据）
+   * transform 永远引擎处理（update 契约不收 transform），保实例身份。
+   *
+   * P3-R1：previous 是调用前完整节点的**深快照**（修改索引前拍），next 是
+   * 合并后的完整节点——definition.update 拿到的是真实前后值，不是已覆盖的索引。
+   * P3-R2：rebuild 路径喂**合成完整节点**（片段未提交字段沿用原值），
+   * transform/card/父链不因片段只带 params 而丢失。
+   * @returns 'updated'（原地，含无变化）| 'rebuild'（触发了局部重建）
    */
-  private updateNodeInPlace(entry: NodeEntry, incoming: SceneNode): void {
+  private updateNodeInPlace(entry: NodeEntry, incoming: SceneNode): 'updated' | 'rebuild' {
     const { obj } = entry;
+
+    // P3-R1：进入即拍旧节点快照（结构化拷贝——后续所有索引写入都不污染 previous）
+    const previous: SceneNode = {
+      ...entry.node,
+      params: entry.node.params === undefined ? undefined : { ...entry.node.params },
+      card: entry.node.card === undefined ? undefined : { ...entry.node.card },
+    };
+
+    // 合成完整 next（P3-R2：「缺的不动」——片段未给的字段沿用当前值）。
+    // card:null 是 Bridge 快照恢复的显式清除哨兵 → 归一为 undefined（无卡片）
+    const next: SceneNode = { ...entry.node, ...stripUndefined(incoming) };
+    if (incoming.card === null) {
+      next.card = undefined;
+    }
+    next.params = incoming.params !== undefined ? incoming.params : entry.node.params;
+    next.card = incoming.card !== undefined ? next.card : entry.node.card;
+
     // parentId：undefined = 不动；显式 null = 解挂到场景根
-    if (incoming.parentId !== undefined) {
-      const newParentId = incoming.parentId ?? null;
-      if ((entry.node.parentId ?? null) !== newParentId) {
+    if (next.parentId !== undefined) {
+      const newParentId = next.parentId ?? null;
+      if ((previous.parentId ?? null) !== newParentId) {
         const parent = newParentId ? this.entries.get(newParentId)?.obj : undefined;
         if (newParentId && !parent) {
           console.warn(`[SceneEngine] 更新时父节点不存在: ${newParentId}（id=${entry.node.id}），保持原父`);
+          next.parentId = previous.parentId ?? null;
         } else {
           (parent ?? this.scene).add(obj);
         }
-        entry.node.parentId = newParentId;
       }
     }
-    // transform（显式字段，引擎消费）
+    // transform（显式字段，引擎消费——任何 factory 契约都不处理 transform）
     if (incoming.position !== undefined) {
       obj.position.set(...(incoming.position as Vec3));
-      entry.node.position = incoming.position;
     }
     if (incoming.rotation !== undefined) {
       obj.rotation.set(...(incoming.rotation as Vec3));
-      entry.node.rotation = incoming.rotation;
     }
     if (incoming.scale !== undefined) {
       const s = incoming.scale;
@@ -676,16 +854,39 @@ export class SceneEngine {
       } else {
         obj.scale.set(...(s as Vec3));
       }
-      entry.node.scale = s;
     }
-    // card / params：给了才整块替换（undefined = 不动；显式值 = 替换）
-    if (incoming.card !== undefined) {
-      entry.node.card = incoming.card;
+
+    // params 值比较（previous vs next——都已是完整语义值）
+    const changed = !paramsEqual(previous.params, next.params);
+
+    // 索引整体换新（P3-R2：entry.node = 完整合成节点——片段不丢字段）
+    entry.node = next;
+
+    if (!changed || incoming.params === undefined) {
+      return 'updated';
     }
-    if (incoming.params !== undefined) {
-      entry.node.params = incoming.params;
-      this.emitNodeEvent('updated', incoming.id);
+
+    const factory = this.factories.get(entry.type);
+    if (factory?.definition?.update) {
+      const verdict = factory.definition.update(
+        obj, next, previous, this.factoryContext ?? this.defaultFactoryContext(),
+      );
+      this.emitNodeEvent('updated', next.id);
+      if (verdict === 'rebuild') {
+        // 结构参数：局部重建（next 已是完整节点——保 transform/card/父链；
+        // 子节点重挂/视觉层重挂由 recreateNode 处理）
+        this.recreateNode(entry.type, next);
+        return 'rebuild';
+      }
+      // P3-RRR1：definition.update 原地路径可能替换材质/几何——资源集对账
+      // （RRRR1：经 syncResourcesFor 带节点边界与受影响子节点同步）
+      this.syncResourcesFor(next.id, obj);
+      return 'updated';
     }
+    // 旧 function / definition 无 update：局部重建兜底（视觉层与子节点重挂由 recreateNode 处理）
+    this.recreateNode(entry.type, next);
+    this.emitNodeEvent('updated', next.id);
+    return 'rebuild';
   }
 
   /** 删除物体（含子树级联），返回全部被删 id */
@@ -708,10 +909,14 @@ export class SceneEngine {
       });
     }
     const removed: string[] = [];
+    // P3-R3：先整体摘树（父子都 removeFromParent + 清 entries），再统一释放——
+    // 顺序释放会让父的整树遍历命中尚未摘下的子 mesh（双 dispose）
+    const targets: Array<{ eid: string; type: string; obj: THREE.Object3D }> = [];
     toRemove.forEach((eid) => {
       const target = this.entries.get(eid);
       if (target) {
-        disposeInstance(target.obj);
+        this.disposeFactoryObject(target.type, target.obj);
+        targets.push({ eid, type: target.type, obj: target.obj });
         target.obj.removeFromParent();
         this.entries.delete(eid);
         this.visuals.delete(eid);
@@ -719,11 +924,25 @@ export class SceneEngine {
         removed.push(eid);
       }
     });
+    const scope = getResourceScope(this);
+    targets.forEach(({ eid }) => {
+      scope.release(eid);
+    });
     return removed;
   }
 
   /** dispose：清空场景（GPU 资源由 AssetEngine/RendererEngine 各自释放） */
   dispose(): void {
+    // P3.4：业务 handler 注册的退订句柄（帧回调/订阅）统一回收
+    const engineAny = this as unknown as { __handlerTeardowns?: Array<() => void> };
+    engineAny.__handlerTeardowns?.forEach((off) => off());
+    engineAny.__handlerTeardowns = [];
+    // P3.2：资源域兜底释放（factory 独立资源 + teardown 句柄）。
+    // AssetEngine.dispose 负责缓存根；这里释放登记的 exclusive/shared 资源
+    this.entries.forEach((entry) => {
+      this.disposeFactoryObject(entry.type, entry.obj);
+    });
+    getResourceScope(this).releaseAll();
     this.scene.clear();
     this.entries.clear();
     this.visuals.clear();

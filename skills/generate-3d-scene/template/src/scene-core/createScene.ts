@@ -262,11 +262,14 @@ export const createScene = async (
 
   // 业务 factory 注册（P2.1）：内建工厂之后、建树之前——首次建树即命中，
   // 消灭"建树后注册再重喂"的旧时序。run/edit 共用同一 profile（scene-profile.ts）。
-  options.profile?.({
+  // P3.1：context 含完整 FactoryContext（definition 工厂的 create/update/dispose 用）。
+  const factoryContext = {
     sceneEngine,
     assetEngine,
     renderLoop,
-  });
+  };
+  sceneEngine.registerFactoryContext(factoryContext);
+  options.profile?.(factoryContext);
 
   // 全量建树 + 卡片同步
   sceneEngine.buildTree(toGroups(data));

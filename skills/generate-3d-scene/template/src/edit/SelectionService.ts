@@ -80,14 +80,14 @@ export class SelectionService {
     }
   };
 
-  /** 选中变化后重建包围盒 */
+  /**
+   * 选中变化后同步包围盒（P3.4：幂等复用——同 key 同 target 同色不重建 helper，
+   * 只清多余/失效项。undo 差量恢复后选区通常不变，避免每次重建 BoxHelper 的
+   * geometry/material 分配）。
+   */
   syncHighlights(): void {
-    this.highlights.forEach((helper) => {
-      helper.removeFromParent();
-      helper.geometry.dispose();
-      (helper.material as THREE.Material).dispose();
-    });
-    this.highlights.clear();
+    // 目标集合：key → { obj, color }
+    const targets = new Map<string, { obj: THREE.Object3D; color: number }>();
 
     // 子网格槽位选中态：包围盒只包该 mesh（EditMaterial 聚焦的视觉反馈）
     const slot = this.bridge.selectedSlot;
@@ -96,18 +96,38 @@ export class SelectionService {
       if (entry) {
         const target = findBySlotKey(entry, slot.slotKey);
         if (target) {
-          this.addHelper(target, ANCHOR_COLOR, `slot:${slot.slotKey}`);
-          return;
+          targets.set(`slot:${slot.slotKey}`, { obj: target, color: ANCHOR_COLOR });
         }
       }
     }
 
-    const ids = this.bridge.selectedIds;
-    const anchorId = this.bridge.anchorId;
-    for (const id of ids) {
-      const obj = this.handle.internals.sceneEngine.getObject(id);
-      if (obj) {
-        this.addHelper(obj, id === anchorId ? ANCHOR_COLOR : SELECT_COLOR, id);
+    if (targets.size === 0) {
+      const ids = this.bridge.selectedIds;
+      const anchorId = this.bridge.anchorId;
+      for (const id of ids) {
+        const obj = this.handle.internals.sceneEngine.getObject(id);
+        if (obj) {
+          targets.set(id, { obj, color: id === anchorId ? ANCHOR_COLOR : SELECT_COLOR });
+        }
+      }
+    }
+
+    // 差量：失效的（不在目标集 / target 换了对象）清掉；仍有效的保留复用
+    for (const [key, helper] of [...this.highlights]) {
+      const want = targets.get(key);
+      const cur = helper.userData.target as THREE.Object3D | undefined;
+      const curColor = (helper.material as THREE.LineBasicMaterial).color.getHex();
+      if (!want || cur !== want.obj || curColor !== want.color) {
+        helper.removeFromParent();
+        helper.geometry.dispose();
+        (helper.material as THREE.Material).dispose();
+        this.highlights.delete(key);
+      }
+    }
+    // 新增的（目标集有而 highlights 没有）
+    for (const [key, { obj, color }] of targets) {
+      if (!this.highlights.has(key)) {
+        this.addHelper(obj, color, key);
       }
     }
   }

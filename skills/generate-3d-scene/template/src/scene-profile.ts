@@ -34,7 +34,7 @@ const registerExampleBusiness = ({ sceneEngine, assetEngine, renderLoop }: Busin
   registerExampleHandler(
     sceneEngine,
     assetEngine,
-    (cb) => void renderLoop.onFrame((delta) => cb(delta)),
+    (cb) => renderLoop.onFrame((delta) => cb(delta)),
     getLoadBadgeState(assetEngine).onCount,
   );
 };

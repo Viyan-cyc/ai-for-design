@@ -66,6 +66,11 @@ const { installDiagnostics, waitForReady, getPageErrorSink } =
 const { makeAssetNodeFactory } = await import(pathToFileURL(join(template, 'src/scene-core/handlers/registry.ts')));
 const { SceneEngine } = await import(pathToFileURL(join(template, 'src/scene-core/engine/SceneEngine.ts')));
 const { RenderLoop } = await import(pathToFileURL(join(template, 'src/scene-core/engine/RenderLoop.ts')));
+const { paramsEqual } = await import(pathToFileURL(join(template, 'src/scene-core/types.ts')));
+const { getResourceScope } = await import(pathToFileURL(join(template, 'src/scene-core/resources.ts')));
+const { registerTreeHandler } = await import(pathToFileURL(join(template, 'src/scene-core/handlers/procedural/tree.ts')));
+const { registerRackHandler } = await import(pathToFileURL(join(template, 'src/scene-core/handlers/procedural/rack.ts')));
+const { handlerUtils } = await import(pathToFileURL(join(template, 'src/scene-core/handlers/registry.ts')));
 
 let passed = 0; let failed = 0;
 const filterArg = process.argv.find((arg) => arg.startsWith('--filter='));
@@ -419,6 +424,655 @@ await test('legacy ready is SKIP/INCONCLUSIVE, never strict PASS', async () => {
   const result = await waitReady(async () => false);
   assert.equal(result.status, 'SKIP');
   assert.equal(summarize([{ status: result.status }]), 'INCONCLUSIVE');
+});
+
+// ── P3 行为回归（生产函数直跑：真 SceneEngine + typed definition + 资源域） ──
+
+await test('P3 paramsEqual: key-order-insensitive, deep, NaN-unequal', () => {
+  assert.equal(paramsEqual({ a: 1, b: [1, 2] }, { b: [1, 2], a: 1 }), true);
+  assert.equal(paramsEqual({ a: 1 }, { a: 2 }), false);
+  assert.equal(paramsEqual({ a: { x: 1 } }, { a: { x: 1, y: 2 } }), false);
+  assert.equal(paramsEqual(undefined, undefined), true);
+  assert.equal(paramsEqual({ a: 1 }, undefined), false);
+  assert.equal(paramsEqual({ a: NaN }, { a: NaN }), false);
+});
+
+await test('P3 typed factory: params change → update contract; same params → idempotent no-op', () => {
+  const engine = new SceneEngine();
+  const updated = [];
+  engine.registerFactory('things', {
+    create(node) {
+      const m = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshStandardMaterial());
+      m.userData.level = node.params?.level ?? 0;
+      return m;
+    },
+    update(obj, next) {
+      obj.userData.level = next.params?.level ?? 0;
+      updated.push(next.id);
+      return 'updated';
+    },
+  });
+  engine.applyFragment({ things: [{ id: 't1', params: { level: 1 } }] });
+  const objBefore = engine.getObject('t1');
+  // 同值 params（键序不同）重推：幂等——不调 update 不重建
+  let stats = engine.applyFragment({ things: [{ id: 't1', params: { level: 1 } }] });
+  assert.equal(engine.getObject('t1'), objBefore);
+  assert.equal(stats.rebuilt.length, 0);
+  assert.equal(stats.updated.length, 1);
+  // 值变化：走 definition.update（原地），保实例身份
+  stats = engine.applyFragment({ things: [{ id: 't1', params: { level: 2 } }] });
+  assert.equal(engine.getObject('t1'), objBefore);
+  assert.equal(objBefore.userData.level, 2);
+  assert.deepEqual(updated, ['t1']);
+  assert.equal(stats.rebuilt.length, 0);
+  engine.dispose();
+});
+
+await test('P3-R1 real registerTreeHandler: height structural change takes effect via update contract', () => {
+  // 真实生产 handler（非假工厂）：height 是结构参数，previous/previous.params 语义正确
+  const engine = new SceneEngine();
+  registerTreeHandler(engine);
+  engine.applyFragment({ trees: [{ id: 't1', params: { height: 1 } }] });
+  const trunkBefore = engine.getObject('t1').children.find((c) => c.name === 'trunk');
+  const hBefore = trunkBefore.geometry.parameters.height;
+  // height 1 → 3：definition.update 收到正确 previous（R1 修复前 previous.params 已被覆盖成 3，
+  // 恒等比较 → 误判"未变"→ 静默不重建，geometry 仍是 0.9 高）
+  const stats = engine.applyFragment({ trees: [{ id: 't1', params: { height: 3 } }] });
+  const trunkAfter = engine.getObject('t1').children.find((c) => c.name === 'trunk');
+  assert.equal(stats.rebuilt[0], 't1', 'height 变化应判定结构重建');
+  const hAfter = trunkAfter.geometry.parameters.height;
+  assert.ok(Math.abs(hAfter - hBefore * 3) < 1e-9, `重建后树干高度应×3：before=${hBefore} after=${hAfter}`);
+  // 颜色参数原地重放：不重建、改材质色
+  const objBeforeColor = engine.getObject('t1');
+  const statsColor = engine.applyFragment({ trees: [{ id: 't1', params: { height: 3, trunkColor: '#123456' } }] });
+  assert.equal(engine.getObject('t1'), objBeforeColor, '颜色参数不得重建');
+  assert.equal(statsColor.rebuilt.length, 0);
+  const trunkMesh = engine.getObject('t1').children.find((c) => c.name === 'trunk');
+  assert.equal(`#${trunkMesh.material.color.getHexString()}`, '#123456');
+  engine.dispose();
+});
+
+await test('P3-R1 real registerRackHandler: rows structural vs bodyColor in-place', () => {
+  const engine = new SceneEngine();
+  registerRackHandler(engine);
+  engine.applyFragment({ coderacks: [{ id: 'r1', params: { rows: 6 } }] });
+  const countServers = () => engine.getObject('r1').children.filter((c) => /server_\d+$/.test(c.name)).length;
+  assert.equal(countServers(), 6);
+  // rows 6 → 3：结构重建
+  const stats = engine.applyFragment({ coderacks: [{ id: 'r1', params: { rows: 3 } }] });
+  assert.equal(stats.rebuilt[0], 'r1');
+  assert.equal(countServers(), 3, 'rows=3 应只有 3 仓段');
+  // bodyColor 原地重放
+  const before = engine.getObject('r1');
+  engine.applyFragment({ coderacks: [{ id: 'r1', params: { rows: 3, bodyColor: '#abcdef' } }] });
+  assert.equal(engine.getObject('r1'), before, 'bodyColor 不得重建');
+  const sidePanel = engine.getObject('r1').children.find((c) => c.name === 'panel_side_l');
+  assert.equal(`#${sidePanel.material.color.getHexString()}`, '#abcdef');
+  engine.dispose();
+});
+
+await test('P3-R2 fragment params-only update keeps transform/card/parent (legacy + definition paths)', () => {
+  // legacy 路径：已有 position/scale/card 的节点只发 params → 重建不得丢字段
+  const legacy = new SceneEngine();
+  legacy.registerFactory('things', (node) => {
+    const g = new THREE.Group();
+    handlerUtils.applyTransform(g, node);
+    return g;
+  });
+  legacy.applyFragment({ things: [{ id: 'n1', position: [8, 2, 3], scale: 2, card: { type: 'example' }, params: { v: 1 } }] });
+  legacy.applyFragment({ things: [{ id: 'n1', params: { v: 2 } }] });
+  let n = legacy.getNode('n1');
+  assert.deepEqual(n.position, [8, 2, 3], 'legacy 重建后 position 保留');
+  assert.equal(n.scale, 2, 'legacy 重建后 scale 保留（数据层原值形态）');
+  assert.deepEqual(n.card, { type: 'example' }, 'legacy 重建后 card 保留');
+  assert.equal(legacy.getObject('n1').position.x, 8, '实例 transform 同步');
+  assert.equal(legacy.getObject('n1').scale.x, 2, '实例 scale 同步');
+  legacy.dispose();
+  // definition 路径（真 tree handler）：height rebuild 只带 params，transform 保留
+  const def = new SceneEngine();
+  registerTreeHandler(def);
+  def.applyFragment({ trees: [{ id: 't1', position: [5, 0, 1], rotation: [0, 1, 0], params: { height: 1 } }] });
+  def.applyFragment({ trees: [{ id: 't1', params: { height: 2 } }] });
+  const t = def.getNode('t1');
+  assert.deepEqual(t.position, [5, 0, 1], 'definition rebuild 后 position 保留');
+  assert.deepEqual(t.rotation, [0, 1, 0], 'definition rebuild 后 rotation 保留');
+  assert.equal(def.getObject('t1').position.x, 5, '新实例 transform 已应用');
+  // 类型变化路径同样合并
+  def.registerFactory('others', () => new THREE.Group());
+  def.applyFragment({ others: [{ id: 't1', params: { x: 1 } }] });
+  assert.deepEqual(def.getNode('t1').position, [5, 0, 1], '类型变化重建后 transform 保留');
+  assert.equal(def.getNodeType('t1'), 'others');
+  def.dispose();
+});
+
+await test('P3-R3 parent rebuild: surviving child resources not disposed, no double-dispose', () => {
+  const engine = new SceneEngine();
+  // 精确 dispose 计数：patch geometry.dispose/material.dispose
+  let geoDisposes = 0;
+  let matDisposes = 0;
+  engine.registerFactory('parents', () => new THREE.Group());
+  engine.registerFactory('kids', () => {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshStandardMaterial());
+    const g = new THREE.Group();
+    g.add(m);
+    const origGeo = m.geometry.dispose.bind(m.geometry);
+    const origMat = m.material.dispose.bind(m.material);
+    m.geometry.dispose = () => { geoDisposes += 1; origGeo(); };
+    m.material.dispose = () => { matDisposes += 1; origMat(); };
+    return g;
+  });
+  engine.applyFragment({
+    parents: [{ id: 'p1', params: { a: 1 } }],
+    kids: [{ id: 'k1', parentId: 'p1' }],
+  });
+  const childObj = engine.getObject('k1');
+  const childNode = engine.getNode('k1');
+  // 父 params 变化 → 父重建（legacy 兜底）；子节点实体重挂、资源不释放
+  engine.applyFragment({ parents: [{ id: 'p1', params: { a: 2 } }] });
+  assert.equal(engine.getObject('k1'), childObj, '子节点实例保留（重挂到新父）');
+  assert.equal(engine.getNode('k1'), childNode || engine.getNode('k1'), '子节点数据保留');
+  assert.equal(engine.getObject('p1').children.includes(childObj), true, '子实体已挂到新父实例');
+  assert.equal(geoDisposes, 0, '存活子节点 geometry 不得收到 dispose（R3：先脱离再释放）');
+  assert.equal(matDisposes, 0, '存活子节点 material 不得收到 dispose');
+  // 删除父 → 级联删子：子资源恰好释放一次（无双 dispose）
+  engine.applyFragment({ remove: ['p1'] });
+  assert.equal(geoDisposes, 1, `级联删除后子 geometry 应恰好 dispose 一次（got ${geoDisposes}）`);
+  assert.equal(matDisposes, 1, `级联删除后子 material 应恰好 dispose 一次（got ${matDisposes}）`);
+  engine.dispose();
+});
+
+await test('P3-R3 repeated create/remove cycles dispose exactly once per resource', () => {
+  const engine = new SceneEngine();
+  let disposes = 0;
+  engine.registerFactory('things', () => {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshStandardMaterial());
+    const orig = m.geometry.dispose.bind(m.geometry);
+    m.geometry.dispose = () => { disposes += 1; orig(); };
+    return m;
+  });
+  // 100 次增删（V14 缩样）：每次 create 的资源在 remove 时恰好释放一次
+  for (let i = 0; i < 50; i++) {
+    engine.applyFragment({ things: [{ id: 'x1' }] });
+    engine.applyFragment({ remove: ['x1'] });
+  }
+  assert.equal(disposes, 50, `50 轮增删应恰好 50 次 dispose（got ${disposes}——泄漏或双释放）`);
+  // recreate 路径同样单次
+  engine.applyFragment({ things: [{ id: 'x1', params: { a: 1 } }] });
+  engine.applyFragment({ things: [{ id: 'x1', params: { a: 2 } }] });
+  assert.equal(disposes, 51, 'rebuild 旧实例恰好释放一次');
+  engine.dispose();
+});
+
+await test('P3-R4 real Bridge undo/redo restores snapshot-missing fields, keeps identities', async () => {
+  const { Bridge } = await import(pathToFileURL(join(template, 'src/edit/Bridge.ts')));
+  // 真 SceneEngine + 真 Bridge（handle 门面只接 Bridge 实际消费的面：update/serialize/internals）
+  const engine = new SceneEngine();
+  engine.registerFactory('things', () => new THREE.Group());
+  const groupsSnapshot = () => {
+    const out = {};
+    for (const type of engine.getGroupNames()) {
+      out[type] = engine.getNodesWithType(type).map((n) => structuredClone(n));
+    }
+    return out;
+  };
+  const handle = {
+    update: (frag) => engine.applyFragment(frag),
+    serialize: () => {
+      const visuals = engine.getAllVisuals();
+      const data = groupsSnapshot();
+      if (Object.keys(visuals).length > 0) {
+        data.__visuals = structuredClone(visuals);
+      }
+      return data;
+    },
+    internals: { sceneEngine: engine },
+  };
+  const bridge = new Bridge(handle);
+  // 初始：a 无 transform/params
+  bridge.commit('初始', () => handle.update({ things: [{ id: 'a' }] }));
+  // 新增 transform + params（快照外字段）
+  bridge.commit('添加变换与参数', () => handle.update({ things: [{ id: 'a', position: [9, 0, 0], params: { v: 2 } }] }));
+  assert.deepEqual(engine.getNode('a').position, [9, 0, 0]);
+  // undo → 回到 {id:'a'}：position/params 必须显式恢复默认（R4 修复前按 patch 合并残留）
+  bridge.undo();
+  const restored = engine.getNode('a');
+  assert.deepEqual(restored.position, [0, 0, 0], 'undo 后 position 应恢复默认（旧实现残留 [9,0,0]）');
+  assert.deepEqual(restored.params, {}, 'undo 后 params 应恢复空（旧实现残留 {v:2}）');
+  assert.equal(engine.getObject('a').position.x, 0, '实例 transform 同步恢复');
+  // redo → 变换回来
+  bridge.redo();
+  assert.deepEqual(engine.getNode('a').position, [9, 0, 0], 'redo 恢复变换');
+  assert.deepEqual(engine.getNode('a').params, { v: 2 });
+  // undo 不重建未变节点身份
+  bridge.commit('无关操作', () => handle.update({ things: [{ id: 'a', rotation: [0, 1, 0] }] }));
+  const objA = engine.getObject('a');
+  bridge.undo();
+  assert.equal(engine.getObject('a'), objA, 'undo 差量恢复保实例身份');
+  assert.deepEqual(engine.getNode('a').rotation, [0, 0, 0], 'undo 恢复 rotation 默认');
+  // 父链变化 undo：child 挂回原父
+  bridge.commit('挂父', () => handle.update({ things: [{ id: 'b' }, { id: 'c', parentId: 'b' }] }));
+  bridge.commit('改父', () => handle.update({ things: [{ id: 'c', parentId: 'a' }] }));
+  assert.equal(engine.getNode('c').parentId, 'a');
+  bridge.undo();
+  assert.equal(engine.getNode('c').parentId, 'b', 'undo 恢复父链');
+  // 序列化一致性：serialize 后节点形态与引擎态一致
+  const snap = handle.serialize();
+  assert.ok(Array.isArray(snap.things) && snap.things.length >= 2, 'serialize 含全部分组节点');
+  engine.dispose();
+});
+
+await test('P3 transform-only update preserves instance identity (V07)', () => {
+  const engine = new SceneEngine();
+  let creates = 0;
+  engine.registerFactory('things', {
+    create() {
+      creates += 1;
+      return new THREE.Group();
+    },
+  });
+  engine.applyFragment({ things: [{ id: 't1' }] });
+  const obj = engine.getObject('t1');
+  const stats = engine.applyFragment({ things: [{ id: 't1', position: [5, 0, 0], rotation: [0, 1, 0], scale: 2 }] });
+  assert.equal(engine.getObject('t1'), obj, 'transform 更新不得重建实例');
+  assert.equal(creates, 1);
+  assert.equal(stats.rebuilt.length, 0);
+  assert.equal(obj.position.x, 5);
+  engine.dispose();
+});
+
+await test('P3 legacy function factory: params change falls back to local rebuild (no silent no-op)', () => {
+  const engine = new SceneEngine();
+  let creates = 0;
+  engine.registerFactory('things', () => {
+    creates += 1;
+    return new THREE.Group();
+  });
+  engine.applyFragment({ things: [{ id: 't1', params: { a: 1 } }] });
+  const before = engine.getObject('t1');
+  const stats = engine.applyFragment({ things: [{ id: 't1', params: { a: 2 } }] });
+  assert.notEqual(engine.getObject('t1'), before, '旧 function 无 update → params 变化必须重建，不能静默只存数据');
+  assert.equal(creates, 2);
+  assert.equal(stats.rebuilt[0], 't1');
+  engine.dispose();
+});
+
+await test('P3 resource scope: recreate releases exclusive old instance resources (V14 core)', () => {
+  const engine = new SceneEngine();
+  engine.registerFactory('things', () => new THREE.Group());
+  engine.applyFragment({ things: [{ id: 't1', params: { a: 1 } }] });
+  const old = engine.getObject('t1');
+  const scope = getResourceScope(engine);
+  // 实际资源粒度（RR1）：Object3D 根不登记；mesh 的 geometry/material 逐个登记
+  assert.equal(scope.isTracked(old), false, 'Object3D 根不得登记（RR1：树遍历释放绕过共享登记）');
+  engine.applyFragment({ things: [{ id: 't1', params: { a: 2 } }] });
+  assert.equal(engine.getObject('t1') !== old, true);
+  engine.dispose();
+});
+
+await test('P3 resource scope: shared resource outlives single owner exit', () => {
+  const engine = new SceneEngine();
+  engine.registerFactory('things', () => new THREE.Group());
+  engine.applyFragment({ things: [{ id: 'a' }, { id: 'b' }] });
+  const scope = getResourceScope(engine);
+  const sharedMat = new THREE.MeshStandardMaterial();
+  scope.acquire('a', sharedMat, 'shared');
+  scope.acquire('b', sharedMat, 'shared');
+  assert.equal(scope.refCount(sharedMat), 2);
+  scope.release('a');
+  assert.equal(scope.refCount(sharedMat), 1, '剩余 owner 仍在，shared 资源不得释放');
+  scope.release('b');
+  assert.equal(scope.isTracked(sharedMat), false, '最后一个 owner 退出才释放');
+  engine.dispose();
+});
+
+await test('P3-RR1 real engine: shared material survives first owner removal, disposed exactly once', () => {
+  // 真实生产链路：两个节点共用同一 material（显式 shared 登记两 owner）——
+  // RR1 修复前：根 Object3D exclusive 释放整树遍历 dispose 共享材质（旁路 refcount）
+  const engine = new SceneEngine();
+  const scope = getResourceScope(engine);
+  const sharedMat = new THREE.MeshStandardMaterial();
+  let matDisposes = 0;
+  const origDispose = sharedMat.dispose.bind(sharedMat);
+  sharedMat.dispose = () => { matDisposes += 1; origDispose(); };
+  engine.registerFactory('things', () => {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(), sharedMat);
+    const g = new THREE.Group();
+    g.add(m);
+    return g;
+  });
+  engine.applyFragment({ things: [{ id: 'a' }, { id: 'b' }] });
+  // 显式 shared 登记（两个 owner 都在用同一材质实例）
+  scope.acquire('a', sharedMat, 'shared');
+  scope.acquire('b', sharedMat, 'shared');
+  // 删除第一个节点：共享材质不得释放（存活节点 b 仍使用）
+  engine.applyFragment({ remove: ['a'] });
+  assert.equal(matDisposes, 0, '删除 a 后共享材质不得被 dispose（b 仍在用）');
+  assert.equal(scope.refCount(sharedMat), 1, 'refCount 应降为 1');
+  assert.equal(scope.isTracked(sharedMat), true);
+  // 删除第二个：恰好释放一次
+  engine.applyFragment({ remove: ['b'] });
+  assert.equal(matDisposes, 1, `最后一个 owner 退出应恰好 dispose 一次（got ${matDisposes}）`);
+  assert.equal(scope.isTracked(sharedMat), false);
+  engine.dispose();
+});
+
+await test('P3-RR1 real engine: parent-child whole dispose counts exactly once per resource', () => {
+  // 父子节点整体 engine.dispose：子 geometry 恰好 1 次 dispose（RR1 修复前父树遍历命中子=2 次）
+  const engine = new SceneEngine();
+  let childGeoDisposes = 0;
+  engine.registerFactory('parents', () => new THREE.Group());
+  engine.registerFactory('kids', () => {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshStandardMaterial());
+    const g = new THREE.Group();
+    g.add(m);
+    const orig = m.geometry.dispose.bind(m.geometry);
+    m.geometry.dispose = () => { childGeoDisposes += 1; orig(); };
+    return g;
+  });
+  engine.applyFragment({
+    parents: [{ id: 'p1' }],
+    kids: [{ id: 'k1', parentId: 'p1' }],
+  });
+  engine.dispose();
+  assert.equal(childGeoDisposes, 1, `整体销毁后子 geometry 应恰好 dispose 一次（got ${childGeoDisposes}）`);
+});
+
+await test('P3 duplicate-object visuals do not clobber other nodes (F06/V09 core)', () => {
+  const engine = new SceneEngine();
+  engine.registerFactory('things', () => new THREE.Group());
+  engine.applyFragment({ things: [{ id: 'A' }, { id: 'B' }] });
+  // A、B 各有自己的视觉层（改色/锁定）
+  engine.applyVisual('A', { color: '#ff0000', locked: true });
+  engine.applyVisual('B', { color: '#00ff00' });
+  // 复制 A（P3.3 语义：patchVisual 单节点，其他节点视觉层不动）
+  engine.applyFragment({ things: [{ id: 'A_copy_001', position: [1, 0, 0] }] });
+  engine.patchVisual('A_copy_001', { color: '#ff0000' });
+  assert.equal(engine.getVisual('B')?.color, '#00ff00', '复制不得清除 B 的视觉层');
+  assert.equal(engine.getVisual('A')?.locked, true, '复制不得清除 A 的视觉层');
+  assert.equal(engine.getVisual('A_copy_001')?.color, '#ff0000', '副本带源视觉');
+  // 对照：旧实现 update({__visuals: {A_copy: ...}}) 整表替换会把 A/B 全清掉
+  engine.dispose();
+});
+
+await test('P3 EnvironmentEngine: intensity-only change does not regenerate PMREM (V16 core)', async () => {
+  const { EnvironmentEngine } = await import(pathToFileURL(join(template, 'src/scene-core/engine/EnvironmentEngine.ts')));
+  // Node 无 WebGL：注入计数 fake PMREM（测试缝 pmremFactory；生产恒真 PMREMGenerator）
+  let fromSceneCalls = 0;
+  const engine = new EnvironmentEngine();
+  engine.pmremFactory = () => ({
+    fromScene() {
+      fromSceneCalls += 1;
+      return { texture: new THREE.Texture() };
+    },
+    dispose() {},
+  });
+  const scene = new THREE.Scene();
+  await engine.apply(null, scene, { intensity: 1 });
+  assert.equal(fromSceneCalls, 1, '首次应用生成 PMREM');
+  const first = scene.environment;
+  await engine.apply(null, scene, { intensity: 2.5 });
+  assert.equal(fromSceneCalls, 1, 'intensity-only 变化不得重新 fromScene（F14）');
+  assert.equal(scene.environment, first, '复用同一 renderTarget.texture');
+  assert.equal(scene.environmentIntensity, 2.5, '强度已更新');
+  await engine.apply(null, scene, null);
+  assert.equal(scene.environment, null, '关闭释放');
+  await engine.apply(null, scene, { intensity: 1 });
+  assert.equal(fromSceneCalls, 2, '关闭后重开才重新生成');
+  assert.notEqual(scene.environment, first, '重开是新纹理');
+  engine.dispose();
+});
+
+await test('P3 AssetEngine: disposed engine rejects late cache writeback and new loads (V05 core)', async () => {
+  const { AssetEngine } = await import(pathToFileURL(join(template, 'src/scene-core/engine/AssetEngine.ts')));
+  const engine = new AssetEngine();
+  engine.dispose();
+  await assert.rejects(engine.getInstance('x', 'http://127.0.0.1:59999/x.glb'), /已释放/);
+});
+
+await test('P3 slot uniqueness: findDuplicateSlotKeys flags same-parent duplicate names (V13 core)', () => {
+  const engine = new SceneEngine();
+  engine.registerFactory('things', () => {
+    const g = new THREE.Group();
+    for (const name of ['part', 'part', 'other']) {
+      const m = new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshStandardMaterial());
+      m.name = name;
+      g.add(m);
+    }
+    return g;
+  });
+  engine.applyFragment({ things: [{ id: 't1' }] });
+  assert.deepEqual(engine.findDuplicateSlotKeys('t1'), ['part']);
+  // 跨父层同名合法（路径含父段）
+  engine.dispose();
+  const engine2 = new SceneEngine();
+  engine2.registerFactory('things', () => {
+    const g = new THREE.Group();
+    const p1 = new THREE.Group(); p1.name = 'p1';
+    const p2 = new THREE.Group(); p2.name = 'p2';
+    const m1 = new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshStandardMaterial()); m1.name = 'part';
+    const m2 = new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshStandardMaterial()); m2.name = 'part';
+    p1.add(m1); p2.add(m2); g.add(p1, p2);
+    return g;
+  });
+  engine2.applyFragment({ things: [{ id: 't1' }] });
+  assert.deepEqual(engine2.findDuplicateSlotKeys('t1'), [], '不同父层同名 mesh 合法（slotKey 路径区分）');
+  engine2.dispose();
+});
+
+await test('P3-RR2 real Bridge: unchanged legacy node without params keeps identity on undo', async () => {
+  const { Bridge } = await import(pathToFileURL(join(template, 'src/edit/Bridge.ts')));
+  // 真实 Bridge + 真 SceneEngine：省略 params 的未变 legacy 节点，撤销无关操作不得重建
+  const engine = new SceneEngine();
+  let creates = 0;
+  engine.registerFactory('things', (node) => {
+    creates += 1;
+    const g = new THREE.Group();
+    handlerUtils.applyTransform(g, node);
+    return g;
+  });
+  const groupsSnapshot = () => {
+    const out = {};
+    for (const type of engine.getGroupNames()) {
+      out[type] = engine.getNodesWithType(type).map((n) => structuredClone(n));
+    }
+    return out;
+  };
+  const handle = {
+    update: (frag) => engine.applyFragment(frag),
+    serialize: () => {
+      const visuals = engine.getAllVisuals();
+      const data = groupsSnapshot();
+      if (Object.keys(visuals).length > 0) {
+        data.__visuals = structuredClone(visuals);
+      }
+      return data;
+    },
+    internals: { sceneEngine: engine },
+  };
+  const bridge = new Bridge(handle);
+  // 初始：a 无 params（legacy 省略形态）；b 带 params
+  bridge.commit('初始', () => handle.update({ things: [{ id: 'a' }, { id: 'b', params: { v: 1 } }] }));
+  const objA = engine.getObject('a');
+  const createsAtCommit = creates;
+  // 无关操作（只动 b）→ undo：恢复与快照完全相同的 {id:'a'}（params 仍缺省）
+  bridge.commit('改b位置', () => handle.update({ things: [{ id: 'b', position: [3, 0, 0] }] }));
+  bridge.undo();
+  // RR2 修复前：rebuild 把缺省 params 强转 {} → paramsEqual(undefined,{}) 判变 → legacy 重建
+  assert.equal(engine.getObject('a'), objA, '缺省 params 的未变节点 undo 后必须保实例身份');
+  assert.equal(creates, createsAtCommit, '未变节点不得触发工厂重建（RR2 修复前 creates+1）');
+  assert.equal(engine.getNode('a').params, undefined, 'a 的 params 保持缺省（不强转 {}）');
+  assert.deepEqual(engine.getNode('b').position, [0, 0, 0], 'b 的位置撤销恢复默认');
+  // redo 再 undo 往返仍稳定
+  bridge.redo();
+  bridge.undo();
+  assert.equal(engine.getObject('a'), objA, '往返后身份仍稳定');
+  assert.equal(creates, createsAtCommit);
+  engine.dispose();
+});
+
+await test('P3-RRR1 real engine: continuous material edits tracked, replaced resources released promptly', () => {
+  // 真实生产链路（三审反例：applyVisual 后新材质 isTracked=false，删除+dispose 后
+  // 新材质 dispose 事件=0 → 泄漏）。连续编辑/替换/删除/整体销毁精确计数。
+  const engine = new SceneEngine();
+  const scope = getResourceScope(engine);
+  engine.registerFactory('things', () => {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshStandardMaterial());
+    const g = new THREE.Group();
+    g.add(m);
+    return g;
+  });
+  const origMat = engine; void origMat;
+  engine.applyFragment({ things: [{ id: 'a' }] });
+  const mesh = () => engine.getObject('a').children.find((c) => c.isMesh);
+
+  // 计数器：追每个时期的材质 dispose
+  const watch = (label, mat) => {
+    const orig = mat.dispose.bind(mat);
+    mat.dispose = () => { (watch.counters.get(label) ?? watch.counters.set(label, 0).get(label)); watch.counters.set(label, (watch.counters.get(label) ?? 0) + 1); orig(); };
+    return mat;
+  };
+  watch.counters = new Map();
+  const initialMat = watch('initial', mesh().material);
+
+  // 第一次编辑：applyVisual 改色 → applyVisualOverride 克隆替换材质
+  engine.applyVisual('a', { color: '#ff0000' });
+  const edited1 = watch('edited1', mesh().material);
+  assert.notEqual(mesh().material, initialMat, '改色应克隆替换材质');
+  assert.equal(scope.isTracked(edited1), true, 'RRR1：编辑后的新材质必须被登记');
+  assert.equal(scope.isTracked(initialMat), false, 'RRR1：被替换的旧材质登记应解除（及时释放，不积累）');
+  assert.equal(watch.counters.get('initial') ?? 0, 1, '被替换的旧独占材质应立即 dispose');
+
+  // 第二次编辑（连续编辑）：再换色
+  engine.applyVisual('a', { color: '#00ff00' });
+  const edited2 = watch('edited2', mesh().material);
+  assert.equal(scope.isTracked(edited2), true, '连续编辑的新材质登记');
+  assert.equal(watch.counters.get('edited1') ?? 0, 1, '前一轮编辑材质已被替换 → 立即释放');
+  assert.notEqual(edited2, edited1);
+
+  // 纯开关（visible）不触发材质重放：材质不换、无新登记/释放
+  engine.applyVisual('a', { visible: false });
+  assert.equal(mesh().material, edited2, '开关路径不得克隆材质');
+
+  // 删除节点：当前材质恰好释放一次
+  engine.applyFragment({ remove: ['a'] });
+  assert.equal(watch.counters.get('edited2') ?? 0, 1, '删除节点后当前材质恰好释放一次');
+  engine.dispose();
+  // 整体销毁后再无额外事件
+  assert.equal(watch.counters.get('edited2') ?? 0, 1, '整体销毁不得重复 dispose 已释放材质');
+  assert.equal(watch.counters.get('initial') ?? 0, 1);
+  assert.equal(watch.counters.get('edited1') ?? 0, 1);
+});
+
+await test('P3-RRR1 real engine: replaceVisual swap and whole-dispose exact counts', () => {
+  const engine = new SceneEngine();
+  const scope = getResourceScope(engine);
+  engine.registerFactory('things', () => {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshStandardMaterial());
+    const g = new THREE.Group();
+    g.add(m);
+    return g;
+  });
+  engine.applyFragment({ things: [{ id: 'a' }] });
+  let disposes = 0;
+  const track = (mat) => {
+    const orig = mat.dispose.bind(mat);
+    mat.dispose = () => { disposes += 1; orig(); };
+    return mat;
+  };
+  // replaceVisual（材质库链接/断开入口）：整条替换视觉层
+  const before = track(engine.getObject('a').children.find((c) => c.isMesh).material);
+  engine.replaceVisual('a', { materialType: 'MeshLambertMaterial', color: '#123456' });
+  const after = track(engine.getObject('a').children.find((c) => c.isMesh).material);
+  assert.notEqual(after, before);
+  assert.equal(scope.isTracked(after), true, 'replaceVisual 的新材质登记');
+  assert.equal(scope.isTracked(before), false, '被替换旧材质解除');
+  assert.equal(disposes, 1, '被替换旧材质立即释放一次');
+  // 整体销毁：当前材质恰好一次（geometry 未计数器，不在此断言）
+  engine.dispose();
+  assert.equal(disposes, 2, `全程恰好 2 次材质 dispose（替换旧 1 + 销毁当前 1，got ${disposes}）`);
+});
+
+await test('P3-RRRR1 real engine: parent edit→rebuild→child survives→delete/teardown exact counts', () => {
+  // 四审反例：applyVisual('p',{color}) 后子 c 的新材质被记给父 p（collectObjectResources
+  // 无条件全树收集）→ 父重建时子的材质 dispose=1（子还活着却丢了材质）。
+  const engine = new SceneEngine();
+  const scope = getResourceScope(engine);
+  engine.registerFactory('parents', () => new THREE.Group());
+  engine.registerFactory('kids', () => {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshStandardMaterial());
+    const g = new THREE.Group();
+    g.add(m);
+    return g;
+  });
+  // 建树：父 p + 子 c（c 是独立业务节点）
+  engine.applyFragment({
+    parents: [{ id: 'p', params: { a: 1 } }],
+    kids: [{ id: 'c', parentId: 'p' }],
+  });
+  const childObj = engine.getObject('c');
+  const childMesh = childObj.children.find((m) => m.isMesh);
+
+  // 计数子节点的"当前材质"dispose 事件
+  let childMatDisposes = 0;
+  const track = (mat) => {
+    const orig = mat.dispose.bind(mat);
+    mat.dispose = () => { childMatDisposes += 1; orig(); };
+    return mat;
+  };
+  let childMat = track(childMesh.material);
+
+  // 父材质编辑（applyVisual 递归 traverse 全树——子的材质也被克隆替换）
+  engine.applyVisual('p', { color: '#ff0000' });
+  const newChildMat = childMesh.material;
+  if (newChildMat !== childMat) {
+    childMat = track(newChildMat);
+  }
+  // RRRR1：子被父编辑递归改的材质必须归属子自己的登记（不记给父）
+  assert.equal(scope.isTracked(childMat), true, '子的当前材质必须被登记');
+  assert.ok(
+    scope.refCount(childMat) >= 1 && engine.getAllIds().includes('c'),
+    '子材质登记存在',
+  );
+  // 关键归属断言：该材质的 owner 集合不含父 p（releaseExcept 场景下无法直接查 owner；
+  // 用行为断言——父 params 重建后子的材质不得被释放）
+  const childMatBeforeRebuild = childMat;
+  let disposesBeforeRebuild = childMatDisposes;
+
+  // 父 params 变化 → 父重建（legacy 兜底）；子实例与材质必须存活
+  engine.applyFragment({ parents: [{ id: 'p', params: { a: 2 } }] });
+  assert.equal(engine.getObject('c'), childObj, '子实例保留');
+  assert.equal(childObj.children.find((m) => m.isMesh).material, childMatBeforeRebuild,
+    '子继续使用其当前材质');
+  assert.equal(childMatDisposes - disposesBeforeRebuild, 0,
+    `父重建时存活子的当前材质不得 dispose（got ${childMatDisposes - disposesBeforeRebuild}——RRRR1 修复前=1）`);
+  assert.equal(scope.isTracked(childMatBeforeRebuild), true, '父重建后子的材质仍在登记');
+
+  // 删除子：子的材质恰好释放一次
+  engine.applyFragment({ remove: ['c'] });
+  assert.equal(childMatDisposes - disposesBeforeRebuild, 1, '删除子后其材质恰好释放一次');
+  assert.equal(scope.isTracked(childMatBeforeRebuild), false);
+
+  // 父删除 + 整体销毁：无重复事件
+  const final = childMatDisposes;
+  engine.applyFragment({ remove: ['p'] });
+  engine.dispose();
+  assert.equal(childMatDisposes, final, '删除父/整体销毁不得重复 dispose 已释放的子材质');
+});
+
+await test('P3 undo diff-restore keeps unchanged node identities (V10/V14 core)', () => {
+  const engine = new SceneEngine();
+  engine.registerFactory('things', () => new THREE.Group());
+  engine.applyFragment({ things: [{ id: 'A' }, { id: 'B' }] });
+  const objA = engine.getObject('A');
+  const objB = engine.getObject('B');
+  // undo 快照恢复（Bridge.rebuild 同语义）：remove 差量 + upsert 差量
+  engine.applyFragment({ things: [{ id: 'C' }] });
+  engine.applyFragment({ remove: ['C'] });
+  engine.applyFragment({ things: [{ id: 'A' }, { id: 'B' }] });
+  assert.equal(engine.getObject('A'), objA, '差量恢复不重建未变节点 A');
+  assert.equal(engine.getObject('B'), objB, '差量恢复不重建未变节点 B');
+  assert.equal(engine.getAllIds().includes('C'), false, '快照外节点被移除');
+  engine.dispose();
 });
 
 if (!process.argv.includes('--node-only')) {

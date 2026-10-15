@@ -380,7 +380,76 @@ export interface UpdateStats {
 
   /** 本次删除的节点 id（含级联子节点） */
   removed: string[];
+
+  /** 本次因结构参数变化触发局部重建的节点 id（factory.update 返回 'rebuild' 或类型变化） */
+  rebuilt: string[];
 }
+
+/**
+ * 工厂创建/更新上下文（P3.1）：factory definition 拿到的引擎能力面。
+ * 不让 handler 直接覆写全局事件——订阅经 subscribeNodeEvent，资源经 scope 登记。
+ */
+export interface FactoryContext {
+  sceneEngine: import('./engine/SceneEngine').SceneEngine;
+  assetEngine: import('./engine/AssetEngine').AssetEngine;
+  renderLoop: import('./engine/RenderLoop').RenderLoop;
+}
+
+/**
+ * 类型化工厂定义（P3.1 优化 Spec §4.2）：
+ * - create：建节点实例（与旧 function factory 等价职责 + 返回实例）
+ * - update：params 变化时原地更新；返回 'updated'（已处理，保实例）或 'rebuild'
+ *   （结构参数，需引擎局部重建）。transform 由引擎处理，不进 update。
+ * - dispose：节点删除/重建前释放工厂持有的资源（帧回调/闭包表/独立 GPU 资源）
+ * 未提供 update 的 definition 等价旧 function：params 变化走局部重建兜底，
+ * 不再是"只存数据不更新模型"的静默行为。
+ */
+export interface NodeFactoryDefinition {
+  create(node: SceneNode, context: FactoryContext): import('three').Object3D | null;
+  update?(
+    object: import('three').Object3D,
+    next: SceneNode,
+    previous: SceneNode,
+    context: FactoryContext,
+  ): 'updated' | 'rebuild';
+  dispose?(object: import('three').Object3D, context: FactoryContext): void;
+}
+
+/** 旧工厂签名（兼容保留：registerFactory(function) 直接可用） */
+export type LegacyFactory = (node: SceneNode) => import('three').Object3D | null;
+
+/** params 按业务 JSON 值比较（键序无关；NaN 视为不等——生产数据不应出现） */
+export const paramsEqual = (
+  a: Record<string, unknown> | undefined,
+  b: Record<string, unknown> | undefined,
+): boolean => {
+  if (a === b) {
+    return true;
+  }
+  if (!a || !b) {
+    return false;
+  }
+  const ka = Object.keys(a);
+  const kb = Object.keys(b);
+  if (ka.length !== kb.length) {
+    return false;
+  }
+  return ka.every((k) => Object.prototype.hasOwnProperty.call(b, k) && jsonValueEqual(a[k], b[k]));
+};
+
+/** JSON 业务值递归比较（数组按序；对象按键集+值；原始值严格相等） */
+const jsonValueEqual = (x: unknown, y: unknown): boolean => {
+  if (x === y) {
+    return true;
+  }
+  if (Array.isArray(x) && Array.isArray(y)) {
+    return x.length === y.length && x.every((v, i) => jsonValueEqual(v, y[i]));
+  }
+  if (x && y && typeof x === 'object' && typeof y === 'object') {
+    return paramsEqual(x as Record<string, unknown>, y as Record<string, unknown>);
+  }
+  return false;
+};
 
 /** 射线拾取结果 */
 export interface PickResult {

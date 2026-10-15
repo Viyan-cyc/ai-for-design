@@ -249,11 +249,20 @@ export const findBySlotKey = (root: THREE.Object3D, slotKey: string): THREE.Obje
   return null;
 };
 
+/** 材质克隆为节点私有（P3-RRR1）：清除缓存共享标记（Material.clone 深拷 userData 会带上） */
+const claimPrivateMaterial = (mat: THREE.Material): THREE.Material => {
+  if ((mat.userData as { isCloneResource?: boolean }).isCloneResource) {
+    const ud = mat.userData as { isCloneResource?: boolean };
+    delete ud.isCloneResource;
+  }
+  return mat;
+};
+
 /** 内联材质应用到单个 base：同类型 clone+patch，跨类型重建+继承兼容贴图槽 */
 const applyInlineMaterial = (base: THREE.Material | null | undefined, spec: MaterialSpec): THREE.Material => {
   const targetType = spec.type ?? 'MeshStandardMaterial';
   if (base && base.type === targetType) {
-    const mat = base.clone();
+    const mat = claimPrivateMaterial(base.clone());
     applyMaterialScalars(mat, spec);
     void applyMaterialTextures(mat, spec);
     return mat;
@@ -610,7 +619,7 @@ export const applyState = async (
       return;
     }
     const base = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
-    const cloned = base.map((m) => (m ?? new THREE.MeshStandardMaterial()).clone() as THREE.MeshStandardMaterial);
+    const cloned = base.map((m) => claimPrivateMaterial((m ?? new THREE.MeshStandardMaterial()).clone()) as THREE.MeshStandardMaterial);
     if (visual.mapUrl) {
       pending.push(loadTexture(visual.mapUrl).then((tex) => {
         cloned.forEach((std) => {

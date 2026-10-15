@@ -10,6 +10,7 @@ export {
 } from './asset-manifest';
 export * from './types';
 export type { SceneDiagnostics, LoadOutcome } from './diagnostics';
+export { getResourceScope, ResourceScope, type ResourceOwnership } from './resources';
 export { stateMaterials, applyState, type StateVisual, type VisualOverride, NON_MATERIAL_VISUAL_KEYS, findBySlotKey } from './materials';
 export {
   createMaterialFromSpec, applyMaterialTextures, applyMaterialScalars, migrateMaterialSpec,

@@ -129,6 +129,9 @@ export class AssetEngine {
   /** 加载中防重表（并发 getInstance 同一资产复用同一 promise） */
   private loading = new Map<string, Promise<unknown>>();
 
+  /** dispose 后拒绝新加载与缓存回填（P3.2：迟到 Promise 不回填已释放的缓存） */
+  private disposed = false;
+
   private loader = new GLTFLoader();
 
   /** Draco 解码器（本地 wasm，随 three 分发；无 CDN 依赖——内网纪律） */
@@ -145,6 +148,9 @@ export class AssetEngine {
    * @param url 模型文件 URL
    */
   async getInstance(assetId: string, url: string): Promise<THREE.Object3D> {
+    if (this.disposed) {
+      throw new Error(`[AssetEngine] 引擎已释放，拒绝加载: ${assetId}`);
+    }
     let entry = this.cache.get(assetId);
     if (!entry) {
       // 并发请求同一未加载资产复用同一 promise（防重复下载/重复解析）
@@ -156,6 +162,19 @@ export class AssetEngine {
       this.loading.set(assetId, load);
       try {
         const gltf = await load;
+        // dispose 竞态：加载完成时引擎已释放——结果丢弃，不回填缓存（缓存已 clear，
+        // 回填会让后续误用已 dispose 的 geometry/material）
+        if (this.disposed) {
+          gltf.scene.traverse((child) => {
+            const mesh = child as THREE.Mesh;
+            if (mesh.isMesh) {
+              mesh.geometry?.dispose();
+              const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+              mats.forEach((m) => m?.dispose());
+            }
+          });
+          throw new Error(`[AssetEngine] 引擎已释放，丢弃迟到加载: ${assetId}`);
+        }
         const root = gltf.scene;
         entry = {
           root,
@@ -173,9 +192,21 @@ export class AssetEngine {
     // 缩放），顶点被放大 1/scale 倍（person 实测 178m）。静态 GLB 两者等价。
     const instance = skinnedClone(entry.root);
     // 标记共享 clone：geometry/material 与缓存根同源，删除时 SceneEngine 不释放
-    // （统一由 AssetEngine.dispose 释放），防误 dispose 共享资源
+    // （统一由 AssetEngine.dispose 释放），防误 dispose 共享资源。
+    // P3-RRR1：材质额外打 isCloneResource 标记（材质级）——后续 applyState/
+    // applyVisualOverride 克隆替换的新材质无此标记，资源域能区分缓存共享与
+    // 节点私有（geometry 仍按 mesh 级 isClone 跳过——clone 不产生新 geometry）
     instance.traverse((child) => {
       (child.userData as { isClone?: boolean }).isClone = true;
+      const mesh = child as THREE.Mesh;
+      if (mesh.isMesh) {
+        const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+        mats.forEach((m) => {
+          if (m) {
+            (m.userData as { isCloneResource?: boolean }).isCloneResource = true;
+          }
+        });
+      }
     });
     return instance;
   }
@@ -235,7 +266,13 @@ export class AssetEngine {
         return;
       }
       const base = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
-      const cloned = base.map((m) => (m ?? new THREE.MeshStandardMaterial()).clone() as THREE.MeshStandardMaterial);
+      // 克隆为节点私有（P3-RRR1）：清 isCloneResource 标记（Material.clone 深拷 userData 会带上）
+      const cloned = base.map((m) => {
+        const mat = (m ?? new THREE.MeshStandardMaterial()).clone() as THREE.MeshStandardMaterial;
+        const ud = mat.userData as { isCloneResource?: boolean };
+        delete ud.isCloneResource;
+        return mat;
+      });
       if (texUrl) {
         pending.push(loadTexture(texUrl).then((tex) => {
           cloned.forEach((std) => {
@@ -302,8 +339,9 @@ export class AssetEngine {
     }
   }
 
-  /** 释放全部缓存（geometry/material 由 GPU 侧释放） */
+  /** 释放全部缓存（geometry/material 由 GPU 侧释放）；置 disposed 拒绝迟到回填 */
   dispose(): void {
+    this.disposed = true;
     this.cache.forEach((entry) => {
       entry.root.traverse((child) => {
         const mesh = child as THREE.Mesh;

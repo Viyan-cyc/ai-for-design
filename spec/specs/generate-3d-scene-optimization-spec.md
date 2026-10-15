@@ -2,15 +2,15 @@
 
 ## 状态与最终目标
 
-- 日期：2026-10-14，Asia/Shanghai。
-- Phase：Review（P2 五审 PASS，RRR2 已关闭，P2 已报告阻塞项全部关闭；P3–P6 未开始）。
-- Approval：APPROVED（2026-10-14 用户指令「按此 Spec 分批实施，每次只完成一个批次」；每批次完成后暂停等待 review）。
+- 日期：2026-10-15，Asia/Shanghai。
+- Phase：Review（P3 五审 PASS，P3-RRRR1 已关闭，本批次已报告阻塞项全部关闭；P4–P6 未开始）。
+- Approval：APPROVED（2026-10-14 用户指令「按此 Spec 分批实施，每次只完成一个批次」；2026-10-15 用户指令「仅实施 P3，完成后回填改动、验证结果及未验证项，不进入 P4，不自动提交」）。
 - 唯一真相源：本文件。Codex outputs 中同名文档只是交付快照。
 - 项目根：`D:/cyc/project/octo/gts/test/ep-coder`。
 - 修改主体：`skills/generate-3d-scene/`，包括 skill 指令、references、脚手架/验证/导出脚本、母版 core 与 edit。
 - 最终目标：让此 skill 后续生成的场景更快获得可用预览，交付代码清晰、参数更新有效、编辑态可正确往返，正式运行包保持编辑后的视觉结果。
-- 当前任务单元：用户「修复 P2 Review 发现的问题」：P2-R1 资产映射贯通、R2 组件依赖同步、R3 未注册工厂硬失败、R4 schema 漏检；仅 P2 不进 P3。
-- 执行前 checkpoint：以生产入口正负例验证（gates 67/67 + p1-fixtures 18/18 + 手动 e2e）；风险是 dev server HTML 回落对负例验证的干扰，改用真 AssetEngine 生产函数直跑。
+- 当前任务单元：P3 生命周期/编辑批次（P3.1–P3.4）已全部实施完成；见 §5 P3 批次与 §10 Resume。
+- 执行前 checkpoint：以生产函数直跑验证（p1-fixtures 32/32）+ gates 84/84 + run/edit 双态冒烟 + eslint 0 error；浏览器交互级编辑回归与 GPU 长时观测按批次边界留给 P6。
 
 ## 0. Open Questions 与已定边界
 
@@ -223,10 +223,10 @@ F06/F08是Skill模板问题，不是仓库代码问题。仓库中重复rack_fra
 - [x] P2.1 共用profile+boot，建树前注册；新business group无需改两入口。（2026-10-14 完成，见 §5 P2 批次）
 - [ ] P2.2 空场景生成、--scene资产闭包、vendor选择/lock/依赖同步一次。（实现部分完成；Review 确认 glTF build/runtime 与 copy 依赖同步未完成）
 - [ ] P2.3 schema校验接入初始化/verify；旧demo兼容与glTF多文件fixture。（实现部分完成；缺 factory/asset 等校验仍漏检，glTF fixture 未贯通实际加载）
-- [ ] P3.1 factory update/events与示例迁移；transform保身份、结构参数有限重建。
-- [ ] P3.2 资源和异步生命周期统一，缓存/GLB蒙皮/材质克隆不回归。
-- [ ] P3.3 修复制视觉覆盖和编辑patch；历史差量恢复；保存重载、slot唯一性。
-- [ ] P3.4 renderer环境复用、订阅清理、选择helper非必要重建优化。
+- [x] P3.1 factory update/events与示例迁移；transform保身份、结构参数有限重建。（2026-10-15 完成，见 §5 P3 批次）
+- [x] P3.2 资源和异步生命周期统一，缓存/GLB蒙皮/材质克隆不回归。（2026-10-15 完成，见 §5 P3 批次）
+- [x] P3.3 修复制视觉覆盖和编辑patch；历史差量恢复；保存重载、slot唯一性。（2026-10-15 完成，见 §5 P3 批次）
+- [x] P3.4 renderer环境复用、订阅清理、选择helper非必要重建优化。（2026-10-15 完成，见 §5 P3 批次）
 - [ ] P4.1 appearance自动编译+runtime应用；异步asset也保真。
 - [ ] P4.2 原子strip与入口固定；unsupported失败不毁源/旧包。
 - [ ] P5.1 preview/standard/release策略和hash缓存，移除重复三绿及固定sleep。
@@ -302,6 +302,261 @@ F06/F08是Skill模板问题，不是仓库代码问题。仓库中重复rack_fra
 Readiness Verdict：GO（建议），不等于实施授权。不能把历史Plan Approved当作本轮优化Plan Approved。
 
 ## 5. Execute Log / Validation
+
+### P3 四审修复轮（2026-10-15，P3-RRRR1 全修，待重审）
+
+**改动文件**（在 P3 三审修复轮基础上）：
+
+| 文件 | 修复项 | 内容 |
+|---|---|---|
+| `template/src/scene-core/resources.ts` | RRRR1 | ① `collectObjectResources` 增加节点边界参数 `isBoundary?: (obj) => boolean`：收集时**不深入**独立业务子节点子树（traverse 前序 + 跳过集合 + 父链过滤实现"跳过子树"语义）——子节点资源归各自登记，不记给父；未提供 isBoundary（独立 ResourceScope 测试）保持全树收集旧行为。② `syncObjectResources` 返回**受影响的后代业务子节点根**（父级编辑 traverse 全树可能递归替换子树内材质——子节点资源集也变了），由调用方逐个对账归属各自登记。③ `acquireObjectResources` 透传 isBoundary |
+| `template/src/scene-core/engine/SceneEngine.ts` | RRRR1 | 新增公共 `syncResourcesFor(id, obj)`：以 `entries.get(o.name)?.obj === o` 判定业务节点边界 → 本节点对账（跳过子树）+ 受影响后代子节点逐个对账。三个动态入口（applyVisual 材质路径/replaceVisual/definition.update 原地）与 createNode 登记全部改走带边界的路径 |
+| `template/src/scene-core/handlers/registry.ts` | RRRR1 | 异步挂载点对账改走 `sceneEngine.syncResourcesFor`（公共入口，带边界与受影响子节点同步） |
+| `scripts/verify/p1-fixtures.mjs` | 回归 | +1 项四审场景精确计数用例；42 项既有全保留 |
+
+**验证证据**（全部 2026-10-15 实跑）：
+
+| 验证 | 命令/方式 | 结果 |
+|---|---|---|
+| 既有门禁 | `node scripts/verify/gates.mjs --quiet` | **84/84 PASS** |
+| 全量回归 | `node scripts/verify/p1-fixtures.mjs --node-only` | **43/43 PASS**（42 全保留含 R1–R4/RR1/RR2/RRR1 全部反例 + 1 项 RRRR1 新增） |
+| 类型/构建 | template 内 `npm run build` | PASS |
+| run/edit 双态冒烟 | dev server + `scene.mjs --both` | SCENE PASS（首跑 mounted 超时=vite 冷启动预编译，预热后通过，与历轮偶发口径一致非回归；STRUCT PASS 同批确认） |
+| 结构冒烟 | `smoke-structural.mjs` | STRUCT PASS |
+| Lint | 改动 3 文件 eslint | **0 error** / 27 warning（既有类） |
+
+**四审复现项对账**：
+
+| Spec §6 复现 | 修复后行为 | 证据 |
+|---|---|---|
+| applyVisual('p',{color}) 后子 c 的新材质仅登记为父 p 所有；父 params 重建时子材质 dispose=1、退出登记（childStillUsesMaterial=true 但 materialTrackedAfter=false） | 边界收集：子树不归父登记；父编辑递归改子材质时受影响子节点各自对账——父重建后子的当前材质 dispose=0、仍在登记、子实例与材质引用均保留 | P3-RRRR1 用例（父编辑→父重建→子存活段） |
+| remove/recreate/dispose 不得释放存活子节点仍持有的资源 | 删除子时其材质恰好 1 次；随后删除父/整体销毁零重复 | 同用例（删除/销毁段：remove c=1，remove p + dispose 无新增） |
+| 不能只跳过后代导致漏登记 | syncObjectResources 返回受影响后代根，SceneEngine 逐个对账——子被父编辑改的材质归属子的登记 | 同用例（父编辑后 isTracked(childMat)=true） |
+
+**既有回归保留确认**：RRR1 连续编辑/替换精确计数（旧材质立即释放不积累）、RR1 共享材质 refcount/父子整体销毁、RR2 缺 params 身份、R1–R4 全部反例——43/43 中全部通过。
+
+**修复中实证发现**：three 的 `traverse` 无 skip 语义——边界跳过用「跳过集合 + 每节点沿父链检查」实现（前序遍历保证边界根先于其子节点访问）；recreateNode 的 createNode 时子实体尚未重挂（挂在 createNode 之后），但 createNode 的边界收集同样生效（无害且防未来时序变化）。
+
+**未验证项（如实记录）**：
+
+1. 与前三轮口径一致：GLB 状态视觉/异步挂载的浏览器实跑（代码路径覆盖 + 双态冒烟零回归）、GPU 长时观测未跑。
+2. 深层嵌套（孙节点）的父编辑传播对账——syncResourcesFor 的受影响子节点对账会递归发现孙边界（isBoundary 对任意层级生效），但回归用例只覆盖两层；深层场景属 P6 编辑回归。
+
+**Spec 偏差**：无。按四审要求「按引擎节点边界收集、区分工厂内部 mesh 与独立业务子节点、父编辑递归影响子时同步子自己的归属、remove/recreate/dispose 不释放存活子资源、补父编辑→父重建→子存活→删除/销毁精确计数」执行。
+
+---
+
+### P3 三审修复轮（2026-10-15，P3-RRR1 全修，待重审）
+
+**改动文件**（在 P3 二审修复轮基础上）：
+
+| 文件 | 修复项 | 内容 |
+|---|---|---|
+| `template/src/scene-core/resources.ts` | RRR1 | ① 新增 `syncObjectResources(scope, nodeId, obj)` 资源集对账：把节点登记同步成对象**当前**实际资源集——新资源 acquire、被替换旧独占资源经 `releaseExcept` 解除（无人引用即释放，不用重复 acquire 留住废弃资源）；共享资源 refcount 守护。② `ResourceScope.releaseExcept(nodeId, keep)`（keep 集合外的该 owner 登记解除，层级/refcount 结算同 release）。③ 收集口径重构：geometry 按 mesh 级 isClone 跳过（clone 不产新 geometry）；材质按**材质级 `isCloneResource` 标记**区分缓存共享（不登记）与节点私有（含被替换进 clone mesh 的新材质——登记）；`acquireObjectResources` 复用同一收集器 |
+| `template/src/scene-core/engine/AssetEngine.ts` | RRR1 | ① `getInstance` 克隆时对 clone mesh 的每个材质打 `isCloneResource` 标记（材质级，与 mesh 级 isClone 互补——此后 applyState/applyVisualOverride 克隆替换的新材质可被资源域识别为节点私有）；② `applyState` 的材质克隆清除 `isCloneResource`（Material.clone 深拷 userData 会带上缓存标记） |
+| `template/src/scene-core/materials.ts` | RRR1 | `applyVisualOverride` 的 `applyInlineMaterial` 与 `applyState` 两处材质克隆经 `claimPrivateMaterial` 清除 `isCloneResource`（同上——新克隆是节点私有资源） |
+| `template/src/scene-core/engine/SceneEngine.ts` | RRR1 | 动态资源入口接对账：`applyVisual`（材质路径 full scope 后——开关路径不触发不改资源集，跳过省遍历）、`replaceVisual`（libraryRef↔inline 切换）、definition.update 原地路径（工厂可替换材质/几何）；rebuild/recreate 已由 createNode 全量登记覆盖 |
+| `template/src/scene-core/handlers/registry.ts` | RRR1 | `makeAssetNodeFactory` 异步挂载点：`applyVisualIfAny` + `onLoaded`（applyState 等业务回调可克隆替换 clone mesh 材质）完成后 `syncObjectResources` 对账 |
+| `scripts/verify/p1-fixtures.mjs` | 回归 | +2 项真实生产入口精确计数用例（见下）；40 项既有全保留 |
+
+**验证证据**（全部 2026-10-15 实跑）：
+
+| 验证 | 命令/方式 | 结果 |
+|---|---|---|
+| 既有门禁 | `node scripts/verify/gates.mjs --quiet` | **84/84 PASS** |
+| 全量回归 | `node scripts/verify/p1-fixtures.mjs --node-only` | **42/42 PASS**（40 全保留含 R1–R4/RR1/RR2 全部反例 + 2 项 RRR1 新增） |
+| 类型/构建 | template 内 `npm run build` | PASS |
+| run/edit 双态冒烟 | dev server + `scene.mjs --both` | SCENE PASS |
+| 结构冒烟 | `smoke-structural.mjs` | STRUCT PASS（13 节点全分组对齐——demo 场景 cars/examples 状态视觉路径零回归） |
+| Lint | 改动 5 文件 eslint | **0 error** / 59 warning（既有类） |
+
+**三审复现项对账**：
+
+| Spec §6 复现 | 修复后行为 | 证据 |
+|---|---|---|
+| applyVisual('a',{color}) 后 isTracked(newMaterial)=false；remove+dispose 后新材质 dispose 事件=0（泄漏） | applyVisual 材质路径后 syncObjectResources——新材质登记、被替换旧材质立即 dispose=1；删除后当前材质恰好 1 次；整体销毁无重复 | P3-RRR1 continuous edits 用例 |
+| 只在本反例末尾补 acquire 会积累被替换旧材质 | releaseExcept 解除 keep 集合外登记——连续两轮编辑，前一轮材质 dispose=1 不积累 | 同用例（edited1 在 edited2 出现后立即释放） |
+| 覆盖工厂 update 与异步挂载这类动态资源入口 | definition.update 原地路径 + makeAssetNodeFactory 异步挂载点（onLoaded 后）均接对账 | 代码路径 + continuous/replaceVisual 用例 |
+| 共享/缓存保持所有者边界 | 材质级 isCloneResource 标记：缓存共享不登记不释放（AssetEngine.dispose 负责）；claimPrivateMaterial 保证克隆为私有 | RR1 既有共享材质用例继续 PASS |
+
+**新增回归明细**：
+
+1. `P3-RRR1 continuous material edits`：真 SceneEngine——初始材质被改色替换后立即 dispose=1；连续第二轮编辑前一轮 dispose=1；纯开关（visible）不克隆材质；删除节点当前材质恰好 1 次；engine.dispose 后无重复（全程 initial=1/edited1=1/edited2=1）。
+2. `P3-RRR1 replaceVisual swap and whole-dispose`：材质库切换入口（replaceVisual 整条替换）——新材质登记、旧材质立即释放；整体销毁全程恰好 2 次 dispose（替换旧 1 + 销毁当前 1）。
+
+**修复中实证发现**：Material.clone 深拷 userData——缓存材质的 isCloneResource 标记会被 applyState/applyInlineMaterial 的克隆继承，导致私有新材质被误判缓存共享（不登记、泄漏复发）。三处克隆点（materials×2 + AssetEngine.applyState×1）统一清除标记后闭环。
+
+**未验证项（如实记录）**：
+
+1. 与前轮口径一致：example 浏览器运行时链路（GLB 状态视觉 applyState 的异步材质克隆已由挂载点对账代码路径覆盖 + demo 场景双态冒烟零回归）、GPU 长时观测未跑。
+2. 材质库共享实例（MaterialLibService 的 libraryRef 材质）在真实编辑器的 link/dislink 往返——MaterialLibService 持有自己的实例表并 dispose（铁律 2 之外的既有语义，其实例未入 ResourceScope——由该服务自管理，与本轮节点域登记边界一致，未改动）；真编辑器链路 P6 回归。
+
+**Spec 偏差**：无。按三审要求「资源域随材质/几何新增、替换、移除同步，覆盖 applyVisual/replaceVisual/工厂 update/异步挂载入口，不用重复 acquire 留住废弃资源，共享/缓存保持所有者边界」执行。
+
+---
+
+### P3 二审修复轮（2026-10-15，P3-RR1/RR2 全修，待重审）
+
+**改动文件**（在 P3 首审修复轮基础上）：
+
+| 文件 | 修复项 | 内容 |
+|---|---|---|
+| `template/src/scene-core/resources.ts` | RR1 重构 | 所有权登记改**实际资源粒度**：`OwnedResource = BufferGeometry \| Material \| Texture`，Object3D 根不再登记、删除树遍历释放路径（`disposeResource` 整体删除）——树遍历会绕过共享登记（两节点共用材质时任一根释放都整树 dispose 它，RR1 复现）。新增 `acquireObjectResources`（逐 mesh geometry/每个 material 登记，isClone 跳过保留）。`releaseAll` 遍历 Map 去重条目（同资源单 entry 恰好一次 dispose）；cache 层跳过（节点域不越权释放缓存根，AssetEngine.dispose 负责） |
+| `template/src/scene-core/engine/SceneEngine.ts` | RR1/RR2 | ① `createNode` 改 `acquireObjectResources`（实际资源逐个 exclusive 登记）；② card 清除哨兵：`updateNodeInPlace` 合成 next 时 `incoming.card === null` 归一为 undefined（Bridge 快照恢复的显式清除语义） |
+| `template/src/edit/Bridge.ts` | RR2 | `rebuild` 字段级差量：只在**引擎当前有值而快照缺省**时显式恢复默认（parentId→null/position,rotation→[0,0,0]/scale→1/params→{}/card→null 哨兵）；**两侧均缺省**的字段不带（undefined）——不再把缺省 params 强转 {} 触发 paramsEqual 判变、未变 legacy 节点被重建 |
+| `scripts/verify/p1-fixtures.mjs` | 回归 | +2 项 RR1 真实引擎精确 dispose 计数 + 1 项 RR2 真 Bridge 身份回归；既有「recreate 释放」用例改实际资源粒度断言（Object3D 根不得登记） |
+
+**验证证据**（全部 2026-10-15 实跑）：
+
+| 验证 | 命令/方式 | 结果 |
+|---|---|---|
+| 既有门禁 | `node scripts/verify/gates.mjs --quiet` | **84/84 PASS** |
+| 全量回归 | `node scripts/verify/p1-fixtures.mjs --node-only` | **40/40 PASS**（37 全保留 + 3 项新增；R1–R4 原始反例与真实 handler 用例全部继续通过） |
+| 类型/构建 | template 内 `npm run build` | PASS |
+| run/edit 双态冒烟 | dev server + `scene.mjs --both` | SCENE PASS |
+| 结构冒烟 | `smoke-structural.mjs` | STRUCT PASS |
+| Lint | 改动 3 文件 eslint | **0 error** / 46 warning（既有类） |
+
+**二审复现项逐条对账**：
+
+| Spec §6 复现 | 修复后行为 | 证据 |
+|---|---|---|
+| RR1：两节点共用 material（shared 登记两 owner），删第一个后 refCount=1 但 material 已 dispose；删第二个总 dispose=3 | 实际资源粒度：Object3D 根不登记不树遍历；删 a 后 matDisposes=0、refCount=1；删 b 后恰好 1 次 | P3-RR1 shared material 用例 |
+| RR1：父子整体 engine.dispose 后子 geometry dispose 2 次 | releaseAll 遍历去重 Map 条目（子资源单 entry）——恰好 1 次 | P3-RR1 parent-child whole dispose 用例 |
+| RR1：releaseAll 的父子重叠与共享资源旁路 | 树遍历释放路径物理删除；cache 层 releaseAll 跳过 | resources.ts 重构 + 两用例 |
+| RR2：恢复完全相同 {id:'a'} 快照，缺省 params 被强转 {}，legacy 工厂重建（identityPreserved=false） | 两侧均缺省不带字段——undo 后 getObject('a') === objA、creates 不变、params 保持 undefined | P3-RR2 real Bridge 用例（含 redo/undo 往返稳定） |
+| RR2：首次撤销无关操作也重建所有省略 params 的 legacy 节点 | 同上——无关节点零重建 | 同用例（只动 b，undo 后 a 的 creates 计数不变） |
+
+**R4 已修复语义保留验证**：P3-R4 real Bridge 用例继续通过——引擎有值而快照缺省的字段（position=[9,0,0]/params={v:2}）undo 后仍显式恢复默认（字段级差量不清除该路径）。
+
+**未验证项（如实记录）**：
+
+1. 与首审修复轮口径一致：example 浏览器运行时链路、GPU 长时观测未跑（Node 生产函数级已覆盖全部 RR 合同）。
+2. `card: null` 哨兵在**真实编辑器操作**中的触发路径（快照恢复撤销"首次添加卡片"）由引擎单路径 + Bridge 字段级差量代码审查覆盖；真 Bridge 测试未含 card 往返（卡片系统依赖 Vue 组件表，Node 门面不装配）——P6 编辑回归补。
+
+**Spec 偏差**：无。RR1 按二审要求「实际资源粒度统一引用/所有权、remove/recreate/dispose 同一语义、cache 不越权」执行；RR2 按要求「区分未变节点与确需清除新增字段的节点、保留 R4 清理语义」执行。
+
+---
+
+### P3 首审修复轮（2026-10-15，P3-R1～R4 全修，待重审）
+
+**改动文件**（在 P3 首轮基础上）：
+
+| 文件 | 修复项 | 内容 |
+|---|---|---|
+| `template/src/scene-core/engine/SceneEngine.ts` | R1/R2/R3 | ① `updateNodeInPlace` 重构：进入即拍 previous 深快照（params/card 结构化拷贝，后续索引写入不污染）；next 按「缺的不动」合成完整节点（`stripUndefined` 合并——undefined 不覆盖原值）；definition.update 收到真实前后值；`entry.node = next` 整体换新（片段不丢字段）。② rebuild 两条路径（definition 返回 rebuild / legacy 兜底 / applyFragment 类型变化）全部喂**合成完整节点**——transform/card/父链不因片段只带 params 而丢失。③ `recreateNode`：子节点实体先 `removeFromParent` 脱离旧树再释放旧实例（dispose 遍历不再命中存活子节点）。④ `removeObject`：先整体摘树（全部 removeFromParent + 清 entries）再统一 ResourceScope.release（级联时父的整树遍历不再命中未摘下的子——双 dispose 消除）。⑤ 模块级 `disposeInstance` 删除——ResourceScope.disposeResource 成唯一释放路径（isClone 守卫语义等价保留） |
+| `template/src/scene-core/handlers/example/example.ts` | R1 | definition.update 签名补 `previous`；assetId 结构参数比较改用 previous.params（旧实现从已覆盖的 getNode 取值恒等——永不触发 rebuild） |
+| `template/src/edit/Bridge.ts` | R4 | `rebuild`（undo/redo 快照恢复）重写：快照是完整状态——节点缺 position/rotation/scale/card/params/parentId 的**显式恢复默认**（parentId→null、position/rotation→[0,0,0]、scale→1、params→{}、card→null），不再按片段「缺的不动」合并（撤销"首次添加 transform/params"不再残留）；完整节点喂回仍走 updateNodeInPlace（未变对象保实例身份）；`__visuals`/`__materialLib` 整表语义保留（快照缺 key 显式补空表） |
+| `scripts/verify/p1-fixtures.mjs` | 回归 | 真实 handler 行为回归（见下）——替换/新增 6 项真生产模块用例 |
+
+**验证证据**（全部 2026-10-15 实跑）：
+
+| 验证 | 命令/方式 | 结果 |
+|---|---|---|
+| 既有门禁 | `node scripts/verify/gates.mjs --quiet` | **84/84 PASS** |
+| P1/P2/P3 全回归 | `node scripts/verify/p1-fixtures.mjs --node-only` | **37/37 PASS**（首轮 20 既有 + P3 首轮用例全保留 + 6 项真实 handler 新用例；首轮假工厂 rebuild 用例删除，由真 tree 用例替代） |
+| 类型/构建 | template 内 `npm run build` | PASS（0 错误） |
+| run/edit 双态冒烟 | dev server + `scene.mjs --both` | SCENE PASS |
+| 结构冒烟 | `smoke-structural.mjs` | STRUCT PASS（13 节点全分组对齐） |
+| Lint | 改动 3 文件 eslint | **0 error** / 31 warning（既有类） |
+
+**Review 复现项逐条对账**（全部真实生产模块直跑）：
+
+| Spec §6 复现 | 修复后行为 | 证据 |
+|---|---|---|
+| R1：真 registerTreeHandler height 1→3，数据 3 但 geometry 仍 0.9 | previous 快照正确 → definition.update 判定变化 → rebuild，树干 geometry.parameters.height ×3（0.9→2.7） | P3-R1 real tree 用例 |
+| R1：example assetId 从已更新 getNode 取旧值恒等 | assetId 比较 previous.params（修改前真值） | example.ts 代码路径 + tree 同构用例覆盖 |
+| R2：节点带 position=[8,2,3]/scale=2/card，只发 params 重建后全丢 | next 合成完整节点——legacy/definition/类型变化三路径 transform/card/父链全保留（数据层 + 实例层双断言） | P3-R2 用例（legacy + 真 tree + 类型变化） |
+| R3：父重建时存活子节点收到 dispose 事件 | 子实体先脱离旧树再释放——geoDisposes=0 | P3-R3 parent rebuild 用例 |
+| R3：级联删除子 geometry dispose 2 次 | 先整体摘树再统一 release——恰好 1 次 | P3-R3 用例（级联 + 50 轮增删/rebuild 精确计数） |
+| R4：undo 恢复 {id:'a'} 快照，新增的 position=[9,0,0]/params={v:2} 残留 | 快照缺省字段显式恢复默认——undo 后 position=[0,0,0]、params={}；redo 恢复；父链 undo 挂回原父 | P3-R4 real Bridge 用例（真 Bridge + 真 SceneEngine，handle 门面只接 Bridge 消费面） |
+
+**修复中实证发现**：
+
+1. removeObject 级联的双 dispose 不止 recreate 路径——级联删除时父 release 的整树遍历同样命中尚未摘下的子 mesh（父 release 在 removeFromParent 之前）；修复为「先整体摘树再统一释放」两阶段，P3-R3 用例的精确 dispose 计数（级联=1、50 轮增删=50、rebuild=+1）同时守护两条路径。
+2. 测试断言形态：数据层 scale 保留原值形态（number 2 不转 [2,2,2]）——「缺的不动」合成对原值零改写；首轮测试断言写死数组形态属断言错误，非实现 bug（已修）。
+
+**未验证项（如实记录）**：
+
+1. 真 registerExampleHandler 的浏览器运行时行为（GLB 异步加载 + status/spin 更新链路）未在 Node 直跑——example 依赖 AssetEngine 网络加载；其 definition.update 的 previous 语义修复由 tree/rack 同构路径 + example.ts 代码审查覆盖；run/edit 双态冒烟（demo 场景含 examples/cars 分组）PASS 证明装配与加载无回归。
+2. 浏览器内 undo/redo 快捷键链路（edit-main 键盘绑定 → bridge.undo）未逐键人工操作——真 Bridge.undo/redo 逻辑已 Node 直跑全覆盖（快照恢复/身份保留/父链往返/serialize 一致性）；键盘事件接线零改动。
+3. GPU memory 长时观测（V14 完整形态）与 P3 首轮口径一致，属 P5/P6。
+
+**Spec 偏差**：无。四项均按 §6 修复要求执行（完整 next/previous 语义、片段未提交字段保留、统一资源所有权释放、快照差量恢复 + 显式默认）；真实 handler/SceneEngine/Bridge 行为回归全部落地，无复制实现或恒返回值假工厂参与核心验收。
+
+---
+
+### P3 批次（2026-10-15 完成执行，待用户 review）
+
+**改动文件**（均相对 `skills/generate-3d-scene/`）：
+
+| 文件 | 状态 | 内容 |
+|---|---|---|
+| `template/src/scene-core/types.ts` | 修改 | P3.1 契约：`NodeFactoryDefinition`（create/update?/dispose?，update 返回 'updated'/'rebuild'）、`LegacyFactory`、`FactoryContext`、`paramsEqual`（JSON 业务值比较：键序无关/深比较/NaN 不等）；`UpdateStats` 扩 `rebuilt` 数组 |
+| `template/src/scene-core/resources.ts` | 新增 | P3.2 资源所有权：`ResourceScope`（exclusive/shared/cache 三层；acquire 去重、release 按 refcount 结算、releaseAll 兜底）+ `getResourceScope`（每 SceneEngine WeakMap 隔离）；disposeResource 沿用 isClone 跳过守卫（GLB clone 不误释放缓存根资源） |
+| `template/src/scene-core/engine/SceneEngine.ts` | 修改 | ① factory 登记改 `FactoryEntry`（definition/legacy 双形态；`registerFactoryContext` 显式 setter）；② `createNode` 工厂产物按 exclusive 登记 + definition.create 分发；③ `updateNodeInPlace` params 契约：同值幂等（不重放不重建）、definition.update → 'updated' 保实例 / 'rebuild' 局部重建（保 id/父链/子节点重挂/视觉层）、legacy 无 update → 局部重建兜底（消除"只存数据不更新模型"静默行为）；transform 永远引擎处理；④ `recreateNode`/`removeObject`：definition.dispose 先跑 → ResourceScope.release → disposeInstance（F07 recreate 泄漏关闭）；⑤ `patchVisual(nodeId, patch)` 公开 API（单节点 merge，整表 `__visuals` 语义不变）；⑥ `findDuplicateSlotKeys(nodeId)`（V13 同父层 slot 唯一性校验）；⑦ dispose 回收 `__handlerTeardowns`（handler 订阅/帧回调句柄）+ 资源域 releaseAll |
+| `template/src/scene-core/engine/AssetEngine.ts` | 修改 | P3.2：`disposed` 标记——dispose 后新 getInstance 拒绝；加载完成时若已 dispose，结果遍历释放并丢弃（不回填已清空缓存，V05 迟到 Promise 守卫） |
+| `template/src/scene-core/engine/EnvironmentEngine.ts` | 修改 | P3.4（F14/V16）：intensity-only 变化复用 currentEnv（不重新 fromScene）；关闭才释放；重开重建；RoomEnvironment 临时 scene 用后 dispose；`pmremFactory` 测试缝（生产恒真 PMREMGenerator） |
+| `template/src/scene-core/handlers/example/example.ts` | 修改 | P3.1 迁移：typed definition（cars/examples 双分组；update：assetId 变化 rebuild、status/spin 原地重放）；单槽 `onNodeUpdated`/`onNodeRemoved` 赋值改 `subscribeNodeEvent` 多订阅（不覆写 P1 diagnostics 接线）；dispose 清 spinners；退订句柄挂 `__handlerTeardowns`；onFrame 参数签名改返回退订函数 |
+| `template/src/scene-core/handlers/procedural/tree.ts` | 修改 | P3.1 迁移：typed definition（height 结构参数 rebuild；trunkColor/foliageColor 原地重放保实例） |
+| `template/src/scene-core/handlers/procedural/rack.ts` | 修改 | P3.1 迁移：typed definition + 新结构参数 `rows`（1–12 仓段，rebuild）；bodyColor 原地重放（shell 材质共享实例单点改色）；slot 命名同父层唯一（server_N 系列） |
+| `template/src/scene-core/createScene.ts` | 修改 | `registerFactoryContext` 在 profile 注册前调用（definition 工厂拿完整 context） |
+| `template/src/scene-core/index.ts` | 修改 | 导出 `getResourceScope`/`ResourceScope`/`ResourceOwnership` |
+| `template/src/scene-profile.ts` | 修改 | onFrame 注入改透传退订函数（`renderLoop.onFrame` 原样返回） |
+| `template/src/edit/Bridge.ts` | 修改 | P3.3：① `duplicateObject` 副本视觉层走 `patchVisual`（不再 `update({__visuals})` 整表替换——F06 修复：复制不清其他节点视觉层）；② `rebuild`（undo/redo 恢复）改差量：remove 差量（快照外 id）+ upsert 差量（未变节点 paramsEqual 短路保实例身份；不再全树拆除重建，V10/V14）；`__visuals`/`__materialLib` 整表替换语义保留（undo 正确性锚点） |
+| `template/src/edit/SelectionService.ts` | 修改 | P3.4：`syncHighlights` 幂等复用（同 key/target/color 不重建 BoxHelper；差量清理/新增——undo 恢复后选区不变时零分配） |
+| `scripts/verify/p1-fixtures.mjs` | 修改 | +12 项 P3 行为回归（生产函数直跑：真 SceneEngine/ResourceScope/EnvironmentEngine/AssetEngine + TS 转译真 definition） |
+
+**验证证据**（全部 2026-10-15 实跑）：
+
+| 验证 | 命令/方式 | 结果 |
+|---|---|---|
+| 类型/构建 | template 内 `npm run build`（vue-tsc + vite） | PASS（0 错误；既有大 chunk warning 保留，boot-scene 816 kB 两态共享） |
+| 既有门禁 | `node scripts/verify/gates.mjs --quiet` | **84/84 PASS**（零回归） |
+| 既有 P1/P2 回归 | `node scripts/verify/p1-fixtures.mjs --node-only` | **20/20 全保留 PASS** |
+| **P3 新增行为回归** | 同上（新 12 项） | **12/12 PASS**（合计 32/32） |
+| run/edit 双态冒烟 | 模板 dev server + `scene.mjs --both` | SCENE PASS（双态 ready succeeded=4、零页面错误、主体进视锥、渲染活性） |
+| 结构冒烟 | `smoke-structural.mjs` | STRUCT PASS（13 节点全分组对齐、零 rejection） |
+| Lint | 改动 12 文件 eslint | **0 error** / 55 warning（均为既有类：函数长度/naming-convention `__visuals`/no-continue，与 P1/P2 历轮口径一致） |
+
+**P3 行为回归用例明细**（p1-fixtures 直跑生产模块）：
+
+| 用例 | 覆盖合同 |
+|---|---|
+| paramsEqual 键序无关/深比较/NaN | §4.2 params 按业务值比较 |
+| typed factory 同值幂等 + 值变化走 update 保实例 | V07 |
+| update 返回 rebuild → 局部重建保 id/children | V07（结构参数有限重建） |
+| transform-only 保实例身份（creates=1） | V07（transform 不重建） |
+| legacy function params 变化 → 重建兜底（非静默） | §1.3（不再"只存数据"） |
+| recreate 释放 exclusive 旧实例 | V14（F07） |
+| shared 资源单 owner 退出不释放/最后才释放 | V14（共享资源所有权） |
+| 复制 A 不清 B/A 视觉层（patchVisual 语义） | V09（F06） |
+| EnvironmentEngine intensity-only 复用纹理 | V16（F14） |
+| AssetEngine disposed 拒绝迟到回填/新加载 | V05 |
+| findDuplicateSlotKeys 同父层重名检出/跨父层合法 | V13 |
+| undo 差量恢复未变节点保实例身份 | V10/V14（F13） |
+
+**实现过程中的实证发现（均已修正）**：
+
+1. 首版 `updateNodeInPlace` 的 'rebuild' 返回路径只 push stats 没调 `recreateNode`（definition.update 返回 rebuild 时不重建）——P3 用例「update returns rebuild」首跑 FAIL 暴露，修复为返回前显式 `recreateNode` + emit updated。
+2. ESM 模块命名空间只读，`THREE.PMREMGenerator` 不可 monkey-patch——环境测试改 `pmremFactory` 注入缝（生产默认真 PMREMGenerator，行为不变）。
+3. example.ts 的 onFrame 注入原先 `void renderLoop.onFrame(...)` 丢弃退订函数——P3.4 订阅清理要求句柄可达，签名改为透传 `() => void`（scene-profile 同步修正）。
+
+**未验证项（如实记录）**：
+
+1. **浏览器内编辑交互链路**（点选/Gizmo 拖拽/Ctrl+D 复制/undo 快捷键/材质面板往返）未逐项人工操作——生产函数级已验证各契约核心（patchVisual/差量恢复/helper 复用/definition update）；run/edit 双态 + 结构冒烟 PASS 证明装配与建树零回归。浏览器交互级验收属 P6（V09–V12 完整编辑回归）。
+2. **100 次增删/重建/撤销的 GPU memory 观测**（V14 后半）未跑——Node 级资源登记/释放对账已过；GPU 侧无界增长需真机长时间采样，与 P5/P6 一并。
+3. **蒙皮模型（person GLB）编辑往返**（V12 蒙皮 clone 尺寸）未单独复测——AssetEngine 的 skinnedClone 路径零改动（本轮只加 disposed 守卫）；蒙皮感知包围盒（getSkinnedAwareBox/refreshSkinnedBounds）零改动，结构冒烟 13 节点含 person 实例渲染正常。
+4. car/worker 两个 procedural handler 未迁移 typed definition（保持旧 function——params 变化走重建兜底，行为等价旧版且不回归）；迁移示范由 tree/rack/example 三个覆盖，属可选项非合同要求（§4.1 P3 行「示范typed params/update」已满足）。
+5. `smoke-visual`/`perf-fps` 未重跑（P3 无视觉输出/GPU 预算改动；渲染管线只加复用优化，triangles/fps 冒烟在 scene.mjs 已覆盖活性判定）。
+
+**Spec 偏差**：
+
+- §4.2 `NodeFactoryDefinition<TParams>` 泛型参数实施时简化为非泛型（`TParams extends Record<string, unknown>` 无运行时作用且 example.ts 内联类型自持——params 的 typed 约束在 handler 文件内以局部 interface 表达，tree.ts/rack.ts 同）；公开签名 `create/update/dispose` 三段契约与返回语义与 Spec 一致。
+- §3.2「组件为 Group/InstancedMesh 时适配层提供稳定唯一路径」的**生成侧断言**以 `findDuplicateSlotKeys` API 形态提供（引擎能力）；将其接入 build.mjs 生成合同（重名负例阻断新代码模型）属 P5/P6 的 build 合同批次（§4.1 P5 行 build.mjs 修改）。
+- 其余按 §4.1 P3 文件清单与 §4.2 签名合同执行；PropertyPanel/LayoutGizmo/OutlineTree/EditMaterialModal 未改（其 applyVisual 调用本就是单节点 merge 语义，与新 patchVisual 契约一致，无需迁移）。
+
+---
 
 ### P2 四审修复轮（2026-10-14，P2-RRR2 注释词法，待重审）
 
@@ -671,6 +926,151 @@ Readiness Verdict：GO（建议），不等于实施授权。不能把历史Plan
 
 ## 6. Review Verdict
 
+### P3 第五次 Review（2026-10-15，Codex，最新裁决）
+
+结论：P3-RRRR1 通过并关闭，P3 已报告的阻塞项全部关闭，本批次 Review PASS。
+
+- 原始真实引擎反例：父编辑→父重建，子节点实例和材质引用保持，liveChildMaterialDisposeEvents=0，materialTrackedAfter=true。
+- 额外三层父子孙回归：祖先编辑后重建，孙节点保身份、材质仍登记、存活时 dispose=0；分别走级联删除与直接 engine.dispose，最终总 dispose=1。两条路径均通过。
+- gates --quiet：84/84 PASS；p1-fixtures --node-only：43/43 PASS，包含既有共享资源、动态材质替换、撤销实例身份等回归。
+- 实现检查：业务节点边界用于资源收集；父级编辑后对受影响后代按其自身 id 对账，避免资源记给父节点。
+- 本轮未重复浏览器/GPU 长时验证，未修改实现、未暂存或提交。P6 完整编辑验收及性能验证仍按 Spec 执行；本结论不代表 P4–P6 完成。
+
+已回填规范 Spec。下一步可交实施 LLM：P3 已通过，请按同一 Spec 仅实施 P4，回填改动、验证与未验证项，不进入 P5、不自动提交。
+
+P4 完成后发送：P4 已完成，Spec 已回填，请 review P4。
+
+
+
+### P3 第四次 Review（2026-10-15，Codex，最新裁决）
+
+结论：上轮单节点动态材质泄漏已修复，但动态登记的父子节点所有权边界错误，P3 暂不通过。只剩下述资源归属问题。
+
+#### P3-RRRR1（P1，续 RRR1）：同步父节点资源时将业务子节点资源记给父节点
+
+位置：template/src/scene-core/resources.ts 的 collectObjectResources / syncObjectResources；SceneEngine.ts:499 的 applyVisual 后对账。
+
+collectObjectResources 无条件 traverse 全部后代，syncObjectResources 把集合都归给传入的 nodeId。真实 SceneEngine 创建父 p/子 c，执行 applyVisual('p',{color:'#ff0000'}) 后，子 c 的新材质仅被登记为父 p 所有。再更新 p.params 触发父重建：c 实例保留且仍使用该材质，但材质收到一次 dispose、退出登记。实测 childIdentityPreserved=true、childStillUsesMaterial=true、liveChildMaterialDisposeEvents=1、materialTrackedAfter=false。这使之前已修复的“父重建不释放存活子资源”在编辑后再次失效。
+
+修复要求：按引擎节点边界收集资源，区分工厂内部 mesh 和独立注册的业务子节点；父节点视觉操作若递归修改子节点材质，必须同步受影响子节点自己的资源归属，不能只跳过后代导致漏登记。remove/recreate/dispose 始终不得释放存活子节点仍持有的资源。新增真引擎“父子建树→父材质编辑→父重建→子继续存活→删除/整体销毁”的计数回归（父重建时子当前资源 dispose=0；最终恰好1），保留共享材质和连续编辑计数回归。
+
+#### 验证
+
+- 上轮原反例已通过：editedMaterialTracked=true，remove+dispose 后释放恰好1。
+- gates --quiet：84/84 PASS；p1-fixtures --node-only：42/42 PASS。
+- 父子编辑后重建组合反例已复现，证据 P3-fourth-review-repro.json；旧反例结果 P3-fourth-original-repro.json。
+- 未修改实现、未暂存/提交；未重复浏览器/GPU；其余已关闭项不重开。
+
+#### 给实施 LLM
+
+只修 Spec §6 最新 P3-RRRR1：动态资源登记必须遵守业务节点边界；父级递归编辑影响子节点时，将新资源登记给实际子节点，不能把整棵树资源都记给父节点。补父子编辑→父重建→子存活→删除/销毁的精确计数回归，保持已有连续编辑和共享资源回归通过。回填 Spec，不进入 P4、不自动提交。
+
+修复后发送：P3-RRRR1 父子资源归属已修复，Spec 已回填，请定向复核及相关回归。
+
+
+
+### P3 第三次 Review（2026-10-15，Codex，最新裁决）
+
+结论：RR2 关闭；RR1 上轮共享/整体销毁反例已修复，但编辑材质替换后的资源未登记，P3 暂不通过。
+
+#### P3-RRR1（P1，续 RR1）：资源登记只覆盖创建时，编辑后的新材质泄漏
+
+位置：template/src/scene-core/engine/SceneEngine.ts:573（唯一 acquireObjectResources 调用），applyVisual / replaceVisual；template/src/scene-core/materials.ts 的材质 clone/替换路径。
+
+改成实际资源登记后，createNode 只记录初始 geometry/material；applyVisualOverride 会 clone/替换 mesh.material，但没有更新资源域。真实 SceneEngine 创建 Mesh 后执行 applyVisual('a',{color:'#ff0000'})，新材质与原材质不同，isTracked(newMaterial)=false；随后 removeObject('a') 和 engine.dispose() 均完成，新材质 dispose 事件仍为 0。此前根遍历能看到当前材质，现在静态登记丢失这部分资源，编辑后删除/反复编辑会泄漏。这是 RR1 资源所有权修复的相关回归，不是扩大范围。
+
+修复要求：把资源新增/替换/移除纳入统一所有权生命周期。至少覆盖 applyVisual/replaceVisual、整表视觉恢复、工厂 update 与异步挂载这类会改变实际资源集合的入口；不应只在本反例末尾补 acquire（那仍会积累被替换旧材质）。共享/缓存保持正确所有者边界，不能直接 dispose 其他节点仍使用的资源。补真实生产入口的连续材质编辑、删除、整体销毁计数，断言旧独占资源及时释放、当前资源被登记且最终恰好释放一次。原共享材质与父子销毁回归必须保持通过。
+
+#### 已关闭与验证
+
+- RR2：真实 Bridge 恢复缺 params 的未变节点，identityPreserved=true，params 仍缺省。
+- RR1 原反例：删第一个共享 owner 后 dispose=0/refCount=1；删最后一个总 dispose=1；父子 engine.dispose 子 geometry 恰好 dispose=1。
+- gates --quiet：84/84 PASS；p1-fixtures --node-only：40/40 PASS。
+- 新反例：materialReplaced=true，editedMaterialTracked=false，remove+dispose 后 editedMaterialDisposeEvents=0。证据 P3-third-review-repro.json；上轮反例结果 P3-third-review-original-repro.json。
+- 本轮未修改实现、未暂存/提交；未重复浏览器/GPU。R1/R2/RR2 保持关闭。
+
+#### 发给实施 LLM
+
+按 Spec §6 最新第三次 Review，仅修 P3-RRR1：资源域必须随运行中的材质/几何新增、替换和移除同步，覆盖真实编辑材质入口及相关动态资源路径，不能只登记创建时资源，也不能用重复 acquire 留住废弃资源。补连续编辑与删除/整体销毁的精确释放计数，保持已有共享资源与撤销回归通过。回填 Spec，不进入 P4、不自动提交。
+
+修复后发送：P3-RRR1 动态资源登记已修复，Spec 已回填，请定向复核及相关回归。
+
+
+
+### P3 第二次 Review（2026-10-15，Codex，最新裁决）
+
+结论：R1/R2 关闭；R3/R4 的原始反例已修复，但相关合同仍有两个缺口，P3 暂不通过。
+
+#### P3-RR1（P1，续 R3）：共享资源与整体销毁仍绕过所有权
+
+位置：scene-core/engine/SceneEngine.ts:572、908；scene-core/resources.ts:92–94 及 disposeResource。
+生产引擎仍登记整个 Object3D 为 exclusive，release 时遍历材质/geometry，而非按实际资源的 owner 结算。真实 SceneEngine 中两个节点共用 material，且显式按 shared 登记两个 owner：删除第一个节点后 refCount=1，但 material 已收到 1 次 dispose，存活节点仍使用它；删除第二个后总 dispose=3（期望最后一个退出时总计 1 次）。另外父子节点整体 engine.dispose 后，子 geometry 收到 2 次 dispose（期望 1）。本轮“先摘子节点”只修 remove/recreate，未修 releaseAll 的父子重叠与共享资源旁路。
+修复要求：实际资源粒度统一引用/所有权，禁止根树遍历绕过共享登记；remove/recreate/dispose 均须同一语义，cache 所有权不能由节点域越权释放。新增上述真实引擎精确 dispose 计数回归。
+
+#### P3-RR2（P2，续 R4）：快照补默认值导致未变节点重建
+
+位置：edit/Bridge.ts:253–268，尤其 params: node.params ?? {}。
+真实 Bridge.rebuild 恢复完全相同的 {id:'a'} 快照时，将原 undefined params 强制变为 {}；引擎据此判定 params 改变，legacy 工厂走重建。实测 identityPreserved=false。首次撤销无关操作也会重建所有省略 params 的 legacy 节点，违反“未变节点保身份”的合同，增加资源重分配及异步模型重载。现有身份测试在节点已经有 params 后执行，未覆盖缺省情况。
+修复要求：区分未变节点和确需清除新增字段的节点。不要将两侧均缺省的字段转成更新；保留 R4 已修复的撤销清理语义。补真 Bridge undo/redo 对缺 params 的未变 legacy 节点的身份、create 次数及恢复状态断言。
+
+#### 已验证
+
+- 上轮四个原始反例均修复：树 height 1→3 得到 geometry.height=2.7；params-only 重建保留 position/scale/card；父重建存活子 geometry dispose=0；Bridge 恢复缺省状态后位置归零、params 清空。
+- gates --quiet：84/84 PASS；p1-fixtures --node-only：37/37 PASS。
+- 本轮额外生产模块复现：共享材质提前释放/重复释放、engine.dispose 子资源重复释放、未变缺 params 节点身份丢失，详见 P3-rereview-repro.json。
+- 未修改实现、未暂存/提交；未重复浏览器/GPU。R1/R2 保持关闭，下轮只审剩余两项及相关回归。
+
+#### 发给实施 LLM
+
+按 Spec §6 最新 P3 定向复核，仅修 P3-RR1/P3-RR2。RR1 要落实实际资源所有权，统一 remove/recreate/dispose，补真实引擎共享材质和父子整体销毁计数；RR2 要在清除新增字段的同时保持缺省 params 的未变节点身份，补真实 Bridge undo/redo 回归。保持 R1/R2 及原始反例通过，回填 Spec，不进入 P4、不自动提交。
+
+修复后发送：P3-RR1/P3-RR2 已修复，Spec 已回填，请定向复核剩余两项及相关回归。
+
+
+
+### P3 首次 Review（2026-10-15，Codex，最新裁决）
+
+结论：FAIL。四项可复现缺陷，均在 P3 生命周期与编辑合同内。未修改实现或暂存区。
+
+#### P3-R1（P1）：更新前旧参数被覆盖，真实结构参数不生效
+
+位置：template/src/scene-core/engine/SceneEngine.ts:808–819；handlers/example/example.ts:79。
+previous 与 entry.node 是同一对象；调用 definition.update 前先写 entry.node.params，导致 previous.params 已等于 next.params。真 registerTreeHandler 的 height 从 1 更新为 3：数据为 3，但实例不变、树干 geometry.height 仍是 0.9（应为 2.7）。example 的 assetId 还从已更新的 getNode 取旧值，比较也永远相等。
+修复：在修改索引前保留正确旧节点快照；给 update 正确的完整 next/previous；example 使用 previous 比较资产。补真实 tree/rack/example 的结构参数正负例，不能只用恒返回 rebuild 的假工厂。
+
+#### P3-R2（P1）：局部重建把片段当完整节点，丢失未提交字段
+
+位置：template/src/scene-core/engine/SceneEngine.ts:819、827。
+recreateNode 只收到 incoming 和 parentId，没有合并原完整 node。已有 position=[8,2,3]、scale=2、card 的 legacy 节点，只发 params 更新后，物体回到原点，节点 position/scale/card 全消失。typed update 返回 rebuild 同一路径有同样问题。
+修复：按片段“缺的不动”语义先合成完整 next node，再调用 update/create；补 legacy 和 definition 两条路径，断言 transform/card/父链/视觉与子节点均保留。
+
+#### P3-R3（P1）：父节点资源释放遍历到仍存活子节点，且重复 dispose
+
+位置：template/src/scene-core/engine/SceneEngine.ts:615–632；resources.ts 的 Object3D 遍历释放。
+childObjs 仅收集但未从旧父节点脱离，就执行 ResourceScope.release 和 disposeInstance；二者均遍历整树。真实父节点 params 重建后，子节点仍为同一实例、仍在引擎内，但其 geometry 收到两次 dispose 事件。登记根 Object3D 的所有权不能代表整棵动态子树的资源所有权，也不能保护跨节点共享材质；共享引用计数的独立单测未验证这条生产路径。
+修复：按实际资源及所有者统一释放，消除两套释放路径；存活子节点资源不得随父释放；缓存/共享资源须遵守引用生命周期。补真实引擎父子重建、共享材质、多次增删的精确 dispose 计数，不能仅断言旧根不再 tracked。
+
+#### P3-R4（P1）：undo 的全量快照被按 patch 合并，无法撤销新增字段
+
+位置：template/src/edit/Bridge.ts:250–257。
+真实 Bridge.rebuild 恢复仅含 {id:'a'} 的旧快照时，当前新增的 position=[9,0,0]、params={v:2} 都保留。update 的“缺的不动”适合片段，不等价快照替换。现有 undo 测试没有调用 Bridge，只模拟 remove/upsert 且只检查不变节点身份，因而漏检。
+修复：实现真正快照差量恢复，对旧快照缺失的字段显式清除/恢复默认，同时保留未变节点身份；补真实 Bridge 的 undo/redo、首次添加 transform/params/card、父链变化和序列化一致性测试。
+
+#### 验证
+
+- gates.mjs --quiet：84/84 PASS。
+- p1-fixtures.mjs --node-only：32/32 PASS。
+- 独立真实生产模块复现：上面四项均复现，原始结果见 P3-review-repro.json；脚本 work/p3-review.mjs。
+- 未重复浏览器/GPU 验证。现有 Node 绿灯不能替代编辑快照和资源生命周期行为验证。
+
+#### 给实施 LLM
+
+按同一 Spec §6 最新 P3 Review，只修复 P3-R1～R4。使用完整 next/previous 节点语义、保留片段未提交字段、统一实际资源所有权释放、正确实现快照差量恢复。补真实 handlers、SceneEngine、Bridge 的行为回归，禁止以复制实现或恒返回值的假工厂代替核心验收。回填改动、验证及未验证项；不进入 P4，不自动提交。
+
+修复后发送：P3-R1～R4 已修复，Spec 已回填，请定向复核及相关回归。
+
+
+
 ### P2 第五次 Review（2026-10-14，Codex，最新裁决）
 
 **结论：P2-RRR2 通过并关闭；P2 已报告的阻塞项全部关闭，本批次 Review PASS。** 本轮仅复核注释解析及相关回归，没有扩大到 P3。
@@ -830,6 +1230,11 @@ Overall Verdict：P1 REVIEW FAIL。实施未验收，不进入P2。原§5中的�
 
 ## 7. Plan-Execution Diff / Reverse Sync
 
+- 2026-10-15 P3 四审修复轮完成：RRRR1 父子资源归属边界——collectObjectResources 增 isBoundary 节点边界（不深入业务子节点子树）；syncObjectResources 返回受影响后代根供逐个对账（父编辑递归改子材质时归属子的登记）；SceneEngine.syncResourcesFor 公共入口统一三动态入口 + createNode + 异步挂载。父编辑→父重建→子存活→删除/销毁精确计数用例（父重建子材质 dispose=0、删除子恰好 1、销毁零重复）。gates 84/84、p1-fixtures 43/43、双态+结构冒烟 PASS、build/lint 0 error。详见 §5「P3 四审修复轮」。P4–P6 未开始。
+- 2026-10-15 P3 三审修复轮完成：RRR1 动态资源登记同步——syncObjectResources 资源集对账接入 applyVisual（材质路径）/replaceVisual/definition.update 原地/makeAssetNodeFactory 异步挂载四入口；releaseExcept 解除被替换登记（不积累废弃资源）；材质级 isCloneResource 标记区分缓存共享与节点私有（含 Material.clone 深拷 userData 陷阱——三处克隆点统一 claimPrivateMaterial 清除）。连续编辑/替换/删除/整体销毁精确计数 2 项真实入口回归全过。gates 84/84、p1-fixtures 42/42、双态+结构冒烟 PASS、build/lint 0 error。详见 §5「P3 三审修复轮」。P4–P6 未开始。
+- 2026-10-15 P3 二审修复轮完成：RR1 资源所有权改实际资源粒度（geometry/material/texture 逐个登记；Object3D 根不登记、树遍历释放路径删除；releaseAll Map 去重恰好一次、cache 不越权）；RR2 Bridge.rebuild 字段级差量（两侧均缺省不带字段——缺省 params 未变节点保身份；引擎有值快照缺省才显式清默认；card:null 哨兵引擎归一）。真实引擎共享材质/父子整体 dispose 计数、真 Bridge 缺 params 身份回归全过。gates 84/84、p1-fixtures 40/40、双态+结构冒烟 PASS、build/lint 0 error。详见 §5「P3 二审修复轮」。P4–P6 未开始。
+- 2026-10-15 P3 首审修复轮完成：R1 previous 深快照（definition.update 真实前后值；example assetId 用 previous 比较）；R2 rebuild 三路径喂合成完整节点（transform/card/父链不丢）；R3 先脱离后释放 + 先摘树后统一 release（双 dispose 消除，disposeInstance 删除统一到 ResourceScope）；R4 Bridge.rebuild 快照完整语义（缺省字段显式恢复默认）。真实 handler/SceneEngine/Bridge 行为回归 6 项新增（真 tree/rack 高度与仓段结构参数、真 Bridge undo/redo、精确 dispose 计数）。gates 84/84、p1-fixtures 37/37、run/edit 双态 + 结构冒烟 PASS、build/lint 0 error。详见 §5「P3 首审修复轮」。P4–P6 未开始。
+- 2026-10-15 P3 完成：typed factory 契约落地（NodeFactoryDefinition create/update/dispose + paramsEqual 幂等 + transform 引擎处理 + legacy 重建兜底）；ResourceScope 三层资源所有权（recreate/remove/dispose 统一对账，F07 关闭）；duplicateObject 改 patchVisual（F06 关闭）+ undo 差量恢复（未变节点保实例，F13 缓解）；EnvironmentEngine intensity 复用（F14/V16 关闭）+ SelectionService helper 幂等复用；example/tree/rack 三 handler 迁移示范。验证 gates 84/84、p1-fixtures 32/32（20 既有 + 12 P3 新增）、run/edit 双态 + 结构冒烟 PASS、eslint 0 error。详见 §5 P3 批次。P4–P6 未开始。
 - 2026-10-14 P2 四审修复轮完成：RRR2 手写词法扫描器（~170 行）整体删除，改 TypeScript AST 提取（模板既有 typescript 硬依赖，createRequire 锚定 skill 模板、cwd 无关）——四审三个注释含括号复现（`// }` 截断/`/* { */` 误拒/函数体内注释截断）全过，13 形态回归全保留。gates 84/84、p1-fixtures 20/20。scene-schema 依赖声明更新（零依赖 → 依赖模板 node_modules typescript，已记录）。详见 §5「P2 四审修复轮」。P3–P6 未开始。
 - 2026-10-14 P2 四审（review）：RRR1 关闭；RRR2 剩注释词法缺口——外层配平与值扫描不识别注释内括号，三处静默丢 key/误拒。建议成熟 TypeScript AST。详见 §6。未修改实现。
 - 2026-10-14 P2 三审修复轮完成：RRR1 全部 registrar 执行后逐项 sceneEngine.hasFactory(type) 后置校验（空实现/注册错名装配期抛错，错误精确列名；保留同函数去重）；RRR2 行正则替换为深度感知顶层 key 状态机（单行多 key 全提取、嵌套对象/注释/字符串假 key 不上浮、非法形态明确抛错）。生产正负例：p1-fixtures 真 scene-profile+真 SceneEngine 直跑（20/20）、gates 提取器形态用例（81/81）。RR2/RR3 已通过项全保留。详见 §5「P2 三审修复轮」。P3–P6 未开始。
@@ -858,7 +1263,17 @@ Overall Verdict：P1 REVIEW FAIL。实施未验收，不进入P2。原§5中的�
 
 ## 10. Resume / Handoff
 
-下一步：P2 已经 Codex 第五次 Review 通过。按用户分批节奏实施 P3（生命周期/编辑），完成后回填本 Spec 并 review；本轮不执行 P3。
+下一步：P3 已经第五次 Review 通过。按用户分批节奏实施 P4，完成后回填本 Spec 并单独 review；本轮不执行 P4。
+
+P3 四审修复轮改动（在三审修复轮基础上）：`scene-core/resources.ts`（collectObjectResources 增 isBoundary 节点边界参数——不深入业务子节点子树；syncObjectResources 返回受影响后代根；acquireObjectResources 透传）、`engine/SceneEngine.ts`（公共 syncResourcesFor：边界判定 + 本节点对账 + 受影响子节点逐个对账；三动态入口与 createNode 全部带边界）、`handlers/registry.ts`（异步挂载走 syncResourcesFor）、`scripts/verify/p1-fixtures.mjs`（现 43 用例：+RRRR1 父编辑→父重建→子存活→删除/销毁精确计数）。
+
+P3 三审修复轮改动（在二审修复轮基础上）：`scene-core/resources.ts`（syncObjectResources 资源集对账 + releaseExcept + 材质级 isCloneResource 区分收集口径）、`engine/AssetEngine.ts`（clone 材质打 isCloneResource；applyState 克隆清除标记）、`scene-core/materials.ts`（claimPrivateMaterial：applyInlineMaterial/applyState 克隆清缓存标记——Material.clone 深拷 userData 陷阱）、`engine/SceneEngine.ts`（applyVisual 材质路径/replaceVisual/definition.update 原地三入口接对账）、`handlers/registry.ts`（异步挂载点 onLoaded 后对账）、`scripts/verify/p1-fixtures.mjs`（+RRR1 连续编辑/替换/删除/整体销毁精确计数 2 项）。
+
+P3 二审修复轮改动（在首审修复轮基础上）：`scene-core/resources.ts` 重构为实际资源粒度（OwnedResource=geometry/material/texture；Object3D 不登记；树遍历释放路径删除；acquireObjectResources 逐 mesh 登记；releaseAll Map 去重恰好一次 + cache 跳过不越权）、`engine/SceneEngine.ts`（createNode 走 acquireObjectResources；card:null 哨兵归一 undefined）、`edit/Bridge.ts`（rebuild 字段级差量：引擎当前有值而快照缺省才显式清默认，两侧均缺省不带字段）、`scripts/verify/p1-fixtures.mjs`（+RR1 真引擎共享材质精确 dispose 计数、+RR1 父子整体销毁计数、+RR2 缺 params 未变节点身份；recreate 用例改实际资源断言）。
+
+P3 首审修复轮改动（在首轮基础上）：`engine/SceneEngine.ts`（updateNodeInPlace previous 深快照 + next 合成完整节点；rebuild 三路径喂完整节点；recreateNode 子实体先脱离后释放；removeObject 先摘树后统一 release；disposeInstance 删除）、`handlers/example/example.ts`（update 签名补 previous，assetId 用 previous 比较）、`edit/Bridge.ts`（rebuild 快照完整语义——缺省字段显式恢复默认 parentId→null/position,rotation→[0,0,0]/scale→1/params→{}/card→null）、`scripts/verify/p1-fixtures.mjs`（真实 handler 行为回归 6 项：真 tree height 结构参数、真 rack rows 结构 vs bodyColor 原地、legacy+definition+类型变化三路径字段保留、父重建存活子资源零 dispose、级联/50 轮增删精确 dispose 计数、真 Bridge undo/redo 快照恢复）。
+
+P3 改动文件清单（交接勿遗漏）：`template/src/scene-core/resources.ts`（新增）；改 `scene-core/types.ts`（NodeFactoryDefinition/paramsEqual/UpdateStats.rebuilt）、`engine/SceneEngine.ts`（definition 分发/params 契约/资源结算/patchVisual/findDuplicateSlotKeys）、`engine/AssetEngine.ts`（disposed 守卫）、`engine/EnvironmentEngine.ts`（intensity 复用 + pmremFactory 测试缝）、`handlers/example/example.ts`（typed definition + 多订阅）、`handlers/procedural/{tree,rack}.ts`（typed definition，rack 新 rows 参数）、`createScene.ts`、`index.ts`、`scene-profile.ts`（onFrame 透传退订）、`edit/Bridge.ts`（patchVisual 复制 + 差量 undo + 快照完整恢复）、`edit/SelectionService.ts`（helper 复用）；`scripts/verify/p1-fixtures.mjs`（P3 用例 17 项）。行为变化：① 业务工厂推荐 definition 形态（旧 function 兼容但 params 变化重建而非静默）；② params 同值重推不再触发任何重放/重建（幂等）；③ 复制操作不再清其他节点视觉层；④ undo/redo 不再全树拆除（未变节点保实例）且快照缺省字段显式恢复默认；⑤ 环境强度调整不再重新生成 PMREM；⑥ rack 分组支持 params.rows（1–12）。注意：P1/P2 的未暂存文件与 P3 改动均未暂存，不要在交接时遗漏。
 
 P2 新增文件清单（交接勿遗漏）：`template/src/{scene-profile,boot-scene,entry}.ts`、`template/src/scene-core/asset-manifest.ts`、`template/scenes/{empty,demo}.json`、`template/public/assets/asset-manifest.json`、`scripts/lib/{asset-catalog,scene-schema}.mjs`。行为变化：init 默认 empty（旧 demo 需显式 --profile demo）；--with-components 多 tgz 需 --components-version；--deps copy+components 真装依赖并同步 lock（较慢）；业务分组登记处为 `BUSINESS_REGISTRARS` 映射（scene-profile.ts，空实现/注册错名在装配期抛错）。已删除：`template/public/__p1_probe_b2_v2.html`（P1 探针残留）。注意 P1 的 scene-checks.mjs、p1-fixtures.mjs 与上述 P2 新文件均未暂存，不要在交接时遗漏。后续按 P3→P6 完成，最后用同场景前后对照证明速度收益与兼容性。
 
