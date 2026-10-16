@@ -1,27 +1,19 @@
 #!/usr/bin/env node
-// gen-tokens.mjs — 维护工具：从 design-language 真源重新生成皮肤与消费包。
-//
-// 同源生成四件产物（，任何一件失败全部不落盘）：
-//   1. scripts/preview/src/assets/themes/default.less
-//   2. scripts/preview/src/assets/themes/dark.less
-//   3. references/design-language.md §1 速查表（GEN 标记之间）
-//   4. references/design-manifest.json（来源/hash/token 数据契约）
+// gen-tokens.mjs — 维护工具：从 design-language 真源（样式Token/设计系统.md）
+// 重新生成浅深主题、design-language.md §1速查及token-catalog.md完整分类目录。
 //
 // 范围：规则表格（约 90% token）按文档表格解析生成；散文定义的组
-// （frost-*、字体栈）是显式 extraction override——每组绑定源文档锚行
-// 的内容 hash，源片段变化时 --check 失败并提示维护，不静默沿用旧值。
+// （frost-*、字体栈）是本脚本内嵌的固定模板片段——文档更新这些时改片段。
 // bridge.less 保持手写（工程映射，非文档可推导）。
 //
 // 文档结构漂移时：解析报错即停（REPORT 全部列出，不产出静默结果）。
 //
-// 用法（两种入口，同时给出报错）：
-//   node gen-tokens.mjs <设计系统.md 路径> [--check]      # 旧命令，保持兼容
-//   node gen-tokens.mjs --source-dir <design-language 目录> [--check]
-//   --check  校验生成结果与磁盘文件一致（EOL 无关）；有漂移退出码 1
-import { readFileSync, writeFileSync, existsSync, mkdirSync, renameSync, rmSync } from 'fs';
+// 用法：
+//   node gen-tokens.mjs <设计系统.md 路径> [--check]
+//   --check  校验生成结果与磁盘文件一致（CI 用）；有漂移退出码 1
+import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { dirname, join, resolve } from 'path';
 import { fileURLToPath } from 'url';
-import { createHash } from 'crypto';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const SKILL_DIR = resolve(__dirname, '..');
@@ -29,124 +21,18 @@ const SKILL_DIR = resolve(__dirname, '..');
 // ---------- args ----------
 const args = process.argv.slice(2);
 const checkMode = args.includes('--check');
-const sourceDirIdx = args.indexOf('--source-dir');
-const hasSourceDir = sourceDirIdx !== -1;
-const sourceDirArg = hasSourceDir ? args[sourceDirIdx + 1] : undefined;
-const sourceValueIdx = hasSourceDir ? sourceDirIdx + 1 : -1;
-const positional = args.filter((a, i) => !a.startsWith('--') && i !== sourceValueIdx);
-
-if (hasSourceDir && positional.length > 0) {
-  console.log('RESULT: FAIL | --source-dir and a positional doc path are mutually exclusive; pick one');
+const docArg = args.find((a) => !a.startsWith('--'));
+if (!docArg) {
+  console.log('RESULT: FAIL | usage: node gen-tokens.mjs <设计系统.md 路径> [--check]');
   process.exit(1);
 }
-if (hasSourceDir && (!sourceDirArg || sourceDirArg.startsWith('--'))) {
-  console.log('RESULT: FAIL | usage: node gen-tokens.mjs --source-dir <design-language 目录> [--check]');
-  process.exit(1);
-}
-
-let docPath;
-let sourceDir = null;
-if (hasSourceDir) {
-  sourceDir = resolve(sourceDirArg);
-  docPath = join(sourceDir, '样式Token', '设计系统.md');
-  if (!existsSync(docPath)) {
-    console.log(`RESULT: FAIL | --source-dir: 样式Token/设计系统.md not found under ${sourceDir}`);
-    process.exit(1);
-  }
-} else {
-  const docArg = positional[0];
-  if (!docArg) {
-    console.log('RESULT: FAIL | usage: node gen-tokens.mjs <设计系统.md 路径 | --source-dir <目录>> [--check]');
-    process.exit(1);
-  }
-  docPath = resolve(docArg);
-  // 推断 source dir（00索引.md 在 doc 上两级），仅用于读设计版本；不存在则版本记 unknown
-  const guessed = resolve(docPath, '..', '..');
-  if (existsSync(join(guessed, '00索引.md'))) sourceDir = guessed;
-}
-if (positional.length > 1) {
-  console.log('RESULT: FAIL | too many positional arguments (expected exactly one doc path)');
-  process.exit(1);
-}
-
+const docPath = resolve(docArg);
 let doc;
 try {
   doc = readFileSync(docPath, 'utf8');
 } catch (e) {
   console.log(`RESULT: FAIL | cannot read doc: ${e.message}`);
   process.exit(1);
-}
-
-// ---------- 工具：hash（EOL 归一，跨平台稳定） ----------
-const sha256 = (s) => createHash('sha256').update(s).digest('hex');
-const normEol = (s) => s.replace(/\r\n/g, '\n');
-const fileHash = (path) => {
-  try { return sha256(normEol(readFileSync(path, 'utf8'))); } catch { return null; }
-};
-
-// ---------- 设计版本（00索引.md；维护期可选，运行期不依赖） ----------
-let designVersion = 'unknown';
-let indexHash = null;
-if (sourceDir) {
-  const idxPath = join(sourceDir, '00索引.md');
-  if (existsSync(idxPath)) {
-    const idx = readFileSync(idxPath, 'utf8');
-    indexHash = sha256(normEol(idx));
-    const m = idx.match(/版本：\*\*(v[\d.]+)\*\*/);
-    if (m) designVersion = m[1];
-  }
-}
-
-// ---------- extraction override 声明 ----------
-// 散文定义组：值来自脚本内嵌模板（文档散文无法逐 token 解析），但每组绑定
-// **完整源依赖行集合**的内容 hash 基线（单行锚点会漏掉组内其余参数行，
-// 改 font-family-en 或 frost-surface 行曾可静默通过）。任一依赖行变化 →
-// --check 失败 + 生成闸拒绝，要求人工核对模板片段。
-// anchors 覆盖该组模板实际消费的全部源参数行；sectionRange 额外覆盖整段
-// （用于检测行删除/结构调整导致锚点整体消失）。
-const EXTRACTIONS = [
-  {
-    id: 'font-stacks',
-    sourceRef: '样式Token/设计系统.md#§5.1 字体参数表',
-    sectionStart: '#### 字体参数',
-    sectionEnd: '### 5.2',
-    anchors: [
-      '| `font-family-zh` | 中文',
-      '| `font-family-en` | 英文',
-      '| `font-family-numeric` | 数字',
-    ],
-    note: '字体栈：文档只给字体名候选表，最终 CSS 栈（含引号、回退顺序）由工程侧整理。',
-  },
-  {
-    id: 'frost',
-    sourceRef: '样式Token/设计系统.md#§7.2 材质档位与 Token（含 §7.5 交互增量）',
-    sectionStart: '### 7.2 材质档位与 Token',
-    sectionEnd: '### 7.3',
-    anchors: [
-      '| `--frost-blur-*` | 各档位背景模糊',
-      '| `--frost-surface-*` | 各档位中性磨砂表面',
-      '| `--frost-shadow-*` | 各档位阴影',
-      '| `--frost-backdrop-*` | 独立父级柔和渐变背景',
-      '| `--frost-tint-blue`、`--frost-tint-lavender`、`--frost-tint-teal`',
-      '| `--frost-border` | 辅助材质边界',
-      '| `--frost-surface-solid` | 减少透明度及不支持模糊时的不透明表面',
-      '| `frost-common`、`frost-light`、`frost-dark`',
-    ],
-    extraAnchors: [
-      // hover/active 增量与过渡来自 §7.5/§7.2 公共参数行，在另一节
-      { sectionStart: '### 7.5', sectionEnd: '<a id="frost-decoration">', anchor: '| Hover／Active |' },
-    ],
-    note: 'frost 材质：文档为散文+参数描述，逐 token 值由工程侧从参数描述整理（blur/saturate/surface/shadow/backdrop/tint/border/solid/hover-active 增量/transition）。',
-  },
-];
-// 单行内容 hash（按 marker 定位该行；EOL 无关——行尾 \r 剥离，CRLF/LF 源文件 hash 一致）
-function lineHashAt(marker) {
-  const idx = doc.indexOf(marker);
-  if (idx === -1) return null;
-  const lineEnd = doc.indexOf('\n', idx);
-  let line = doc.slice(idx, lineEnd === -1 ? undefined : lineEnd);
-  if (line.endsWith('\r')) line = line.slice(0, -1);
-  return sha256(line);
 }
 
 const problems = [];
@@ -308,7 +194,7 @@ const radius = tableAfter('### 3.1', ['Token', '半径']).map((r) => {
 // radius-size-infinity 是散文映射（§3.2：既有名称映射到同一 999px 值）
 const fullRow = radius.find((t) => t.name === 'radius-size-full');
 if (!fullRow) parseError('3.1 radius', 'radius-size-full missing');
-const radiusExtra = fullRow ? [{ name: 'radius-size-infinity', val: fullRow.val, scene: '既有名称，映射到同一 999px 值', sourceRef: '§3.2 使用规则（散文映射）' }] : [];
+const radiusExtra = fullRow ? [{ name: 'radius-size-infinity', val: fullRow.val, scene: '既有名称，映射到同一 999px 值' }] : [];
 
 // ---------- 4.1 边框宽度（| Token | 用途 | 浅色主题 | 深色主题 |，取浅色档） ----------
 const borderWidth = tableAfter('### 4.1', ['Token', '浅色主题']).map((r) => {
@@ -360,14 +246,16 @@ const shadows = tableAfter('### 6.2', ['Token', 'X', 'Y', '模糊', '扩展', 'L
 });
 
 // ---------- 解析问题即停（不产出静默结果） ----------
-if (problems.length) {
+function stopOnParseErrors() {
+  if (!problems.length) return;
   console.log(`RESULT: FAIL | ${problems.length} parse problem(s) — doc structure drifted?`);
   for (const p of problems) console.log(`  ${p}`);
   console.log('HINT: 设计系统.md 表格结构变化 —— 先适配本解析器再重跑；不要手改生成产物');
   process.exit(1);
 }
+stopOnParseErrors();
 
-// ---------- 内嵌模板片段（extraction override；锚行 hash 变化 → --check 失败） ----------
+// ---------- 内嵌模板片段（散文定义的组；文档更新时改这里） ----------
 const FONT_STACKS = [
   "  --font-family-zh: 'Microsoft YaHei', 'PingFang SC', 'Source Han Sans CN', 'HarmonyOS Sans', sans-serif;",
   "  --font-family-en: 'HarmonyOS Sans', Arial, 'Helvetica Neue', Roboto, sans-serif;",
@@ -426,19 +314,6 @@ const FROST_DARK = [
   '  --frost-tint-lavender: rgba(168, 159, 249, 0.08);',
   '  --frost-tint-teal: rgba(99, 213, 168, 0.07);',
 ].join('\n');
-
-// 解析 extraction override 模板片段中的 token 声明（供 manifest 收录）
-function parseDeclarations(block) {
-  const out = [];
-  for (const line of block.split('\n')) {
-    const m = line.match(/^\s*(--[\w-]+)\s*:\s*([^;]+);/);
-    if (m) out.push({ name: m[1].slice(2), value: m[2].replace(/\/\*.*\*\//, '').trim() });
-  }
-  return out;
-}
-const fontDecls = parseDeclarations(FONT_STACKS);
-const frostLightDecls = parseDeclarations(FROST_LIGHT);
-const frostDarkDecls = parseDeclarations(FROST_DARK);
 
 // ---------- 对齐辅助：声明列对齐，注释跟进 ----------
 function emitEntries(entries) {
@@ -747,193 +622,132 @@ if (darkMissing.length) {
   process.exit(1);
 }
 
-// ---------- references/design-manifest.json（数据契约） ----------
-// 所有输出从同一解析结果生成；manifest 记录来源 hash 与 token 数据，
-// 运行期消费只读 skill 内包，不回查外部 design-language 目录。
-// token 类型集合（按真实语义分类，值与类型做兼容性校验，不冒充 DTCG）：
-const TOKEN_TYPES = ['color', 'dimension', 'number', 'fontWeight', 'fontFamily', 'shadow', 'transition', 'borderStyle', 'alpha'];
-// type → value 兼容性校验器（value 必须匹配该类型的 CSS 语法形态）
-const TYPE_VALIDATORS = {
-  color: (v) => /^#[0-9a-fA-F]{6}$/.test(v) || /^rgba?\(\s*\d+,\s*\d+,\s*\d+(?:,\s*(?:0|1|0?\.\d+))?\s*\)$/.test(v),
-  dimension: (v) => /^-?\d+(\.\d+)?(px|%)$/.test(v) || /^0$/.test(v),
-  number: (v) => /^-?\d+(\.\d+)?$/.test(v),
-  fontWeight: (v) => /^\d{3}$/.test(v),
-  fontFamily: (v) => v.includes(',') || /^[A-Za-z][\w-]*$/.test(v),
-  shadow: (v) => /^-?\d+(\.\d+)?(px)?(\s+-?\d+(\.\d+)?(px)?){2,3}\s+rgba\(/.test(v),
-  transition: (v) => /^\d+m?s\b/.test(v) && /(ease|linear|step|cubic-bezier)/.test(v),
-  borderStyle: (v) => /^(dotted|dashed|solid)$/.test(v),
-  alpha: (v) => /^(0|1|0?\.\d+)$/.test(v),
-};
-function tokenEntry(name, type, valueByTheme, density, sourceRef) {
-  if (!TOKEN_TYPES.includes(type)) {
-    console.log(`RESULT: FAIL | manifest type "${type}" not in internal type set (token ${name})`);
-    process.exit(1);
+// The catalogue follows emitted public declarations, so derived names are included too.
+function publicDeclarations(css) {
+  const entries = new Map();
+  for (const m of css.matchAll(/--([a-z][a-z0-9-]*)\s*:\s*([^;]+);(?:[ \t]*\/\*([^\n]*?)\*\/)?/g)) {
+    if (m[1] === 'ux-mix-base' || m[1].startsWith('el-')) continue;
+    if (!entries.has(m[1])) entries.set(m[1], { value: m[2].trim(), note: (m[3] || '').trim() });
   }
-  const vals = Object.values(valueByTheme || {});
-  if (vals.length && !vals.every((v) => TYPE_VALIDATORS[type](v))) {
-    console.log(`RESULT: FAIL | manifest token ${name}: value(s) [${vals.join(' | ')}] incompatible with type ${type}`);
-    process.exit(1);
-  }
-  const e = { name, type, sourceRef };
-  if (valueByTheme) e.valueByTheme = valueByTheme;
-  if (density) e.density = density;
-  return e;
+  return entries;
 }
-
-const manifestTokens = [];
-for (const t of semanticAll) {
-  manifestTokens.push(tokenEntry(t.name, 'color', { default: t.light, dark: t.dark }, null, '设计系统.md#1.2'));
+const publicLight = publicDeclarations(cssOut);
+const publicDark = publicDeclarations(darkCssOut);
+const themeNameDiff = [...publicLight.keys()].filter(k => !publicDark.has(k))
+  .concat([...publicDark.keys()].filter(k => !publicLight.has(k)));
+if (themeNameDiff.length) {
+  console.log(`RESULT: FAIL | public token names differ between themes: ${themeNameDiff.join(', ')}`);
+  process.exit(1);
 }
-for (const t of palette) {
-  manifestTokens.push(tokenEntry(t.name, 'color', { default: t.value, dark: t.value }, null, '设计系统.md#1.3'));
+const uses = new Map([
+  ...semanticAll.map(t => [t.name, t.use]),
+  ...radius.concat(radiusExtra).map(t => [t.name, t.scene]),
+  ...borderWidth.map(t => [t.name, t.use]),
+  ...fontSizes.flatMap(t => [[t.fs, t.role], [t.lh, t.role]]),
+  ...fontWeight.map(t => [t.name, t.use]),
+  ...shadows.map(t => [t.name, t.level]),
+]);
+// Catalogue-only metadata: preserve source descriptions without changing theme output.
+for (const [name, kind] of tableAfter('### 1.4', ['检索 Token', '类别／色名'])) {
+  uses.set(name, `公司视觉辅助色 ${clean(kind)}`);
 }
-for (const t of company) {
-  manifestTokens.push(tokenEntry(t.name, 'color', { default: t.value, dark: t.value }, null, '设计系统.md#1.4'));
+for (const [name, meaning] of tableAfter('### 1.6', ['检索 Token', '语义／Highlight.js 类名'])) {
+  uses.set(name, `${clean(meaning).replace(/`/g, '')}；浅色代码区`);
+  uses.set(`${name}-dark`, `${clean(meaning).replace(/`/g, '')}；深色代码区`);
 }
-for (const t of chartDefault) {
-  manifestTokens.push(tokenEntry(t.name, 'color', { default: t.light, dark: t.dark }, null, '设计系统.md#1.5(default)'));
+for (const t of palette) uses.set(t.name, `${t.name.toUpperCase().replace(/-(\d+)$/, ' $1')}`);
+// §5.1 begins with a deployment table; select the font parameter rows explicitly.
+const fontSection = doc.split('### 5.1')[1]?.split('### 5.2')[0] || '';
+for (const line of fontSection.split('\n').filter(isRow)) {
+  const [name, content] = cells(line);
+  if (/^font-family-/.test(name) && clean(content)) uses.set(name, `${clean(content)}字体`);
 }
-for (const t of chartAccessible) {
-  // CSS 实际发布 `--color-chart-N-accessible`；manifest 必须与最终 CSS 名称一致，
-  // 否则同名覆盖 default 序列且 accessible 序列在 manifest 中不存在
-  manifestTokens.push(tokenEntry(`${t.name}-accessible`, 'color', { default: t.light, dark: t.dark }, null, '设计系统.md#1.5(accessible)'));
+for (const name of ['font-family-zh', 'font-family-en', 'font-family-numeric']) {
+  if (!uses.has(name)) parseError('5.1 font-family', `missing content for ${name}`);
 }
-for (const t of code) {
-  manifestTokens.push(tokenEntry(t.name, 'color', { default: t.light, dark: t.light }, null, '设计系统.md#1.6'));
-  manifestTokens.push(tokenEntry(`${t.name}-dark`, 'color', { default: t.dark, dark: t.dark }, null, '设计系统.md#1.6(深色代码区)'));
-}
-for (const t of spacing) {
-  manifestTokens.push(tokenEntry(t.name, 'dimension', { default: `${t.reg}px`, dark: `${t.reg}px` }, { default: `${t.reg}px`, compact: `${t.compact}px` }, '设计系统.md#2.2'));
-}
-for (const t of [...radius, ...radiusExtra]) {
-  manifestTokens.push(tokenEntry(t.name, 'dimension', { default: t.val, dark: t.val }, null, t.sourceRef || '设计系统.md#3.1'));
-}
-for (const t of borderWidth) {
-  manifestTokens.push(tokenEntry(t.name, 'dimension', { default: t.val, dark: t.val }, null, '设计系统.md#4.1'));
-}
-for (const t of borderStyle) {
-  manifestTokens.push(tokenEntry(t.name, 'borderStyle', { default: t.val, dark: t.val }, null, '设计系统.md#4.2'));
-}
-for (const d of fontDecls) {
-  manifestTokens.push(tokenEntry(d.name, 'fontFamily', { default: d.value, dark: d.value }, null, EXTRACTIONS[0].sourceRef));
-}
-for (const t of fontSizes) {
-  manifestTokens.push(tokenEntry(t.fs, 'dimension', { default: t.size, dark: t.size }, null, '设计系统.md#5.2'));
-  manifestTokens.push(tokenEntry(t.lh, 'dimension', { default: t.height, dark: t.height }, null, '设计系统.md#5.2'));
-}
-for (const t of fontWeight) {
-  manifestTokens.push(tokenEntry(t.name, 'fontWeight', { default: t.weight, dark: t.weight }, null, '设计系统.md#5.3'));
-}
+uses.set('font-family', '通用中英文字体栈');
+for (const [name, scene] of tableAfter('### 6.3', ['Token', '适用场景'])) uses.set(name, clean(scene));
+const frostPresets = new Map(tableAfter('### 7.2', ['档位', '用途']).map(([name, use]) => [name, clean(use)]));
 for (const t of shadows) {
-  manifestTokens.push(tokenEntry(t.name, 'shadow', { default: t.val, dark: t.darkVal }, null, '设计系统.md#6.2'));
+  if (!clean(uses.get(t.name)) || uses.get(t.name) === t.level) parseError('6.3 shadow', `missing scene for ${t.name}`);
 }
-const frostDarkByName = new Map(frostDarkDecls.map((d) => [d.name, d.value]));
-// frost token 按真实语义分类，不再一律 dimension
-function frostTypeOf(name, value) {
-  if (/^frost-shadow-/.test(name)) return 'shadow';
-  if (name === 'frost-transition') return 'transition';
-  if (/-add$/.test(name)) return 'alpha';
-  if (/^frost-saturate-/.test(name)) return 'dimension'; // 百分比长度语义档
-  if (/^frost-blur-/.test(name)) return 'dimension';
-  if (/^frost-(surface|backdrop|tint)-/.test(name) || name === 'frost-border-color') return 'color';
-  // 兜底：值形态倒推（rgba/hex → color；数值 → number；其余 → dimension）
-  if (TYPE_VALIDATORS.color(value)) return 'color';
-  if (TYPE_VALIDATORS.number(value)) return 'number';
-  return 'dimension';
+for (const preset of ['control', 'card', 'overlay']) {
+  if (!frostPresets.get(preset)) parseError('7.2 frost', `missing purpose for ${preset}`);
 }
-for (const d of frostLightDecls) {
-  const darkVal = frostDarkByName.get(d.name) ?? d.value;
-  manifestTokens.push(tokenEntry(d.name, frostTypeOf(d.name, d.value), { default: d.value, dark: darkVal }, null, EXTRACTIONS[1].sourceRef));
+stopOnParseErrors();
+const frostKinds = { blur: '背景模糊', surface: '中性磨砂表面', shadow: '阴影' };
+for (const name of publicLight.keys()) {
+  const match = name.match(/^frost-(blur|surface|shadow)-(control|card|overlay)$/);
+  if (match) uses.set(name, `${frostPresets.get(match[2])}的${frostKinds[match[1]]}`);
 }
+// These descriptions map existing emitted names to §7.2–7.5; no new tokens are introduced.
+for (const [name, use] of Object.entries({
+  'frost-saturate-neutral': '中性磨砂饱和度 100%',
+  'frost-saturate-muted': '复杂背景饱和度 95%',
+  'frost-surface-solid': '减少透明度或不支持模糊时的不透明表面',
+  'frost-transition': '材质交互过渡',
+  'frost-border-color': '材质边界颜色',
+  'frost-backdrop-base': '柔和背景的中性基底',
+})) uses.set(name, use);
+for (const [color, label] of [['blue', '雾蓝'], ['lavender', '灰紫'], ['teal', '青绿']]) {
+  uses.set(`frost-backdrop-${color}`, `${label}柔和背景色`);
+  uses.set(`frost-tint-${color}`, `${label}薄染色层`);
+}
+const compactValues = new Map(spacing.map(t => [t.name, `${t.compact}px`]));
+const categories = [
+  ['品牌动作', /^color-brand/], ['文本与链接', /^color-(text|link)/],
+  ['图标颜色', /^color-icon/], ['边框颜色', /^color-border/],
+  ['背景', /^color-bg/], ['交互与填充', /^color-(hover|select|table|fill)/],
+  ['功能颜色', /^color-(error|alert|warning|success|info|none)/],
+  ['基础色板', /^(rose|red|orange|yellow|green|mint|cyan|blue|indigo|purple|pink|brand|gray)-/],
+  ['公司辅助色', /^company-/], ['图表颜色', /^color-chart/], ['代码配色', /^code-/], ['间距', /^space-/],
+  ['圆角', /^radius-/], ['边框宽度与线型', /^border-/],
+  ['字族', /^font-family/], ['字号与行高', /^font-(size|line-height)/],
+  ['字重', /^font-weight/], ['投影', /^shadow-/], ['材质', /^frost-/],
+  ['其他', /./],
+];
+const catalogGroups = new Map(categories.map(([title]) => [title, []]));
+const escapeCell = text => String(text ?? '').replace(/\|/g, '\\|').replace(/[\r\n]+/g, ' ');
+for (const [name, entry] of publicLight) {
+  const title = categories.find(([, pattern]) => pattern.test(name))[0];
+  const purpose = uses.get(name) || entry.note ||
+    (name.startsWith('font-size-') ? '字号' : name.startsWith('font-line-height-') ? '行高' : entry.value);
+  catalogGroups.get(title).push({ name, purpose, light: entry.value, dark: publicDark.get(name).value });
+}
+const catalogLines = [
+  '# 完整 token 目录', '',
+  '> 由 scripts/gen-tokens.mjs 生成，勿手改。先查常用速查；不足时按用途搜索本文件，只读命中行及必要的分类上下文，满足需求即停止。不要默认全量读取。', '',
+  `共 ${publicLight.size} 个公共名称；浅色/深色同名，仅实际值随主题变化。内部桥接变量 --ux-mix-base 不作为页面候选。`,
+  '使用 var(--token-name)；代码配色 -dark 用于深色代码区。', '',
+  '## 分类索引', '', '| 分类 | 数量 |', '| --- | --- |',
+  ...[...catalogGroups].filter(([, rows]) => rows.length).map(([title, rows]) => `| ${title} | ${rows.length} |`), '',
+];
+for (const [title, rows] of catalogGroups) {
+  if (!rows.length) continue;
+  const spacingGroup = title === '间距';
+  const themed = !spacingGroup && (title === '图表颜色' || rows.some(row => row.light !== row.dark));
+  const headers = spacingGroup ? ['准确名称', '常规值', '紧凑值'] :
+    themed ? ['准确名称', '用途', '浅色值', '深色值'] : ['准确名称', '用途', '值'];
+  catalogLines.push(`## ${title}`, '', `| ${headers.join(' | ')} |`, `| ${headers.map(() => '---').join(' | ')} |`);
+  for (const row of rows) {
+    const values = spacingGroup ? [row.light, compactValues.get(row.name)] :
+      themed ? [row.purpose, row.light, row.dark] : [row.purpose, row.light];
+    catalogLines.push(`| \`--${row.name}\` | ${values.map(escapeCell).join(' | ')} |`);
+  }
+  catalogLines.push('');
+}
+const catalogOut = catalogLines.join('\n');
 
-// ---------- token 名称唯一性 + manifest 键集合与 CSS 声明集合一致性校验 ----------
-{
-  const names = manifestTokens.map((t) => `--${t.name}`);
-  const dup = names.filter((n, i) => names.indexOf(n) !== i);
-  if (dup.length) {
-    console.log(`RESULT: FAIL | manifest token names not unique: ${[...new Set(dup)].join(', ')}`);
-    process.exit(1);
-  }
-  // CSS 侧实际声明的自定义属性集合（default.less + dark.less 并集），扣除：
-  //  - 紧凑档覆盖块（同名 token 二次赋值，非新 token）
-  //  - 基础层内部变量（--ux-mix-base：bridge 派生基底，非设计 token，显式豁免登记）
-  const cssDecls = new Set();
-  for (const m of (cssOut + '\n' + darkCssOut).matchAll(/--[a-z][a-z0-9-]*(?=\s*:)/g)) cssDecls.add(m[0]);
-  const manifestSet = new Set(names);
-  const BRIDGE_PLUMBING = new Set(['--ux-mix-base']);
-  const missingInManifest = [...cssDecls].filter((n) => !manifestSet.has(n) && !BRIDGE_PLUMBING.has(n));
-  const missingInCss = [...manifestSet].filter((n) => !cssDecls.has(n));
-  if (missingInManifest.length || missingInCss.length) {
-    console.log('RESULT: FAIL | manifest ↔ theme CSS token set mismatch:');
-    if (missingInManifest.length) console.log(`  in CSS but not manifest: ${missingInManifest.join(', ')}`);
-    if (missingInCss.length) console.log(`  in manifest but not CSS: ${missingInCss.join(', ')}`);
-    process.exit(1);
-  }
-}
-
-// extraction override 校验数据（逐锚行基线，覆盖组内全部源依赖行）
-const extractionChecks = EXTRACTIONS.map((ex) => {
-  const lines = ex.anchors.map((a, i) => ({
-    anchor: a,
-    sourceSnippetHash: lineHashAt(a),
-  }));
-  for (const ea of ex.extraAnchors || []) {
-    lines.push({ anchor: ea.anchor, sourceSnippetHash: lineHashAt(ea.anchor), optional: true, note: `节 ${ea.sectionStart}` });
-  }
-  return {
-    id: ex.id,
-    sourceRef: ex.sourceRef,
-    lines,
-    note: ex.note,
-  };
-});
-// 生成侧防漏：任一**非 optional** 锚行缺失（文档删行/改结构）→ 立即 FAIL，不得静默放行
-{
-  const missing = [];
-  for (const c of extractionChecks) {
-    for (const l of c.lines) {
-      if (l.sourceSnippetHash === null && !l.optional) missing.push(`${c.id}: ${l.anchor.slice(0, 50)}`);
-    }
-  }
-  if (missing.length) {
-    console.log('RESULT: FAIL | extraction override anchor line(s) not found in source doc:');
-    for (const m of missing) console.log(`  ${m}`);
-    console.log('HINT: 设计文档删改了字体/frost 参数行 —— 先核对 gen-tokens.mjs 模板片段与 anchors 声明，再重跑');
-    process.exit(1);
-  }
-}
-
-const manifest = {
-  schemaVersion: 1,
-  designVersion,
-  generatedAt: null, // 由写盘时填充（避免非确定性 → 由调用方/CI 盖章；生成器本身不读时钟，保证 --check 可重现）
-  sourceFiles: {},
-  tokens: manifestTokens,
-  generatedFiles: {},
-  rulesVersion: 'gts-ep-coder-token-rules@1',
-  unresolvedGaps: [
-    '图表选型规范：设计师确认后补（design-language/00索引.md 已知待确认项）',
-    'frost-* 与字体栈为 extraction override：文档散文参数由工程侧整理为模板片段，锚行变化须人工核对',
-  ],
-  extractionOverrides: extractionChecks,
-};
-if (sourceDir) {
-  manifest.sourceFiles = {
-    '样式Token/设计系统.md': { hash: sha256(normEol(doc)) },
-  };
-  if (indexHash) manifest.sourceFiles['00索引.md'] = { hash: indexHash };
-  manifest.sourceDirNote = 'sourceFiles 相对 design-language 源目录；运行期消费不回查该目录，仅维护期（gen-tokens / --check）读取';
-} else {
-  manifest.sourceFiles = {
-    '样式Token/设计系统.md': { hash: sha256(normEol(doc)), path: docPath, note: '仅传入文档路径，未定位 source dir；designVersion 为 unknown' },
-  };
-}
-
-// ---------- 输出路径 ----------
+// ---------- 写盘 / 校验 ----------
 const cssPath = join(SKILL_DIR, 'scripts', 'preview', 'src', 'assets', 'themes', 'default.less');
 const darkPath = join(SKILL_DIR, 'scripts', 'preview', 'src', 'assets', 'themes', 'dark.less');
 const refPath = join(SKILL_DIR, 'references', 'design-language.md');
-const manifestPath = join(SKILL_DIR, 'references', 'design-manifest.json');
+const catalogPath = join(SKILL_DIR, 'references', 'token-catalog.md');
+const normalizeEol = text => text.replace(/\r\n/g, '\n');
+function writeGenerated(path, text) {
+  const crlf = existsSync(path) && readFileSync(path, 'utf8').includes('\r\n');
+  writeFileSync(path, crlf ? normalizeEol(text).replace(/\n/g, '\r\n') : normalizeEol(text), 'utf8');
+}
 
 function applyToRef(refCur) {
   const start = refCur.indexOf(GEN_START);
@@ -942,317 +756,49 @@ function applyToRef(refCur) {
   return refCur.slice(0, start) + genTable + refCur.slice(end + GEN_END.length);
 }
 
-// generatedFiles hash 在最终内容定稿后统一填充（不含自身，避免递归）
-function fillGeneratedHashes() {
-  manifest.generatedFiles = {
-    'scripts/preview/src/assets/themes/default.less': { hash: sha256(normEol(cssOut)) },
-    'scripts/preview/src/assets/themes/dark.less': { hash: sha256(normEol(darkCssOut)) },
-    'references/design-language.md': { hash: sha256(normEol(applyToRef(readFileSync(refPath, 'utf8')) ?? '')), note: 'GEN:TOKEN-TABLE 区段' },
-  };
-}
-
-// ---------- EOL 无关比较（吸取 autocrlf 伪漂移教训：跨平台 checkout 后 --check 仍须稳定） ----------
-const sameContent = (disk, generated) => {
-  if (disk === null || disk === undefined) return false;
-  return normEol(disk) === normEol(generated);
-};
-
-// ---------- --check 模式 ----------
 if (checkMode) {
-  const readOr = (p) => (existsSync(p) ? readFileSync(p, 'utf8') : null);
-  const cssCur = readOr(cssPath);
-  const darkCur = readOr(darkPath);
-  const refCur = readOr(refPath);
-  const manifestCur = readOr(manifestPath);
-
-  const drifts = [];
-  if (!sameContent(cssCur, cssOut)) drifts.push('default.less differs from generated output');
-  if (!sameContent(darkCur, darkCssOut)) drifts.push('dark.less differs from generated output');
-
-  const refNext = refCur === null ? null : applyToRef(refCur);
-  if (refCur === null) drifts.push('design-language.md not found');
-  else if (refNext === null) drifts.push('design-language.md missing GEN:TOKEN-TABLE markers');
-  else if (!sameContent(refCur, refNext)) drifts.push('design-language.md §1 differs from generated output');
-
-  // manifest 校验（完整校验受控字段，不能只查部分导致版本/速查 hash 伪造可假通过）
-  fillGeneratedHashes();
-  if (manifestCur === null) {
-    drifts.push('design-manifest.json not found (run generator without --check to create)');
-  } else {
-    let parsed = null;
-    try { parsed = JSON.parse(manifestCur); } catch { drifts.push('design-manifest.json is not valid JSON'); }
-    if (parsed) {
-      // 受控标量字段：schema/design/rulesVersion 必须与本次解析结果一致
-      if (parsed.schemaVersion !== manifest.schemaVersion) drifts.push(`design-manifest.json schemaVersion ${JSON.stringify(parsed.schemaVersion)} !== expected ${manifest.schemaVersion}`);
-      if (parsed.designVersion !== designVersion) drifts.push(`design-manifest.json designVersion ${JSON.stringify(parsed.designVersion)} !== source index ${JSON.stringify(designVersion)}`);
-      if (parsed.rulesVersion !== manifest.rulesVersion) drifts.push(`design-manifest.json rulesVersion ${JSON.stringify(parsed.rulesVersion)} !== expected ${manifest.rulesVersion}`);
-      // generatedAt 是调用方盖章字段：只要求为 null 或 ISO 时间字符串（null=未盖章），值本身不比对
-      if (!('generatedAt' in parsed) || (parsed.generatedAt !== null && !/^\d{4}-\d{2}-\d{2}T/.test(String(parsed.generatedAt)))) {
-        drifts.push('design-manifest.json generatedAt must be null or an ISO timestamp');
-      }
-      // sourceFiles 全量：键集合 + 每个键的 hash 与当前源一致（索引改版/删来源记录都会失败）
-      const expectedSources = manifest.sourceFiles;
-      const diskSources = parsed.sourceFiles || {};
-      for (const k of Object.keys(expectedSources)) {
-        if (!(k in diskSources)) drifts.push(`design-manifest.json sourceFiles missing entry: ${k}`);
-        else if (diskSources[k].hash !== expectedSources[k].hash) drifts.push(`design-manifest.json sourceFiles hash mismatch: ${k}`);
-      }
-      for (const k of Object.keys(diskSources)) {
-        if (!(k in expectedSources)) drifts.push(`design-manifest.json sourceFiles has unexpected entry: ${k}`);
-      }
-      // generatedFiles 全量：键集合 + 每键 hash 与磁盘产物一致（含速查表；伪造 hash 失败）
-      const expectedGen = manifest.generatedFiles;
-      const gf = parsed.generatedFiles || {};
-      for (const k of Object.keys(expectedGen)) {
-        if (!(k in gf)) drifts.push(`design-manifest.json generatedFiles missing entry: ${k}`);
-        else if (gf[k].hash !== expectedGen[k].hash) drifts.push(`design-manifest.json generatedFiles hash mismatch: ${k}`);
-      }
-      for (const k of Object.keys(gf)) {
-        if (!(k in expectedGen)) drifts.push(`design-manifest.json generatedFiles has unexpected entry: ${k}`);
-      }
-      // 速查表 hash 口径澄清：expected 的 design-language.md hash 覆盖 GEN 块替换后的整文件；
-      // 磁盘侧直接以「磁盘文件 + 本次 GEN 块」重算，两者天然同口径
-      const expected = JSON.parse(JSON.stringify(manifest, null, 2));
-      // 逐 token 比对（磁盘 manifest 与本次生成，含 name/type/valueByTheme/density/sourceRef）
-      if (JSON.stringify(parsed.tokens) !== JSON.stringify(expected.tokens)) {
-        drifts.push('design-manifest.json tokens differ from parsed source doc (token values/types drifted)');
-      }
-      // extractionOverrides 内容级比对（数量检查不足以发现伪造/篡改）
-      if (JSON.stringify(parsed.extractionOverrides || null) !== JSON.stringify(expected.extractionOverrides || null)) {
-        drifts.push('design-manifest.json extractionOverrides differ from current source doc lines');
-      }
-    }
-  }
-
-  // extraction override 锚行校验（逐行基线比对，覆盖组内全部源依赖行）。
-  // 磁盘 manifest 里每行的 sourceSnippetHash 是上次生成时「已核对」的基线；当前源
-  // 文档任一依赖行与之不符 = 设计师改了该行而模板片段未同步核对——不能仅重跑
-  // 生成器冲掉基线（模板值不随锚行自动变化），必须人工核对模板后重跑。
-  // ：基线缺失/损坏在 --check 同样是 FAIL（不能静默当首次）。
-  const anchorDrifts = [];
-  let diskOverrides = [];
-  try {
-    const p = JSON.parse(manifestCur || '{}');
-    diskOverrides = Array.isArray(p.extractionOverrides) ? p.extractionOverrides : null;
-    if (diskOverrides === null) {
-      anchorDrifts.push('disk manifest has no extractionOverrides array — damaged/incomplete baseline');
-    }
-  } catch {
-    anchorDrifts.push('disk manifest is not valid JSON — damaged baseline, cannot verify extraction lines');
-  }
-  const diskOverrideById = new Map((diskOverrides || []).map((e) => [e.id, e]));
-  for (const ex of EXTRACTIONS) {
-    const disk = diskOverrideById.get(ex.id);
-    if (!disk) {
-      anchorDrifts.push(`${ex.id}: baseline group missing from disk manifest — damaged/incomplete baseline`);
-      continue;
-    }
-    const diskLines = Array.isArray(disk.lines) ? disk.lines : null;
-    const liveLines = extractionChecks.find((c) => c.id === ex.id).lines;
-    if (!diskLines) {
-      anchorDrifts.push(`${ex.id}: disk manifest baseline is legacy single-hash format — regenerate to upgrade to per-line baselines`);
-      continue;
-    }
-    if (diskLines.length !== liveLines.length) {
-      anchorDrifts.push(`${ex.id}: baseline line count ${diskLines.length} !== current anchors ${liveLines.length} (extraction declaration changed)`);
-      continue;
-    }
-    for (let i = 0; i < liveLines.length; i++) {
-      const live = liveLines[i];
-      const base = diskLines[i];
-      if (base.anchor !== live.anchor) {
-        anchorDrifts.push(`${ex.id}: baseline anchor #${i + 1} changed (declaration edited)`);
-        continue;
-      }
-      if (live.sourceSnippetHash === null) {
-        anchorDrifts.push(`${ex.id}: anchor line not found in source doc — doc restructured? (${live.anchor.slice(0, 40)}...)`);
-        continue;
-      }
-      if (base.sourceSnippetHash !== live.sourceSnippetHash) {
-        anchorDrifts.push(`${ex.id}: source snippet changed since last generation (${live.anchor.slice(0, 40)}...) — template values in gen-tokens.mjs must be re-verified against the new doc line, not auto-carried over`);
-      }
-    }
-  }
-
-  if (drifts.length === 0 && anchorDrifts.length === 0) {
-    console.log('RESULT: OK | --check: generated output matches on-disk files');
-    console.log(`TOKENS: ${totalTokens}`);
-    console.log(`DESIGN_VERSION: ${designVersion}`);
-    process.exit(0);
-  }
-  console.log('RESULT: FAIL | --check drift detected:');
-  for (const d of drifts) console.log(`  ${d}`);
-  for (const d of anchorDrifts) console.log(`  [extraction] ${d}`);
-  if (anchorDrifts.length) {
-    console.log('HINT: extraction override 源片段变化 —— 设计师更新了 frost/字体栈参数行；');
-    console.log('      逐项核对 gen-tokens.mjs 内对应模板片段（模板值不随锚行自动变化），');
-    console.log('      需要改值就改模板并同步 manifest 基线（去掉 --check 重跑）；确认无影响的同样重跑刷新基线');
-  } else if (drifts.length) {
-    console.log('HINT: 去掉 --check 重跑生成器，再审查 diff');
-  }
-  process.exit(1);
-}
-
-// ---------- 生成模式：临时输出 → 全部成功 → 原子替换 ----------
-fillGeneratedHashes();
-const manifestOut = JSON.stringify(manifest, null, 2) + '\n';
-
-// extraction override 防盲跑闸（「源片段变化时…提示维护」同样约束生成模式；
-// 逐行基线比对，单行变化（如仅 font-family-en）也会被拦；
-// ：manifest 存在但基线缺失/损坏 ≠ 首次生成——JSON 损坏、缺
-// extractionOverrides、缺任一必需组、lines 结构坏，都按「基线不可信」处理，
-// 普通重跑拒绝（否则旧模板值会被打上『已同步新源』标记）。
-// ：manifest 不存在同样拒绝普通生成——「文件不存在」无法区分真首次
-// 安装、误删基线或已改源后的重建；基线建立（含首次）一律需要显式
-// --confirm-extraction 确认（确认=人工核对过模板与源，只建立基线记录，
-// 不自动改模板参数）。缺源锚点任何情况不放行。
-let extractionGate = [];
-let gateNeedsConfirm = false; // true = 基线缺失/损坏/未建立，需显式确认重建（区别于普通漂移）
-if (!existsSync(manifestPath)) {
-  extractionGate.push('design-manifest.json not found — no extraction baseline exists (first publish or deleted baseline); plain regen cannot self-certify');
-  gateNeedsConfirm = true;
-} else {
-  let diskM = null;
-  let parseErr = null;
-  try { diskM = JSON.parse(readFileSync(manifestPath, 'utf8')); } catch (e) { parseErr = e; }
-  if (parseErr || typeof diskM !== 'object' || diskM === null) {
-    extractionGate.push(`manifest on disk is not valid JSON (${parseErr ? parseErr.message : 'not an object'}) — damaged baseline, not a first publish`);
-    gateNeedsConfirm = true;
-  } else if (!Array.isArray(diskM.extractionOverrides)) {
-    extractionGate.push('manifest on disk has no extractionOverrides array — damaged/incomplete baseline, not a first publish');
-    gateNeedsConfirm = true;
-  } else {
-    const byId = new Map(diskM.extractionOverrides.map((e) => [e.id, e]));
-    for (const c of extractionChecks) {
-      const disk = byId.get(c.id);
-      if (!disk) {
-        extractionGate.push(`${c.id}: baseline group missing from disk manifest — damaged/incomplete baseline, not a first publish`);
-        gateNeedsConfirm = true;
-        continue;
-      }
-      const diskLines = Array.isArray(disk.lines) ? disk.lines : null;
-      if (!diskLines) {
-        extractionGate.push(`${c.id}: legacy single-hash baseline on disk — explicit migration to per-line baseline required`);
-        gateNeedsConfirm = true;
-        continue;
-      }
-      if (diskLines.length !== c.lines.length) {
-        extractionGate.push(`${c.id}: baseline has ${diskLines.length} lines, current declaration has ${c.lines.length} (declaration or manifest edited)`);
-        continue;
-      }
-      let groupDamaged = false;
-      for (let i = 0; i < c.lines.length; i++) {
-        const live = c.lines[i];
-        const base = diskLines[i];
-        if (!base || typeof base.sourceSnippetHash !== 'string') {
-          extractionGate.push(`${c.id}: baseline line #${i + 1} malformed — damaged baseline, not a first publish`);
-          groupDamaged = true;
-          continue;
-        }
-        if (live.sourceSnippetHash === null) {
-          extractionGate.push(`${c.id}: anchor line not found in source doc (${live.anchor.slice(0, 40)}...)`);
-          continue; // 缺源锚点：确认开关也不放行（下方 hasAnchorMissing 统一拦截）
-        }
-        if (base.anchor !== live.anchor || base.sourceSnippetHash !== live.sourceSnippetHash) {
-          extractionGate.push(`${c.id}: source snippet changed since last run (${live.anchor.slice(0, 40)}...)`);
-        }
-      }
-      if (groupDamaged) gateNeedsConfirm = true;
-    }
-  }
-}
-// 缺源锚点：结构性问题，--confirm-extraction 不放行（模板值无从核对）
-const anchorMissing = extractionGate.some((g) => g.includes('anchor line not found'));
-if (anchorMissing) {
-  console.log('RESULT: FAIL | extraction override anchor line(s) not found in source doc:');
-  for (const g of extractionGate) console.log(`  ${g}`);
-  console.log('HINT: 设计文档删改了字体/frost 参数行 —— 先核对 gen-tokens.mjs 模板与 anchors 声明；');
-  console.log('      缺锚点不能用 --confirm-extraction 放行。');
-  process.exit(1);
-}
-if (extractionGate.length && !args.includes('--confirm-extraction')) {
-  console.log('RESULT: FAIL | extraction override baseline problem:');
-  for (const g of extractionGate) console.log(`  ${g}`);
-  if (gateNeedsConfirm) {
-    console.log('HINT: 磁盘 manifest 基线缺失/损坏/为旧格式/未建立 —— 普通重跑不能自动标记『已核对』。');
-    console.log('      逐项核对 gen-tokens.mjs 模板片段与设计文档后，加 --confirm-extraction 建立基线；');
-    console.log('      确认只建立/重置基线记录，不自动更新模板参数。');
-  } else {
-    console.log('HINT: 设计师改动了 frost/字体栈参数行。逐项核对 gen-tokens.mjs 内模板片段：');
-    console.log('      需要改值 → 改模板后重跑（本次重跑即刷新基线）；');
-    console.log('      确认无影响 → 加 --confirm-extraction 重跑，仅刷新锚行基线。');
-    console.log('      不允许不看 diff 直接重跑把旧模板值打进新产物。');
-  }
-  process.exit(1);
-}
-
-const stagingDir = join(SKILL_DIR, 'scripts', '.gen-tokens-staging');
-rmSync(stagingDir, { recursive: true, force: true });
-mkdirSync(stagingDir, { recursive: true });
-
-const staged = [];
-function stage(name, content) {
-  const p = join(stagingDir, name);
-  writeFileSync(p, content, 'utf8');
-  staged.push({ name, content });
-}
-
-try {
-  stage('default.less', cssOut);
-  stage('dark.less', darkCssOut);
-
+  const cssCur = readFileSync(cssPath, 'utf8');
   const refCur = readFileSync(refPath, 'utf8');
   const refNext = applyToRef(refCur);
   if (refNext === null) {
     console.log('RESULT: FAIL | design-language.md missing GEN:TOKEN-TABLE markers');
-    console.log('HINT: 在 §1 速查表两侧加上 GEN:TOKEN-TABLE START/END 标记后重跑');
     process.exit(1);
   }
-  stage('design-language.md', refNext);
-  stage('design-manifest.json', manifestOut);
-} catch (e) {
-  rmSync(stagingDir, { recursive: true, force: true });
-  console.log(`RESULT: FAIL | staging failed: ${e.message}`);
+  const darkCur = readFileSync(darkPath, 'utf8');
+  const cssOk = normalizeEol(cssCur) === normalizeEol(cssOut);
+  const refOk = normalizeEol(refCur) === normalizeEol(refNext);
+  const darkOk = normalizeEol(darkCur) === normalizeEol(darkCssOut);
+  const catalogOk = existsSync(catalogPath) && normalizeEol(readFileSync(catalogPath, 'utf8')) === catalogOut;
+  if (cssOk && refOk && darkOk && catalogOk) {
+    console.log('RESULT: OK | --check: generated output matches on-disk files');
+    console.log(`TOKENS: ${totalTokens}`);
+    process.exit(0);
+  }
+  console.log('RESULT: FAIL | --check drift detected:');
+  if (!cssOk) console.log('  default.less differs from generated output');
+  if (!refOk) console.log('  design-language.md §1 differs from generated output');
+  if (!darkOk) console.log('  dark.less differs from generated output');
+  if (!catalogOk) console.log('  token-catalog.md missing or differs from generated output');
+  console.log('HINT: 去掉 --check 重跑生成器，再审查 diff');
   process.exit(1);
 }
 
-// 原子提交：逐文件 rename；任一失败即回滚已替换文件（旧内容恢复），不留半套产物
-const targets = [
-  { name: 'default.less', path: cssPath },
-  { name: 'dark.less', path: darkPath },
-  { name: 'design-language.md', path: refPath },
-  { name: 'design-manifest.json', path: manifestPath },
-];
-const committed = [];
-try {
-  for (const t of targets) {
-    const backup = existsSync(t.path) ? readFileSync(t.path, 'utf8') : null;
-    renameSync(join(stagingDir, t.name), t.path);
-    committed.push({ path: t.path, prev: backup });
-  }
-} catch (e) {
-  // 回滚：逆序恢复已 commit 的文件
-  let rollbackErr = null;
-  for (const c of committed.reverse()) {
-    try {
-      if (c.prev === null) rmSync(c.path, { force: true });
-      else writeFileSync(c.path, c.prev, 'utf8');
-    } catch (re) {
-      rollbackErr = re.message;
-    }
-  }
-  rmSync(stagingDir, { recursive: true, force: true });
-  console.log(`RESULT: FAIL | commit interrupted: ${e.message}${rollbackErr ? ` (rollback warning: ${rollbackErr})` : ''}`);
-  console.log('HINT: 磁盘产物已回滚到生成前状态；排查写入权限后重跑');
+writeGenerated(cssPath, cssOut);
+writeGenerated(darkPath, darkCssOut);
+const refCur = readFileSync(refPath, 'utf8');
+const refNext = applyToRef(refCur);
+if (refNext === null) {
+  console.log('RESULT: FAIL | design-language.md missing GEN:TOKEN-TABLE markers');
+  console.log('HINT: 在 §1 速查表两侧加上 GEN:TOKEN-TABLE START/END 标记后重跑');
   process.exit(1);
 }
-rmSync(stagingDir, { recursive: true, force: true });
+writeGenerated(refPath, refNext);
+writeGenerated(catalogPath, catalogOut);
 
 console.log('RESULT: OK');
 console.log(`TOKENS: ${totalTokens} (semantic: ${semanticAll.length}, palette: ${palette.length}, company: ${company.length}, chart: ${chartDefault.length + chartAccessible.length}×2, code: ${code.length * 2}, shadow: ${shadows.length}×2, frost: ${frostCount}×2)`);
 for (const [k, v] of Object.entries(counts)) console.log(`  ${k}: ${v}`);
-console.log(`DESIGN_VERSION: ${designVersion}`);
 console.log(`OUT_CSS: ${cssPath}`);
 console.log(`OUT_DARK: ${darkPath}`);
 console.log(`OUT_REF: ${refPath}`);
-console.log(`OUT_MANIFEST: ${manifestPath}`);
+console.log(`OUT_CATALOG: ${catalogPath}`);

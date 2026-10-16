@@ -11,7 +11,7 @@
    html[data-theme="dark"] {
      --color-brand: #4d9eff;
      --color-bg-1: #121212;
-     /* ...全部 token 见 references/design-manifest.json */
+     /* ...全部 token 见 references/design-language.md */
    }
    ```
 3. **注册**：
@@ -28,7 +28,7 @@
 
 ## Token 真值源
 
-token 全表（颜色 / 间距 / 圆角 / 边框 / 字体 / 投影）以随 skill 交付的 **design-manifest.json**（由设计文档同源生成，见 `references/design-manifest.json`）与速查表（`references/design-language.md`）为唯一标准。皮肤必须完整提供页面与桥接层消费的全部 token；新增皮肤前先读 manifest 确认必须覆盖的键集合。
+token 全表（颜色 / 间距 / 圆角 / 边框 / 字体 / 投影）以 **design-language（设计语言包）** 为唯一标准，见 skill `references/design-language.md`。皮肤必须完整提供页面与桥接层消费的全部 token。
 
 ## 深色皮肤注意
 

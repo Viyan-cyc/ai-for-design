@@ -1,11 +1,9 @@
 # GTS 组件 → Element Plus 映射索引
 
 - GTS 规范决定"该长什么样"（视觉参数、状态、规则、"不要"清单）；Element Plus API 决定"怎么写代码"（属性、事件、插槽、方法）。
-- 规范路径为维护期溯源指引（相对 design-language 源树根，如 `组件规范/通用类/按钮.md`）；
-  **页面生成期不回查该源树**——token 数值用 `references/design-manifest.json`，组件选型结论已在本索引表。
+- 规范路径相对 `design-language/` 源树根（如 `组件规范/通用类/按钮.md`）。
 - 复合组件同时遵循内部按钮、输入框等子组件规则。
 - 组件文档明确指定的部位、状态和尺寸用于该组件，其余参数遵循 Design System；每份规范文档末尾的"不要"用于检查错误用法。
-- **禁止臆测组件属性**：优先复用随包模板和对应组件示例；只有API仍不确定时再查询官方文档。
 - ★ = 高频组件（`vue-skill/components/` 下有可直接抄的示例 SFC）。
 
 ## 组件选择
@@ -23,87 +21,87 @@
 
 ## 通用类（4）
 
-| GTS 组件 | GTS 规范路径 | Element Plus 组件 | EP 文档 |
-| --- | --- | --- | --- |
-| ★ 按钮 Button | 组件规范/通用类/按钮.md | ElButton | https://element-plus.org/en/component/button.html |
-| 文字链接 Link | 组件规范/通用类/文字链接.md | ElLink | https://element-plus.org/en/component/link.html |
-| 分割线 Divider | 组件规范/通用类/分割线.md | ElDivider | https://element-plus.org/en/component/divider.html |
-| 滚动条 Scrollbar | 组件规范/通用类/滚动条.md | ElScrollbar | https://element-plus.org/en/component/scrollbar.html |
+| GTS 组件 | GTS 规范路径 | Element Plus 组件 |
+| --- | --- | --- |
+| ★ 按钮 Button | 组件规范/通用类/按钮.md | ElButton |
+| 文字链接 Link | 组件规范/通用类/文字链接.md | ElLink |
+| 分割线 Divider | 组件规范/通用类/分割线.md | ElDivider |
+| 滚动条 Scrollbar | 组件规范/通用类/滚动条.md | ElScrollbar |
 
 ## 录入类（17）
 
-| GTS 组件 | GTS 规范路径 | Element Plus 组件 | EP 文档 |
-| --- | --- | --- | --- |
-| ★ 输入框 Input | 组件规范/录入类/输入框.md | ElInput | https://element-plus.org/en/component/input.html |
-| 搜索框 Search | 组件规范/录入类/搜索框.md | ElInput（suffix 图标 + onkeyup 检索） | https://element-plus.org/en/component/input.html |
-| 数字输入框 InputNumber | 组件规范/录入类/数字输入框.md | ElInputNumber | https://element-plus.org/en/component/input-number.html |
-| ★ 单选框 Radio | 组件规范/录入类/单选框.md | ElRadio / ElRadioGroup | https://element-plus.org/en/component/radio.html |
-| ★ 多选框 Checkbox | 组件规范/录入类/多选框.md | ElCheckbox / ElCheckboxGroup | https://element-plus.org/en/component/checkbox.html |
-| ★ 开关 Switch | 组件规范/录入类/开关.md | ElSwitch | https://element-plus.org/en/component/switch.html |
-| ★ 选择器 Select | 组件规范/录入类/选择器.md | ElSelect / ElOption | https://element-plus.org/en/component/select.html |
-| 级联选择器 | 组件规范/录入类/级联选择器.md | ElCascader | https://element-plus.org/en/component/cascader.html |
-| 日期时间选择器 DateTimePicker | 组件规范/录入类/日期时间选择器.md | ElDatePicker(type="datetime") | https://element-plus.org/en/component/date-picker.html |
-| ★ 日期选择器 DatePicker | 组件规范/录入类/日期选择器.md | ElDatePicker | https://element-plus.org/en/component/date-picker.html |
-| 滑块 Slider | 组件规范/录入类/滑块.md | ElSlider | https://element-plus.org/en/component/slider.html |
-| 评分 Rate | 组件规范/录入类/评分.md | ElRate | https://element-plus.org/en/component/rate.html |
-| 穿梭框 Transfer | 组件规范/录入类/穿梭框.md | ElTransfer | https://element-plus.org/en/component/transfer.html |
-| 上传 Upload | 组件规范/录入类/上传.md | ElUpload | https://element-plus.org/en/component/upload.html |
-| 颜色选择器 ColorPicker | 组件规范/录入类/颜色选择器.md | ElColorPicker | https://element-plus.org/en/component/color-picker.html |
-| 下拉菜单 Dropdown | 组件规范/录入类/下拉菜单.md | ElDropdown | https://element-plus.org/en/component/dropdown.html |
-| ★ 表单 Form | 组件规范/录入类/表单.md | ElForm / ElFormItem | https://element-plus.org/en/component/form.html |
+| GTS 组件 | GTS 规范路径 | Element Plus 组件 |
+| --- | --- | --- |
+| ★ 输入框 Input | 组件规范/录入类/输入框.md | ElInput |
+| 搜索框 Search | 组件规范/录入类/搜索框.md | ElInput（suffix 图标 + onkeyup 检索） |
+| 数字输入框 InputNumber | 组件规范/录入类/数字输入框.md | ElInputNumber |
+| ★ 单选框 Radio | 组件规范/录入类/单选框.md | ElRadio / ElRadioGroup |
+| ★ 多选框 Checkbox | 组件规范/录入类/多选框.md | ElCheckbox / ElCheckboxGroup |
+| ★ 开关 Switch | 组件规范/录入类/开关.md | ElSwitch |
+| ★ 选择器 Select | 组件规范/录入类/选择器.md | ElSelect / ElOption |
+| 级联选择器 | 组件规范/录入类/级联选择器.md | ElCascader |
+| 日期时间选择器 DateTimePicker | 组件规范/录入类/日期时间选择器.md | ElDatePicker(type="datetime") |
+| ★ 日期选择器 DatePicker | 组件规范/录入类/日期选择器.md | ElDatePicker |
+| 滑块 Slider | 组件规范/录入类/滑块.md | ElSlider |
+| 评分 Rate | 组件规范/录入类/评分.md | ElRate |
+| 穿梭框 Transfer | 组件规范/录入类/穿梭框.md | ElTransfer |
+| 上传 Upload | 组件规范/录入类/上传.md | ElUpload |
+| 颜色选择器 ColorPicker | 组件规范/录入类/颜色选择器.md | ElColorPicker |
+| 下拉菜单 Dropdown | 组件规范/录入类/下拉菜单.md | ElDropdown |
+| ★ 表单 Form | 组件规范/录入类/表单.md | ElForm / ElFormItem |
 
 ## 展示类（13）
 
-| GTS 组件 | GTS 规范路径 | Element Plus 组件 | EP 文档 |
-| --- | --- | --- | --- |
-| ★ 表格 Table | 组件规范/展示类/表格.md | ElTable / ElTableColumn | https://element-plus.org/en/component/table.html |
-| 列表 List | 组件规范/展示类/列表.md | （需自行封装：ElScrollbar + v-for） | — |
-| ★ 卡片 Card | 组件规范/展示类/卡片.md | ElCard | https://element-plus.org/en/component/card.html |
-| 头像 Avatar | 组件规范/展示类/头像.md | ElAvatar | https://element-plus.org/en/component/avatar.html |
-| 徽标 Badge | 组件规范/展示类/徽标.md | ElBadge | https://element-plus.org/en/component/badge.html |
-| ★ 标签 Tags | 组件规范/展示类/标签.md | ElTag | https://element-plus.org/en/component/tag.html |
-| 折叠面板 Collapse | 组件规范/展示类/折叠面板.md | ElCollapse / ElCollapseItem | https://element-plus.org/en/component/collapse.html |
-| ★ 抽屉 Drawer | 组件规范/展示类/抽屉.md | ElDrawer | https://element-plus.org/en/component/drawer.html |
-| 日历 Calendar | 组件规范/展示类/日历.md | ElCalendar | https://element-plus.org/en/component/calendar.html |
-| 时间轴 Timeline | 组件规范/展示类/时间轴.md | ElTimeline / ElTimelineItem | https://element-plus.org/en/component/timeline.html |
-| 树形 Tree | 组件规范/展示类/树形.md | ElTree | https://element-plus.org/en/component/tree.html |
-| 气泡 Popover | 组件规范/展示类/气泡.md | ElPopover | https://element-plus.org/en/component/popover.html |
-| 轮播 Carousel | 组件规范/展示类/轮播.md | ElCarousel / ElCarouselItem | https://element-plus.org/en/component/carousel.html |
+| GTS 组件 | GTS 规范路径 | Element Plus 组件 |
+| --- | --- | --- |
+| ★ 表格 Table | 组件规范/展示类/表格.md | ElTable / ElTableColumn |
+| 列表 List | 组件规范/展示类/列表.md | （需自行封装：ElScrollbar + v-for） |
+| ★ 卡片 Card | 组件规范/展示类/卡片.md | ElCard |
+| 头像 Avatar | 组件规范/展示类/头像.md | ElAvatar |
+| 徽标 Badge | 组件规范/展示类/徽标.md | ElBadge |
+| ★ 标签 Tags | 组件规范/展示类/标签.md | ElTag |
+| 折叠面板 Collapse | 组件规范/展示类/折叠面板.md | ElCollapse / ElCollapseItem |
+| ★ 抽屉 Drawer | 组件规范/展示类/抽屉.md | ElDrawer |
+| 日历 Calendar | 组件规范/展示类/日历.md | ElCalendar |
+| 时间轴 Timeline | 组件规范/展示类/时间轴.md | ElTimeline / ElTimelineItem |
+| 树形 Tree | 组件规范/展示类/树形.md | ElTree |
+| 气泡 Popover | 组件规范/展示类/气泡.md | ElPopover |
+| 轮播 Carousel | 组件规范/展示类/轮播.md | ElCarousel / ElCarouselItem |
 
 ## 导航类（8）
 
-| GTS 组件 | GTS 规范路径 | Element Plus 组件 | EP 文档 |
-| --- | --- | --- | --- |
-| 顶部导航 | 组件规范/导航类/顶部导航.md | （需自行封装：ElMenu mode="horizontal"） | https://element-plus.org/en/component/menu.html |
-| 侧边栏导航 | 组件规范/导航类/侧边栏导航.md | ElMenu / ElSubMenu / ElMenuItem | https://element-plus.org/en/component/menu.html |
-| 面包屑 Breadcrumbs | 组件规范/导航类/面包屑.md | ElBreadcrumb / ElBreadcrumbItem | https://element-plus.org/en/component/breadcrumb.html |
-| ★ 分页 Pagination | 组件规范/导航类/分页.md | ElPagination | https://element-plus.org/en/component/pagination.html |
-| 页签 Tabs | 组件规范/导航类/页签.md | ElTabs / ElTabPane | https://element-plus.org/en/component/tabs.html |
-| 步骤条 Steps | 组件规范/导航类/步骤条.md | ElSteps / ElStep | https://element-plus.org/en/component/steps.html |
-| 锚点导航 Anchor | 组件规范/导航类/锚点导航.md | （需自行封装） | — |
-| 回到顶部 BackTop | 组件规范/导航类/回到顶部.md | ElBacktop | https://element-plus.org/en/component/backtop.html |
+| GTS 组件 | GTS 规范路径 | Element Plus 组件 |
+| --- | --- | --- |
+| 顶部导航 | 组件规范/导航类/顶部导航.md | （需自行封装：ElMenu mode="horizontal"） |
+| 侧边栏导航 | 组件规范/导航类/侧边栏导航.md | ElMenu / ElSubMenu / ElMenuItem |
+| 面包屑 Breadcrumbs | 组件规范/导航类/面包屑.md | ElBreadcrumb / ElBreadcrumbItem |
+| ★ 分页 Pagination | 组件规范/导航类/分页.md | ElPagination |
+| 页签 Tabs | 组件规范/导航类/页签.md | ElTabs / ElTabPane |
+| 步骤条 Steps | 组件规范/导航类/步骤条.md | ElSteps / ElStep |
+| 锚点导航 Anchor | 组件规范/导航类/锚点导航.md | （需自行封装） |
+| 回到顶部 BackTop | 组件规范/导航类/回到顶部.md | ElBacktop |
 
 ## 反馈类（10）
 
-| GTS 组件 | GTS 规范路径 | Element Plus 组件 | EP 文档 |
-| --- | --- | --- | --- |
-| ★ 对话框 Dialog | 组件规范/反馈类/对话框.md | ElDialog | https://element-plus.org/en/component/dialog.html |
-| ★ 消息 Message | 组件规范/反馈类/消息.md | ElMessage（命令式 API，非模板标签） | https://element-plus.org/en/component/message.html |
-| ★ 通知 Notification | 组件规范/反馈类/通知.md | ElNotification（命令式 API，非模板标签） | https://element-plus.org/en/component/notification.html |
-| 警告 Alert | 组件规范/反馈类/警告.md | ElAlert | https://element-plus.org/en/component/alert.html |
-| ★ 文字提示 Tooltip | 组件规范/反馈类/文字提示.md | ElTooltip | https://element-plus.org/en/component/tooltip.html |
-| ★ 加载 Loading | 组件规范/反馈类/加载.md | ElLoading / vLoading 指令 | https://element-plus.org/en/component/loading.html |
-| 进度条 Progress | 组件规范/反馈类/进度条.md | ElProgress | https://element-plus.org/en/component/progress.html |
-| 右键快捷菜单 | 组件规范/反馈类/右键快捷菜单.md | （需自行封装：ElDropdown + contextmenu） | — |
-| 记分卡 ScoreCard | 组件规范/反馈类/记分卡.md | （需自行封装：ElCard + 指标） | — |
+| GTS 组件 | GTS 规范路径 | Element Plus 组件 |
+| --- | --- | --- |
+| ★ 对话框 Dialog | 组件规范/反馈类/对话框.md | ElDialog |
+| ★ 消息 Message | 组件规范/反馈类/消息.md | ElMessage（命令式 API，非模板标签） |
+| ★ 通知 Notification | 组件规范/反馈类/通知.md | ElNotification（命令式 API，非模板标签） |
+| 警告 Alert | 组件规范/反馈类/警告.md | ElAlert |
+| ★ 文字提示 Tooltip | 组件规范/反馈类/文字提示.md | ElTooltip |
+| ★ 加载 Loading | 组件规范/反馈类/加载.md | ElLoading / vLoading 指令 |
+| 进度条 Progress | 组件规范/反馈类/进度条.md | ElProgress |
+| 右键快捷菜单 | 组件规范/反馈类/右键快捷菜单.md | （需自行封装：ElDropdown + contextmenu） |
+| 记分卡 ScoreCard | 组件规范/反馈类/记分卡.md | （需自行封装：ElCard + 指标） |
 
 ## 布局容器（高频，配合栅格）
 
-| 用途 | Element Plus 组件 | EP 文档 |
-| --- | --- | --- |
-| ★ 栅格 / 弹性布局 | ElRow / ElCol | https://element-plus.org/en/component/layout.html |
-| 整页骨架（header/aside/main） | ElContainer / ElHeader / ElAside / ElMain | https://element-plus.org/en/component/container.html |
-| ★ 空状态 | ElEmpty | https://element-plus.org/en/component/empty.html |
+| 用途 | Element Plus 组件 |
+| --- | --- |
+| ★ 栅格 / 弹性布局 | ElRow / ElCol |
+| 整页骨架（header/aside/main） | ElContainer / ElHeader / ElAside / ElMain |
+| ★ 空状态 | ElEmpty |
 
 ## 高频 20 组件示例对照
 

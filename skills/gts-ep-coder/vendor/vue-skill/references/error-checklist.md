@@ -149,13 +149,13 @@ import dayjs from 'dayjs'
 
 ### 错误 9：直接在代码中写死中英文字符串做语言显示
 
-> 预览原型阶段直接写中文文案可接受；真实工程接入后必须走 vue-i18n（见 code-rules 规则十）。
+> 仅启用国际化的工程适用；用户未要求多语言时直接写中文，不必创建词典（见 code-rules 规则十）。
 
 ```js
-// ❌ 错误（真实工程）
+// ❌ 错误（已启用国际化）
 ElMessage.success('保存成功')
 
-// ✅ 正确（真实工程）
+// ✅ 正确（已启用国际化）
 import { useI18n } from 'vue-i18n'
 const { t } = useI18n()
 ElMessage.success(t('msg.module.success.saveOk'))

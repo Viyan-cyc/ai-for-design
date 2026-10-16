@@ -6,18 +6,18 @@
 import { createApp } from 'vue'
 import ElementPlus from 'element-plus'
 import zhCn from 'element-plus/es/locale/lang/zh-cn'
+import * as ElementPlusIconsVue from '@element-plus/icons-vue'
 import 'element-plus/dist/index.css'
 import './assets/themes/base.less'
 import './assets/themes/bridge.less'
 import './assets/themes/default.less'
-import './assets/themes/dark.less'
 // ▼▼ 换肤插槽：接入新皮肤 less 后在此追加 import ▼▼
 import App from './App.vue'
 
 const app = createApp(App)
 // EP 组件内置文案（分页等）默认中文；启用国际化后改由 App.vue 的 ElConfigProvider 跟随语言
 app.use(ElementPlus, { locale: zhCn })
-// 图标按文件显式 import（如 import { Search } from '@element-plus/icons-vue'），
-// fetch-icons 会把这些引用统一迁移到 src/assets/icons 的 barrel；不在此全局注册，
-// 以免注册成 EP 原图、与迁移后的公司图标分叉（预览也从不注册全局图标）。
+for (const [name, component] of Object.entries(ElementPlusIconsVue)) {
+  app.component(name, component)
+}
 app.mount('#app')

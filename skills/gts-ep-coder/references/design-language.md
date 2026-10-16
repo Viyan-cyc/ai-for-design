@@ -1,13 +1,7 @@
 # design-language 消费指南（skill 内参考）
 
-> 本 skill **自带设计包，运行期自足**：token 速查（本文件 §1）、逐 token 数值与来源
-> （`references/design-manifest.json`，含来源 hash 与 extraction override 溯源）、皮肤文件
-> （`src/assets/themes/*.less`）都随 skill 交付，生成页面时**不需要**开发机上的
-> design-language 原始目录。
-> 原始目录（design-language/）只在**维护期**使用：设计师改文档后由维护者跑
-> `node scripts/gen-tokens.mjs --source-dir <design-language 目录>` 同步生成上述产物
-> （`--check` 校验漂移）。维护命令与消费边界见 `../scripts/gen-tokens.mjs` 文件头注释。
-> 数值冲突时：manifest/皮肤文件 > 本文件速查表述（速查为浓缩视图）。
+> 真值源是 `design-language/样式Token/设计系统.md`（token 表）与 `design-language/设计规范/组件库适配.md`（接入规则）。
+> 本文件是面向生成 agent 的**消费视图**：浓缩 token 速查、EP 桥接映射和页面协议；数值以真值源为准，冲突时真值源胜出。
 
 ## 1. token 体系总览
 
@@ -37,14 +31,34 @@ token 全量定义在皮肤文件 `src/assets/themes/default.less`（375 个自�
 
 <!-- GEN:TOKEN-TABLE END -->
 
-关键守则（源文档 §0，已随包同步）：
+### 常用用途速查
+
+以下为实际可用键名，直接按用途取用；分类表中的范围仅作命名示意，不表示范围内每个名称都存在。
+
+| 用途 | 准确 token |
+| --- | --- |
+| 品牌动作 | `--color-brand` |
+| 主文字 | `--color-text-primary` |
+| 次文字 | `--color-text-secondary` |
+| 页面背景 | `--color-bg-1` |
+| 容器背景 | `--color-bg-2` |
+| 边框 | `--color-border` |
+| 成功 / 错误 | `--color-success` / `--color-error` |
+| 小间距 | `--space-size-8` / `--space-size-12` |
+| 常规间距 | `--space-size-16` / `--space-size-24` |
+| 正文 / 小标题 | `--font-size-normal` / `--font-size-normal1` |
+| 常规圆角 | `--radius-size-normal` |
+| 常规投影 | `--shadow-1` |
+
+需要其他 token 时，用文本搜索（如 `rg -n`）批量查 [完整分类目录](token-catalog.md) 中本页需要的类别或用途，只读命中行及必要的分类上下文，复制准确名称；已满足就停止，不重复读取或全量加载。目录覆盖浅深主题共有的公共名称，页面不用另选深色名字；内部桥接变量不作为候选。实际值先看目录对应列，目录信息不足时再定向查随包主题声明，不自行造名或把分类范围展开成猜测列表。`--color-bg-6` 尚未定义，不可使用。
+
+
+关键守则（真值源 §0）：
 
 1. 先确定部位、用途与状态，再取 token；填充/文字/图标/边框分别选色，不近似互换。
-2. 未定义或待确认的值**不可使用**（如 `color-bg-6` 未定义，应改用目录中的真实名称）。
+2. 未定义或待确认的值**不可使用**（如 `color-bg-6` 未定义，引用即构建失败）。
 3. 状态不可推导：不自行推算缺失的交互态色值。
 4. 默认浅色界面；深色经 dark 皮肤提供（见 themes/dark.less）。
-5. 逐 token 精确值与来源（sourceRef/主题值/密度档）查 `references/design-manifest.json`；
-   该 manifest 由 gen-tokens 从设计文档同源生成，页面生成期只读 skill 内文件。
 
 ## 2. Element Plus 桥接（bridge.less，FIXED 不改）
 
@@ -104,8 +118,7 @@ token 全量定义在皮肤文件 `src/assets/themes/default.less`（375 个自�
   （表格局部滚动除外）；窄屏优先保留标题、核心数据、主操作、筛选入口。
 - 1440 参考画布不是浏览器最小宽度，不要以固定最小宽度导致整页被裁切。
 - 编码细则见 `vendor/vue-skill/references/code-rules.md` 第十二节。
-- 出处（维护期溯源）：设计文档 `设计规范/响应式与无障碍.md`、`页面布局.md`（design-language 源树）；
-  页面生成期以上表为准，不回查源树。
+- 出处：真值源 `design-language/设计规范/响应式与无障碍.md`、`页面布局.md`；数值冲突以真值源为准。
 
 ### 3.4 状态与语义
 
@@ -118,7 +131,7 @@ token 全量定义在皮肤文件 `src/assets/themes/default.less`（375 个自�
 
 - 一皮肤一文件 `src/assets/themes/{name}.less`；作用域 `html[data-theme="{name}"]`（非 `:root`）。
 - 预览下 `themes/` 全部 `.less` 自动发现加载（新皮肤放入即生效）；真实工程在入口 import；运行时切换：`document.documentElement.setAttribute("data-theme", name)`。
-- token 真值 = 随 skill 交付的 design-manifest.json（由设计文档生成）；皮肤必须完整提供页面与桥接层消费的全部 token。
+- token 真值 = design-language；皮肤必须完整提供页面与桥接层消费的全部 token。
 - 深色皮肤必须覆盖 `--ux-mix-base` 为深色表面色（否则 light-N 色阶发白）。
 
 ## 5. 图表与代码区

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# gts-ep-coder env install (macOS)
+# generate-ux-prototype env install (macOS)
 #
 # Does ONE thing: get a working node.
 # Reuse an existing node when `node -v` works (any major version); only
