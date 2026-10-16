@@ -1,19 +1,16 @@
 #!/usr/bin/env node
-// fetch-icons.mjs — icon resolution for gts-ep-coder (Spec v2 §5)
-//
-// Resolves the Element Plus icon names actually used in src/ to company
-// IconPlus assets when there is an *exact* (reviewed-alias or exact-name)
-// match, and leaves everything else as the original Element Plus icon.
-// Fallback to Element Plus is a normal design strategy, not a failure.
+// fetch-icons.mjs — IconPlus retrieval and page icon materialization.
+// Searches the existing IconPlus library: prefer the first englishName match,
+// otherwise use the highest score. No additional score threshold is imposed.
+// No candidates or an unavailable service falls back to Element Plus.
 //
 // What it does, in order:
 //   1. AST-scan src/ (.vue/.js/...) for `@element-plus/icons-vue` imports and
 //      for imports of the generated barrel — collecting the requested set.
-//   2. Resolve each name: reviewed alias → else exact englishName match within
-//      the configured source/group scope → else Element Plus. Fuzzy score is
-//      never used to pick an asset.
-//   3. Fetch paired light/dark SVG (unless shared), validate them, drop to
-//      Element Plus on any single-theme miss / invalid SVG.
+//   2. Resolve each name: configured alias, otherwise first englishName match
+//      or highest-score search result. Search uses the configured source/group.
+//   3. Fetch light/dark SVG; when dark is absent reuse light, as in the
+//      original retrieval flow. Invalid assets fall back to Element Plus.
 //   4. Write `<src>/assets/icons/<Name>.{light,dark}.svg` + a barrel
 //      `<src>/assets/icons/index.js` that exports company components and
 //      re-exports the Element Plus fallbacks from one entry.
@@ -111,7 +108,7 @@ const sourceId = aliasConfig.sourceId != null ? aliasConfig.sourceId : 6;
 const groupId = aliasConfig.groupId || '74,77,93';
 const matchingVersion = aliasDoc.mappingVersion != null ? String(aliasDoc.mappingVersion) : '1';
 // mappingVersion is content-derived so editing an alias invalidates the cache.
-const mappingVersion = `${matchingVersion}:${crypto.createHash('md5').update(JSON.stringify({ a: aliases, c: aliasConfig })).digest('hex').slice(0, 8)}`;
+const mappingVersion = `legacy-score-v1:${matchingVersion}:${crypto.createHash('md5').update(JSON.stringify({ a: aliases, c: aliasConfig })).digest('hex').slice(0, 8)}`;
 const NEGATIVE_TTL_MS = (aliasConfig.negativeCacheHours != null ? aliasConfig.negativeCacheHours : 24) * 3600 * 1000;
 
 // ────────────────────────────────────────────────────────────
@@ -136,7 +133,7 @@ try {
   sfc = req('@vue/compiler-sfc');
   babelParser = req('@babel/parser');
   MagicString = req('magic-string');
-  // real XML well-formedness (R1): replaces the former regex tag-stack
+  // real XML well-formedness : replaces the former regex tag-stack
   const xml = req('@rgrove/parse-xml');
   parseXml = xml.parseXml || xml.default;
 } catch (e) {
@@ -213,11 +210,10 @@ async function apiSearch(keywords) {
   });
   return fetchJsonRetry(`${baseUrl}/assetRepository/iconPlus/getIconInfo?${params}`, timeoutMs, 1, netLog.search);
 }
-// getIcon params per references facts (intranet-icon-fetch §2): url/size/style/
-// color/theme/fileType only. Do NOT send name/category — they are not part of the
-// documented contract; batched responses are correlated back by `url`.
-async function apiGetIcon(urls, theme, color, size, style) {
+async function apiGetIcon(urls, theme, color, size, style, names, categories) {
   const params = new URLSearchParams({ url: urls, theme, color, size, style, fileType: 'svg' });
+  if (names) params.set('name', names);
+  if (categories) params.set('category', categories);
   return fetchJsonRetry(`${baseUrl}/assetRepository/iconPlus/getIcon?${params}`, timeoutMs, 1, theme === 'dark' ? netLog.iconDark : netLog.iconLight);
 }
 
@@ -239,7 +235,7 @@ function selectConfigDefaults(config) {
   const size = sizeList.map(sizeKey).find((k) => k === '24') || sizeKey(sizeList[0]) || '24';
   const styleList = Array.isArray(config.style) ? config.style : [];
   const chosenStyle = styleList.find((s) => s && s.key === 'border') || styleList[0] || {};
-  const style = chosenStyle.key || 'border';
+  const style = chosenStyle.value || '线性';
   const styleValue = chosenStyle.value || '线性';
   const colors = Array.isArray(config.colors) ? config.colors : [];
   const lightColor = colors.find((c) => c && c.style === styleValue)?.id || colors[0]?.id || '';
@@ -250,35 +246,21 @@ function selectConfigDefaults(config) {
 }
 
 // ────────────────────────────────────────────────────────────
-// Normalization + selection (Spec §5.2)
+// Normalization + selection ()
 // ────────────────────────────────────────────────────────────
 const norm = (s) => String(s == null ? '' : s).trim().toLowerCase();
 const identityOf = (c) => c.icon_id ?? c.assetId ?? c.asset_id ?? c.id ?? c.url;
 
-// Filter candidates into the configured source/group scope when the API
-// response carries those fields (tolerant: absent fields are accepted).
-function inScope(c) {
-  const s = c.source_id ?? c.sourceId;
-  if (s != null && String(s) !== String(sourceId)) return false;
-  const g = c.group_id ?? c.groupId;
-  if (g != null && !String(groupId).split(',').map(norm).includes(norm(g))) return false;
-  return true;
-}
-
 function decideFromCandidates(epName, candidates) {
-  // Review §5.2: exact normalized englishName only; never pick by score.
-  const exact = candidates.filter((c) => c.englishName && norm(c.englishName) === norm(epName));
-  if (exact.length === 0) return { reason: 'NO_MATCH' };
-  const byIdentity = new Map();
-  for (const c of exact) byIdentity.set(String(identityOf(c)), c);
-  if (byIdentity.size > 1) return { reason: 'AMBIGUOUS' };
-  return { reason: 'EXACT', candidate: [...byIdentity.values()][0] };
+  const exact = candidates.find(c => c.englishName && c.englishName.toLowerCase() === epName.toLowerCase());
+  const best = exact || [...candidates].sort((a, b) => (b.score || 0) - (a.score || 0))[0];
+  return best ? { reason: exact ? 'EXACT' : 'SCORE', candidate: best } : { reason: 'NO_MATCH' };
 }
 
 // ────────────────────────────────────────────────────────────
-// SVG validation (Spec §5.3) + normalization
+// SVG validation () + normalization
 // ────────────────────────────────────────────────────────────
-// R1: well-formedness is delegated to the real XML parser (@rgrove/parse-xml,
+// well-formedness is delegated to the real XML parser (@rgrove/parse-xml,
 // installed by setup-env into the shared env dir). On top of a *parsable*
 // document we independently enforce the icon contract: svg root, namespace,
 // viewBox shape, and no script/event/entity/external-reference content.
@@ -481,7 +463,7 @@ if (scanErrors.length) {
   fail(`icon import scan failed:\n  ${scanErrors.join('\n  ')}`);
 }
 
-// unknown EP names → FAIL (§5.4)
+// unknown EP names → FAIL ()
 const unknown = [...requested.keys()].filter((n) => !EP_ICONS.has(n));
 if (unknown.length) {
   fail(`unknown Element Plus icon name(s): ${unknown.join(', ')} — check spelling against scripts/verify/whitelists/element-plus-icons.json`);
@@ -512,13 +494,13 @@ function cacheEntryValid(name) {
   if (String(e.sourceId) !== String(sourceId)) return false;
   if (String(e.groupId) !== String(groupId)) return false;
   if (e.mappingVersion !== mappingVersion) return false;
-  if (e.reason !== 'EXACT' && e.reason !== 'ALIAS') return false;
+  if (e.reason !== 'EXACT' && e.reason !== 'SCORE' && e.reason !== 'ALIAS') return false;
   const lp = join(iconsDir, `${name}.light.svg`);
   const dp = join(iconsDir, `${name}.dark.svg`);
   if (!existsSync(lp) || !existsSync(dp)) return false;
   try {
     if (md5File(lp) !== e.lightHash) return false;
-    // §5.3 the pair must be complete: for shared assets dark == light, so its
+    // the pair must be complete: for shared assets dark == light, so its
     // hash is validated against lightHash; otherwise against the stored darkHash
     const expectedDark = e.themeMode === 'shared' ? e.lightHash : e.darkHash;
     if (md5File(dp) !== expectedDark) return false;
@@ -541,7 +523,7 @@ function legacyUnverified(name) {
   const lp = join(iconsDir, `${name}.light.svg`);
   const dp = join(iconsDir, `${name}.dark.svg`);
   const e = cache.entries[name];
-  return existsSync(lp) && existsSync(dp) && (!e || (e.reason !== 'EXACT' && e.reason !== 'ALIAS'));
+  return existsSync(lp) && existsSync(dp) && (!e || (e.reason !== 'EXACT' && e.reason !== 'SCORE' && e.reason !== 'ALIAS'));
 }
 
 // ────────────────────────────────────────────────────────────
@@ -630,10 +612,10 @@ if (toFetch.length && !online) {
       for (const n of group) nameToCandidate.set(n, { reason: r });
       continue;
     }
-    // Layer 2 (R2): each group must be an object with a keyword and an icons
+    // Layer 2 : each group must be an object with a keyword and an icons
     // ARRAY. A missing/null/non-array icons field is groundless — it must not
-    // be treated as "empty result" (§15.1: 无依据的 null/缺字段不能等同空数组).
-    // §17.2: per-KEYWORD validation outcome — a malformed group must poison its
+    // be treated as "empty result" (无依据的 null/缺字段不能等同空数组).
+    // per-KEYWORD validation outcome — a malformed group must poison its
     // own names as BAD_RESPONSE, never fall through to a default NO_MATCH.
     const byKeyword = new Map(); // normKeyword -> { cands } | { reason }
     let goodGroups = 0;
@@ -649,7 +631,7 @@ if (toFetch.length && !online) {
         byKeyword.set(key, { reason: 'BAD_RESPONSE' });
         continue;
       }
-      // Layer 3 (R2 + §19.1): candidate minimum schema — a candidate must be a
+      // Layer 3 : candidate minimum schema — a candidate must be a
       // non-array object with a non-empty string `url` (the fields selection
       // actually reads). A structurally invalid candidate (null, scalar, array,
       // object missing/typing `url` wrong) counts as INVALID — distinct from a
@@ -657,21 +639,16 @@ if (toFetch.length && !online) {
       // is a legitimate "no match".
       const usable = [];
       let junk = 0;
-      let scopedOut = 0;
       for (const i of g.icons) {
         if (i == null || typeof i !== 'object' || Array.isArray(i) || typeof i.url !== 'string' || i.url === '') {
           junk++;
           continue;
         }
-        try {
-          if (inScope(i)) usable.push(i);
-          else scopedOut++;
-        } catch { junk++; }
+        usable.push(i);
       }
       // all candidates structurally invalid → the group carries no usable data;
       // without a valid response we cannot claim a business miss for this keyword.
-      // Well-formed candidates that are all out of scope DO prove a miss.
-      if (usable.length === 0 && scopedOut === 0 && junk > 0) {
+      if (usable.length === 0 && junk > 0) {
         badGroups++;
         byKeyword.set(key, { reason: 'BAD_RESPONSE' });
         continue;
@@ -681,7 +658,7 @@ if (toFetch.length && !online) {
     }
     // An empty array is a genuine empty result → NO_MATCH below. Otherwise, if
     // no group survived validation (or every group was malformed), the payload
-    // is an error envelope, not "no match" (R2).
+    // is an error envelope, not "no match" .
     if (groups.length > 0 && goodGroups === 0) {
       netLog.badResponses = (netLog.badResponses || 0) + 1;
       for (const n of group) nameToCandidate.set(n, { reason: 'BAD_RESPONSE' });
@@ -718,10 +695,9 @@ if (toFetch.length && !online) {
       continue;
     }
     const res = nameToCandidate.get(n);
-    if (res && res.reason === 'EXACT') {
-      pending.push({ name: n, url: res.candidate.url, identity: String(identityOf(res.candidate)), themeMode: 'paired', reason: 'EXACT', sourceRef: 'iconplus-search' });
-    } else if (res && res.reason === 'AMBIGUOUS') {
-      decisions.set(n, { name: n, kind: 'ep', reason: 'AMBIGUOUS', cacheStatus: 'MISS' });
+    if (res && (res.reason === 'EXACT' || res.reason === 'SCORE')) {
+      pending.push({ name: n, url: res.candidate.url, identity: String(identityOf(res.candidate)), themeMode: 'paired', reason: res.reason, sourceRef: 'iconplus-search', searchName: res.candidate.name || '', category: res.candidate.category || '' });
+
     } else if (res && res.reason === 'NO_MATCH') {
       decisions.set(n, { name: n, kind: 'ep', reason: 'NO_MATCH', cacheStatus: 'MISS' });
     } else {
@@ -748,15 +724,15 @@ if (toFetch.length && !online) {
     const darkGroup = group.filter((u) => urlNeedsDark.get(u));
     try {
       const [lRes, dRes] = await Promise.allSettled([
-        apiGetIcon(group.join(','), 'light', def.lightColor, def.size, def.style),
+        apiGetIcon(group.join(','), 'light', def.lightColor, def.size, def.style, group.map(u => urlToNames.get(u)[0].searchName || '').join(','), group.map(u => urlToNames.get(u)[0].category || '').join(',')),
         darkGroup.length
-          ? apiGetIcon(darkGroup.join(','), 'dark', def.darkColor, def.size, def.style)
+          ? apiGetIcon(darkGroup.join(','), 'dark', def.darkColor, def.size, def.style, darkGroup.map(u => urlToNames.get(u)[0].searchName || '').join(','), darkGroup.map(u => urlToNames.get(u)[0].category || '').join(','))
           : Promise.resolve([]),
       ]);
       netLog.iconCalls += darkGroup.length ? 2 : 1;
       if (lRes.status === 'fulfilled') {
         const val = lRes.value;
-        // Layer-2 validation (R2): the getIcon response must be an array of
+        // Layer-2 validation : the getIcon response must be an array of
         // {url, data} objects. Anything else (object envelope, null items,
         // missing data) is a service anomaly — never silently a miss.
         const arr = Array.isArray(val) ? val.filter((it) => it && typeof it === 'object') : null;
@@ -797,7 +773,7 @@ if (toFetch.length && !online) {
 
   for (const p of pending) {
     const light = urlToLight.get(p.url);
-    const dark = p.themeMode === 'shared' ? light : urlToDark.get(p.url);
+    const dark = p.themeMode === 'shared' ? light : (urlToDark.get(p.url) || light);
     if (urlFetchErr.has(p.url) && !light) {
       decisions.set(p.name, { name: p.name, kind: 'ep', reason: urlFetchErr.get(p.url), cacheStatus: 'MISS' });
       continue;
@@ -807,7 +783,7 @@ if (toFetch.length && !online) {
       continue;
     }
     if (p.themeMode !== 'shared' && !dark) {
-      // §5.3 paired completeness: single-theme miss → whole item EP
+      // paired completeness: single-theme miss → whole item EP
       decisions.set(p.name, { name: p.name, kind: 'ep', reason: 'INCOMPLETE_THEME', cacheStatus: 'MISS' });
       continue;
     }
@@ -892,7 +868,7 @@ ${imports.join('\n')}
 ${body.length ? '\n' + body.join('\n\n') + '\n' : ''}`;
 }
 // Plan every owned output, verify ownership up front, then stage → commit so a
-// failure never leaves a half-written set of assets (Spec §4.1 atomicity).
+// failure never leaves a half-written set of assets (atomicity).
 const outputs = []; // { path, content, label }
 for (const name of companyNames) {
   const d = decisions.get(name);
@@ -969,17 +945,17 @@ for (const name of requestedNames) {
       reason: d.reason, sourceRef: d.sourceRef,
       lightHash,
       // shared assets reuse the light file for dark; store the SAME hash so
-      // cacheEntryValid can still validate the dark file on disk (R5)
+      // cacheEntryValid can still validate the dark file on disk 
       darkHash: d.themeMode === 'shared' ? lightHash : md5File(join(iconsDir, `${name}.dark.svg`)),
     };
   } else if (d.reason === 'NO_MATCH') {
     // service-scoped negative cache; NOT renewed on a hit — carry the original
-    // expiry forward so a stale NO_MATCH still eventually expires (R3)
+    // expiry forward so a stale NO_MATCH still eventually expires 
     const prev = cache.entries[name];
     const until = d.cacheStatus === 'NEGATIVE_HIT' && prev && prev.until ? prev.until : now + NEGATIVE_TTL_MS;
     nextEntries[name] = { provider, baseUrl, sourceId, groupId, mappingVersion, reason: 'NO_MATCH', until };
   } else {
-    // AMBIGUOUS / INCOMPLETE_THEME / INVALID_SVG / SERVICE_UNAVAILABLE / TIMEOUT / BAD_RESPONSE — not a business miss
+    // INCOMPLETE_THEME / INVALID_SVG / SERVICE_UNAVAILABLE / TIMEOUT / BAD_RESPONSE — not a business miss
     nextEntries[name] = { provider, baseUrl, sourceId, groupId, mappingVersion, reason: d.reason, transient: true };
   }
 }
@@ -1018,7 +994,7 @@ try {
 }
 
 // ────────────────────────────────────────────────────────────
-// 8. Output protocol (§5.4)
+// 8. Output protocol ()
 // ────────────────────────────────────────────────────────────
 const cachedCount = items.filter((i) => i.cacheStatus === 'HIT' || i.cacheStatus === 'NEGATIVE_HIT').length;
 const missed = items.filter((i) => i.provider !== provider).map((i) => i.epName);

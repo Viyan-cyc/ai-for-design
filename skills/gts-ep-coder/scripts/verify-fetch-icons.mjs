@@ -1,14 +1,14 @@
 #!/usr/bin/env node
-// Mock IconPlus server + driver for fetch-icons.mjs (Spec v2 §10.1 matrix).
+// Mock IconPlus server + driver for fetch-icons.mjs ( matrix).
 // Usage: node verify-fetch-icons.mjs
 //
 // Covered scenarios (§10.1):
 //   A exact low-score wins / wrong high-score ignored
-//   B fuzzy-only candidate → EP (NO_MATCH)
-//   C two distinct exact-named assets → EP (AMBIGUOUS)
+//   B no exact name → highest score candidate
+//   C duplicate exact names → first exact candidate
 //   D reviewed alias → locked company asset, no search
 //   E service unreachable → valid cache kept, rest EP (SERVICE_UNAVAILABLE)
-//   F single-theme miss → whole item EP (INCOMPLETE_THEME), no fake pair
+//   F missing dark theme → reuse light SVG
 //   G explicit shared asset → both themes share, dark not requested
 //   H hash mismatch / no metadata → cache not trusted, re-resolve
 //   I same-version valid cache → zero network, stable files
@@ -25,7 +25,7 @@
 //   Q R3 negative cache is service-scoped and not perpetually renewed
 //   R R4 scan narrowed to src/assets/icons (a module under src/assets is scanned)
 //   S R5 shared cache validates the dark file too (corruption → re-resolve)
-//   T getIcon sends exactly url/size/style/color/theme/fileType
+//   T getIcon sends original download metadata and style value
 
 import { spawn, spawnSync } from 'child_process';
 import { mkdtempSync, writeFileSync, mkdirSync, readFileSync, existsSync, rmSync } from 'fs';
@@ -161,19 +161,19 @@ async function main() {
     rmSync(proj, { recursive: true, force: true });
   }
 
-  // ── B. fuzzy-only candidate → EP / NO_MATCH ──
+  // ── B. score-based selection without exact name ──
   {
     resetBehavior();
     behavior.search = () => [{ englishName: 'MagnifierX', url: 'mock://m', score: 0.99 }];
     const proj = makeProject({ 'pages/Home/index.vue': `import { Search } from '@element-plus/icons-vue'\nexport default {}\n` });
     const { out } = await runFetch(proj);
-    check('B1 fuzzy-only → FALLBACK / NO_MATCH', out.includes('STATUS: FALLBACK') && out.includes('RESOLVED: 0'));
-    check('B2 no company svg, barrel re-exports EP', !existsSync(iconFile(proj, 'Search', 'light')) && /export \{[^}]*Search[^}]*\} from '@element-plus\/icons-vue'/.test(barrelOf(proj)));
-    check('B3 report reason NO_MATCH', reportOf(proj).items.find((i) => i.epName === 'Search').reason === 'NO_MATCH');
+    check('B1 no exact name → highest score company', out.includes('STATUS: COMPLETE') && out.includes('RESOLVED: 1'));
+    check('B2 score winner materialized', existsSync(iconFile(proj, 'Search', 'light')) && /export const Search = \{/.test(barrelOf(proj)));
+    check('B3 report reason SCORE', reportOf(proj).items.find((i) => i.epName === 'Search').reason === 'SCORE');
     rmSync(proj, { recursive: true, force: true });
   }
 
-  // ── C. two distinct exact-named assets → EP / AMBIGUOUS ──
+  // ── C. first exact candidate wins ──
   {
     resetBehavior();
     behavior.search = (kw) => [
@@ -182,8 +182,8 @@ async function main() {
     ];
     const proj = makeProject({ 'pages/Home/index.vue': `import { Search } from '@element-plus/icons-vue'\nexport default {}\n` });
     const { out } = await runFetch(proj);
-    check('C1 ambiguous → FALLBACK, no company svg', out.includes('STATUS: FALLBACK') && !existsSync(iconFile(proj, 'Search', 'light')));
-    check('C2 report reason AMBIGUOUS', reportOf(proj).items.find((i) => i.epName === 'Search').reason === 'AMBIGUOUS');
+    check('C1 duplicate exact names → first exact company', out.includes('STATUS: COMPLETE') && existsSync(iconFile(proj, 'Search', 'light')));
+    check('C2 duplicate exact names report EXACT', reportOf(proj).items.find((i) => i.epName === 'Search').reason === 'EXACT');
     rmSync(proj, { recursive: true, force: true });
     // C3: duplicate records that are the SAME asset identity dedupe to one → EXACT
     resetBehavior();
@@ -234,15 +234,15 @@ async function main() {
     rmSync(proj, { recursive: true, force: true });
   }
 
-  // ── F. single-theme miss → whole item EP ──
+  // ── F. dark theme missing reuses light ──
   {
     resetBehavior();
     behavior.getIconStatus = (theme) => (theme === 'dark' ? 500 : 200);
     const proj = makeProject({ 'pages/Home/index.vue': `import { Search } from '@element-plus/icons-vue'\nexport default {}\n` });
     const { out } = await runFetch(proj);
-    check('F1 single-theme miss → FALLBACK, no fake pair', out.includes('STATUS: FALLBACK') && !existsSync(iconFile(proj, 'Search', 'light')) && !existsSync(iconFile(proj, 'Search', 'dark')));
-    check('F2 report reason INCOMPLETE_THEME', reportOf(proj).items.find((i) => i.epName === 'Search').reason === 'INCOMPLETE_THEME');
-    check('F3 barrel falls back to EP', /export \{[^}]*Search[^}]*\} from '@element-plus\/icons-vue'/.test(barrelOf(proj)));
+    check('F1 dark missing → company with light reused', out.includes('STATUS: COMPLETE') && existsSync(iconFile(proj, 'Search', 'light')) && existsSync(iconFile(proj, 'Search', 'dark')));
+    check('F2 reused light/dark files identical', hashOf(iconFile(proj, 'Search', 'light')) === hashOf(iconFile(proj, 'Search', 'dark')));
+    check('F3 barrel uses company component', /export const Search = \{/.test(barrelOf(proj)));
     rmSync(proj, { recursive: true, force: true });
   }
 
@@ -394,7 +394,7 @@ async function main() {
     rmSync(artifact, { recursive: true, force: true });
   }
 
-  // ── O. R1: XML well-formedness + external-ref validation ──
+  // ── O. XML well-formedness + external-ref validation ──
   {
     const oneIcon = () => makeProject({ 'pages/Home/index.vue': `import { Search } from '@element-plus/icons-vue'\nexport default {}\n` });
     const cases = [
@@ -427,7 +427,7 @@ async function main() {
     rmSync(projOk, { recursive: true, force: true });
   }
 
-  // ── P. R2: anomalous response classification (never a business miss) ──
+  // ── P. anomalous response classification (never a business miss) ──
   {
     const N = 'Search';
     const oneIcon = () => makeProject({ 'pages/Home/index.vue': `import { Search } from '@element-plus/icons-vue'\nexport default {}\n` });
@@ -459,7 +459,7 @@ async function main() {
     rmSync(proj, { recursive: true, force: true });
   }
 
-  // ── Q. R3: negative-cache service isolation + no perpetual renewal ──
+  // ── Q. negative-cache service isolation + no perpetual renewal ──
   {
     const N = 'Search';
     const projOf = () => makeProject({ 'pages/Home/index.vue': `import { Search } from '@element-plus/icons-vue'\nexport default {}\n` });
@@ -495,7 +495,7 @@ async function main() {
     rmSync(proj, { recursive: true, force: true });
   }
 
-  // ── R. R4: src/assets scan must be narrowed to the icons output dir ──
+  // ── R. src/assets scan must be narrowed to the icons output dir ──
   {
     resetBehavior();
     // a module under src/assets/ (NOT src/assets/icons) that imports EP icons
@@ -507,7 +507,7 @@ async function main() {
     rmSync(proj, { recursive: true, force: true });
   }
 
-  // ── S. R5: shared cache completeness — the dark file is validated ──
+  // ── S. shared cache completeness — the dark file is validated ──
   {
     resetBehavior();
     const aliasDir = mkdtempSync(join(tmpdir(), 'uxal-'));
@@ -537,19 +537,19 @@ async function main() {
     const getIconUrl = requests.slice(from).find((u) => u.includes('/getIcon?'));
     const p = getIconUrl ? new URL(getIconUrl, 'http://x').searchParams : new URLSearchParams();
     check('T1 getIcon sends url/size/style/color/theme/fileType', ['url', 'size', 'style', 'color', 'theme', 'fileType'].every((k) => p.has(k)), [...p.keys()].join(','));
-    check('T2 getIcon does NOT send undocumented name/category', !p.has('name') && !p.has('category'));
+    check('T2 getIcon keeps original name/category/style values', p.get('name') === 'Search' && p.get('category') === 'c' && p.get('style') === '线性');
     check('T3 getIcon fileType=svg', p.get('fileType') === 'svg');
     rmSync(proj, { recursive: true, force: true });
   }
 
   // ── U. R1 hardening (spec §15.2-1): real parser + icon contract ──
-  // the four §15.1 counterexamples that the old regex stack accepted, plus
+  // the four counterexamples that the old regex stack accepted, plus
   // namespace / viewBox-shape / positive-size checks and a real-world sample.
   {
     const oneIcon = () => makeProject({ 'pages/Home/index.vue': `import { Search } from '@element-plus/icons-vue'\nexport default {}\n` });
     const reasonOf = (proj) => reportOf(proj).items.find((i) => i.epName === 'Search');
     const cases = [
-      // §15.1 counterexamples (all must now be INVALID_SVG)
+      // counterexamples (all must now be INVALID_SVG)
       ['duplicate attribute', '<svg viewBox="0 0 24 24" a="1" a="2"></svg>'],
       ['unquoted attribute value', '<svg viewBox="0 0 24 24"><path d=M0 /></svg>'],
       ['non-numeric viewBox', '<svg viewBox="oops"></svg>'],
@@ -676,7 +676,7 @@ async function main() {
     rmSync(proj, { recursive: true, force: true });
   }
 
-  // ── Y. §17.2: mixed-response per-icon classification + negative-cache purity ──
+  // ── Y. mixed-response per-icon classification + negative-cache purity ──
   {
     const twoIcons = () => makeProject({ 'pages/Home/index.vue': `<script>\nimport { Search, Camera } from '@element-plus/icons-vue'\nexport default {}\n</script>\n<template><div/></template>\n` });
     const reasonsOf = (proj) => {
@@ -686,7 +686,7 @@ async function main() {
     };
     const cacheOf = (proj) => JSON.parse(readFileSync(join(proj, 'src', 'assets', 'icons', '.icon-cache.json'), 'utf8'));
 
-    // Y1: the §17.2 repro — one genuine empty group + one malformed group
+    // Y1: the repro — one genuine empty group + one malformed group
     resetBehavior();
     behavior.searchRaw = [{ keyword: 'Search', icons: [] }, { keyword: 'Camera', icons: { error: 'failed' } }];
     let proj = twoIcons();
@@ -750,7 +750,7 @@ async function main() {
     rmSync(proj, { recursive: true, force: true });
   }
 
-  // ── Z. §19.1: candidate-object minimum schema (table-driven) ──
+  // ── Z. candidate-object minimum schema (table-driven) ──
   // Each row: malformed candidate shapes must classify as BAD_RESPONSE (never
   // a negative-cached NO_MATCH), while well-formed-but-unmatched candidates
   // stay genuine NO_MATCH — the fix must not over-tighten.
@@ -769,10 +769,10 @@ async function main() {
       ['missing url entirely', [{ englishName: 'Camera', icon_id: 'x' }], 'BAD_RESPONSE'],
       ['all invalid mixed shapes', [null, 'x', {}, { url: 42 }], 'BAD_RESPONSE'],
       ['partial valid + invalid', [{ url: 'mock://cam', englishName: 'Camera', icon_id: 'c1' }, { error: 'boom' }, null], 'EXACT'],
-      // well-formed but NOT an exact englishName match → genuine NO_MATCH (not BAD_RESPONSE)
-      ['well-formed non-exact candidate', [{ url: 'mock://other', englishName: 'CameraX', icon_id: 'c2' }], 'NO_MATCH'],
-      // well-formed but out of configured scope → still a legitimate miss
-      ['well-formed out-of-scope candidate', [{ url: 'mock://s', englishName: 'Camera', icon_id: 'c3', source_id: 999 }], 'NO_MATCH'],
+      // A well-formed non-exact candidate is selected by score.
+      ['well-formed non-exact candidate', [{ url: 'mock://other', englishName: 'CameraX', icon_id: 'c2' }], 'SCORE'],
+      // Source/group filtering is performed by the original search API parameters.
+      ['well-formed out-of-scope candidate', [{ url: 'mock://s', englishName: 'Camera', icon_id: 'c3', source_id: 999 }], 'EXACT'],
     ];
 
     for (const [label, cameraIcons, expected] of TABLE) {
@@ -790,7 +790,7 @@ async function main() {
       const ok =
         out.includes('RESULT: OK') &&
         cam.reason === expected &&
-        (expected === 'EXACT' ? cam.provider !== 'element-plus' : cam.provider === 'element-plus') &&
+        (['EXACT', 'SCORE'].includes(expected) ? cam.provider !== 'element-plus' : cam.provider === 'element-plus') &&
         search.reason === 'NO_MATCH' &&
         // negative-cache discipline: only a genuine miss may be cached as NO_MATCH
         (expected === 'NO_MATCH' ? camCache === 'NO_MATCH' : camCache !== 'NO_MATCH') &&

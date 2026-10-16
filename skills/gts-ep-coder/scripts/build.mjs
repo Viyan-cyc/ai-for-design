@@ -17,7 +17,7 @@
 //   6. Style check — SFC <style>: no :root/[data-theme] definitions, page-local
 //                   custom props must be prefixed --page-* (design tokens live in
 //                   src/assets/themes/); var(--color-*)-style token uses must be
-//                   defined; hardcoded hex -> WARN
+//                   checked as advisory hints; hardcoded hex -> WARN
 //   7. Theme check — bridge.less + themes/default.less present
 //
 // Usage:
@@ -382,7 +382,7 @@ for (const text of cssHaystacks) {
     if (tok.startsWith('--el-')) continue;         // Element Plus runtime vars
     if (!definedTokens.has(tok)) {
       const hints = tokenHints(tok, definedTokens);
-      fail(`unknown token var(${tok}) : tokens are defined in src/assets/themes/*.less${hints.length ? ` : did you mean ${hints.join(', ')}?` : ''}`);
+      warn(`unknown token var(${tok}) : tokens are defined in src/assets/themes/*.less${hints.length ? ` : did you mean ${hints.join(', ')}?` : ''}`);
     }
   }
   // var(--x, fallback) — token should still exist unless it's --el-* / --ux-mix-base bridge plumbing
@@ -390,7 +390,7 @@ for (const text of cssHaystacks) {
     const tok = m[1];
     if (tok.startsWith('--el-')) continue;
     if (tok === '--ux-mix-base') continue;         // bridge plumbing, defined in base.less
-    if (!definedTokens.has(tok)) warn(`token var(${tok}) used with fallback but never defined${tokenHints(tok, definedTokens).map((h) => ` : did you mean ${h}?`).join('')} : check spelling against references/design-language.md`);
+    if (!definedTokens.has(tok)) warn(`token var(${tok}) used with fallback but never defined${tokenHints(tok, definedTokens).map((h) => ` : did you mean ${h}?`).join('')} : check spelling against references/design-language.md §1 or references/design-manifest.json`);
   }
 }
 

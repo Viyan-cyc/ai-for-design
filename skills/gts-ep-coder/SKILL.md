@@ -1,359 +1,76 @@
 ---
 name: gts-ep-coder
-description: 根据用户需求生成 Vue 3 + Element Plus 2.13.5 页面（.vue SFC），样式严格遵循 design-language 设计 token；输出离线可开的双击即看 HTML 预览与可拷入真实工程的 src/ 源码。做页面、改页面、看效果时使用。
-version: 0.1.0
+description: 根据自然语言需求或参考图生成符合 GTS 设计规范的 Vue 3 + Element Plus 2.13.5 页面，交付可双击打开的离线预览和标准 Vue 源码。用于创建、修改页面及展示效果。
 ---
 
 # gts-ep-coder
 
-把自然语言需求变成 Vue 3 + Element Plus 2.13.5 的 `.vue` 页面，样式严格走 design-language token 体系（见 `references/design-language.md`）。
+尽快把需求变成可见页面：按需选组件、token、图标与模板，编写代码，构建后打开预览，检查主要操作，然后立即交付。页面默认中文；国际化和主题切换按钮按需求添加。
 
-交付两件东西：
+交付 `index.gts.html`（双击离线预览）及 `src/`（真实 Vue 工程源码）。所有命令从本 skill 根目录执行，工程路径使用绝对路径。
 
-1. **`index.gts.html`** —— 离线预览（本地 UMD 运行时 + 浏览器内 SFC 编译，双击即看，无需服务器）；
-2. **`src/`** —— 标准工程源码，可整目录拷入任何 Vue 3 + Element Plus 2.13.5 工程（接入说明见 `src/README.md`）。
+## 1. 准备环境和工程
 
-页面代码是主交付物；预览 HTML 只是让你和用户**当场看到编译渲染结果**的手段。
-
----
-
-## 工作流
-
-```
-⓪ 确认 node  →  ① ensure-env  →  ② init 建工程  →  ③ 写 .vue 页面  →  ③.5 fetch-icons  →  ④ build 门禁  →  ⑤ 交付
-  (没有就装)                                    ↑                 │
-                                                └── build 验证未过 ─┘  循环至通过
-```
-
-> fetch-icons 在页面图标 import 变化时执行（增量：只处理新出现的名字，已确认的图标零网络）；
-> build 失败回到 ③ 改代码，重跑 ④。
-
-脚本都在本 skill 的 `scripts/` 下，**除 ⓪ 的安装脚本外都要 node 才能跑**。
-所有脚本的输出都是固定格式，**先读 `RESULT:` 那一行再决定下一步**：
-
-```
-RESULT: OK
-KEY: value …
-
-RESULT: FAIL | <CODE>: <原因>
-HINT: <可直接执行的下一步>
-```
-
-### ⓪ 确认 node —— 机器上没有 node 时，**装它是你的活，不是用户的**
-
-先跑 `node -v`：
-
-| 结果 | 怎么办 |
-|---|---|
-| 有版本号输出 | 直接进 ① |
-| `command not found` / `不是内部或外部命令` | 直接跑安装脚本（见下）。装环境本来就在本 skill 职责范围内，用户全程不该接触安装命令 |
-
-```bash
-# macOS
-bash "<skillDir>/scripts/install/install.sh"
-```
-```powershell
-# Windows
-powershell -ExecutionPolicy Bypass -File "<skillDir>\scripts\install\install.ps1"
-```
-
-`<skillDir>` 就是**本文件（SKILL.md）所在目录**，照着拼绝对路径。这两个脚本是 bash / PowerShell
-原生的，不需要机器先有 node；没有时它们会先从内网 manifest 下载 portable node（带 sha256 校验），
-**内网不通时自动回落到 skill 内置的 fallback manifest（npmmirror 包源，node v24.16.0，同样带
-sha256 校验）**，然后自动接续 `setup-env.mjs` 装 compiler 依赖（**npm-only，本 skill 不用 yarn**；
-npm 源也带两级回落：内网源 → 公网 npmmirror）。
-
-机器上已有能跑的 node 时它们会直接复用（任意大版本，无版本门禁），日志里 `[node] source: system`
-就是走了这条路——**不要因为"没看到下载"就以为它没装**。内网 manifest 拉取失败且走了回落时，
-日志会出现 `[manifest] primary unreachable, using fallback` / `using fallback manifest` 这类行，
-属预期行为；实在装不上（两源都失败）会报 `MANIFEST_UNREACHABLE` / `NPM_INSTALL_FAILED` 并给
-`HINT:`。
-
-升级 node 版本时：内网 manifest 与 `references/fallback-node-manifest.json`（file/sha256/baseUrl）
-需要同步更新，保持两个来源版本一致。
-
-装环境要几分钟，告诉用户正在装。装完回到 ①。
-
-### ① `ensure-env.mjs` —— 每个会话开头跑一次
+每个会话先执行一次，依赖锁未变不重复安装：
 
 ```bash
 node scripts/ensure-env.mjs
+node scripts/init.mjs "<输出目录>" "<slug>"
 ```
 
-校验三件事：node 可用（共享池 portable node 优先）、`@vue/compiler-sfc` 可加载（真实编译器，
-build 门禁用）、`env.lock.json` 的 lock hash 与 skill 携带的 `package-lock.json` 一致。
+没有 Node、compiler 缺失或环境过期时，按 [环境准备](references/environment.md) 执行安装脚本；已有环境直接复用。安装失败如实给出 `RESULT`、`HINT` 和日志，不换依赖或伪造环境。
 
-| `RESULT: FAIL` 的 CODE | 怎么办 |
-|---|---|
-| `COMPILER_MISSING` / `ENV_LOCK_MISSING` / `ENV_OUTDATED` | **直接执行 `HINT:` 里那条命令**（`setup-env.mjs` 或 install 脚本），完成后重跑 ensure-env。要几分钟，告诉用户在装环境 |
-| `ENV_CONFIG_BROKEN` / `SKILL` 组装不完整 | 停下。这是 skill 没组装好，不是用户能解决的问题，如实说明并给出 `HINT` 里的路径 |
-| `COMPILER_LOAD_FAILED` | 按 `HINT:` 重装依赖；仍失败把输出整段报给用户 |
+记住 init 输出的 `HTML_PATH`、`SRC_DIR`、`PAGE`。修改已有工程时复用其路径，不重新创建。
 
-**装不上时把 `RESULT: FAIL`、`DETAIL:`、`HINT:` 原样报给用户**——那是环境问题，人的活（见硬约束 0.2）。
+## 2. 按需选型，立即编写
 
-### ② `init.mjs` —— 每个需求建一次工程（幂等）
+先读 [页面与组件索引](references/page-routing.md)，只选择一个最接近的模板及当前需要的组件资料；不用每次读整份规范或多个整页例子。
+
+- 页面放 `src/pages/{PAGE}/index.vue`，`src/App.vue` 负责挂载；数据经 `src/api/` 的 Promise 接口获取，mock 放 `src/api/mock/`，页面不直接读取 mock。
+- 视觉值从 [常用 token](references/page-routing.md#常用-token) 选取；更多名称在 `references/design-language.md` 中定向搜索，精确主题值查询 `references/design-manifest.json`。不猜不存在的 token，不读开发机上的原始 design-language 目录。
+- 使用真实 Element Plus 组件，模板用 PascalCase，每个文件导入自己使用的组件和 Vue API。样式用 `<style scoped lang="less">`；颜色、间距、圆角走 token，布局宽度/百分比可直接使用。
+- 组件交互状态沿用现有主题桥接，不在页面覆盖 `--el-*`。局部派生变量用 `--page-*`。容器流式布局，表格允许内部滚动，不用缩放整个页面适配窗口。
+- 参考图用于确定结构、内容和比例；规范决定 token/API。普通布局细节直接采用模板默认值，只有阻碍实现的实质业务歧义才询问。
+- 不确定某个组件 API 时，只读索引指向的对应示例。历史示例仅作结构参考，不能覆盖设计目录或锁定的组件 API。
+
+需要国际化或主题切换 UI 时才读 [可选功能](references/optional-features.md)。机制和两套主题已随工程提供，不必重建。
+
+## 3. 解析图标
+
+先按 Element Plus 名称编写，例如 `import { Search } from '@element-plus/icons-vue'`。图标首次生成或引用发生变化时执行：
 
 ```bash
-node scripts/init.mjs "<artifact-folder 绝对路径>" "<slug>"
+node scripts/fetch-icons.mjs --dir "<工程目录>"
 ```
 
-- `<slug>`：小写英文/数字/连字符，1–6 段（如 `login-form`、`device-list`）。
-- 返回值记住三个：`HTML_PATH`（预览入口）、`SRC_DIR`（你写代码的地方）、`PAGE`（主组件名）。
+脚本沿用原 IconPlus 流程：getConfig → getIconInfo → 优先英文同名，否则选择最高 score 候选 → getIcon 取浅深主题。没有候选或服务不可达时用 EP；暗色取不到时沿用原流程复用浅色。无需手工补公司图标ID或让用户确认候选。
 
-init 会生成完整骨架：`index.gts.html` + `public/library/`（UMD 运行时）+ `src/`（App.vue、
-main.js、api 服务层示例、主题三件套、starter 页面）。
-**默认不含任何切换 UI**（国际化 / 主题切换均为按需能力，见下方判据）。
+脚本生成 `src/assets/icons/index.js` 并改写页面 import，源码与预览共用同一入口。有效缓存无需网络；引用未变不重复解析。图标无变化且工程未使用图标时不需要空跑。
 
-### ③ 写代码 —— 主战场
+`RESULT: OK` / `STATUS: FALLBACK` 均可继续构建；`FAILED` 先修错误。服务异常简短说明已使用 EP，细节见 `icons-report.json`。裸 SVG 用 `<ElIcon :size="16">` 包装或显式宽高；ElButton 的 `:icon` 已有包装。
 
-**只写 `src/` 下**：页面放 `src/pages/{Page}/index.vue`（一页一目录，子组件/样式放同目录），
-`App.vue` 只改挂载点。主题 css（`src/assets/themes/`）与 `index.html` 是交付件骨架，
-不改不删；换肤按 `src/assets/themes/README.md` 协议追加。
+## 4. 构建、打开、反馈
 
-动手前**先查 `vendor/`**（入口 `vendor/README.md`，两条直线按需取用）：
-
-1. 需求是典型页面（表格+搜索+详情、图表看板等）→ 从 `vendor/code-example/references/` 选最接近的
-   整页示例作起点，改造成本远低于从零写；
-2. 具体组件用法拿不准 → 查 `vendor/vue-skill/components/` 对应示例；页面样式规则、文件组织、
-   通信约定在 `vendor/vue-skill/references/`（code-rules.md 是总纲）。
-
-生成后按 `vendor/vue-skill/references/error-checklist.md` 过一遍再交 build。不要往 vendor 写任何
-东西；vendor 覆盖不了的非常规需求再扩展查 token 词汇（`references/design-language.md`）。
-
-#### 数据走服务层（src/api/）
-
-- 页面数据一律经 `src/api/{模块}.js` 的语义化函数（返回 Promise）获取，**页面不直接 import
-  mock 数据文件**（它们放 `src/api/mock/`，只被 api 层消费）。starter 的 `api/demo.js` 是样例。
-- 对接真实后端 = 改 `api/` 实现（换 fetch/axios），页面零改动——这是服务层存在的意义。
-- 新增接口按同样式扩展：每个业务模块一个 `api/{模块}.js`，mock 数据沉到 `api/mock/`。
-- 交付卫生：真实页面落地后，跑 `node scripts/cleanup-starter.mjs --dir "<工程目录>"` 清理
-  starter 预置的 `api/demo.js` + `api/mock/demo-data.js`（脚本只删仍为 starter 原样的文件，
-  已改造为真实模块的会 WARN 保留），`src/README.md` 的迁移示例同步改指真实模块——不给交付物留死代码。
-
-#### 国际化：按需启用（默认不含任何 i18n 代码）
-
-- **用户没提国际化 → 页面直接写中文**（starter 页默认直接中文，改动为零）。
-- **用户要求国际化（或明确多语言）→ 该工程启用**，最小集：
-  1. 装配：从 `scripts/preview/i18n-scaffold/` 拷贝 `i18n/` 到工程 `src/`（含 createI18n、
-     locales、EP_LOCALES 映射；**逐字拷贝，不要重写**——预览 moduleCache 与 build 白名单按此接线）；
-  2. 文案 key 化：页面用 `const { t } = useI18n()` + key（key 命名 `msg.{页面}.{分类}.{语义}`，
-     至少 3 个点，见 code-rules 规则 10.2）；
-  3. 词典进 `src/i18n/locales/{zh-cn,en}.js`（**两份 key 集合必须一致**，en 缺失会回落中文）；
-     - 词典边界（只收两类，判定法：对接真实后端后词条还用得上吗）：
-       ① 界面文案（标签/按钮/占位符/提示/空态）；
-       ② 枚举显示名——封闭集合的 code→label（如 level/status/业务域），存于数据的只有 code，
-          显示文案由 `t()` 解析；对接后端后词典保留，仅把 code 集合对齐后端枚举表。
-       记录内容**不进词典**：标题/描述/设备或资源名称/人名/时长等开放文本，存于 mock、
-       对接后被真实数据取代，组件不得对数据值做 `t()` 包装（否则真实数据会显示 key 路径，
-       破坏「页面零改动」契约）。拿不准封闭/开放时，按记录内容处理。
-  4. App.vue 接线 + 切换 UI：**UI 形态按用户描述决定**（图标/下拉/菜单项均可），参考实现见
-     `references/on-demand-toggle.md`（含预览必需：幂等补装须先于 `useI18n`，EP 文案经
-     `ElConfigProvider` 跟随）。真实工程入口需 `app.use(i18n)`。
-- 启用 i18n 的工程，`ElMessage` 等命令式提示文案同样走 `t()`。
-
-#### 主题切换：机制常驻，UI 按需
-
-- 换肤**机制**随工程交付（`src/assets/themes/` 协议：一皮肤一文件（.less）、`html[data-theme="{name}"]`、
-  bridge.less 自动跟随、新增皮肤插槽）——这部分不删不用重做，页面颜色全程走 token。
-- **切换 UI 默认不在**。用户要求深浅切换 → 接入 UI，**形态按用户描述决定**（图标 toggle/
-  下拉/菜单项均可），参考实现见 `references/on-demand-toggle.md`。
-- **内置 default + dark 两套皮肤**。两套皮肤均由 gen-tokens 从 design-language 统一双主题表（§1.2 `Token｜用途｜Light｜Dark`）生成，无工程回填项。
-
-#### 页面自适应（桌面区间弹性）
-
-- 所有页面按桌面区间弹性交付（约 1024–1920+）：布局折叠式（内容重排），不做等比缩放。
-- 编码规则见 `vendor/vue-skill/references/code-rules.md` 第十二节（容器流式、ElRow/ElCol
-  响应式栅格、宽度纪律、@media 口径、表格自适应）；断点与窗口适配口径见
-  `references/design-language.md` §3.3。
-- 交付前自查：1280 与 1024 视口下无横向溢出、无内容裁切（预览窗口缩到该宽度看一眼）。
-
-### ③.5 `fetch-icons.mjs` —— 图标解析（③ 之后、④ 之前必跑）
+修改源码后执行，刷新预览的数据映射：
 
 ```bash
-node scripts/fetch-icons.mjs --dir "<工程目录>" [--base-url <url>] [--timeout <ms>] [--refresh]
+node scripts/build.mjs --dir "<工程目录>"
 ```
 
-**这一步是必跑的，不是可选的。** 写完页面代码后必须执行，不能跳过。
+构建使用真实 Vue 编译器并检查导入与必要文件。失败时一次读完错误、修复后重跑；不能在 `RESULT: FAIL` 时声称完成。样式提示不阻断可运行页面，不为清零提示反复修改。
 
-**页面照常按 EP 名写**：`import { Search } from '@element-plus/icons-vue'`。fetch-icons 用
-Vue SFC/Babel AST 采集实际 import（支持 alias；default/namespace import 无法静态解析会报错），
-逐个名字解析后**把页面 import 重写成统一入口** `src/assets/icons/index.js`（相对路径，alias 保留，
-不改业务逻辑、不做字符串替换）。
+构建成功后：
 
-**统一入口 barrel** 同时导出：命中的公司图标（生成双主题 SVG，data-theme 纯 CSS 切换深浅）+
-未命中的 EP 图标（从原包 re-export）。**预览与真实工程都从这一个模块取图标，不存在预览专属覆盖。**
+1. 打开 `HTML_PATH`，确认主要内容可见，无白屏、致命异常或必要资源加载失败。
+2. 检查一条主要操作，例如搜索、弹窗开关、表单校验/提交。无交互的页面不额外制造任务。只查看当前视口明显布局问题，需求指定响应式或更改主题时再查相应视口/主题。
+3. 立即给用户可点击的预览链接及源码位置，简短说明完成内容和必要的未验证项，再按反馈迭代。
 
-**匹配规则（§5.2）**：先查人工确认别名 `references/icon-aliases.json` → 否则检索 IconPlus，
-候选须在配置 source/group 范围内且规范化 englishName **精确相等** → 否则 / 多资产重名(AMBIGUOUS) /
-主题单边缺失(INCOMPLETE_THEME) / 歧义，**一律回退 EP**。**分数从不参与选择**（模糊分只进维护报告），
-不需要询问用户。**回退 EP 是正常设计策略，不是失败。**
+浏览器不可用时仍交付可打开的预览，但明确“构建通过，运行未验证”。mock 不等于真实后端联调。不做全状态、全组件、逐项 computed-style 或像素级证明。
 
-**缓存与增量**：命中项写 `.icon-cache.json`（含 provider/baseUrl/source/group/themeMode/资产身份/
-SVG hash/解析原因），有效缓存命中**零网络且不改文件**；旧双文件无 metadata 属 legacy-unverified，
-会重解析，不把旧的最高分误选永久锁死。NO_MATCH 短期负缓存（默认 24h，`negativeCacheHours` 可配）；
-SERVICE_UNAVAILABLE/TIMEOUT 不记为业务未命中。`--refresh` 显式刷新。重跑只处理请求集合的变化。
+## 编辑和运行约束
 
-- **执行时机**：③ 写完页面代码后、④ build 前必须执行，**不可跳过**
-- **默认 base-url**：`https://octo.hdesign.huawei.com`（可通过 `--base-url` 覆盖）
-- **默认超时**：10s；瞬态网络故障有限重试一次，不无限等待
-- **即使页面没有用 EP 图标也要跑**（输出 `RESOLVED: 0, MISSED: 0` 正常退出）
-
-输出协议（§5.4）：
-
-| 输出 | 含义 | 下一步 |
-|---|---|---|
-| `RESULT: OK` + `STATUS: COMPLETE` | IconPlus 全命中 | 走 ④ build |
-| `RESULT: OK` + `STATUS: FALLBACK` | 部分回退 EP（无匹配/歧义/主题不全/服务不可达），EP 均有效 | **属已完成**，走 ④ build，不打扰用户 |
-| `RESULT: FAIL` + `STATUS: FAILED` | 源码不合法、未知 EP 名、本地写入失败、barrel 无法生成 | 按 `ERROR:` 修源码或报用户 |
-
-- `RESOLVED: <n>, MISSED: <m>, CACHED: <c>`：公司命中数 / 回退 EP 数 / 其中走缓存零请求数
-- 诊断明细落 `icons-report.json`（每项 epName/provider/companyIdentity/reason/cacheStatus +
-  请求数与耗时）；reason ∈ EXACT/ALIAS/NO_MATCH/AMBIGUOUS/SERVICE_UNAVAILABLE/TIMEOUT/INCOMPLETE_THEME/INVALID_SVG
-- **服务不可达**：允许复用仍有效的公司缓存，其余用 EP；成功但报告故障原因（不记为 NO_MATCH）
-- **普通 fallback 不打扰用户**；服务异常只简短说明"部分图标已使用 Element Plus"，详情留报告
-
-### ④ `build.mjs` —— 编译门禁（真实编译，不是 lint）
-
-```bash
-node scripts/build.mjs --dir "<工程目录（含 index.html 与 src/）>"
-```
-
-build 用真实 `@vue/compiler-sfc`（parse + compileScript + compileTemplate）编译每个 `.vue`，
-并做 token/样式纪律检查。首次跑之前确保 ① 已通过。**错误一次全列出**：FAIL 时逐条给
-`ERROR: <file>: <msg>`，一轮改完再跑即可，不用逐个试。
-
-- `RESULT: OK` → 拿 `HTML_PATH` 走第 ⑤ 步
-- `RESULT: FAIL |` → 读每条 `ERROR:`（含 `file:line`），改代码，**再跑一次 build**。
-  这是你的代码问题，修完重跑即可，不要转述给用户
-- `WARN: ...`（token 有 fallback 但未定义、样式内出现 hex 等）→ **必须处理**，
-  不因为 `RESULT: OK` 就当作做完了
-- 另：修改 `src/` 后预览 HTML 不会自动更新，**每次改动后都要重跑 build** 刷新 `preview-data.js`
-
-> 编译失败 ≠ 报告用户。`verify` 的编译错误、白名单错误、token 违规都是你自己的代码问题，
-> 按提示改完重跑。**环境类失败**（装不上、compiler 加载不了）才报给用户。
-
-### ⑤ 交付 —— 不能省
-
-build 返回 `RESULT: OK` 之后，必须向用户交付预览页面的可点击链接：
-
-```
-预览：<HTML_PATH 的绝对路径>（双击用浏览器打开）
-```
-
-**预览路径必须输出为 artifact 链接**（不是纯文本），让用户可直接点击打开。源码在 `<SRC_DIR>` 下，
-无需作为链接输出。
-
-**这一步没做，整件事就不算完成**，和 build 不通过是同等级别的未完成。
-
----
-
-## 硬约束
-
-### 0. 绝不删除用户磁盘上的任何东西 —— 这条没有例外
-
-**禁止执行任何删除命令**：`Remove-Item` / `rm` / `rmdir` / `del` / `git clean`，不论加什么参数、
-不论那个目录看起来多像垃圾残留。清理是 skill 脚本自己的职责，不是你的。
-
-目录名乱码极可能是正常中文目录——编码显示问题从来不是删除的理由。建目录/复制失败时原样报告，
-让用户自己看。同理禁止：`sudo`（agent 没有交互通道，会静默挂住）、改用户机器的全局配置
-（`~/.npmrc`、shell profile、系统代理）。脚本自己的开关（`--env-dir` 等）不在此列。
-
-### 0.1 不要绕过脚本
-
-脚本失败时，**唯一正确的动作是按 `HINT:` 处理或如实报告失败**：
-
-| ❌ 禁止 | 为什么 |
-|---|---|
-| 自己起 dev server / vite 代替 build | 绕过 build 就没有编译门禁，你会开始"我觉得应该好了" |
-| 修改、调试 `scripts/` 下的任何文件 | 那是 skill 的一部分，不是本次任务的产物。脚本有 bug 应该报告 |
-| 环境装不上就换个方式硬凑 | 凑出来的环境与用户的不是同一个。装不上是环境问题，报给用户 |
-
-**脚本报错不是让你绕开的障碍，是让你转达的信息。**（环境类失败原样转达；
-build 的编译/token 错误是你自己的代码问题，修完重跑，不转述。）
-
-### 0.2 「装环境」是你的活，「装不上」才是人的活
-
-| 情况 | 谁的活 |
-|---|---|
-| 机器上没有 node / compiler 依赖缺失 / lock 过期 | **你的活。** 跑 ⓪ 安装脚本或 `HINT:` 给的命令，自动装完继续 |
-| 装的过程失败（下载不动、sha256 不匹配、权限不足） | **人的活。** 把 `RESULT: FAIL` + `DETAIL:` + `LOG:` 路径原样给用户 |
-
-**说"装不上、卡在这一步"是诚实；换个东西糊弄过去是不诚实。**
-以下兜底一律禁止：
-
-- 让用户自己去 nodejs.org 下载 node（下载是安装脚本的活，npmmirror 直连）
-- 生成"看起来像"的纯 HTML/静态图代替 .vue 源码（交付物是能拷进真实工程的组件代码）
-- 手工改 `node_modules` 或绕过 `npm ci` 去凑依赖
-
-### 1. build 不通过就不算做完
-
-**这是最重要的一条。** 不允许在 `build.mjs` 没有 `RESULT: OK` 的情况下告诉用户"做好了"。
-编译失败就读错误、改代码、重跑 build，直到通过。
-
-### 2. 编辑边界（一张权限表）
-
-| 允许 | 路径 |
-|---|---|
-| ✅ 新建/修改 | `src/pages/{Page}/` 下的任何文件 |
-| ✅ 修改 | `src/App.vue`（挂载页面组件） |
-| ✅ 新建/修改 | `src/api/`（业务模块与 mock，见 ③ 数据走服务层） |
-| ✅ 新建/修改 | `src/i18n/`（仅启用国际化时，见 ③） |
-| 🔒 脚本写 | `src/assets/icons/`（fetch-icons 生成，勿手改；页面从 barrel 取图标） |
-| 🔒 按需追加 | `src/assets/themes/*.less`（换肤走 `themes/README.md` 协议**追加**皮肤文件） |
-| ❌ 不动 | `index.gts.html`、`public/library/`、`src/main.js`、`src/assets/themes/` 既有三件套（交付骨架，改了换肤/预览体系就散了） |
-
-按依赖变化执行：图标 import 变了跑 ③.5，`src/` 任何改动后跑 ④ build 刷预览。
-
-### 3. 页面代码规范（design-language）
-
-- **样式一律 `<style scoped>`**；禁止 `:root` / `html` / `body` / `[data-theme]` 选择器（build 会拒）。
-- **所有颜色走 token**：`var(--color-brand)` 这类规范名；页面局部派生值用 `--page-*` 前缀定义。
-  页面里不写 hex 色值（build 检查）。
-- **只用真实 Element Plus 组件**，模板标签一律 **PascalCase**（`<ElTable>`），模板里用到的每个
-  组件、`ElMessage` 等命令式 API、vue 的 API（`ref`/`reactive`/…）**每个文件各自 import**——
-  漏 import 编译能过但运行时白屏。编译宏（`defineProps` 等）不用 import。
-- 图标从 `@element-plus/icons-vue` 导入（如 `import { Search } from '@element-plus/icons-vue'`）。
-  EP 图标是**无宽高的裸 svg**，直接放模板里 font-size 控不住尺寸（会撑到 200px+）：
-  - 裸 svg 图标必须包进 `<ElIcon :size="N">` 或显式写 `width`/`height`；
-  - 组件自带包装（如 ElButton 的 `:icon` prop、ElMessage 的 icon 选项）不必再包；
-  - 引用 svg 文件用 `<ElIcon><img …/></ElIcon>` 模式。
-- 间距/圆角/字号/投影等同样用 token：`var(--space-size-16)`、`var(--radius-size-normal)`、
-  `var(--shadow-1)`。
-- 组件状态（悬停/聚焦/禁用/加载）由 Element Plus + 桥接层自动获得，页面不重绘状态色。
-- **自适应纪律**：布局容器禁写死总宽（内容流式，控件固有定宽配 `max-width: 100%` 兜底）；
-  字体禁用 vw/vh 视口缩放；多卡片用响应式栅格（细则见 code-rules 第十二节）。
-  build 会对 `zoom` 与 font-size vw/vh 出 WARN。
-- token 速查与协议见 `references/design-language.md`；组件/导出/图标白名单见
-  `scripts/verify/whitelists/*.json`（EP 2.13.5：118 组件 / 534 导出 / 293 图标）。
-
-#### UMD 运行时已知坑（预览跑 UMD、真实工程跑构建工具，行为有差异——按下面写法写两边都稳）
-
-1. **跨组件命令式调用不用 `defineExpose` 方法**：模板 ref + `defineExpose` 暴露的方法在预览
-   运行时下会报 "is not a function"。改用 **prop 信号 + 子组件 watch**：父组件递增一个计数
-   prop，子组件 `watch` 它执行动作。
-2. **ElPagination 分页状态用 ref 绑定**：静态 `:current-page="1"` 在运行时下组件可能静默
-   不渲染。写法：`v-model:current-page`（或 `:current-page` 绑 ref）+ `@current-change`。
-3. **中文 jumper 自组**：EP jumper 在运行时下显示英文 "Go to"。需要中文"前往 X 页"时不用
-   jumper，自组 ElInput + 按钮，配合规则 2 的 `@current-change`。
-
-### 4. vendor/ —— 参考资产（只读）
-
-`vendor/` 已就位：`vue-skill/`（组件示例、code-rules、error-checklist、页面模板）、
-`code-example/`（整页示例）、顶层 `README.md`（两块职责与直线路径）。生成页面前先查 vendor
-（见工作流 ③）。**不要往 vendor 写任何东西**；vendor 是参考资产，不参与编译与 build 门禁，
-示例中引用的 token 名拷入页面后由 build 检查。
-
----
-
-## 交给用户的话怎么说
-
-- 装环境时：说在准备环境、需要几分钟，不要贴命令和路径
-- 编译失败自己修时：不要每轮都汇报，修好了一起说
-- 做完时：给出预览 HTML 路径（双击即开），源码路径无需作为链接输出
-
-## 已知边界
-
-- 预览 HTML 依赖本地 UMD 运行时（`public/library/`），**改 `src/` 后必须重跑 build** 刷新源码映射
-- `dayjs` 已被 Element Plus UMD 内置，页面代码仍可 `import dayjs from 'dayjs'`（映射已接好）
-- 深色主题：dark 皮肤已全量正式化（由 design-language 统一表 Dark 列生成，覆盖全部 token，
-  无缺口）；浅色／深色成对维护，改 token 先改 design-language 再重跑 gen-tokens，不手写深色值
+- 页面生成只改工程的 pages、App.vue、api 和按需 i18n；不改 skill 脚本、vendor、node_modules、全局 npm/代理配置。
+- `index.gts.html`、`public/library/`、`src/main.js` 和既有主题为骨架，不手改；图标由脚本生成。新增主题按工程 `src/assets/themes/README.md` 协议。
+- 不删除用户目录；需要清理未用 starter 服务时用 `scripts/cleanup-starter.mjs --dir "<工程目录>"`，它会保护已修改文件。保留模板仍使用的 demo 服务。
+- 预览运行时不能可靠使用跨组件 `defineExpose` 命令式调用；使用 props/emits 或 prop 信号配合 watch。分页用 ref + `v-model:current-page`，不要静态写死页码。
+- 不用截图或纯 HTML 冒充 Vue 源码，不通过改骨架或绕过构建隐藏错误。
