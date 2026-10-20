@@ -75,11 +75,11 @@ function check(name, cond, detail = '') {
 
 function runFetch(dir) {
   return new Promise((resolveP) => {
-    const p = spawn('node', [SCRIPT, '--dir', dir, '--base-url', BASE_URL], { cwd: __dirname });
+    const p = spawn(process.execPath, [SCRIPT, '--dir', dir, '--base-url', BASE_URL], { cwd: __dirname });
     let out = '';
     p.stdout.on('data', (d) => (out += d));
     p.stderr.on('data', (d) => (out += d));
-    p.on('close', (code) => resolveP({ code, out }));
+    p.on('close', (code) => {if(code!==0)out+='\nDRIVER_EXIT: '+code;resolveP({ code, out });});
   });
 }
 
@@ -89,7 +89,7 @@ function makeProject(files) {
   for (const [rel, content] of Object.entries(files)) {
     const f = join(root, 'src', rel);
     mkdirSync(dirname(f), { recursive: true });
-    writeFileSync(f, content, 'utf8');
+    writeFileSync(f, rel.endsWith('.vue') ? `<script>\n${content}\n</script><template><div /></template>` : content, 'utf8');
   }
   return root;
 }
@@ -109,7 +109,7 @@ async function main() {
   requests.length = 0; configHitCount = 0;
   const r1 = await runFetch(projA);
   const iconsDirA = join(projA, 'src', 'assets', 'icons');
-  check('a1 first run OK', r1.out.includes('RESULT: OK'), `code=${r1.code}`);
+  check('a1 first run OK', r1.code===0 && r1.out.includes('RESULT: OK'), `code=${r1.code}`);
   check('a2 CACHED: 0 on first run', /RESOLVED: 10, MISSED: 0, CACHED: 0/.test(r1.out), (r1.out.match(/RESOLVED.*/) || [''])[0]);
   check('a3 20 svg + barrel written', existsSync(join(iconsDirA, 'Search.light.svg')) && existsSync(join(iconsDirA, 'Close.dark.svg')) && existsSync(join(iconsDirA, 'index.js')));
   check('a4 barrel has 10 exports', (readFileSync(join(iconsDirA, 'index.js'), 'utf8').match(/export const /g) || []).length === 10);
@@ -128,7 +128,7 @@ async function main() {
 
   // ---------- c) mixed: 10 cached + 5 new ----------
   const iconsNew = ['Download', 'Upload', 'Refresh', 'Lock', 'Unlock'];
-  writeFileSync(join(projA, 'src', 'pages', 'more.vue'), `import { ${iconsNew.join(', ')} } from '@element-plus/icons-vue'\nexport default {}\n`, 'utf8');
+  writeFileSync(join(projA, 'src', 'pages', 'more.vue'), `<script>import { ${iconsNew.join(', ')} } from '@element-plus/icons-vue'\nexport default {}\n</script><template><div /></template>`, 'utf8');
   requests.length = 0; configHitCount = 0;
   const r3 = await runFetch(projA);
   const reqKeywords = requests.filter((q) => q.path.includes('getIconInfo')).map((q) => new URL(q.path, 'http://x').searchParams.get('keyword')).join('|');
@@ -158,7 +158,7 @@ async function main() {
   const e1Dir = join(projE1, 'src', 'assets', 'icons');
   const lightC = readFileSync(join(e1Dir, 'Search.light.svg'), 'utf8');
   const darkC = readFileSync(join(e1Dir, 'Search.dark.svg'), 'utf8');
-  check('e1 dark-down: OK + light reused as dark', rE1.out.includes('RESULT: OK') && lightC.includes('#111111') && darkC.includes('#111111'), `code=${rE1.code}`);
+  check('e1 dark-down: OK + light reused as dark', rE1.code===0 && rE1.out.includes('RESULT: OK') && lightC.includes('#111111') && darkC.includes('#111111'), `code=${rE1.code}`);
   check('e1b still RESOLVED: 2', /RESOLVED: 2, MISSED: 0/.test(rE1.out), (rE1.out.match(/RESOLVED.*/) || [''])[0]);
 
   // e2: light endpoint down → all miss → EP fallback (no svg files)
@@ -177,17 +177,17 @@ async function main() {
   check('e3 getIcon light+dark arrived close together (parallel)', getIconTimes.length === 2 && Math.abs(getIconTimes[0] - getIconTimes[1]) < 1500, `delta=${Math.abs(getIconTimes[0] - getIconTimes[1])}ms`);
 
   // ---------- f) probe-down: cached still reported, net names missed ----------
-  const projF = makeProject({ 'pages/p.vue': `import { Search, NeverAsked } from '@element-plus/icons-vue'\nexport default {}\n` });
+  const projF = makeProject({ 'pages/p.vue': `import { Search, CircleClose } from '@element-plus/icons-vue'\nexport default {}\n` });
   // pre-seed Search pair as cached
   mkdirSync(join(projF, 'src', 'assets', 'icons'), { recursive: true });
   writeFileSync(join(projF, 'src', 'assets', 'icons', 'Search.light.svg'), SVG('#111111'), 'utf8');
   writeFileSync(join(projF, 'src', 'assets', 'icons', 'Search.dark.svg'), SVG('#eeeeee'), 'utf8');
   const p2 = new Promise((resolveP) => {
-    const pp = spawn('node', [SCRIPT, '--dir', projF, '--base-url', 'http://127.0.0.1:9'], { cwd: __dirname });
+    const pp = spawn(process.execPath, [SCRIPT, '--dir', projF, '--base-url', 'http://127.0.0.1:9'], { cwd: __dirname });
     let out = ''; pp.stdout.on('data', (d) => (out += d)); pp.stderr.on('data', (d) => (out += d)); pp.on('close', () => resolveP(out));
   });
   const outF = await p2;
-  check('f1 probe-down: CACHED kept + net missed', /RESOLVED: 1, MISSED: 1, CACHED: 1/.test(outF) && outF.includes('MISSED_LIST: NeverAsked'), (outF.match(/RESOLVED.*/) || [''])[0]);
+  check('f1 probe-down: CACHED kept + net missed', /RESOLVED: 1, MISSED: 1, CACHED: 1/.test(outF) && outF.includes('MISSED_LIST: CircleClose'), (outF.match(/RESOLVED.*/) || [''])[0]);
 
   // ---------- g) scan assets modules, excluding only generated icons ----------
   const projG = makeProject({
@@ -201,12 +201,12 @@ async function main() {
   requests.length = 0;
   const rG = await runFetch(projG);
   const gKeywords = requests.filter(q => q.path.includes('getIconInfo')).map(q => new URL(q.path, BASE_URL).searchParams.get('keyword')).join(',');
-  check('g1 assets/helpers.js icon collected with icons cache present', /RESOLVED: 2, MISSED: 0, CACHED: 1/.test(rG.out) && gKeywords === 'Camera' && existsSync(join(gDir, 'Camera.light.svg')), `keyword=${gKeywords} code=${rG.code}`);
+  check('g1 assets/helpers.js icon collected with icons cache present', rG.code===0 && /RESOLVED: 2, MISSED: 0, CACHED: 1/.test(rG.out) && gKeywords === 'Camera' && existsSync(join(gDir, 'Camera.light.svg')), `keyword=${gKeywords} code=${rG.code}`);
   check('g2 generated icons directory is not scanned', !gKeywords.includes('Plus') && !existsSync(join(gDir, 'Plus.light.svg')));
 
   // ---------- cleanup ----------
   server.close();
-  for (const p of [projA, projD, projE1, projE2, projE3, projF, projG]) rmSync(p, { recursive: true, force: true });
+  for (const p of [projA, projD, projE1, projE2, projE3, projF, projG]) { if(!p.startsWith(join(tmpdir(),'uxfi-')))throw new Error('Unexpected cleanup path');rmSync(p, { recursive: true, force: true }); }
 
   const fails = results.filter((r) => !r.ok).length;
   console.log(`\nRESULT: ${fails === 0 ? 'ALL PASS' : 'FAIL'} | ${results.length - fails}/${results.length}`);

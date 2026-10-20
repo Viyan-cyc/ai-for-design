@@ -1,4 +1,4 @@
-# generate-ux-prototype env install (Windows)
+# gts-ep-coder env install (Windows)
 #
 # ASCII-only comments: PowerShell 5.1 reads BOM-less UTF-8 via the system ANSI
 # code page, so non-ASCII comments can break parsing (fastui project hit this).

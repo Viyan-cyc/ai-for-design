@@ -13,7 +13,7 @@ import {
   InfoFilled,
   WarningFilled,
 } from '@element-plus/icons-vue'
-import DangerDialog from './danger-dialog.vue'
+import DangerDialog from './components/danger-dialog.vue'
 
 defineOptions({ name: 'FeedbackFlowPage' })
 

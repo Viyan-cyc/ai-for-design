@@ -17,12 +17,14 @@
 //   ICONS_DIR: <absolute path>
 //   RESULT: FAIL | <reason>
 
-import { existsSync, readFileSync, writeFileSync, readdirSync, mkdirSync } from 'fs';
+import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'fs';
 import { join, resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import {compilerRequire,iconImports,wireIcons} from './source-tools.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
+async function main(){
 // --- CLI args ---
 const args = process.argv.slice(2);
 function getOpt(long, short) {
@@ -36,7 +38,7 @@ function getOpt(long, short) {
 const dir = getOpt('--dir', '-d');
 if (!dir) {
   console.log('RESULT: FAIL | Usage: node fetch-icons.mjs --dir "<folder with src/>" [--base-url <url>] [--timeout <ms>]');
-  process.exit(1);
+  process.exitCode=1;return;
 }
 
 const baseUrl = (getOpt('--base-url') || 'https://octo.hdesign.huawei.com').replace(/\/+$/, '');
@@ -46,46 +48,26 @@ const root = resolve(dir);
 const srcDir = join(root, 'src');
 if (!existsSync(srcDir)) {
   console.log(`RESULT: FAIL | src folder not found: ${srcDir}`);
-  process.exit(1);
+  process.exitCode=1;return;
 }
 
 // ============================================================
 // 1. Import scanning + dedup
 // ============================================================
 
-function walkFiles(dirPath, exts, out = []) {
-  for (const entry of readdirSync(dirPath, { withFileTypes: true })) {
-    if (entry.name === 'node_modules' || entry.name.startsWith('.')) continue;
-    const full = join(dirPath, entry.name);
-    // Skip only generated icons; other modules under assets may import icons.
-    if (entry.isDirectory() && full === join(srcDir, 'assets', 'icons')) continue;
-    if (entry.isDirectory()) walkFiles(full, exts, out);
-    else if (exts.includes(entry.name.slice(entry.name.lastIndexOf('.')))) out.push(full);
-  }
-  return out;
-}
-
-const vueAndJsFiles = walkFiles(srcDir, ['.vue', '.js']);
-const iconNames = new Set();
-const importRe = /import\s+(?:\{([^}]*)\}\s*from\s*)?['"]@element-plus\/icons-vue['"]/g;
-for (const file of vueAndJsFiles) {
-  const text = readFileSync(file, 'utf8');
-  for (const m of text.matchAll(importRe)) {
-    const names = (m[1] || '')
-      .split(',')
-      .map((s) => s.trim().split(/\s+as\s+/)[0])
-      .filter(Boolean);
-    names.forEach((n) => iconNames.add(n));
-  }
-}
+let iconCompiler,iconNames;
+try{iconCompiler=compilerRequire()('@vue/compiler-sfc');iconNames=new Set(iconImports(srcDir,iconCompiler).flatMap(entry=>entry.names));}catch(e){console.log('RESULT: FAIL | '+e.message);process.exitCode=1;return;}
 
 const iconList = [...iconNames].sort();
+const allowedIcons=new Set(JSON.parse(readFileSync(join(__dirname,'verify/whitelists/element-plus-icons.json'),'utf8')));
+const unknownIcons=iconList.filter(name=>!allowedIcons.has(name));
+if(unknownIcons.length){console.log('RESULT: FAIL | Unknown EP icon name(s): '+unknownIcons.join(', '));process.exitCode=1;return;}
 
 if (iconList.length === 0) {
   console.log('RESULT: OK');
   console.log('RESOLVED: 0, MISSED: 0');
   console.log(`ICONS_DIR: ${resolve(join(srcDir, 'assets', 'icons'))}`);
-  process.exit(0);
+  return;
 }
 
 // ============================================================
@@ -136,6 +118,7 @@ ${barrelExports.join('\n\n')}
 
   mkdirSync(iconsDir, { recursive: true });
   writeFileSync(join(iconsDir, 'index.js'), barrelContent, 'utf8');
+  wireIcons(srcDir,iconCompiler,resolvedNames);
 }
 
 function hasCachedPair(epName) {
@@ -154,7 +137,7 @@ if (netNames.length === 0) {
   console.log('RESULT: OK');
   console.log(`RESOLVED: ${cachedNames.length}, MISSED: 0, CACHED: ${cachedNames.length}`);
   console.log(`ICONS_DIR: ${resolve(iconsDir)}`);
-  process.exit(0);
+  return;
 }
 
 // ============================================================
@@ -218,11 +201,12 @@ function selectConfigDefaults(config) {
 // --- 3a. Connectivity probe: unreachable → net miss, use EP icons + cached ---
 const config = await probeConfig();
 if (!config) {
+  if(cachedNames.length || existsSync(join(iconsDir,'index.js')))writeBarrel(cachedNames.slice().sort());
   console.log('RESULT: OK');
   console.log(`RESOLVED: ${cachedNames.length}, MISSED: ${netNames.length}, CACHED: ${cachedNames.length}`);
   console.log(`MISSED_LIST: ${netNames.join(', ')}`);
   console.log(`ICONS_DIR: ${resolve(iconsDir)}`);
-  process.exit(0);
+  return;
 }
 
 // --- 3b. Intranet: IconPlus remaining API (probe response already carries config) ---
@@ -263,7 +247,7 @@ try {
     console.log(`RESOLVED: ${cachedNames.length}, MISSED: ${missedNames.length}, CACHED: ${cachedNames.length}`);
     if (missedNames.length) console.log(`MISSED_LIST: ${missedNames.join(', ')}`);
     console.log(`ICONS_DIR: ${resolve(iconsDir)}`);
-    process.exit(0);
+    return;
   }
 
   // Step 3: getIcon × 2 (light + dark, parallel — independent requests)
@@ -345,8 +329,11 @@ try {
   console.log(`RESOLVED: ${resolvedNames.length}, MISSED: ${finalMissed.length}, CACHED: ${cachedNames.length}`);
   if (finalMissed.length) console.log(`MISSED_LIST: ${finalMissed.join(', ')}`);
   console.log(`ICONS_DIR: ${resolve(iconsDir)}`);
-  process.exit(0);
+  return;
 } catch (e) {
   console.log(`RESULT: FAIL | ${e.message}`);
-  process.exit(1);
+  process.exitCode=1;return;
 }
+
+}
+main().catch(e=>{console.log("RESULT: FAIL | "+e.message);process.exitCode=1;});

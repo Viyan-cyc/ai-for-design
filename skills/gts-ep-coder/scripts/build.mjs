@@ -1,407 +1,114 @@
 #!/usr/bin/env node
-// build.mjs
-// Build & verify a ux-proto page workspace ({slug}/ with src/ + index.html).
-// AUTO-REFRESHES preview-data.js first (embedding src/ sources for the offline
-// preview), then machine-checks everything:
-//
-//   1. Structure  — loader html, src/App.vue, main.js, styles, ≥1 page index.vue
-//   2. SFC compile — every .vue parsed + compileScript + compileTemplate with the
-//                   REAL @vue/compiler-sfc (catches syntax errors, unclosed tags,
-//                   bad directives, bad expressions)
-//   3. Tag check   — <el-*> tags against the official Element Plus whitelist;
-//                   PascalCase tags must be imported components or valid icons
-//   4. Import check — 'element-plus' names / '@element-plus/icons-vue' names against
-//                   official export lists; relative imports must resolve to real
-//                   files; bare imports restricted to the allowed dependency set
-//   5. JS check    — src/**/*.js parsed as ESM (node --check)
-//   6. Style check — SFC <style>: no :root/[data-theme] definitions, page-local
-//                   custom props must be prefixed --page-* (design tokens live in
-//                   src/assets/themes/); var(--color-*)-style token uses must be
-//                   defined; hardcoded hex -> WARN
-//   7. Theme check — bridge.less + themes/default.less present
-//
-// Usage:
-//   node build.mjs --dir "{artifact-folder}/{slug}"
-//
-// Output (agent-parseable):
-//   RESULT: OK
-//   OK index.gts.html verified (N pages, M components, K el-tag uses)
-//   RESULT: FAIL | N error(s)   — every error collected in one pass:
-//     ERROR: <file>: <msg>
-//   (structure-level fatals like missing index.gts.html exit immediately)
-
-import { existsSync, readFileSync, readdirSync, writeFileSync, mkdtempSync, rmSync } from 'fs';
-import { join, dirname, resolve, extname } from 'path';
-import { fileURLToPath } from 'url';
-import { spawnSync } from 'child_process';
-import { tmpdir } from 'os';
-import { createRequire } from 'module';
-import { refresh } from './build-data.mjs';
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
-
-const args = process.argv.slice(2);
-function getOpt(long, short) {
-  const idx = args.findIndex((a) => a === long || a === short);
-  if (idx === -1) return undefined;
-  const val = args[idx + 1];
-  if (val === undefined || val.startsWith('-')) {
-    console.log('RESULT: FAIL | Missing value for --dir');
-    process.exit(1);
+// One build: compile sources, link supported imports, check resources/names, then publish preview data.
+import fs from 'node:fs';
+import path from 'node:path';
+import vm from 'node:vm';
+import {fileURLToPath} from 'node:url';
+import {refresh} from './build-data.mjs';
+import {compilerRequire,resolveSource,walkFiles,dependencies,visitAST,scripts} from './source-tools.mjs';
+const args=process.argv.slice(2),i=args.findIndex(a=>a==='--dir'||a==='-d');
+const errors=new Set(),warnings=new Set();
+const fail=s=>errors.add(s),warn=s=>warnings.add(s);
+async function build(){
+  if(i<0||!args[i+1]||args[i+1].startsWith('-'))throw Error('Usage: node build.mjs --dir "<project>"');
+  const root=path.resolve(args[i+1]),src=path.join(root,'src');
+  if(!fs.existsSync(src))throw Error('src folder not found: '+src);
+  // The loader is a fixed skill asset, not a business file. Sync it for existing projects too.
+  fs.copyFileSync(path.join(scripts,'preview/index.gts.html'),path.join(root,'index.gts.html'));
+  const req=compilerRequire(),sfc=req('@vue/compiler-sfc'),less=req('less'),postcss=req('postcss');
+  const files=walkFiles(src),key=f=>'/src/'+path.relative(src,f).split(path.sep).join('/');
+  const byKey=Object.fromEntries(files.map(f=>[key(f),f]));
+  const assets=/\.(png|jpe?g|gif|svg|webp|ico|bmp|woff2?|ttf|eot|otf|avif)$/i;
+  const texts=/\.(vue|m?js|css|less|json)$/;
+  for(const rel of ['App.vue','main.js','assets/themes/base.less','assets/themes/bridge.less','assets/themes/default.less','assets/themes/dark.less'])if(!byKey['/src/'+rel])fail('Missing src/'+rel);
+  const pages=files.filter(f=>/[\\/]pages[\\/][^\\/]+[\\/]index\.vue$/.test(f));if(!pages.length)fail('No src/pages/{Name}/index.vue');
+  function localResource(value,from){
+    if(!value||/^(?:data:|https?:|blob:|#|\/\/)/i.test(value))return;
+    let clean;try{clean=decodeURIComponent(value.split(/[?#]/)[0]);}catch{fail(from+': invalid resource URL '+value);return;}
+    const target=path.resolve(path.dirname(from),clean.startsWith('/')?'.'+clean:clean);
+    if(!target.startsWith(root+path.sep)||!fs.existsSync(target)||!fs.statSync(target).isFile())fail(from+': missing/outside local resource '+value);
   }
-  return val;
-}
-
-const dir = getOpt('--dir', '-d');
-if (!dir) {
-  console.log('RESULT: FAIL | Usage: node build.mjs --dir "<folder with src/ and index.html>"');
-  process.exit(1);
-}
-const root = resolve(dir);
-
-const warns = [];
-const errors = [];
-function fatal(msg) {
-  console.log(`RESULT: FAIL | ${msg}`);
-  process.exit(1);
-}
-function fail(msg) {
-  errors.push(msg);
-}
-function warn(msg) {
-  warns.push(msg);
-}
-
-// ---------- 0. auto-refresh preview-data.js ----------
-const refreshed = refresh(root);
-if (!refreshed.ok) fatal(refreshed.reason);
-
-// ---------- whitelists ----------
-const EP_COMPONENTS = new Set(
-  JSON.parse(readFileSync(join(__dirname, 'verify', 'whitelists', 'element-plus-components.json'), 'utf8')),
-);
-const EP_EXPORTS = new Set(
-  JSON.parse(readFileSync(join(__dirname, 'verify', 'whitelists', 'element-plus-exports.json'), 'utf8')),
-);
-const EP_ICONS = new Set(
-  JSON.parse(readFileSync(join(__dirname, 'verify', 'whitelists', 'element-plus-icons.json'), 'utf8')),
-);
-const ALLOWED_BARE = new Set([
-  'vue',
-  'vue-i18n',
-  'element-plus',
-  '@element-plus/icons-vue',
-  'dayjs',
-  'echarts',
-  'vue-echarts',
-]);
-const CHART_TAGS = new Set(['v-chart']);
-
-// ---------- real compiler (installed at <envDir>/compiler by setup-env.mjs;
-// node_modules never lives inside the skill) ----------
-let sfc;
-try {
-  const envCfg = JSON.parse(readFileSync(join(__dirname, '..', 'references', 'env-config.json'), 'utf8'));
-  const envVar = process.env[envCfg.envDirEnvVar];
-  const envDir = envVar
-    ? resolve(envVar)
-    : process.platform === 'win32'
-      ? join(process.env.LOCALAPPDATA || join(process.env.USERPROFILE || '~', 'AppData', 'Local'), envCfg.envDirName)
-      : process.platform === 'darwin'
-        ? join(process.env.HOME || '~', 'Library', 'Application Support', envCfg.envDirName)
-        : join(process.env.XDG_DATA_HOME || join(process.env.HOME || '~', '.local', 'share'), envCfg.envDirName);
-  const req = createRequire(join(envDir, 'compiler', 'node_modules', '@vue', 'compiler-sfc', 'package.json'));
-  sfc = req('@vue/compiler-sfc');
-} catch (e) {
-  fatal(`@vue/compiler-sfc not installed (expected under the shared env dir): ${e.message} — run: node scripts/ensure-env.mjs`);
-}
-// ---------- helpers ----------
-function walkFiles(dirPath, exts, out = []) {
-  for (const entry of readdirSync(dirPath, { withFileTypes: true })) {
-    if (entry.name === 'node_modules' || entry.name.startsWith('.')) continue;
-    const full = join(dirPath, entry.name);
-    if (entry.isDirectory()) walkFiles(full, exts, out);
-    else if (exts.includes(extname(entry.name))) out.push(full);
+  function cssResources(text,file){const ast=postcss.parse(text,{from:file});ast.walkDecls(d=>{for(const m of d.value.matchAll(/url\(\s*["']?([^"')]+)["']?\s*\)/g))localResource(m[1].trim(),file);});ast.walkAtRules('import',n=>{const m=n.params.match(/^(?:url\(\s*)?["']([^"']+)["']/);if(m)localResource(m[1],file);});}
+  function previewCSS(css,file){
+    const ast=postcss.parse(css,{from:file});
+    ast.walkAtRules('import',()=>{throw Error('Use JS imports for local CSS dependencies; CSS @import is unsupported in offline injected styles');});
+    ast.walkDecls(d=>{d.value=d.value.replace(/url\(\s*["']?([^"')]+)["']?\s*\)/g,(all,url)=>{if(/^(data:|https?:|blob:|#|\/\/)/i.test(url))return all;const clean=url.split(/[?#]/)[0],suffix=url.slice(clean.length),target=path.resolve(path.dirname(file),decodeURIComponent(clean));return 'url("./'+encodeURI(path.relative(root,target).split(path.sep).join('/'))+suffix+'")';});});
+    return ast.toString();
   }
-  return out;
-}
-const pascal = (s) => s.replace(/(^|-)(\w)/g, (m, a, b) => b.toUpperCase());
-
-// ---------- 1. structure ----------
-const htmlPath = join(root, 'index.gts.html');
-const srcDir = join(root, 'src');
-if (!existsSync(htmlPath)) fatal(`index.gts.html not found: ${htmlPath}`);
-if (!existsSync(srcDir)) fatal(`src folder not found: ${srcDir}`);
-
-const html = readFileSync(htmlPath, 'utf8');
-const REQUIRED_HTML = [
-  '<script src="./public/library/vue.global.prod.js"></script>',
-  '<script src="./public/library/element-plus.full.min.js"></script>',
-  '<script src="./public/library/echarts.min.js"></script>',
-  '<script src="./public/library/vue-echarts.iife.min.js"></script>',
-  '<script src="./public/library/less.min.js"></script>',
-  '<script src="./public/library/vue3-sfc-loader.js"></script>',
-  '<link rel="stylesheet" href="./public/library/vue-echarts.style.css">',
-  '<script src="./preview-data.js"></script>',
-];
-for (const line of REQUIRED_HTML) {
-  if (!html.includes(line)) fail(`preview loader integrity broken, missing: ${line}`);
-}
-if (!/<html[^>]*data-theme=/.test(html)) fail('preview loader broken: <html> has no data-theme attribute');
-
-for (const p of ['App.vue', 'main.js', join('assets', 'themes', 'base.less'), join('assets', 'themes', 'bridge.less'), join('assets', 'themes', 'default.less')]) {
-  if (!existsSync(join(srcDir, p))) fatal(`deliverable incomplete, missing: src/${p}`);
-}
-
-const vueFiles = walkFiles(srcDir, ['.vue']);
-const jsFiles = walkFiles(srcDir, ['.js', '.mjs']).filter((f) => !f.endsWith('.mjs'));
-const cssFiles = walkFiles(srcDir, ['.css', '.less']);
-if (vueFiles.length === 0) fatal('no .vue files under src/');
-const pageIndexes = vueFiles.filter((f) => /[\\/]pages[\\/][^\\/]+[\\/]index\.vue$/.test(f));
-if (pageIndexes.length === 0) fatal('no page entry found (expected src/pages/{Name}/index.vue)');
-
-// file map for relative import resolution (posix keys from src root)
-const fileMap = new Set();
-for (const f of [...vueFiles, ...jsFiles, ...cssFiles, ...walkFiles(srcDir, ['.json'])]) {
-  fileMap.add('/' + f.slice(srcDir.length).split('\\').join('/').replace(/^\/+/, ''));
-}
-const ASSET_EXT = ['.png', '.jpg', '.jpeg', '.gif', '.svg', '.webp', '.ico', '.bmp'];
-
-// ---------- 2-4. verify each .vue (errors collected; a broken file doesn't
-// mask errors in the others) ----------
-let elTagTotal = 0;
-for (const file of vueFiles) {
-  const rel = '/' + file.slice(srcDir.length).split('\\').join('/').replace(/^\/+/, '');
-  const source = readFileSync(file, 'utf8');
-  const { descriptor, errors: parseErrors } = sfc.parse(source, { filename: file });
-  if (parseErrors.length) {
-    fail(`${rel}: SFC parse error: ${parseErrors.map((e) => e.message).join('; ')}`);
-    continue;
-  }
-  if (!descriptor.template) fail(`${rel}: no <template> block`);
-
-  // script compile + binding metadata
-  let bindings = {};
-  const script = descriptor.scriptSetup || descriptor.script;
-  if (script) {
-    try {
-      const compiled = sfc.compileScript(descriptor, { id: 'data-v-verify', templateOptions: { id: 'data-v-verify' } });
-      bindings = compiled.bindings || {};
-    } catch (e) {
-      fail(`${rel}: script compile error: ${e.message}`);
-    }
-  }
-
-  // template compile
-  const tpl = sfc.compileTemplate({
-    source: descriptor.template.content,
-    filename: file,
-    id: 'data-v-verify',
-    compilerOptions: { bindingMetadata: bindings },
-  });
-  if (tpl.errors.length) {
-    fail(`${rel}: template compile error: ${tpl.errors.map((e) => String(e.message || e)).join('; ')}`);
-  }
-
-  // imports (from raw script text — covers default/named/side-effect)
-  const scriptText = script ? script.content : '';
-  const importedNames = new Set(); // local identifiers available to the template
-  const importRe = /import\s+([\w$]+)\s*,?\s*(?:\{([^}]*)\})?\s*(?:\*+as\s+[\w$]+\s*)?from\s*['"]([^'"]+)['"]|import\s*\{([^}]*)\}\s*from\s*['"]([^'"]+)['"]|import\s*['"]([^'"]+)['"]/g;
-  for (const m of scriptText.matchAll(importRe)) {
-    const spec = m[3] || m[5] || m[6];
-    const names = (m[2] || m[4] || '').split(',').map((s) => s.trim().split(/\s+as\s+/).pop()).filter(Boolean);
-    if (m[1]) importedNames.add(m[1]);
-    names.forEach((n) => importedNames.add(n));
-
-    // bare import policy
-    if (!spec.startsWith('.') && !spec.startsWith('/')) {
-      const base = spec.split('/')[0] === '@element-plus' ? spec.split('/').slice(0, 2).join('/') : spec.split('/')[0];
-      const allowed = ALLOWED_BARE.has(spec) || (base === 'element-plus' && /^element-plus\//.test(spec));
-      if (!allowed) {
-        fail(`${rel}: bare import "${spec}" not allowed — deliverable deps are limited to: ${[...ALLOWED_BARE].join(', ')} (+ element-plus subpaths)`);
-      }
-      if (spec === 'element-plus') {
-        for (const n of names) {
-          if (!EP_EXPORTS.has(n)) fail(`${rel}: unknown Element Plus export "${n}" (imported from 'element-plus')`);
+  const html=fs.readFileSync(path.join(root,'index.gts.html'),'utf8');
+  for(const m of html.matchAll(/<(?:script|link)\b[^>]*(?:src|href)=["']([^"']+)["']/g))if(m[1]!=='./preview-data.js')localResource(m[1],path.join(root,'index.gts.html'));
+  for(const f of walkFiles(path.join(root,'public')).filter(f=>f.endsWith('.css')))try{cssResources(fs.readFileSync(f,'utf8'),f);}catch(e){fail(f+': CSS '+e.message);}
+  // Read actual shipped UMD exports in a DOM-free context, not a browser/render test.
+  const context=vm.createContext({console:{warn(){},error(){},log(){}},setTimeout,clearTimeout});
+  const runtimeFiles=['vue.global.prod.js','element-plus.full.min.js','element-plus-icons-vue.iife.min.js','dayjs.min.js','echarts.min.js','vue-i18n.global.prod.js','vue-echarts.iife.min.js','element-plus-locale-zh-cn.min.js','element-plus-locale-en.min.js'];
+  for(const name of runtimeFiles)try{vm.runInContext(fs.readFileSync(path.join(root,'public/library',name),'utf8'),context,{timeout:5000});}catch(e){fail('Runtime '+name+': '+e.message);}
+  const packageObjects={'vue':context.Vue,'element-plus':context.ElementPlus,'@element-plus/icons-vue':context.ElementPlusIconsVue,'dayjs':context.dayjs,'echarts':context.echarts,'vue-i18n':context.VueI18n,'vue-echarts':context.VueECharts,'element-plus/es/locale/lang/zh-cn':context.ElementPlusLocaleZhCn,'element-plus/es/locale/lang/en':context.ElementPlusLocaleEn};
+  for(const [name,obj]of Object.entries(packageObjects))if(!obj)fail('Runtime module global missing: '+name);
+  const packageExports=new Map(Object.entries(packageObjects).map(([name,obj])=>[name,new Set(Object.keys(obj||{}))]));
+  for(const name of ['element-plus','dayjs','vue-echarts','element-plus/es/locale/lang/zh-cn','element-plus/es/locale/lang/en'])packageExports.get(name).add('default');
+  const runtimeSources={},records=new Map(),tokenTexts=[],defined=new Set(),epVars=new Set();
+  const epCSS=path.join(root,'public/library/element-plus.index.css');if(fs.existsSync(epCSS))for(const m of fs.readFileSync(epCSS,'utf8').matchAll(/(--el-[a-z0-9-]+)/g))epVars.add(m[1]);
+  function tokenSource(text,label){tokenTexts.push([text.replace(/\/\*[\s\S]*?\*\//g,''),label]);}
+  function getNames(pattern,out){if(!pattern)return;if(pattern.type==='Identifier')out.add(pattern.name);else if(pattern.type==='ObjectPattern')pattern.properties.forEach(p=>getNames(p.value||p.argument,out));else if(pattern.type==='ArrayPattern')pattern.elements.forEach(p=>getNames(p,out));else if(pattern.type==='AssignmentPattern')getNames(pattern.left,out);else if(pattern.type==='RestElement')getNames(pattern.argument,out);}
+  for(const file of files){const k=key(file);if(!texts.test(file))continue;const source=fs.readFileSync(file,'utf8').replace(/^\uFEFF/,'');let ast=[],bindings={};
+    try{
+      if(file.endsWith('.vue')){
+        const parsed=sfc.parse(source,{filename:file});if(parsed.errors.length)throw Error(parsed.errors.map(e=>e.message||e).join('; '));const d=parsed.descriptor;
+        if([d.script,d.scriptSetup].some(b=>b?.lang&&!['js','javascript'].includes(b.lang)))fail(k+': offline SFC scripts support JavaScript only');
+        if(d.script||d.scriptSetup){const c=sfc.compileScript(d,{id:'gts-verify'});bindings=c.bindings||{};ast=[...(c.scriptAst||[]),...(c.scriptSetupAst||[])];}
+        if(!d.template){fail(k+': missing template');}else{
+          const c=sfc.compileTemplate({source:d.template.content,filename:file,id:'gts-verify',compilerOptions:{bindingMetadata:bindings}});c.errors.forEach(e=>fail(k+': template '+(e.message||e)));
+          const builtin=new Set(['Teleport','Suspense','KeepAlive','Transition','TransitionGroup']);
+          for(const m of d.template.content.matchAll(/<([A-Z][A-Za-z0-9]*)[\s/>]/g))if(!builtin.has(m[1])&&!Object.hasOwn(bindings,m[1]))fail(k+': unbound component <'+m[1]+'>');
+          for(const m of d.template.content.matchAll(/<((?:el-)[a-z0-9-]+)[\s/>]/g)){const tag=m[1].replace(/(^|-)(\w)/g,(_,a,b)=>b.toUpperCase());if(!packageExports.get('element-plus').has(tag))fail(k+': unknown component '+m[1]);if(!Object.hasOwn(bindings,tag))fail(k+': use explicitly imported '+tag);}
+          const shared=req('@vue/shared');
+          for(const m of d.template.content.matchAll(/<([a-z][a-z0-9]*-[a-z0-9-]+)[\s/>]/g)){const tag=m[1];if(tag.startsWith('el-')||shared.isHTMLTag(tag)||shared.isSVGTag(tag)||['keep-alive','transition-group'].includes(tag))continue;const name=tag.replace(/(^|-)(\w)/g,(_,a,b)=>b.toUpperCase());if(!Object.hasOwn(bindings,name))fail(k+': unbound component <'+tag+'>');}
+          // Static image/media resources; bound paths use checked asset imports or business runtime data.
+          const tree=d.template.ast;function nodeWalk(n){if(!n||typeof n!=='object')return;if(n.type===1){for(const p of n.props||[])if(p.type===6&&['src','poster'].includes(p.name)&&p.value)localResource(p.value.content,file);nodeWalkChildren(n);}else nodeWalkChildren(n);}function nodeWalkChildren(n){for(const c of n.children||[])nodeWalk(c);}nodeWalk(tree);
+          tokenSource(d.template.content,k);
         }
-      }
-      if (spec === '@element-plus/icons-vue') {
-        for (const n of names) {
-          if (!EP_ICONS.has(n)) {
-            const hints = [...EP_ICONS].filter((x) => x.toLowerCase().startsWith(n.toLowerCase().slice(0, 4))).slice(0, 4);
-            fail(`${rel}: unknown icon "${n}"${hints.length ? ` : did you mean ${hints.join(', ')}?` : ''}`);
-          }
+        const styleEdits=[];
+        for(const st of d.styles){
+          if(st.src){fail(k+': external SFC style src is unsupported; import CSS/Less explicitly');continue;}
+          if(st.lang&&!['css','less'].includes(st.lang)){fail(k+': unsupported style language '+st.lang);continue;}
+          const raw=st.lang==='less'?(await less.render(st.content,{filename:file})).css:st.content;
+          const c=sfc.compileStyle({source:raw,filename:file,id:'gts-verify',scoped:!!st.scoped});c.errors.forEach(e=>fail(k+': style '+(e.message||e)));if(!c.errors.length){cssResources(raw,file);styleEdits.push({start:st.loc.start.offset,end:st.loc.end.offset,css:previewCSS(raw,file)});}
+          if(st.module)fail(k+': CSS modules are unsupported in this offline preview');
+          if(!st.scoped)warn(k+': unscoped style; keep global overrides narrowly targeted');
+          if(/:root|\[data-theme|(?:^|[},])\s*(?:html|body)\b/.test(st.content))fail(k+': page style must not replace global theme scope');
+          for(const m of st.content.matchAll(/(--[a-z][a-z0-9-]*)\s*:/g)){if(!m[1].startsWith('--page-'))fail(k+': local custom property requires --page-: '+m[1]);else defined.add(m[1]);}
+          if(/#[0-9a-f]{3,8}\b/i.test(st.content))warn(k+': hardcoded hex; prefer design tokens');
+          if(/\bzoom\s*:|font-size\s*:[^;}]*\d(?:vw|vh)\b/.test(st.content))warn(k+': viewport/page scaling; use fluid layout');tokenSource(st.content,k);
         }
-      }
-    } else {
-      // relative import resolution
-      const baseDir = rel.slice(0, rel.lastIndexOf('/'));
-      const parts = (baseDir + '/' + spec).split('/');
-      const stack = [];
-      for (const p of parts) {
-        if (p === '' || p === '.') continue;
-        if (p === '..') stack.pop();
-        else stack.push(p);
-      }
-      let target = '/' + stack.join('/');
-      if (fileMap.has(target)) continue;
-      if (fileMap.has(target + '.vue')) continue;
-      if (fileMap.has(target + '.js')) continue;
-      if (fileMap.has(target + '.css')) continue;
-      if (fileMap.has(target + '.less')) continue;
-      if (fileMap.has(target + '/index.vue')) continue;
-      if (fileMap.has(target + '/index.js')) continue;
-      if (ASSET_EXT.includes(extname(target))) continue; // assets resolve at runtime
-      fail(`${rel}: relative import "${spec}" does not resolve (looked for ${target}[.vue|.js|/index.vue])`);
-    }
+        let previewSource=source;for(const edit of styleEdits.sort((a,b)=>b.start-a.start))previewSource=previewSource.slice(0,edit.start)+edit.css+previewSource.slice(edit.end);runtimeSources[k]=previewSource;
+      }else if(/\.m?js$/.test(file))ast=sfc.babelParse(source,{sourceType:'module'}).program.body;
+      else if(/\.(css|less)$/.test(file)){
+        const css=file.endsWith('.less')?(await less.render(source,{filename:file})).css:source;postcss.parse(css,{from:file});cssResources(css,file);runtimeSources[k]=previewCSS(css,file);tokenSource(source,k);
+        for(const m of source.matchAll(/(--[a-z][a-z0-9-]*)\s*:/g)){defined.add(m[1]);if(m[1].startsWith('--el-'))epVars.add(m[1]);}
+      }else if(file.endsWith('.json'))JSON.parse(source);
+      const rec={file,k,ast,deps:dependencies(ast),exports:new Set(file.endsWith('.vue')?['default']:file.endsWith('.json')?['default']:[])};
+      for(const n of ast){if(n.type==='ExportDefaultDeclaration')rec.exports.add('default');if(n.type==='ExportNamedDeclaration'){for(const spec of n.specifiers||[])rec.exports.add(spec.exported.name||spec.exported.value);const dec=n.declaration;if(dec?.id)getNames(dec.id,rec.exports);for(const d of dec?.declarations||[])getNames(d.id,rec.exports);}}
+      visitAST(ast,n=>{if(n.type==='StringLiteral')tokenSource(n.value,k);if(n.type==='TemplateElement')tokenSource(n.value.raw,k);});
+      if(file.endsWith('.json'))rec.exports.add('default');records.set(k,rec);
+    }catch(e){fail(k+': '+e.message);}
   }
-
-  // tag checks
-  const tplContent = descriptor.template.content;
-  const usedEl = new Set([...tplContent.matchAll(/<(el-[a-z][a-z0-9-]*)/g)].map((m) => m[1]));
-  for (const tag of usedEl) {
-    if (!EP_COMPONENTS.has(tag)) {
-      const candidates = [...EP_COMPONENTS].filter((c) => c.startsWith(tag.split('-').slice(0, 2).join('-'))).slice(0, 5);
-      fail(`${rel}: unknown Element Plus tag <${tag}>${candidates.length ? ` : did you mean ${candidates.join(', ')}?` : ''}`);
-    }
+  function targetOf(dep,from){
+    if(typeof dep.spec!=='string'){fail(from+': dynamic import must use a literal module path');return null;}
+    if(packageExports.has(dep.spec))return {exports:packageExports.get(dep.spec)};
+    if(dep.spec==='element-plus/dist/index.css')return {exports:new Set()};
+    if(!dep.spec.startsWith('.')&&!dep.spec.startsWith('/')){fail(from+': unmapped module '+dep.spec);return null;}
+    const target=resolveSource(dep.spec,from,byKey);if(!target){fail(from+': missing/outside import '+dep.spec);return null;}
+    if(assets.test(target))return {exports:new Set(['default'])};
+    if(!texts.test(target)){fail(from+': unsupported module type '+target);return null;}
+    return records.get(target)||{exports:new Set()};
   }
-  elTagTotal += usedEl.size;
-
-  for (const m of tplContent.matchAll(/<([A-Z][A-Za-z0-9]*)[\s/>]/g)) {
-    const tag = m[1];
-    // must be imported in this file (components AND icons alike — the preview
-    // registers nothing globally, so unimported tags cannot render)
-    if (importedNames.has(tag)) continue;
-    const iconHint = EP_ICONS.has(tag) ? ' (it is a valid icon name — add `import { ' + tag + ' } from \'@element-plus/icons-vue\'`)' : '';
-    fail(`${rel}: <${tag}> is not imported${iconHint}`);
-  }
-  // kebab-case usage of imported PascalCase components (e.g. <status-tag>)
-  for (const m of tplContent.matchAll(/<((?!el-)[a-z][a-z0-9]*-[a-z0-9-]*)[\s/>]/g)) {
-    const tag = m[1];
-    if (importedNames.has(pascal(tag))) continue;
-    if (CHART_TAGS.has(tag)) continue;
-    fail(`${rel}: unknown component tag <${tag}> — no matching import found`);
-  }
-
-  // style blocks — hygiene rules
-  for (const [i, block] of descriptor.styles.entries()) {
-    if (/:root\s*\{/.test(block.content)) fail(`${rel}: <style> #${i + 1} must not define :root (design tokens live in src/assets/themes/)`);
-    if (/data-theme/.test(block.content)) fail(`${rel}: <style> #${i + 1} must not touch [data-theme] (skins live in src/assets/themes/)`);
-    for (const dm of block.content.matchAll(/--[a-z][a-z0-9-]*\s*:/g)) {
-      const tok = dm[0].replace(/\s*:/, '');
-      if (!tok.startsWith('--page-')) fail(`${rel}: <style> #${i + 1} defines "${tok}" : page-local custom props must be prefixed --page- (design tokens belong in styles/themes/)`);
-    }
-  }
+  // Resolve export-star chains to a fixed point, then validate named bindings.
+  for(let pass=0;pass<=records.size;pass++){let changed=false;for(const rec of records.values())for(const dep of rec.deps)if(dep.node.type==='ExportAllDeclaration'){const target=targetOf(dep,rec.k);for(const name of target?.exports||[])if(name!=='default'&&!rec.exports.has(name)){rec.exports.add(name);changed=true;}}if(!changed)break;}
+  for(const rec of records.values())for(const dep of rec.deps){const target=targetOf(dep,rec.k);if(!target)continue;for(const spec of dep.node.specifiers||[]){let name;if(spec.type==='ImportDefaultSpecifier')name='default';else if(spec.type==='ImportSpecifier')name=spec.imported.name||spec.imported.value;else if(spec.type==='ExportSpecifier'&&dep.node.source)name=spec.local.name||spec.local.value;if(name&&!target.exports.has(name))fail(rec.k+': '+dep.spec+' has no export '+name);}}
+  for(const [text,label]of tokenTexts)for(const m of text.matchAll(/var\(\s*(--[a-z][a-z0-9-]*)\s*([,)])/g)){const name=m[1];if(defined.has(name)||epVars.has(name))continue;const message=label+': unknown token '+name;if(m[2]===','&&name==='--ux-mix-base')continue;(m[2]===','?warn:fail)(message);}
+  for(const message of warnings)console.log('WARN: '+message);
+  if(errors.size){console.log('RESULT: FAIL | '+errors.size+' error(s)');for(const message of errors)console.log('ERROR: '+message);process.exitCode=1;return;}
+  const result=refresh(root,runtimeSources);if(!result.ok)throw Error(result.reason);
+  console.log('RESULT: OK\nHTML_PATH: '+path.join(root,'index.gts.html')+'\nPAGES: '+pages.length+'\nRUNTIME: not-run');
 }
-
-// ---------- 5. verify js files (ESM syntax + import policy) ----------
-const tmp = mkdtempSync(join(tmpdir(), 'ux-proto-verify-'));
-try {
-  for (const file of jsFiles) {
-    const rel = '/' + file.slice(srcDir.length).split('\\').join('/').replace(/^\/+/, '');
-    const text = readFileSync(file, 'utf8');
-
-    const tmpFile = join(tmp, rel.replace(/\//g, '_') + '.mjs');
-    writeFileSync(tmpFile, text, 'utf8');
-    const res = spawnSync(process.execPath, ['--check', tmpFile], { encoding: 'utf8' });
-    if (res.status !== 0) fail(`${rel}: ESM syntax error: ${(res.stderr || '').split('\n').filter(Boolean).slice(-1)[0] || res.status}`);
-
-    for (const m of text.matchAll(/(?:import\s+[^;]*?from\s*|import\s*)['"]([^'"]+)['"]/g)) {
-      const spec = m[1];
-      if (spec.startsWith('.') || spec.startsWith('/')) {
-        const baseDir = rel.slice(0, rel.lastIndexOf('/'));
-        const stack = [];
-        for (const p of (baseDir + '/' + spec).split('/')) {
-          if (p === '' || p === '.') continue;
-          if (p === '..') stack.pop();
-          else stack.push(p);
-        }
-        const target = '/' + stack.join('/');
-        if (![target, target + '.js', target + '.css', target + '.less', target + '/index.js'].some((t) => fileMap.has(t))) {
-          if (!ASSET_EXT.includes(extname(target))) fail(`${rel}: relative import "${spec}" does not resolve`);
-        }
-      } else {
-        const base = spec.split('/')[0] === '@element-plus' ? spec.split('/').slice(0, 2).join('/') : spec.split('/')[0];
-        const allowed = ALLOWED_BARE.has(spec) || (base === 'element-plus' && /^element-plus\//.test(spec));
-        if (!allowed) fail(`${rel}: bare import "${spec}" not allowed — deliverable deps are limited to: ${[...ALLOWED_BARE].join(', ')} (+ element-plus subpaths)`);
-      }
-    }
-  }
-} finally {
-  rmSync(tmp, { recursive: true, force: true });
-}
-
-// ---------- 6-7. token usage across styles + templates ----------
-// Design tokens follow the design-language naming (color-brand, space-size-16,
-// font-size-normal, shadow-1, ...). All token definitions must live in
-// src/assets/themes/*.less (skin scope) — SFC styles may only define --page-*
-// page-local custom props. Every var(--x) reference without a fallback must
-// resolve to a definition; --el-* is exempt (provided by Element Plus at runtime).
-const definedTokens = new Set();
-const cssHaystacks = [];for (const f of cssFiles) {
-  const text = readFileSync(f, 'utf8');
-  cssHaystacks.push(text);
-  for (const m of text.matchAll(/--[a-z][a-z0-9-]*\s*:/g)) definedTokens.add(m[0].replace(/\s*:/, ''));
-}
-for (const file of vueFiles) {
-  const source = readFileSync(file, 'utf8');
-  const rel = '/' + file.slice(srcDir.length).split('\\').join('/').replace(/^\/+/, '');
-  const { descriptor } = sfc.parse(source, { filename: file });
-  for (const block of descriptor.styles) {
-    for (const m of block.content.matchAll(/--page-[a-z0-9-]+\s*:/g)) definedTokens.add(m[0].replace(/\s*:/, ''));
-    cssHaystacks.push(block.content);
-    const hexes = (block.content.match(/#[0-9a-fA-F]{3,8}\b/g) || []).length;
-    if (hexes) warn(`${rel}: ${hexes} hardcoded hex color(s) in <style> : prefer design tokens (var(--color-*), var(--space-size-*), ...)`);
-    if (/\bzoom\s*:/.test(block.content)) warn(`${rel}: zoom layout detected in <style> : use flex/grid reflow instead of scaling`);
-    if (/font-size\s*:[^;}]*\d(vw|vh)\b/.test(block.content)) warn(`${rel}: font-size with vw/vh in <style> : do not scale fonts by viewport (design-language red line)`);
-  }
-  if (descriptor.template) cssHaystacks.push(descriptor.template.content);
-}
-// token suggestions: candidates sharing a prefix chunk or differing only in
-// one segment (typo-tolerant, same spirit as the icon/tag did-you-mean hints)
-function tokenHints(tok, pool) {
-  const stem = tok.replace(/^--/, '');
-  const parts = stem.split('-');
-  const scored = [];
-  for (const t of pool) {
-    const name = t.replace(/^--/, '');
-    if (name === stem) continue;
-    let score = 0;
-    const tp = name.split('-');
-    const shared = tp.filter((p) => parts.includes(p)).length;
-    if (shared) score += shared * 2;
-    if (name.startsWith(stem.slice(0, 6))) score += 2;
-    if (tp.length === parts.length) score += 1;
-    if (score) scored.push([score, t]);
-  }
-  return scored.sort((a, b) => b[0] - a[0]).slice(0, 4).map(([, t]) => t);
-}
-for (const text of cssHaystacks) {
-  for (const m of text.matchAll(/var\(\s*(--[a-z][a-z0-9-]*)\s*\)/g)) {
-    const tok = m[1];
-    if (tok.startsWith('--el-')) continue;         // Element Plus runtime vars
-    if (!definedTokens.has(tok)) {
-      const hints = tokenHints(tok, definedTokens);
-      fail(`unknown token var(${tok}) : tokens are defined in src/assets/themes/*.less${hints.length ? ` : did you mean ${hints.join(', ')}?` : ''}`);
-    }
-  }
-  // var(--x, fallback) — token should still exist unless it's --el-* / --ux-mix-base bridge plumbing
-  for (const m of text.matchAll(/var\(\s*(--[a-z][a-z0-9-]*)\s*,/g)) {
-    const tok = m[1];
-    if (tok.startsWith('--el-')) continue;
-    if (tok === '--ux-mix-base') continue;         // bridge plumbing, defined in base.less
-    if (!definedTokens.has(tok)) warn(`token var(${tok}) used with fallback but never defined${tokenHints(tok, definedTokens).map((h) => ` : did you mean ${h}?`).join('')} : check spelling against references/design-language.md`);
-  }
-}
-
-// ---------- done ----------
-const pageCount = pageIndexes.length;
-for (const w of warns) console.log(`WARN: ${w}`);
-if (errors.length > 0) {
-  console.log(`RESULT: FAIL | ${errors.length} error(s)`);
-  for (const e of errors) console.log(`ERROR: ${e}`);
-  process.exit(1);
-}
-console.log('RESULT: OK');
-console.log(`OK index.gts.html verified (${pageCount} page${pageCount > 1 ? 's' : ''}, ${vueFiles.length - pageCount} components, ${elTagTotal} el-tag uses)`);
-process.exit(0);
+build().catch(e=>{console.log('RESULT: FAIL | '+e.message+'\nHINT: ensure shared compiler dependencies are ready; inspect the reported source/resource.');process.exitCode=1;});

@@ -1,6 +1,7 @@
 # 页面交付件（src/）
 
 本目录即生成产物，可直接拷入任何 Vue 3 + Element Plus 2.13.5 工程。
+以下目录、路由及接口名称是通用示例，接入时使用实际业务路径；生成页面时无需逐页改写本说明。
 
 ## 目录结构
 
@@ -9,8 +10,8 @@ src/
 ├── main.js        # 工程入口示例（预览不执行；接入时参考或直接使用）
 ├── App.vue        # 应用壳：只挂载目标页面（切换类 UI 为按需能力，默认不含）
 ├── api/           # 服务层：页面从这里取数，对接后端只改这里
-│   ├── demo.js
-│   └── mock/demo-data.js
+│   ├── {模块}.js
+│   └── mock/{模块}-data.js
 ├── pages/         # 页面（每个页面一个文件夹，index.vue 为入口）
 │   └── XxxYyy/
 │       ├── index.vue
@@ -35,9 +36,9 @@ src/
 2. 拷贝 `src/` 对应目录进工程（或只取所需页面文件夹 + `assets/themes/` + 用到的 `assets/`）。
 3. 在工程路由中注册页面，例如：
    ```js
-   { path: '/device-management', component: () => import('@/pages/DeviceManagement/index.vue') }
+   { path: '/example', component: () => import('@/pages/ExamplePage/index.vue') }
    ```
-4. 在工程入口引入主题三件套（见 `main.js`）：`base.less`、`bridge.less`、`themes/default.less`。
+4. 在工程入口引入基础和桥接样式，以及 `default.less`、`dark.less`（见 `main.js`）；自有皮肤按主题协议追加。
 5. 页面颜色全部走 `var(--color-*)` 等设计 token —— 换肤体系接入后页面自动跟随（协议见同目录 README.md）。
 
 ## 国际化（按需启用）
@@ -48,7 +49,7 @@ src/
   ```js
   import { useI18n } from 'vue-i18n'
   const { t } = useI18n()
-  t('msg.demo.search.placeholder')
+  t('msg.page.search.placeholder')
   ```
 - key 命名 `msg.{页面}.{分类}.{语义}`（至少 3 个点）；**两个词典文件 key 集合保持一致**，en 缺失自动回落中文。
 - 词典只收界面文案与枚举显示名（封闭集合 code→label）；标题/描述/名称/人名等记录内容
@@ -77,17 +78,22 @@ src/
 
 - 页面**不直接**引用 `api/mock/` 下的数据文件；一律调用 `src/api/{模块}.js` 的语义化函数：
   ```js
-  import { getDeviceList } from '@/api/demo.js'
-  const res = await getDeviceList({ keyword, page, pageSize })   // { list, total }
+  import { getRecords } from '@/api/records.js'
+  const res = await getRecords({ keyword, page, pageSize })   // { list, total }
   ```
 - 对接真实后端时**只改 `api/` 实现**（把 mock 读取换成 fetch/axios），页面代码零改动：
   ```js
-  // api/demo.js —— 迁移示例
-  export async function getDeviceList(params) {
-    const { data } = await axios.get('/api/devices', { params })
+  // api/records.js —— 迁移示例
+  export async function getRecords(params) {
+    const { data } = await axios.get('/api/records', { params })
     return data
   }
   ```
 - mock 函数保留了 `await`/延迟语义，迁移后调用侧（含 loading 态）无需调整。
-- 交付卫生：真实模块的 `api/{模块}.js` 落地后，删除 starter 样例 `api/demo.js` 与
-  `api/mock/demo-data.js`，本节迁移示例改指真实模块。
+- 交付卫生：真实业务已替换starter引用后，在最终build前运行skill的cleanup-starter脚本；
+  仅清理仍为原样的demo服务，不手动删除用户改造内容。本节保持通用示例，无需逐页改写。
+- 源码修改和清理后统一build；仅修改本README不影响预览源码映射，无需重新build。
+
+## 公司图标
+
+fetch-icons保持原检索/排序/缓存/回退策略，命中后把命名import接入 `assets/icons/entry.js`；该入口显式覆盖公司图标并从原EP导出其余图标，离线与标准构建共用。复制源码时保留entry、barrel和两主题SVG，不另配全局别名。

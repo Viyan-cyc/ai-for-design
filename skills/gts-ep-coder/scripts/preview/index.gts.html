@@ -67,7 +67,8 @@
                 bootError.textContent = "预览加载失败：" + msg;
                 bootError.style.display = "block";
             }
-            window.addEventListener("error", function (e) { showBootError(e.message); });
+            window.addEventListener("error", function (e) { showBootError(e.message || "资源加载失败"); });
+            window.addEventListener("unhandledrejection", function(e){showBootError((e.reason && e.reason.message) || String(e.reason));});
 
             if (!window.__UX_PROTO_SRC__) {
                 showBootError("preview-data.js 缺失或为空 — 运行 node scripts/build.mjs --dir 重新生成");
@@ -102,9 +103,10 @@
                         var assetExt = clean.slice(clean.lastIndexOf("."));
                         return Promise.resolve({ getContentData: function () { return ""; }, type: assetExt });
                     }
+                    clean = window.__UX_RESOLVE_SOURCE__(clean, "/src/App.vue", SRC) || clean;
                     var content = SRC[clean];
                     if (content === undefined) {
-                        return Promise.reject(new Error("源码映射中找不到 " + clean + " — 修改 src/ 后请重跑 build"));
+                        return Promise.reject(new Error("源码映射中找不到 " + clean + " — 检查文件与import路径；源码修改后重跑build"));
                     }
                     // 剥 BOM：Windows 编辑器常写入 EF BB BF，会毒化 CSS 首条选择器 / JSON.parse
                     if (content.charCodeAt(0) === 0xfeff) content = content.slice(1);
@@ -159,8 +161,9 @@
                 .filter(function (p) { return p.indexOf(THEME_DIR) === 0 && p.slice(-5) === ".less"; })
                 .sort();
             Promise.all(themePaths.map(function (p) {
-                return less.render(SRC[p]).then(function (out) { addStyle(out.css); });
-            })).then(function () {
+                return less.render(SRC[p]);
+            })).then(function (styles) {
+                styles.forEach(function(out){addStyle(out.css);});
                 // Icon barrel: if /src/assets/icons/index.js exists, pre-load it
                 // and create a Proxy that merges barrel exports with EP icons.
                 // Hit → company SVG (dual-theme CSS switch); miss → EP original.
