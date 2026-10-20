@@ -1,7 +1,7 @@
 ---
 name: gts-ep-coder
 description: 根据用户需求生成 Vue 3 + Element Plus 2.13.5 页面（.vue SFC），样式严格遵循 design-language 设计 token；输出离线可开的双击即看 HTML 预览与可拷入真实工程的 src/ 源码。做页面、改页面、看效果时使用。
-version: 0.1.0
+version: 0.2.1
 ---
 
 # gts-ep-coder
@@ -106,8 +106,8 @@ build 门禁用）、`env.lock.json` 的 lock hash 与 skill 携带的 `package-
 node scripts/init.mjs "<artifact-folder 绝对路径>" "<slug>"
 ```
 
-- `<slug>`：小写英文/数字/连字符，1–6 段（如 `login-form`、`device-list`）。
-- 返回值记住三个：`HTML_PATH`（预览入口）、`SRC_DIR`（你写代码的地方）、`PAGE`（主组件名）。
+- `<slug>`：小写英文/数字/连字符，2–6 段（如 `login-form`、`device-list`）。
+- 返回值记住三个：`HTML_PATH`（预览入口）、`SRC_DIR`（你写代码的地方）、`PAGE`（init返回的PascalCase页面目录名，如DeviceList）。
 
 init 会生成完整骨架：`index.gts.html` + `public/library/`（UMD 运行时）+ `src/`（App.vue、
 main.js、api 服务层示例、主题三件套、starter 页面）。
@@ -116,34 +116,33 @@ main.js、api 服务层示例、主题三件套、starter 页面）。
 ### ③ 写代码 —— 主战场
 
 **只写 `src/` 下**：页面放 `src/pages/{Page}/index.vue`（一页一目录，子组件/样式放同目录），
-`App.vue` 只改挂载点。主题 css（`src/assets/themes/`）与 `index.html` 是交付件骨架，
+`App.vue` 修改挂载与需求明确的装配。主题 css（`src/assets/themes/`）与 `index.gts.html` 是交付件骨架，
 不改不删；换肤按 `src/assets/themes/README.md` 协议追加。
 
-#### 代码组织（每页遵循）
+#### 必须遵守的代码规则
 
-- 简单页面可保留单文件；具有独立状态、复杂交互或可复用功能的区域放 `src/pages/{PAGE}/components/`，index.vue负责组装。接近500行时检查职责，不靠堆叠大文件完成复杂页。
-- 同构卡片、菜单、列表等用数据数组与 `v-for`，提供稳定key；不要重复手写只改文案/数字的模板，也不必把每张静态卡片拆成组件。
-- 需求未提供的业务数据标明为演示，不编造真实企业资历或业绩。
-- 本地import优先写完整扩展名；loader与build使用同一解析规则。动态import仅支持静态字符串，图标使用命名静态import；不支持的能力明确报告。
+编码前完整读取 `vendor/vue-skill/references/code-rules.md` 并遵守所有适用条款；当前有效上下文已完整读取同版本时复用，不重复加载。该文件是项目编码规则的统一来源，不能以熟悉Vue、主入口摘要够用或追求速度为由跳过。
+
+其中包含组件职责拆分、800行审视界线、同构与嵌套循环、服务/mock与中英文分层、交互状态、命名、样式、通信和资源清理。交付前必须做一次代码自查，见该文件最后一节；构建通过不能代替规范自查。它们是编码要求，不新增机器门禁。
 
 #### 资料怎么读
 
-主入口规则和当前上下文足够时直接编写，不把读参考资料当作每页的前置步骤。每次查询只解决一个具体不确定项：
+代码规则必读；下面的token目录、组件API与详细示例才按需查询，每次查询解决一个具体不确定项：
 
 - **Token**：先复用已核实名称或常用速查。名称或用途不确定时，可用 `node scripts/query-tokens.mjs "次要文本" "边框" "--color-brand" --limit 5` 一次批量查询；返回真实候选、用途和值，未命中明确列出。只复制返回名称，不拼接前后缀；结果截断时缩小关键词，不因此读完整目录。已有准确名称就直接写，不强制查询。 多个参数分别查询；同一参数内空格表示同时满足，查不同用途请分参数。常用中文词可归一化为候选类别，未命中会给分类提示；准确名称不自动纠正。
 - **组件**：用法确定就直接写；不确定时搜索 `vendor/vue-skill/references/components_index.md` 定位，只读对应示例中有关的属性、插槽或事件。示例仍不能回答时，再定向查对应资料，不从其他组件推断API。
 - **布局**：需要结构参考时才查 `vendor/code-example/references/README.md` 或 `vendor/vue-skill/templates/README.md`，选一个合适起点；没有合适项就按需求编写，不继续遍历示例库。示例的数据、slot和接口占位按业务补全。
-- **规则**：主入口已覆盖的规则直接遵循；遇到具体问题时搜索 `code-rules.md` 的相关标题或关键词，只读该节。错误清单同样只查相关项，不分段读完整文件。
+- **规则与自查**：按上面的必读约定执行；自查覆盖全部适用规则，不以“没有报错”跳过。需要错误示例解释时才查 `error-checklist.md`，不用反复阅读同一示例。
 - **名称**：组件导出或EP图标名称不确定时，用宿主已有搜索工具批量查 `scripts/verify/whitelists/`；组件标签清单是 `el-xxx`，导出和图标清单是 PascalCase，不混查格式；不临时编写 `node -e` 等探针，也不为每页做全量名称预检。公司图标仍走③.5的原检索流程。
 
 普通按钮、输入框、表格等直接使用组件和桥接主题，状态样式由组件承担；不重新查配色并逐项覆盖。只为页面布局、内容层级或明确的视觉需求选择额外token。查询用宿主已有工具，不要求安装rg；正常使用只执行指定脚本，不为了解脚手架而读取运行库实现。
 
-找到足够信息就停止，直接继续编码；当前上下文已有且未变化的内容不重复读取。匹配行无法解释用途时才扩大到相关分类或条款，不为“读过规范”而补读其他文件。`vendor/` 只读；详细资料分工见 `vendor/README.md`，不要求每页先打开该入口。
+找到足够信息就停止，直接继续编码；当前上下文已有且未变化的内容不重复读取。匹配行无法解释用途时才扩大到相关分类或条款，不为了读完整个参考库而补读无关文件；本项不免除必读代码规则。`vendor/` 只读；详细资料分工见 `vendor/README.md`，不要求每页先打开该入口。
 
 #### 数据走服务层（src/api/）
 
-- 页面数据一律经 `src/api/{模块}.js` 的语义化函数（返回 Promise）获取，**页面不直接 import
-  mock 数据文件**（它们放 `src/api/mock/`，只被 api 层消费）。starter 的 `api/demo.js` 是样例。
+- 业务记录、统计值、图表数据经 `src/api/{模块}.js` 的语义化函数（返回 Promise）获取，**页面不直接 import
+  mock 数据文件**（它们放 `src/api/mock/`，只被 api 层消费）。starter 的 `api/demo.js` 是样例。菜单/栏目结构、按钮配置与枚举映射是UI配置，可在组件内声明；包含业务记录时仍走服务层。
 - 对接真实后端 = 改 `api/` 实现（换 fetch/axios），页面零改动——这是服务层存在的意义。
 - 新增接口按同样式扩展：每个业务模块一个 `api/{模块}.js`，mock 数据沉到 `api/mock/`。
 - 交付卫生：完成页面和服务源码替换、业务不再引用starter后，在最终build前运行
@@ -157,7 +156,7 @@ main.js、api 服务层示例、主题三件套、starter 页面）。
 - **用户没提国际化 → 页面直接写中文**（starter 页默认直接中文，改动为零）。
 - **用户要求国际化（或明确多语言）→ 该工程启用**，最小集：
   1. 装配：从 `scripts/preview/i18n-scaffold/` 拷贝 `i18n/` 到工程 `src/`（含 createI18n、
-     locales、EP_LOCALES 映射；**逐字拷贝，不要重写**——预览 moduleCache 与 build 白名单按此接线）；
+     locales、EP_LOCALES 映射；复用公共接线，词典按业务成对更新并清理demo词条，不复制两套Vue页面）；
   2. 文案 key 化：页面用 `const { t } = useI18n()` + key（key 命名 `msg.{页面}.{分类}.{语义}`，
      至少 3 个点，见 code-rules 规则 10.2）；
   3. 词典进 `src/i18n/locales/{zh-cn,en}.js`（**两份 key 集合必须一致**，en 缺失会回落中文）；
@@ -169,8 +168,8 @@ main.js、api 服务层示例、主题三件套、starter 页面）。
        对接后被真实数据取代，组件不得对数据值做 `t()` 包装（否则真实数据会显示 key 路径，
        破坏「页面零改动」契约）。拿不准封闭/开放时，按记录内容处理。
   4. App.vue 接线 + 切换 UI：**UI 形态按用户描述决定**（图标/下拉/菜单项均可），参考实现见
-     `references/on-demand-toggle.md`（含预览必需：幂等补装须先于 `useI18n`，EP 文案经
-     `ElConfigProvider` 跟随）。真实工程入口需 `app.use(i18n)`。
+     `references/on-demand-toggle.md`（含预览必需：统一安装须先于 `useI18n`，EP 文案经
+     `ElConfigProvider` 跟随）。真实工程入口通过 `installI18n(app)` 在mount前安装；仅启用国际化时允许对main追加该接线，不改其他骨架。
 - 启用 i18n 的工程，`ElMessage` 等命令式提示文案同样走 `t()`。
 
 #### 主题切换：机制常驻，UI 按需
@@ -187,7 +186,7 @@ main.js、api 服务层示例、主题三件套、starter 页面）。
 - 编码规则见 `vendor/vue-skill/references/code-rules.md` 第十二节（容器流式、ElRow/ElCol
   响应式栅格、宽度纪律、@media 口径、表格自适应）；断点与窗口适配口径见
   `references/design-language.md` §3.3。
-- 布局按上述响应式口径编写；构建通过直接交付预览链接，不要求 agent 打开浏览器或执行多视口测试。
+- 布局按上述响应式口径编写；完成规则自查且构建通过后交付预览链接，不要求agent打开浏览器或执行多视口测试；未运行不宣称视觉验收。
 
 ### ③.5 `fetch-icons.mjs` —— 图标检索替换（有新增或变化的图标时）
 
@@ -235,6 +234,8 @@ build 用真实 `@vue/compiler-sfc`（parse + compileScript + compileTemplate）
 
 > 编译失败 ≠ 报告用户。`verify` 的编译错误、白名单错误、token 违规都是你自己的代码问题，
 > 按提示在重试额度内修复；达到上限或提前停止时报告未通过。**环境类失败**（装不上、compiler加载不了）按HINT处理或报告阻塞。
+
+最终build前按code-rules最后一节完成一次自查并直接修正偏差，不新增检查命令或报告。
 
 build同步固定预览加载器，使已有工程使用当前解析规则；业务src不因此重写。源码映射仅在检查通过后刷新。共享工具池新增Less校验依赖，ensure提示过期时按HINT更新一次。
 
@@ -296,19 +297,20 @@ build的编译/token错误在重试额度内修复，达到上限或提前停止
 **这是最重要的一条。** 不允许在 `build.mjs` 没有 `RESULT: OK` 的情况下告诉用户"做好了"。
 按前述验证额度修复；未通过时如实报告剩余错误。
 
-### 2. 只碰 `src/` 下与 App.vue
+### 2. 业务源码与固定骨架边界
 
 | 允许 | 路径 |
 |---|---|
 | ✅ 新建/修改 | `src/pages/{Page}/` 下的任何文件 |
-| ✅ 修改 | `src/App.vue`（挂载页面组件） |
-| ❌ 不动 | `index.gts.html`、`public/library/`、`src/main.js`、`src/assets/themes/*.less`（交付骨架，改了换肤/预览体系就散了） |
+| ✅ 新建/修改 | `src/api/`、业务hooks/辅助模块与用户素材；请求多语言时的 `src/i18n/` |
+| ✅ 修改 | `src/App.vue`（挂载页面与按需装配）；启用i18n时main仅追加规定的安装接线 |
+| ❌ 不动 | `index.gts.html`、`public/library/`、`src/main.js`（仅允许上行i18n接线例外）、`src/assets/themes/*.less`（交付骨架，改了换肤/预览体系就散了） |
 
 换肤需求走 `src/assets/themes/README.md` 协议**追加**皮肤文件，不动既有三件套。
 
 ### 3. 页面代码规范（design-language）
 
-- **样式一律 `<style scoped>`**；禁止 `:root` / `html` / `body` / `[data-theme]` 选择器（build 会拒）。
+- **样式一律 `<style scoped lang="less">`**；禁止 `:root` / `html` / `body` / `[data-theme]` 选择器（build 会拒）。
 - **所有颜色走 token**：`var(--color-brand)` 这类规范名；页面局部派生值用 `--page-*` 前缀定义；页面不得定义 `--el-*`，已有运行时变量可引用。
   页面里不写 hex 色值（build 检查）。
 - **只用真实 Element Plus 组件**，模板标签一律 **PascalCase**（`<ElTable>`），模板里用到的每个
@@ -341,8 +343,7 @@ build的编译/token错误在重试额度内修复，达到上限或提前停止
 ### 4. vendor/ —— 参考资产（只读）
 
 `vendor/` 已就位：`vue-skill/`（组件示例、code-rules、error-checklist、页面模板）、
-`code-example/`（整页示例）、顶层 `README.md`（两块职责与读取路由）。仅在有具体不确定项或需要结构参考时查询
-（见工作流 ③）。**不要往 vendor 写任何东西**；vendor 是参考资产，不参与编译与 build 门禁，
+`code-example/`（整页示例）、顶层 `README.md`（两块职责与读取路由）。代码规则按工作流③必读，其余资料仅在组件/API有疑问或需要结构参考时查询。**不要往 vendor 写任何东西**；vendor 是参考资产，不参与编译与 build 门禁，
 示例中引用的 token 名拷入页面后由 build 检查。
 
 ---

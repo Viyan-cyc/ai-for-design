@@ -5,6 +5,7 @@ import { ElDialog, ElForm, ElFormItem, ElInput, ElSelect, ElOption, ElButton } f
 defineOptions({ name: 'FormDialog' })
 
 defineProps({
+  submitting: { type: Boolean, default: false },
   visible: {
     type: Boolean,
     required: true
@@ -65,7 +66,7 @@ const handleReset = () => {
       <div class="dialog-footer">
         <ElButton @click="handleReset">重置</ElButton>
         <ElButton @click="handleClose">取消</ElButton>
-        <ElButton type="primary" @click="handleSubmit">确定</ElButton>
+        <ElButton type="primary" :loading="submitting" :disabled="submitting" @click="handleSubmit">确定</ElButton>
       </div>
     </template>
   </ElDialog>

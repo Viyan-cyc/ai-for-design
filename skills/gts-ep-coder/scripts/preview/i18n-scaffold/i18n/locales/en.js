@@ -10,5 +10,5 @@ export default {
   'msg.demo.table.updatedAt': 'Updated At',
   'msg.demo.status.enabled': 'Enabled',
   'msg.demo.status.disabled': 'Disabled',
-  'msg.demo.empty': 'No data',
+  'msg.demo.empty.description': 'No data',
 }

@@ -166,3 +166,17 @@ references/feedback-flow/
 - **禁止**一次性读取所有示例文件
 - **禁止**使用通配符批量加载 `references/` 下的文件
 - 每次仅加载当前任务相关的 1-2 个示例文件
+
+
+## 复制整页与服务
+
+先遵守code-rules；示例不是规则的例外。index.vue复制到src/pages/{PAGE}/index.vue（PAGE取init输出），同页components一起复制。所选示例的api/内容合入src/api/（含mock子目录），不放在页面内：
+
+| 示例 | 服务 | mock |
+|---|---|---|
+| table-search-drawer | api/tasks.js | api/mock/tasks-data.js |
+| mixed-chart | api/metrics.js | api/mock/metrics-data.js |
+| content-states | api/events.js | api/mock/events-data.js |
+| feedback-flow | api/operations.js | api/mock/operation-result.js |
+
+只复制当前使用的示例及依赖，不遍历全库。组件用法片段中的ElTable/VChart通过props接收业务数据，整页服务负责提供；图表主题变化后重算option并清理Observer。UI配置可在组件，业务记录不内嵌。模拟操作明确标为演示，未接入动作不冒充成功。

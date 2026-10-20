@@ -1,34 +1,46 @@
 <script setup>
-import { ref } from 'vue'
-import { ElCard } from 'element-plus'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ElCard, ElAlert, ElButton } from 'element-plus'
 import VChart from 'vue-echarts'
-
+import { getMetrics } from '../../api/metrics.js'
 defineOptions({ name: 'MixedChartPage' })
-
-const readToken = (name) =>
-  getComputedStyle(document.documentElement).getPropertyValue(name).trim()
-
-const chartColors = ['--color-chart-1', '--color-chart-2', '--color-chart-3']
-  .map(readToken)
-  .filter(Boolean)
-
-const months = ['1月', '2月', '3月', '4月', '5月', '6月']
-
-const mixedOption = ref({
-  color: chartColors,
-  tooltip: { trigger: 'axis' },
-  legend: { data: ['产量', '增长率'] },
-  grid: { left: 48, right: 48, top: 48, bottom: 28 },
-  xAxis: { type: 'category', data: months },
-  yAxis: [
-    { type: 'value', name: '产量' },
-    { type: 'value', name: '增长率(%)', axisLabel: { formatter: '{value}%' } }
-  ],
-  series: [
-    { name: '产量', type: 'bar', data: [120, 200, 150, 80, 170, 110] },
-    { name: '增长率', type: 'line', yAxisIndex: 1, smooth: true, data: [12, 20, 15, 8, 17, 11] }
-  ]
+const data = ref(null)
+const loading = ref(false)
+const error = ref('')
+const themeRevision = ref(0)
+let observer
+let requestSeq = 0
+const readToken = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim()
+const mixedOption = computed(() => {
+  themeRevision.value
+  if (!data.value) return {}
+  return {
+    color: ['--color-chart-1', '--color-chart-2', '--color-chart-3'].map(readToken),
+    textStyle: { color: readToken('--color-text-primary') },
+    tooltip: { trigger: 'axis' }, legend: { data: ['产量', '增长率'], textStyle: { color: readToken('--color-text-primary') } },
+    grid: { left: 48, right: 48, top: 48, bottom: 28 },
+    xAxis: { type: 'category', data: data.value.months },
+    yAxis: [{ type: 'value', name: '产量' }, { type: 'value', name: '增长率(%)', axisLabel: { formatter: '{value}%' } }],
+    series: [
+      { name: '产量', type: 'bar', data: data.value.production },
+      { name: '增长率', type: 'line', yAxisIndex: 1, smooth: true, data: data.value.growth },
+    ],
+  }
 })
+const load = async () => {
+  const seq = ++requestSeq
+  loading.value = true
+  error.value = ''
+  try { const result = await getMetrics(); if (seq === requestSeq) data.value = result }
+  catch (e) { if (seq === requestSeq) error.value = e.message || '加载失败' }
+  finally { if (seq === requestSeq) loading.value = false }
+}
+onMounted(() => {
+  observer = new MutationObserver(() => { themeRevision.value++ })
+  observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] })
+  load()
+})
+onUnmounted(() => { requestSeq++; observer?.disconnect() })
 </script>
 
 <template>
@@ -37,7 +49,8 @@ const mixedOption = ref({
       <template #header>
         <span class="card-title">产量与增长率</span>
       </template>
-      <VChart class="chart-canvas" :option="mixedOption" autoresize />
+      <ElAlert v-if="error" :title="error" type="error" :closable="false"><ElButton @click="load">重试</ElButton></ElAlert>
+      <VChart v-if="data" class="chart-canvas" :option="mixedOption" :loading="loading" autoresize />
     </ElCard>
   </div>
 </template>

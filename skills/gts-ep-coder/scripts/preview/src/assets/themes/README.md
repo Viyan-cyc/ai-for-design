@@ -11,7 +11,7 @@
    html[data-theme="dark"] {
      --color-brand: #4d9eff;
      --color-bg-1: #121212;
-     /* ...全部 token 见 references/design-language.md */
+     /* 其余变量沿用 default.less 中的名称 */
    }
    ```
 3. **注册**：
@@ -28,7 +28,7 @@
 
 ## Token 真值源
 
-token 全表（颜色 / 间距 / 圆角 / 边框 / 字体 / 投影）以 **design-language（设计语言包）** 为唯一标准，见 skill `references/design-language.md`。皮肤必须完整提供页面与桥接层消费的全部 token。
+内置 `default.less` / `dark.less` 提供浅深主题变量及其值。新增皮肤时沿用同一组变量名，完整提供页面与 `bridge.less` 使用的 token；设计含义以团队设计规范为准。
 
 ## 深色皮肤注意
 
@@ -39,4 +39,4 @@ token 全表（颜色 / 间距 / 圆角 / 边框 / 字体 / 投影）以 **desig
 若自有换肤样式已有一套变量（如 `--brand-color` 等），两种接入方式任选：
 
 - **改皮肤（推荐）**：在皮肤文件里把自有变量赋给标准 token（`--color-brand: var(--brand-color);`），保持桥接层不动；
-- **改桥接**：把 `bridge.less` 右侧的 `var(--color-...)` 换成自有变量名（桥接层随之脱离 FIXED 约定，需自行维护）。
+- **改桥接**：把 `bridge.less` 右侧的 `var(--color-...)` 换成自有变量名（修改后需自行维护桥接映射）。

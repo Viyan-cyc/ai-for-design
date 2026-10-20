@@ -5,7 +5,7 @@
 // 浮层（挂 body）的语义配色经 customClass + 本文件底部非 scoped 全局样式实现；
 // EP 浮层组件仅 4 类型（success/warning/info/error）；告警/失效两组语义在嵌入式消息区补全演示。
 // EP 通知组件无 max 参数（2.13.5 核验）——规范"最多同时 3 条"以队列守卫实现：超出先关最早一条。
-import { ref, nextTick } from 'vue'
+import { ref, nextTick, onUnmounted } from 'vue'
 import { ElMessage, ElNotification, ElButton, ElCheckbox, ElIcon } from 'element-plus'
 import {
   CircleCheckFilled,
@@ -13,6 +13,7 @@ import {
   InfoFilled,
   WarningFilled,
 } from '@element-plus/icons-vue'
+import { executeDemoOperation } from '../../api/operations.js'
 import DangerDialog from './components/danger-dialog.vue'
 
 defineOptions({ name: 'FeedbackFlowPage' })
@@ -49,6 +50,7 @@ const NOTIFY_DEFS = [
 ]
 
 const notifyQueue = ref([])
+onUnmounted(() => notifyQueue.value.forEach(handle => handle.close()))
 
 const pushNotification = (opts) => {
   // 队列守卫：同时最多 3 条，超出先关最早一条（最新在顶由通知组件默认插入顺序保证）
@@ -94,7 +96,7 @@ const openDanger = () => {
 
 const onDangerExecuted = async () => {
   dangerOpen.value = false
-  execResult.value = '高危操作已执行，结果通过全局消息反馈'
+  execResult.value = '模拟操作已完成，未执行真实数据库删除'
   await nextTick()
   fireMessage(MSG_DEFS[3])
 }
@@ -220,7 +222,7 @@ const ICONS = {
       </p>
     </section>
 
-    <DangerDialog v-model="dangerOpen" @executed="onDangerExecuted" />
+    <DangerDialog v-model="dangerOpen" :execute="executeDemoOperation" @executed="onDangerExecuted" />
   </div>
 </template>
 

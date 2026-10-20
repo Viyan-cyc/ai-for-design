@@ -18,3 +18,5 @@
 4. 所有模板默认使用 GTS Token（CSS 变量），无需额外配置即可对接设计规范。
 5. 栅格使用 Element Plus 的 ElRow/ElCol，默认 24 列流式栅格。
 6. 模板样式为 `<style scoped lang="less">`；复制后保持 less，不写静态内联 style。
+
+DashboardCards的metrics每项提供稳定id。FormDialog的submit由父组件校验后调用服务并传submitting，组件不伪造成功；布局slot由业务补全。整页服务/mock复制关系见code-example/references/README.md。

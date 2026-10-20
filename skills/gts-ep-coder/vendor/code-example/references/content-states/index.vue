@@ -1,5 +1,6 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { getEvents } from '../../api/events.js'
 import {
   ElSegmented,
   ElInput,
@@ -16,17 +17,8 @@ import { Search, RefreshRight, Plus, Delete, Back } from '@element-plus/icons-vu
 
 defineOptions({ name: 'ContentStates' })
 
-// 内容状态演示页：数据是展示物本身，写死在页面内（业务页面数据应走 src/api/ 服务层）。
-const allRows = [
-  { id: 1, name: '事件-华东区网关超时', level: 'P1', owner: '陈磊', status: '处理中' },
-  { id: 2, name: '事件-华南区存储容量告警', level: 'P2', owner: '王倩', status: '已确认' },
-  { id: 3, name: '事件-北区调度延迟', level: 'P3', owner: '刘洋', status: '处理中' },
-  { id: 4, name: '事件-西区证书临期', level: 'P2', owner: '赵敏', status: '已恢复' },
-  { id: 5, name: '事件-东区队列堆积', level: 'P1', owner: '孙浩', status: '处理中' },
-  { id: 6, name: '事件-数据库主从延迟', level: 'P2', owner: '李婷', status: '已确认' },
-  { id: 7, name: '事件-缓存命中率下降', level: 'P3', owner: '周斌', status: '已恢复' },
-  { id: 8, name: '事件-限流策略误触发', level: 'P2', owner: '吴静', status: '已恢复' },
-]
+// 状态选择是UI配置，业务记录仍经服务获取。
+const allRows = ref([])
 
 const STATES = [
   { label: '首次使用', value: 'idle' },
@@ -48,35 +40,45 @@ let requestSeq = 0
 
 const filteredRows = computed(() =>
   keyword.value
-    ? allRows.filter((r) => r.name.includes(keyword.value.trim()))
-    : allRows,
+    ? allRows.value.filter((r) => r.name.includes(keyword.value.trim()))
+    : allRows.value,
 )
 
 const hasFilter = computed(() => Boolean(keyword.value.trim()))
 
 function applyDemoState(next) {
+  requestSeq++
   state.value = next
   if (next === 'filtered-empty') keyword.value = '不存在的关键字'
   if (next !== 'filtered-empty' && next !== 'success' && next !== 'partial-fail') return
   if (next !== 'filtered-empty' && next !== 'partial-fail') keyword.value = ''
+  if (!allRows.value.length) simulateLoad(next)
 }
 
-function simulateLoad(target) {
+async function simulateLoad(target) {
   const seq = ++requestSeq
   state.value = 'loading'
-  setTimeout(() => {
+  try {
+    const rows = await getEvents()
     if (seq !== requestSeq) return
+    allRows.value = rows
     state.value = target
-  }, 600)
+  } catch {
+    if (seq === requestSeq) state.value = 'error'
+  }
 }
+onMounted(() => simulateLoad('success'))
+onUnmounted(() => { requestSeq++ })
 
 function retry() {
   simulateLoad('success')
 }
 
 function clearFilter() {
+  requestSeq++
   keyword.value = ''
-  state.value = 'success'
+  if (!allRows.value.length) simulateLoad('success')
+  else state.value = 'success'
 }
 
 const levelTagType = (level) => (level === 'P1' ? 'danger' : level === 'P2' ? 'warning' : 'info')
@@ -113,7 +115,7 @@ const showToolbar = computed(() =>
           clearable
         />
         <ElButton v-if="hasFilter" :icon="RefreshRight" @click="clearFilter">清除筛选</ElButton>
-        <ElButton type="primary" :icon="Plus">新建事件</ElButton>
+        <ElButton type="primary" :icon="Plus" disabled>新建事件（未接入）</ElButton>
       </div>
 
       <!-- 部分模块失败：成功区域照常展示，只有失败区域显示重试 -->
@@ -142,10 +144,10 @@ const showToolbar = computed(() =>
         v-else-if="state === 'no-permission'"
         icon="info"
         title="暂无查看权限"
-        sub-title="你没有该页面的访问权限。仅当真实流程存在时才提供申请入口。"
+        sub-title="你没有该页面的访问权限，请联系管理员。"
       >
         <template #extra>
-          <ElButton size="small">申请权限</ElButton>
+          <ElButton size="small" disabled>申请权限（未接入）</ElButton>
         </template>
       </ElResult>
 
@@ -169,7 +171,7 @@ const showToolbar = computed(() =>
         sub-title="该事件可能已被删除或链接已过期。"
       >
         <template #extra>
-          <ElButton :icon="Back">返回列表</ElButton>
+          <ElButton :icon="Back" @click="retry">返回列表</ElButton>
         </template>
       </ElResult>
 
@@ -179,7 +181,7 @@ const showToolbar = computed(() =>
         description="尚未添加数据"
         class="region-empty"
       >
-        <ElButton type="primary" :icon="Plus">新建事件</ElButton>
+        <ElButton type="primary" :icon="Plus" disabled>新建事件（未接入）</ElButton>
       </ElEmpty>
 
       <!-- 成功请求返回零条：中性文字，不展示错误图标 -->
@@ -300,7 +302,7 @@ const showToolbar = computed(() =>
 
 .partial-fail-title {
   font-size: var(--font-size-normal);
-  font-weight: 600;
+  font-weight: var(--font-weight-bold);
   color: var(--color-error);
   line-height: var(--font-line-height-normal);
 }

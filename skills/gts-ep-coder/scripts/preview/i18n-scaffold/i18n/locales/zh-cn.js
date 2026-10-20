@@ -10,5 +10,5 @@ export default {
   'msg.demo.table.updatedAt': '更新时间',
   'msg.demo.status.enabled': '已启用',
   'msg.demo.status.disabled': '已停用',
-  'msg.demo.empty': '暂无数据',
+  'msg.demo.empty.description': '暂无数据',
 }

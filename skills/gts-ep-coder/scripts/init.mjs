@@ -25,7 +25,7 @@
 //   RESULT: OK
 //   HTML_PATH: <absolute path to {slug}/index.gts.html>
 //   SRC_DIR: <absolute path to {slug}/src>
-//   PAGE: <PascalCase page name>
+//   PAGE: <PascalCase page directory name>
 //   RESULT: FAIL | <reason>
 
 import {
@@ -104,8 +104,8 @@ writeFileSync(
   `<script setup>
 // ${pageName} — 页面主组件（交付入口；真实工程中由路由挂载）
 // 文案默认直接写中文。用户要求国际化时才 key 化（按需能力，参考实现由生成方提供）。
-import { ref, onMounted } from 'vue'
-import { ElButton, ElInput, ElPagination, ElTable, ElTableColumn, ElTag } from 'element-plus'
+import { ref, onMounted, onUnmounted } from 'vue'
+import { ElButton, ElInput, ElPagination, ElTable, ElTableColumn, ElTag, ElAlert } from 'element-plus'
 import { Search } from '@element-plus/icons-vue'
 import { getDeviceList } from '../../api/demo.js'
 
@@ -115,16 +115,24 @@ const total = ref(0)
 const page = ref(1)
 const pageSize = ref(10)
 const loading = ref(false)
+const loadError = ref('')
+let requestSeq = 0
+onUnmounted(() => { requestSeq++ })
 
 // 数据一律经服务层（src/api/）获取，页面不直接接触 mock 数据文件
 const fetchList = async () => {
+  const seq = ++requestSeq
   loading.value = true
+  loadError.value = ''
   try {
     const res = await getDeviceList({ keyword: keyword.value, page: page.value, pageSize: pageSize.value })
+    if (seq !== requestSeq) return
     list.value = res.list
     total.value = res.total
+  } catch (error) {
+    if (seq === requestSeq) loadError.value = error.message || '加载失败'
   } finally {
-    loading.value = false
+    if (seq === requestSeq) loading.value = false
   }
 }
 
@@ -155,6 +163,9 @@ onMounted(fetchList)
       <ElButton type="primary" :icon="Search" @click="onSearch">查询</ElButton>
     </div>
 
+    <ElAlert v-if="loadError" :title="loadError" type="error" :closable="false">
+      <ElButton @click="fetchList">重试</ElButton>
+    </ElAlert>
     <ElTable v-loading="loading" :data="list" class="table">
       <ElTableColumn prop="name" label="名称" min-width="180" />
       <ElTableColumn prop="status" label="状态" width="120">

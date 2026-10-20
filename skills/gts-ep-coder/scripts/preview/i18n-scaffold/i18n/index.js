@@ -48,3 +48,11 @@ export function getLocale() {
 }
 
 export default i18n
+
+const installedApps = new WeakSet()
+export function installI18n(app) {
+  if (!installedApps.has(app)) {
+    app.use(i18n)
+    installedApps.add(app)
+  }
+}

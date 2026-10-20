@@ -1,82 +1,61 @@
 <script setup>
-import { ref, reactive } from 'vue'
-import { ElRow, ElCol, ElCard } from 'element-plus'
+import { ref, reactive, onMounted, onUnmounted } from 'vue'
+import { ElRow, ElCol, ElCard, ElAlert, ElButton } from 'element-plus'
+import { getTaskList } from '../../api/tasks.js'
 import SearchForm from './components/search-form.vue'
 import DataTable from './components/data-table.vue'
 import DetailDrawer from './components/detail-drawer.vue'
 
 defineOptions({ name: 'TableSearchDrawerPage' })
-
-const searchFormRef = ref()
-const searchParams = reactive({
-  keyword: '',
-  type: '',
-  dateRange: []
-})
-
+const defaults = () => ({ keyword: '', type: '', dateRange: [] })
+const searchParams = reactive(defaults())
 const tableData = ref([])
 const tableLoading = ref(false)
 const tableTotal = ref(0)
 const currentPage = ref(1)
 const pageSize = ref(20)
-
 const drawerVisible = ref(false)
 const currentRow = ref(null)
+const loadError = ref('')
+let requestSeq = 0
+onUnmounted(() => { requestSeq++ })
 
-const fetchData = async (params, page, size) => {
+const fetchData = async () => {
+  const seq = ++requestSeq
   tableLoading.value = true
+  loadError.value = ''
   try {
-    // await api.getTableData({ ...params, page, size })
-    // tableData.value = res.data.list
-    // tableTotal.value = res.data.total
-    tableData.value = [
-      { id: 1, name: '任务 A', type: 'Bug', status: 'running', date: '2026-09-01', value: 120 },
-      { id: 2, name: '任务 B', type: 'Feature', status: 'warning', date: '2026-09-02', value: 80 },
-      { id: 3, name: '任务 C', type: 'Task', status: 'idle', date: '2026-09-03', value: 66 }
-    ]
-    tableTotal.value = 3
+    const result = await getTaskList({ ...searchParams, page: currentPage.value, pageSize: pageSize.value })
+    if (seq !== requestSeq) return
+    tableData.value = result.list
+    tableTotal.value = result.total
+  } catch (error) {
+    if (seq === requestSeq) loadError.value = error.message || '加载失败'
   } finally {
-    tableLoading.value = false
+    if (seq === requestSeq) tableLoading.value = false
   }
 }
-
-const handleSearch = (params) => {
-  Object.assign(searchParams, params)
+const handleSearch = params => {
+  Object.assign(searchParams, defaults(), params)
   currentPage.value = 1
-  fetchData(searchParams, currentPage.value, pageSize.value)
+  fetchData()
 }
-
-const handleReset = () => {
-  currentPage.value = 1
-  fetchData(searchParams, currentPage.value, pageSize.value)
-}
-
-const handlePageChange = (page) => {
-  currentPage.value = page
-  fetchData(searchParams, currentPage.value, pageSize.value)
-}
-
-const handleSizeChange = (size) => {
-  pageSize.value = size
-  currentPage.value = 1
-  fetchData(searchParams, currentPage.value, pageSize.value)
-}
-
-const handleRowClick = (row) => {
-  currentRow.value = row
-  drawerVisible.value = true
-}
-
-fetchData(searchParams, currentPage.value, pageSize.value)
+const handleReset = () => handleSearch(defaults())
+const handlePageChange = page => { currentPage.value = page; fetchData() }
+const handleSizeChange = size => { pageSize.value = size; currentPage.value = 1; fetchData() }
+const handleRowClick = row => { currentRow.value = row; drawerVisible.value = true }
+onMounted(fetchData)
 </script>
 
 <template>
   <div class="page-root">
+    <ElAlert v-if="loadError" :title="loadError" type="error" :closable="false">
+      <ElButton @click="fetchData">重试</ElButton>
+    </ElAlert>
     <ElRow :gutter="0">
       <ElCol :span="24">
         <ElCard shadow="never" class="search-card">
           <SearchForm
-            ref="searchFormRef"
             :loading="tableLoading"
             @search="handleSearch"
             @reset="handleReset"

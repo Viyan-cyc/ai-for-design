@@ -1,14 +1,9 @@
 <script setup>
-import { ref } from 'vue'
 import { ElTable, ElTableColumn, ElTag, ElEmpty } from 'element-plus'
 
 defineOptions({ name: 'TableDemo' })
 
-const tableData = ref([
-  { id: 1, name: '设备 A', status: 'running', date: '2026-09-01', value: 120 },
-  { id: 2, name: '设备 B', status: 'warning', date: '2026-09-02', value: 80 },
-  { id: 3, name: '设备 C', status: 'error', date: '2026-09-03', value: 0 }
-])
+defineProps({ tableData: { type: Array, default: () => [] } })
 
 const statusMap = {
   running: { type: 'success', label: '运行中' },

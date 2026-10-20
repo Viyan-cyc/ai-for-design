@@ -1,6 +1,6 @@
 # 错误检测清单
 
-> 只查当前页面涉及或报错相关的项目，不逐页全量读取。
+> 交付前必须按code-rules最后一节自查全部适用项；这里是错误对照，不是替代规则的另一个标准。
 
 ## 一、组件导入错误
 
@@ -96,11 +96,11 @@ defineOptions({ directives: { loading: ElLoadingDirective } })
 <!-- ❌ 错误：图标按钮无说明 -->
 <ElButton :icon="Search" circle />
 
-<!-- ✅ 正确：添加 aria-label 或 ElTooltip -->
+<!-- ✅ 正确：提供可访问名称，Tooltip仅为补充 -->
 <ElButton :icon="Search" circle aria-label="搜索" />
 <!-- 或 -->
 <ElTooltip content="搜索">
-  <ElButton :icon="Search" circle />
+  <ElButton :icon="Search" circle aria-label="搜索" />
 </ElTooltip>
 ```
 
@@ -163,11 +163,11 @@ ElMessage.success(t('msg.module.success.saveOk'))
 
 ### 错误 10：大对象定义
 
-对象属性之和超过 10000 以上会严重影响性能。
+按实际数据与渲染成本选择分页/虚拟滚动；不用固定属性数判定性能。
 
 ## 三、文件组织错误
 
-### 错误 11：单文件超过 500 行未拆分
+### 错误 11：超过800行未审视职责、或压缩行数规避拆分
 
 ### 错误 12：文件命名使用大写驼峰而非小写中划线
 
@@ -188,10 +188,10 @@ data-grid.js
 
 ## 四、Vue3 编码错误
 
-### 错误 14：使用 reactive 包装数组
+### 错误 14：使用 本项目列表未按约定使用ref
 
 ```js
-// ❌ 错误
+// 本项目不采用；Vue技术上支持reactive数组
 const list = reactive([])
 
 // ✅ 正确
@@ -290,4 +290,15 @@ const readToken = (name) =>
   getComputedStyle(document.documentElement).getPropertyValue(name).trim()
 option.color = ['--color-chart-1', '--color-chart-2', '--color-chart-3']
   .map(readToken).filter(Boolean)
+// 主题变化后再次读取并更新option，不能只初始化一次。
 ```
+
+## 七、代码组织与数据
+
+### 错误22：同构内容重复手写
+
+栏目与链接等嵌套列表按层使用v-for及稳定key；启用多语言时保存翻译key或computed，不在初始化数组固化t()结果。
+
+### 错误23：页面内嵌业务mock或直接import mock
+
+业务记录经api Promise接口获取，mock仅由服务消费；静态UI配置不必走假接口。

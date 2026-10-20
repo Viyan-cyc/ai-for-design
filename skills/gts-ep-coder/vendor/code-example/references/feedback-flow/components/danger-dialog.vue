@@ -4,13 +4,14 @@
 // 右上角关闭与取消等效（close-on-click-modal=false：高危不放行点遮罩关闭）；
 // 执行中按钮 loading，防重复触发。
 import { ref, watch, nextTick } from 'vue'
-import { ElDialog, ElCheckbox, ElButton } from 'element-plus'
+import { ElDialog, ElCheckbox, ElButton, ElAlert } from 'element-plus'
 import { WarningFilled } from '@element-plus/icons-vue'
 import { ElIcon } from 'element-plus'
 
 defineOptions({ name: 'DangerDialog' })
 
 const props = defineProps({
+  execute: { type: Function, required: true },
   modelValue: { type: Boolean, default: false },
 })
 
@@ -18,6 +19,7 @@ const emit = defineEmits(['update:modelValue', 'executed'])
 
 const confirmed = ref(false)
 const executing = ref(false)
+const executeError = ref('')
 const cancelBtnRef = ref(null)
 
 const visible = ref(props.modelValue)
@@ -33,7 +35,7 @@ watch(visible, (v) => {
   emit('update:modelValue', v)
   if (v) {
     confirmed.value = false
-    executing.value = false
+    executeError.value = ''
   }
 })
 
@@ -44,23 +46,35 @@ const onOpened = async () => {
 }
 
 const doExecute = async () => {
+  if (!confirmed.value || executing.value) return
   executing.value = true
-  await new Promise((r) => setTimeout(r, 600))
-  executing.value = false
-  emit('executed')
+  executeError.value = ''
+  try {
+    const result = await props.execute()
+    emit('executed', result)
+  } catch (error) {
+    executeError.value = error.message || '执行失败，请重试'
+  } finally {
+    executing.value = false
+  }
 }
+
 </script>
 
 <template>
   <ElDialog
     v-model="visible"
-    title="删除生产数据库实例"
+    title="删除实例（演示）"
     width="458px"
     align-center
+    draggable
     :close-on-click-modal="false"
+    :close-on-press-escape="!executing"
+    :show-close="!executing"
     custom-class="gts-dialog"
     @opened="onOpened"
   >
+    <ElAlert v-if="executeError" :title="executeError" type="error" :closable="false" />
     <div class="danger-body">
       <div class="danger-icon">
         <ElIcon :size="24"><WarningFilled /></ElIcon>
@@ -68,7 +82,7 @@ const doExecute = async () => {
       <div class="danger-text">
         <p class="danger-product">GTS 运维平台 · 高危操作</p>
         <p class="danger-desc">
-          即将删除生产库实例 PROD-DB-07 及其全部数据，操作不可恢复。
+          此页演示确认流程，模拟删除实例 PROD-DB-07，不会连接真实数据库。
           影响范围：依赖该实例的 3 个业务系统将中断服务。
         </p>
       </div>
@@ -78,7 +92,7 @@ const doExecute = async () => {
     </ElCheckbox>
     <template #footer>
       <div class="danger-footer">
-        <ElButton ref="cancelBtnRef" size="small" @click="visible = false">取消</ElButton>
+        <ElButton ref="cancelBtnRef" size="small" :disabled="executing" @click="visible = false">取消</ElButton>
         <ElButton
           size="small"
           type="danger"

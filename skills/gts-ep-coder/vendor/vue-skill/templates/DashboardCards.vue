@@ -20,7 +20,7 @@ defineProps({
     <div class="metrics-row">
       <ElCard
         v-for="(metric, index) in metrics"
-        :key="index"
+        :key="metric.id"
         shadow="hover"
         class="metric-card"
       >

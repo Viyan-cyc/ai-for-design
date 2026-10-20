@@ -31,7 +31,8 @@ const handleSearch = () => {
 }
 
 const handleReset = () => {
-  formRef.value?.resetFields()
+  Object.assign(formData, { keyword: '', type: '', dateRange: [] })
+  formRef.value?.clearValidate()
   emit('reset')
 }
 </script>
@@ -57,6 +58,7 @@ const handleReset = () => {
       <ElDatePicker
         v-model="formData.dateRange"
         type="daterange"
+        value-format="YYYY-MM-DD"
         range-separator="至"
         start-placeholder="开始日期"
         end-placeholder="结束日期"

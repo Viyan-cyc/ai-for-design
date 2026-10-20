@@ -39,12 +39,17 @@ src/
    { path: '/example', component: () => import('@/pages/ExamplePage/index.vue') }
    ```
 4. 在工程入口引入基础和桥接样式，以及 `default.less`、`dark.less`（见 `main.js`）；自有皮肤按主题协议追加。
-5. 页面颜色全部走 `var(--color-*)` 等设计 token —— 换肤体系接入后页面自动跟随（协议见同目录 README.md）。
+5. 页面颜色使用 `var(--color-*)` 等设计 token，换肤接入方式见 `assets/themes/README.md`。
 
 ## 国际化（按需启用）
 
 - 默认不生成任何 i18n 代码，页面文案直接写中文。
 - 启用后：装配在 `src/i18n/index.js`（vue-i18n 9.x，legacy: false）；词典在 `src/i18n/locales/`。
+- 在 `main.js` 的 `app.mount()` 前安装国际化：
+  ```js
+  import { installI18n } from './i18n/index.js'
+  installI18n(app)
+  ```
 - 页面里取文案：
   ```js
   import { useI18n } from 'vue-i18n'
@@ -90,10 +95,7 @@ src/
   }
   ```
 - mock 函数保留了 `await`/延迟语义，迁移后调用侧（含 loading 态）无需调整。
-- 交付卫生：真实业务已替换starter引用后，在最终build前运行skill的cleanup-starter脚本；
-  仅清理仍为原样的demo服务，不手动删除用户改造内容。本节保持通用示例，无需逐页改写。
-- 源码修改和清理后统一build；仅修改本README不影响预览源码映射，无需重新build。
 
 ## 公司图标
 
-fetch-icons保持原检索/排序/缓存/回退策略，命中后把命名import接入 `assets/icons/entry.js`；该入口显式覆盖公司图标并从原EP导出其余图标，离线与标准构建共用。复制源码时保留entry、barrel和两主题SVG，不另配全局别名。
+命中公司图标时，源码通过 `assets/icons/entry.js` 引用；该入口提供公司图标及其余 Element Plus 图标。接入真实工程时，保留页面引用的入口、barrel 和浅深主题 SVG 文件，无需额外注册全局别名。
