@@ -42,7 +42,7 @@ const boot = async (): Promise<void> => {
       handle.internals.controlsEngine.controls.enabled = enabled;
     },
   );
-  const save = new SaveService(handle);
+  const save = new SaveService(handle, bridge);
   const lightHelpers = new LightHelperService(handle);
 
   // 状态联动：选中→Gizmo/高亮；吸附开关→手柄磁吸值；模式→TransformControls（单路同步，
@@ -114,11 +114,13 @@ const boot = async (): Promise<void> => {
   app.mount(root);
 
   // dev-only：编辑器调试口（冒烟脚本/控制台直接读引擎态 + 编辑服务）
-  if (import.meta.env.DEV) {
+  if (import.meta.env.DEV || (window.__gts3dOffline && new URLSearchParams(window.location.search).get('debug') === '1')) {
     const dbg = window as unknown as Record<string, unknown>;
     dbg.__gts3d = handle;
     dbg.__gts3dEdit = { bridge, materialLib, save, selection, gizmo, lightHelpers };
   }
 };
 
-void boot();
+if (!window.__gts3dOffline || new URLSearchParams(window.location.search).get('edit') === '1') {
+  void boot();
+}

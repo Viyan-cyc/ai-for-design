@@ -365,7 +365,7 @@ rmSync(join(F('stripped'), 'src', 'edit'), { recursive: true, force: true });
 /* ── init.mjs ─────────────────────────────────────────────────────────────── */
 {
   const out = F('init-ok');
-  const r = run('init.mjs', [out, '--name', 'Factory Monitor', '--assets', 'referenced'], true);
+  const r = run('init.mjs', [out, '--name', 'Factory Monitor', '--assets', 'referenced', '--deps', 'skip'], true);
   const pkg = existsSync(join(out, 'package.json')) ? JSON.parse(readFileSync(join(out, 'package.json'), 'utf8')) : {};
   const refModels = existsSync(join(out, 'public/assets/models'))
     ? readdirSync(join(out, 'public/assets/models'))
@@ -646,7 +646,7 @@ if (withBuild) {
 
   // 正例：真实新增业务分组（登记条目 + 注册实现 + 数据）→ build PASS
   const pos = F('fx-rr1-newfactory');
-  initProject(pos, { name: 'rr1-pos', force: true });
+  initProject(pos, { name: 'rr1-pos', profile: 'demo', force: true });
   const posProfile = join(pos, 'src', 'scene-profile.ts');
   writeFileSync(posProfile, readFileSync(posProfile, 'utf8').replace(
     'coderacks: ({ sceneEngine }) => registerRackHandler(sceneEngine),',

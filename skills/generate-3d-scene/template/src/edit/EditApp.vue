@@ -43,6 +43,7 @@ onMounted(() => {
     <Toolbar
       :bridge="props.bridge"
       :on-save="() => props.save.save()"
+      :on-import="() => props.save.chooseImport()"
     />
     <aside class="ed-panel ed-panel--left">
       <OutlineTree :bridge="props.bridge" />

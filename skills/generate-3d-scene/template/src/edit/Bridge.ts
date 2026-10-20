@@ -228,6 +228,10 @@ export class Bridge {
    *   transform 同值 set 无副作用——保实例身份（undo 不再全树拆建）。
    * - 视觉层/材质库：快照为全集语义（__visuals/__materialLib 整表替换）。
    */
+  restoreSnapshot(data: SceneData): void {
+    this.commit('导入场景', () => this.rebuild(structuredClone(data)));
+  }
+
   private rebuild(data: SceneData): void {
     const alive = new Set<string>();
     const groups: Array<[string, Array<{ id: string }>]> = [];
@@ -284,12 +288,20 @@ export class Bridge {
     }
     // 材质库整表替换语义：快照缺 key 时显式补空表，保证 undo 能清空库
     frag.__materialLib = data.__materialLib ?? {};
-    if (data.__visuals !== undefined) {
-      frag.__visuals = data.__visuals;
-    } else {
-      frag.__visuals = {};
-    }
     this.handle.update(frag);
+    // 视觉层快照恢复必须**整条替换**（replaceVisual），不走 update({__visuals})——
+    // 后者对每个 id 是 merge 语义，undo「删除槽位色/清除字段」时快照缺的槽会从当前
+    // 视觉层残留（S43 复现：commit 加 pants 槽色 → undo → 槽色残留）。merge 仅供
+    // patchVisual 单节点局部操作；快照恢复是全集替换。
+    const snapVisuals = data.__visuals ?? {};
+    for (const id of se.getAllIds()) {
+      const visual = snapVisuals[id];
+      if (visual !== undefined) {
+        se.replaceVisual(id, visual);
+      } else if (se.getVisual(id) !== null) {
+        se.applyVisual(id, null);
+      }
+    }
     this.emit();
   }
 

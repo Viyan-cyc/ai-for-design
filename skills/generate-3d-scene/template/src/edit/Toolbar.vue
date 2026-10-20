@@ -13,6 +13,7 @@ import type { Bridge, EditorState } from './Bridge';
 const props = defineProps<{
   bridge: Bridge;
   onSave: () => void;
+  onImport: () => void;
 }>();
 
 const state = ref<EditorState>(props.bridge.getState());
@@ -373,9 +374,10 @@ const deleteSelected = (): void => {
     </button>
     <span class="toolbar__sep" />
 
+    <button class="tb-btn" title="导入保存的场景文件" @click="props.onImport()">导入</button>
     <button
       class="tb-btn tb-btn--primary"
-      title="保存 (Ctrl+S)"
+      title="保存文件 (Ctrl+S)，再次打开后可导入恢复"
       @click="props.onSave()"
     >
       <svg

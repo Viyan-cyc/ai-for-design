@@ -1,0 +1,7 @@
+{
+  "manifestUrl": "https://octo.hdesign.huawei.com/design/fastui-env/manifest.json",
+  "fallbackManifestUrl": "fallback-node-manifest.json",
+  "fallbackNpmRegistry": "http://mirrors.tools.huawei.com/npm",
+  "envDirName": "EpCoder/3d-scene-env",
+  "envDirEnvVar": "GTS3D_ENV_DIR"
+}

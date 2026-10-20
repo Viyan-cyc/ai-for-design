@@ -1,6 +1,6 @@
 # modeling-channels — 代码建模指引（LLM 直写，唯一过程化建模通道）
 
-> 降级阶梯第 4 层的执行手册。**写代码建模前必读。**
+> 降级阶梯第 4 层的执行手册。需要自定义轮廓或精细建模时按需读；普通生成以 generation-contract.md 为准。
 > 通道裁决（2026-10-12）：Blender 通道完全剔除——LLM 直写 three.js 代码是唯一过程化建模通道，零外部依赖。
 
 ## 两种形态
@@ -45,9 +45,9 @@
 2. **typed definition 注册**（P3 起标准形态，参照 `procedural/tree.ts`）：`create` 建树 + `update` params 响应（结构参数返回 `'rebuild'`、原地参数返回 `'updated'`）+ `dispose` 可选——旧 function 形态仍兼容但 params 变化走重建兜底；
 3. 常量全部顶部集中（轮廓点表/比例表/颜色），body 一处；
 4. `handlerUtils.applyTransform(group, node)` 先行（读节点 transform）；
-5. `node.params` 读业务字段（颜色/状态），**渲染默认值写在代码**（`applyShadowDefaults` 模式）；
-6. 面数自检：`setDebug(true)` 看 tris——精模单件目标 ≤2k（strict 档口径）；
-7. 产出后必须 `smoke-visual` 截图自查（多模态档）或人工验证清单（非多模态档）——比例失调/漂浮是代码建模第一风险，**不要凭「代码写对了」宣布完成**。
+5. `node.params` 读业务/结构字段（状态/层数），**渲染默认值写在代码**（`applyShadowDefaults` 模式）；
+6. 细节按场景观察距离设计；运行时面数检查仅用于维护或用户要求的性能诊断，不新增默认步骤；
+7. 普通生成统一构建成功即交付，不追加截图、人工验收清单或审美修复；实际未运行时只说明构建通过。维护或用户反馈故障时才按需验证。
 
 ## 已否决方案（防回潮）
 

@@ -13,7 +13,7 @@ src/
 │   ├── materials.ts     ← 状态视觉注册表（常改）
 │   ├── cards/             ← 2D 卡片纯展示组件（常改）
 │   └── types.ts           v3 全部类型（只读）
-├── edit/                ★ 编辑态外壳——禁改（交付时整目录物理剔除）
+├── edit/                ★ 编辑态外壳（仅按需 strip-edit 导出时剔除）
 └── main.ts              ← 装配 handler + 卡片注册表（常改）
 ```
 
@@ -124,7 +124,7 @@ socket.on('car/status', (msg) => {
 
 ## 编辑器视觉层与交付转录
 
-编辑态调的材质/显隐/阴影存 `__visuals`，复用材质存 `__materialLib`（都是编辑器私有，undo 依赖）。**strip-edit.mjs 交付时**：剥离两个私有区 + 产出 TRANSCRIPTION.md（物体视觉表/槽位覆盖表/材质库表/引用表）→ **你按清单转录进代码**（materials.ts / handler 默认值），数据回归纯净。
+编辑态调的材质/显隐/阴影存 `__visuals`，复用材质存 `__materialLib`（都是编辑器私有，undo 依赖）。默认离线预览保留编辑器和外观。仅用户要求二开源码包时运行 strip-edit.mjs：自动编译到 generated/appearance.ts，再剥离私有区。TRANSCRIPTION.md 是自动转换摘要，无需 LLM 人工转录。
 
 蒙皮边界（编辑与转录都适用）：SkinnedMesh 槽位局部 transform 对蒙皮顶点无效（数学必然）——换材质/隐藏正常，位置调整不做；实例化必须走引擎内建（`SkeletonUtils.clone`）。
 

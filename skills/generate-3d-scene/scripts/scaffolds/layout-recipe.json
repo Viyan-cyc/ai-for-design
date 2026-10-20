@@ -1,0 +1,17 @@
+{
+  "patterns": [
+    {
+      "type": "assemblies",
+      "idPrefix": "rack",
+      "counts": [3, 1, 4],
+      "spacing": [4, 0, 3],
+      "origin": [-4, 0, -4.5],
+      "variantAxis": "z",
+      "variants": [{ "params": { "label": "A" } }, { "params": { "label": "B" } }],
+      "placements": [
+        { "key": "west", "origin": [-8, 0, 0] },
+        { "key": "east", "origin": [8, 0, 0] }
+      ]
+    }
+  ]
+}

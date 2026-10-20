@@ -1,5 +1,5 @@
 /**
- * smoke-structural.mjs — 结构化冒烟（非多模态档，每次场景生成必跑）
+ * smoke-structural.mjs — 结构化冒烟（仅维护或明确请求诊断时运行）
  *
  * 断言（全部数值型，无需看图）：
  *   ① 场景图 JSON：__gts3d 挂载 / 分组数与各组物体数（读 scene-data.json 期望值）

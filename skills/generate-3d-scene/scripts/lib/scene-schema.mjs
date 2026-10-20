@@ -184,21 +184,21 @@ export const registryFromFactories = (factoryTypes, { hasAssetFactory = true } =
 /* ── TypeScript 加载（AST 提取用，P2-RRR2 四审）───────────────────────────── */
 
 import { createRequire } from 'node:module';
+import { dependencyPath } from './environment.mjs';
 import { existsSync } from 'node:fs';
 import { resolve as pathResolve, join } from 'node:path';
 const requireFromHere = createRequire(import.meta.url);
 
 /**
- * 惰性加载模板 node_modules 的 typescript（vue-tsc 构建链的既有硬依赖，
+ * 惰性加载共享环境 node_modules 的 typescript（vue-tsc 构建链的既有硬依赖，
  * 无新增依赖）。加载失败明确抛错——提取器不能在拿不到 AST 时静默退回猜测。
  */
 let tsModule = null;
 const getTs = () => {
   if (!tsModule) {
-    const skillRoot = pathResolve(import.meta.dirname, '..', '..');
-    const tsPath = join(skillRoot, 'template', 'node_modules', 'typescript', 'lib', 'typescript.js');
+    const tsPath = dependencyPath('typescript', 'lib', 'typescript.js');
     if (!existsSync(tsPath)) {
-      throw new Error(`TypeScript 不可达（AST 提取依赖）：${tsPath}——母版 node_modules 缺失时先恢复模板依赖`);
+      throw new Error(`TypeScript 不可达（AST 提取依赖）：${tsPath}——先运行 scripts/setup-env.mjs 准备共享依赖`);
     }
     tsModule = requireFromHere(tsPath);
   }

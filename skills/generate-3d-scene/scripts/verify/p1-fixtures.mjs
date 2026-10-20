@@ -1,3 +1,4 @@
+import { dependencyPath } from '../lib/environment.mjs';
 // P1 regression tests use production modules, not copied implementations.
 // node scripts/verify/p1-fixtures.mjs --node-only
 // node scripts/verify/p1-fixtures.mjs --url http://localhost:5199/
@@ -5,7 +6,7 @@
 import assert from 'node:assert/strict';
 import { EventEmitter } from 'node:events';
 import { registerHooks } from 'node:module';
-import { existsSync, readFileSync, readdirSync, mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, mkdtempSync, mkdirSync, writeFileSync, rmSync, symlinkSync } from 'node:fs';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { resolve, dirname, join, sep } from 'node:path';
 import { createServer } from 'node:http';
@@ -19,7 +20,7 @@ import {
 } from './scene.mjs';
 
 const template = resolve(dirname(fileURLToPath(import.meta.url)), '../../template');
-const ts = (await import(pathToFileURL(join(template, 'node_modules/typescript/lib/typescript.js')))).default;
+const ts = (await import(pathToFileURL(dependencyPath('typescript/lib/typescript.js')))).default;
 registerHooks({
   resolve(specifier, context, next) {
     if (specifier.startsWith('.') && context.parentURL?.endsWith('.ts')) {
@@ -51,8 +52,9 @@ registerHooks({
     const tmplHref = pathToFileURL(template).href;
     if (specifier === 'three'
       && (context.parentURL?.startsWith(tmplHref) || context.parentURL?.endsWith('p1-fixtures.mjs'))) {
-      return { url: pathToFileURL(join(template, 'node_modules', 'three', 'build', 'three.module.js')).href, shortCircuit: true };
+      return { url: pathToFileURL(dependencyPath('three', 'build', 'three.module.js')).href, shortCircuit: true };
     }
+    if (specifier.startsWith('three/') && context.parentURL?.startsWith(tmplHref)) return { url: pathToFileURL(dependencyPath(specifier)).href, shortCircuit: true };
     return next(specifier, context);
   },
   load(url, context, next) {
@@ -70,7 +72,7 @@ registerHooks({
     return next(url, context);
   },
 });
-const THREE = await import(pathToFileURL(join(template, 'node_modules/three/build/three.module.js')));
+const THREE = await import(pathToFileURL(dependencyPath('three/build/three.module.js')));
 const { installDiagnostics, waitForReady, getPageErrorSink } =
   await import(pathToFileURL(join(template, 'src/scene-core/diagnostics.ts')));
 const { makeAssetNodeFactory } = await import(pathToFileURL(join(template, 'src/scene-core/handlers/registry.ts')));
@@ -1467,6 +1469,7 @@ await test('P4-R3 stale slot fails closed with exact path; real slot passes (V19
       (n) => s.endsWith(n) || s.includes(`/${n}`) || s.includes(`\\${n}`),
     ),
   });
+  if (!existsSync(join(src, 'node_modules'))) symlinkSync(dependencyPath(), join(src, 'node_modules'), process.platform === 'win32' ? 'junction' : 'dir');
   try {
     const p = join(src, 'public/scene-data.json');
     const data = JSON.parse(readFileSync(p, 'utf8'));
@@ -1512,6 +1515,7 @@ await test('P4-RR2 procedural slots: runtime-manifest positive, stale negative, 
       (n) => s.endsWith(n) || s.includes(`/${n}`) || s.includes(`\\${n}`),
     ),
   });
+  if (!existsSync(join(src, 'node_modules'))) symlinkSync(dependencyPath(), join(src, 'node_modules'), process.platform === 'win32' ? 'junction' : 'dir');
   try {
     assert.ok(existsSync(join(src, 'node_modules', 'typescript')), '夹具含 typescript（运行时清单前提）');
     const p = join(src, 'public/scene-data.json');
@@ -1577,6 +1581,7 @@ await test('P4-RRR1 multi-primitive model: loader-true slots export, stale fails
       (n) => s.endsWith(n) || s.includes(`/${n}`) || s.includes(`\\${n}`),
     ),
   });
+  if (!existsSync(join(src, 'node_modules'))) symlinkSync(dependencyPath(), join(src, 'node_modules'), process.platform === 'win32' ? 'junction' : 'dir');
   try {
     // 构造审稿形态多 primitive 模型：node part / mesh surface / 2 primitive（数据 URI
     // 嵌入——无外部依赖；真实 AssetEngine/GLTFLoader 同链路加载）
@@ -1723,6 +1728,7 @@ await test('P4-RRRR1 external bin (encoded filename): real slot exports, missing
       (n) => s.endsWith(n) || s.includes(`/${n}`) || s.includes(`\\${n}`),
     ),
   });
+  if (!existsSync(join(src, 'node_modules'))) symlinkSync(dependencyPath(), join(src, 'node_modules'), process.platform === 'win32' ? 'junction' : 'dir');
   try {
     // 合法多文件 glTF：具名节点 part + 外部 data.bin（磁盘文件名含空格/非 ASCII，
     // glTF URI 百分号编码——与浏览器 fetch 解码一致）

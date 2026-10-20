@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { showEditorMessage } from './message';
 
 /**
  * edit/MaterialParams — 材质参数区（参数分组折叠 + 贴图槽，数据驱动渲染）
@@ -231,6 +232,19 @@ const pickTexture = (key: string): void => {
 const uploadTexture = async (key: string, file: File): Promise<void> => {
   uploading.value = key;
   try {
+    if (window.__gts3dOffline) {
+      if (!/\.(png|jpe?g|webp|avif)$/i.test(file.name)) {
+        throw new Error('请选择 PNG、JPEG、WebP 或 AVIF 图片');
+      }
+      const url = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result));
+        reader.onerror = () => reject(reader.error ?? new Error('读取贴图失败'));
+        reader.readAsDataURL(file);
+      });
+      emit('change', key, url);
+      return;
+    }
     const res = await fetch('/__gts3d/upload-texture', {
       method: 'POST',
       // 非 ASCII 文件名（中文）必须 encode——Headers 只接受 Latin-1，裸发会 throw
@@ -246,6 +260,7 @@ const uploadTexture = async (key: string, file: File): Promise<void> => {
     }
   } catch (err) {
     console.warn('[MaterialParams] 贴图上传失败', err);
+    showEditorMessage(`贴图应用失败：${err instanceof Error ? err.message : String(err)}`);
   } finally {
     uploading.value = null;
   }

@@ -26,12 +26,13 @@ import { checkProject } from './build.mjs';
 import { compileAppearance } from './lib/compile-appearance.mjs';
 
 /** 复制时剔除的目录/文件（编辑态 + 构建残留 + 依赖 + 临时目录族） */
-const EXCLUDE_DIRS = new Set(['node_modules', 'dist', '.git', '.smoke-r', '.smoke-vendor', '.tmp-a3d-verify']);
+const EXCLUDE_DIRS = new Set(['node_modules', '.cache', 'dist', 'offline', '.git', '.smoke-r', '.smoke-vendor', '.tmp-a3d-verify']);
 const EXCLUDE_FILE_RE = /\.(log|local)$/;
 
 /** 复制过滤器：返回 false 表示跳过。 */
 const copyFilter = (src) => {
   const name = basename(src);
+  if (name.startsWith('.offline-')) return false;
   if (EXCLUDE_DIRS.has(name)) {
     return false;
   }
@@ -40,6 +41,7 @@ const copyFilter = (src) => {
   }
   // 剔除编辑态世界（路径分隔符归一后判 src/edit 段）
   const norm = src.replace(/\\/g, '/');
+  if (norm.endsWith('/src/offline-entry.ts') || norm.endsWith('/scripts/build-offline.mjs')) return false;
   if (/\/src\/edit$/.test(norm) || norm.includes('/src/edit/')) {
     return false;
   }
@@ -367,6 +369,10 @@ export const stripEdit = async (srcProject, outDir, opts = {}) => {
 
     // ① 复制（剔除 edit 世界 + 依赖 + 残留）
     cpSync(src, staging, { recursive: true, filter: copyFilter });
+    const packagePath = join(staging, 'package.json');
+    const packageData = JSON.parse(readFileSync(packagePath, 'utf8'));
+    if (packageData.scripts) delete packageData.scripts['build:offline'];
+    writeFileSync(packagePath, `${JSON.stringify(packageData, null, 2)}\n`);
 
     // entry.ts 单入口化 + App.vue 去链接
     const entryPath = join(staging, 'src', 'entry.ts');

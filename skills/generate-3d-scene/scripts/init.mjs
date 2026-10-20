@@ -19,14 +19,15 @@
  * CLI：
  *   node init.mjs <target-dir> [--name <proj-name>] [--profile empty|demo] [--scene <file>]
  *        [--assets referenced|all|<id,id>] [--with-components [--components-version <ver>]]
- *        [--deps skip|copy|install] [--force] [--json]
+ *        [--deps shared|skip|copy|install] [--force] [--json]
  *   退出码：0 成功 / 1 校验失败 / 2 用法错误
  */
-import { readFileSync, writeFileSync, existsSync, mkdirSync, cpSync, readdirSync, rmSync, realpathSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, mkdirSync, cpSync, readdirSync, rmSync, realpathSync, symlinkSync } from 'node:fs';
 import { join, resolve, basename, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import { checkProject } from './build.mjs';
+import { checkEnvironment, npmEntry } from './lib/environment.mjs';
 import { buildAssetCatalog, resolveAsset, referencedAssetIds } from './lib/asset-catalog.mjs';
 import { validateSceneData, factoryRegistryFromProfile } from './lib/scene-schema.mjs';
 
@@ -35,8 +36,8 @@ const TEMPLATE_DIR = join(SKILL_ROOT, 'template');
 const ASSETS_DIR = join(SKILL_ROOT, 'assets');
 const VENDOR_DIR = join(SKILL_ROOT, 'vendor');
 
-const EXCLUDE = new Set(['node_modules', 'dist', '.git', '.smoke-r', '.smoke-vendor', '.tmp-a3d-verify']);
-const copyFilter = (src) => !EXCLUDE.has(basename(src))
+const EXCLUDE = new Set(['node_modules', '.cache', 'dist', 'offline', '.git', '.smoke-r', '.smoke-vendor', '.tmp-a3d-verify']);
+const copyFilter = (src) => !EXCLUDE.has(basename(src)) && !basename(src).startsWith('.offline-')
   && !/^smoke.*\.png$/.test(basename(src)); // 冒烟上传产物不进生成工程
 
 /**
@@ -96,6 +97,8 @@ const spawnCwd = (p) => {
 };
 
 const GITIGNORE = `node_modules/
+.cache/
+offline/
 dist/
 .smoke*/
 *.local
@@ -115,13 +118,22 @@ const toSlug = (s) => s
  * @param {object} opts { name, profile, scene, assets, withComponents, componentsVersion, deps, force }
  */
 export const initProject = (target, opts = {}) => {
+  const started = performance.now();
+  const timings = {};
   const out = resolve(target);
   const errors = [];
   const warnings = [];
+  const deps = opts.deps ?? 'shared';
+  if (!['shared', 'copy', 'install', 'skip'].includes(deps)) return { ok: false, out, errors: [`Unknown deps mode: ${deps}`], warnings };
+  let env;
+  try { env = checkEnvironment(); }
+  catch (e) { return { ok: false, out, errors: [`${e.code}: ${e.message}`, `HINT: ${e.hint}`], warnings }; }
+
 
   if (!existsSync(TEMPLATE_DIR)) {
     return { ok: false, out, errors: [`skill 母版缺失：${TEMPLATE_DIR}`], warnings };
   }
+  timings.environment = Math.round(performance.now() - started);
   if (existsSync(out) && readdirSync(out).length > 0) {
     if (!opts.force) {
       return { ok: false, out, errors: [`目标目录已存在且非空（用 --force 覆盖）：${out}`], warnings };
@@ -132,6 +144,25 @@ export const initProject = (target, opts = {}) => {
 
   /* ① 复制母版 */
   cpSync(TEMPLATE_DIR, out, { recursive: true, filter: copyFilter });
+
+  if (!opts.scene && (opts.profile ?? 'empty') === 'empty') {
+    cpSync(join(SKILL_ROOT, 'scripts/scaffolds/empty-profile.ts'), join(out, 'src/scene-profile.ts'));
+    const materialsPath = join(out, 'src/scene-core/materials.ts');
+    const materials = readFileSync(materialsPath, 'utf8');
+    const begin = materials.indexOf('export const stateMaterials:');
+    const end = materials.indexOf('\n};', begin);
+    if (begin < 0 || end < 0) throw new Error('Template stateMaterials shape changed');
+    writeFileSync(materialsPath, materials.slice(0, begin) + 'export const stateMaterials: Record<string, Record<string, StateVisual>> = {};'
+      + materials.slice(end + 3), 'utf8');
+    const handlers = join(out, 'src/scene-core/handlers/index.ts');
+    writeFileSync(handlers, readFileSync(handlers, 'utf8').replace(/^export .*registerExampleHandler.*\r?\n/m, ''), 'utf8');
+    const coreIndex = join(out, 'src/scene-core/index.ts');
+    writeFileSync(coreIndex, readFileSync(coreIndex, 'utf8').replace(/^export .*?(?:registerExampleHandler|ExampleCard).*\r?\n/gm, ''), 'utf8');
+    // These paths belong to the fresh copy above, never an existing user's source tree.
+    for (const rel of ['src/scene-core/handlers/example', 'src/scene-core/cards/ExampleCard.vue', 'public/assets/textures/example.jpg']) {
+      rmSync(join(out, rel), { recursive: true, force: true });
+    }
+  }
 
   /* ② 场景选择：--scene > --profile（empty 默认 / demo） */
   const profile = opts.profile ?? 'empty';
@@ -310,68 +341,38 @@ export const initProject = (target, opts = {}) => {
   const check = checkProject(out);
 
   /* ⑥b 可选装依赖并跑 npm run build */
+  timings.scaffold = Math.round(performance.now() - started) - timings.environment;
+  const depsStarted = performance.now();
   let buildRun = null;
   const cwd = spawnCwd(out);
-  if (opts.deps === 'copy') {
-    const srcModules = join(TEMPLATE_DIR, 'node_modules');
-    if (existsSync(srcModules)) {
-      // 排除增量缓存（.tmp 的 tsbuildinfo 按路径键控，拷贝会污染目标工程首次构建；
-      // .vite/.vite-temp 为预打包缓存，目标首次构建自行重建）
-      const CACHE = new Set(['.tmp', '.vite', '.vite-temp', '.package-lock.json']);
-      cpSync(srcModules, join(out, 'node_modules'), { recursive: true, filter: (s) => !CACHE.has(basename(s)) });
-    } else {
-      warnings.push('--deps copy 但母版无 node_modules（退回 skip）');
-    }
-    if (components.included) {
-      // P2-R2：copy 模式带组件时必须真装所选 tgz 并同步 lock——
-      // 只拷 node_modules 不装 file: 依赖，构建假绿、首次 import 即解析失败。
-      const registry = process.env.GTS3D_REGISTRY;
-      const args = ['install', '--no-audit', '--no-fund'];
-      if (registry) {
-        args.push('--registry', registry);
-      }
-      const r = spawnSync('npm', args, { cwd, stdio: 'inherit', shell: process.platform === 'win32' });
-      if (r.status !== 0) {
-        errors.push(`--with-components --deps copy 但组件依赖安装失败（npm install exit=${r.status}）；lock 未同步，产物工程不可直接构建`);
+  if (deps !== 'skip') {
+    try {
+      if (deps === 'install' || components.included || deps === 'copy') {
+        // Component projects own their dependency tree; never npm-install into a shared link.
+        const CACHE = new Set(['.tmp', '.vite', '.vite-temp', '.package-lock.json']);
+        if (deps !== 'install') cpSync(env.modules, join(out, 'node_modules'), { recursive: true, filter: (s) => !CACHE.has(basename(s)) });
+        if (deps === 'install' || components.included) {
+          const args = [components.included ? 'install' : 'ci', '--no-audit', '--no-fund', '--registry', env.registry];
+          const r = spawnSync(env.node, [npmEntry(env.node), ...args], { cwd, stdio: 'inherit' });
+          if (r.status !== 0) throw new Error(`Dependency installation failed: ${r.error?.message ?? r.status}`);
+          if (components.included) {
+            const lock = JSON.parse(readFileSync(join(out, 'package-lock.json'), 'utf8'));
+            if (!existsSync(join(out, 'node_modules/@a3d/a3d-components')) || !lock.packages?.['']?.dependencies?.['@a3d/a3d-components']) {
+              throw new Error('Component install or lock synchronization failed');
+            }
+          }
+        }
       } else {
-        const installedDir = join(out, 'node_modules', '@a3d', 'a3d-components');
-        const lockPath = join(out, 'package-lock.json');
-        let lockHasDep = false;
-        try {
-          const lock = JSON.parse(readFileSync(lockPath, 'utf8'));
-          lockHasDep = (lock.packages?.['']?.dependencies?.['@a3d/a3d-components']
-            ?? lock.dependencies?.['@a3d/a3d-components']) !== undefined;
-        } catch {
-          // lock 缺失在下方统一报错
-        }
-        if (!existsSync(installedDir)) {
-          errors.push('组件安装后 node_modules/@a3d/a3d-components 仍不存在（安装假成功）');
-        } else if (!lockHasDep) {
-          errors.push('npm install 后 package-lock.json 缺 @a3d/a3d-components 根依赖（lock 未同步）');
-        }
+        symlinkSync(env.modules, join(out, 'node_modules'), process.platform === 'win32' ? 'junction' : 'dir');
       }
-    }
-  } else if (opts.deps === 'install') {
-    const registry = process.env.GTS3D_REGISTRY;
-    const args = ['install', '--no-audit', '--no-fund'];
-    if (registry) {
-      args.push('--registry', registry);
-    }
-    const r = spawnSync('npm', args, { cwd, stdio: 'inherit', shell: process.platform === 'win32' });
-    if (r.status !== 0) {
-      warnings.push('npm install 失败（离线/镜像问题）——依赖未装，后续需手动安装');
-    } else if (components.included) {
-      const installedDir = join(out, 'node_modules', '@a3d', 'a3d-components');
-      if (!existsSync(installedDir)) {
-        errors.push('--install 模式组件依赖未落 node_modules（解析将失败）');
+      if (!(opts.deferBuild ?? deps === 'shared')) {
+        const r = spawnSync(env.node, [npmEntry(env.node), 'run', 'build'], { cwd, stdio: 'inherit' });
+        buildRun = { ok: r.status === 0, status: r.status };
       }
-    }
-  }
-  if (['copy', 'install'].includes(opts.deps) && existsSync(join(out, 'node_modules'))) {
-    const r = spawnSync('npm', ['run', 'build'], { cwd, stdio: 'inherit', shell: process.platform === 'win32' });
-    buildRun = { ok: r.status === 0, status: r.status };
+    } catch (e) { errors.push(e.message); }
   }
 
+  timings.dependenciesAndOptionalBuild = Math.round(performance.now() - depsStarted);
   const ok = check.ok && buildRun?.ok !== false && errors.length === 0;
   return {
     ok,
@@ -385,6 +386,7 @@ export const initProject = (target, opts = {}) => {
     components,
     gate: check.report,
     buildRun,
+    timings,
   };
 };
 
@@ -402,8 +404,10 @@ const USAGE = `用法: node init.mjs <target-dir> [选项]
   --assets id1,id2         注入指定资产
   --with-components        注入 3d-components（vendor tgz + file: 依赖）
   --components-version <v> 多 tgz 时显式选择版本（含 v 的文件名须唯一匹配）
-  --deps skip              只做结构门禁（默认）
-  --deps copy              从母版复制 node_modules（离线）并跑 npm run build
+  --deps shared            连接外部共享依赖（默认）；组件工程使用独立依赖
+  --deps skip              只做结构门禁
+  --defer-build            安装依赖后暂不编译，待场景完成后统一离线构建
+  --deps copy              从共享环境复制独立 node_modules（兼容选项）并跑 npm run build
   --deps install           npm install（--registry 或环境变量 GTS3D_REGISTRY）并跑 npm run build
   --validate preview       场景 schema 校验档位（默认 preview；standard 同级严格；off 跳过）
   --force                  目标目录非空时覆盖
@@ -427,6 +431,8 @@ const parseArgs = (argv) => {
       opts.withComponents = true;
     } else if (a === '--components-version') {
       opts.componentsVersion = next();
+    } else if (a === '--defer-build') {
+      opts.deferBuild = true;
     } else if (a === '--deps') {
       opts.deps = next();
     } else if (a === '--validate') {
@@ -465,6 +471,8 @@ const main = () => {
   if (opts.json) {
     console.log(JSON.stringify(result, null, 2));
   } else if (!opts.quiet) {
+    console.log(`RESULT: ${result.ok ? 'OK' : 'FAIL'}`);
+    if (result.timings) console.log(`INIT_TIMING_MS: ${JSON.stringify(result.timings)}`);
     const mark = result.ok ? 'PASS' : 'FAIL';
     console.log(`[init/${mark}] ${result.out}  (name=${result.name ?? '-'}, profile=${result.profile})`);
     if (result.assets) {

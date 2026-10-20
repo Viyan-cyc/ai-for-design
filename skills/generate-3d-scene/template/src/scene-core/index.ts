@@ -10,6 +10,7 @@ export {
 } from './asset-manifest';
 export * from './types';
 export type { SceneDiagnostics, LoadOutcome } from './diagnostics';
+export { offlineData, offlineResource } from './offline';
 export { getResourceScope, ResourceScope, type ResourceOwnership } from './resources';
 export {
   applyCompiledAppearance, hasCompiledAppearance, type AppearanceApplyResult,

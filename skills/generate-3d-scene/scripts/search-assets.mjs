@@ -23,6 +23,7 @@ const USAGE = `用法: node search-assets.mjs <query> [选项]
   --lib <dir>          资产库目录（默认 skill 的 assets/）
   --batch <file>       批量检索：每行一个查询（# 注释行跳过），逐查询输出
   --json               仅输出 JSON（批量模式输出数组，逐项含 query 字段）
+  --brief              Compact candidate summaries; asset-info provides full details
   --help
 
 退出码: 0 有结果 / 3 无结果 / 2 错误`;
@@ -38,6 +39,8 @@ const parseArgs = (argv) => {
       opts.lib = argv[++i];
     } else if (a === '--batch') {
       opts.batch = argv[++i];
+    } else if (a === '--brief') {
+      opts.brief = true;
     } else if (a === '--json') {
       opts.json = true;
     } else if (a === '--help' || a === '-h') {
@@ -48,6 +51,7 @@ const parseArgs = (argv) => {
       throw new Error(`未知选项: ${a}`);
     }
   }
+  if (!Number.isInteger(opts.top) || opts.top < 1 || opts.top > 100) throw new Error('--top must be an integer from 1 to 100');
   opts.query = words.join(' ');
   return opts;
 };
@@ -61,10 +65,17 @@ export const loadIndex = (libDir) => {
 };
 
 /** query → 检索结果条目（含 score）。 */
-export const searchAssets = (index, query, top = 5) => {
+export const searchAssets = (index, query, top = 5, brief = false) => {
   const byId = new Map(index.docs.map((d) => [d.id, d]));
   return rank(index, query, top).map((r) => {
     const doc = byId.get(r.id) ?? {};
+    if (brief) return {
+      id: r.id, name: doc.name ?? '', score: Number(r.score.toFixed(3)),
+      category: doc.category ?? '',
+      size: doc.bbox?.size?.map((n) => Number(n.toPrecision(4))) ?? null,
+      triangles: doc.triangles ?? null, units: doc.units ?? 'unverified',
+      compatibility: doc.compatibility?.status ?? 'unknown',
+    };
     return {
       id: r.id,
       name: doc.name ?? '',
@@ -74,6 +85,10 @@ export const searchAssets = (index, query, top = 5) => {
       tags: doc.tags ?? [],
       modelPath: doc.modelPath ?? '',
       description: doc.description ?? '',
+      bbox: doc.bbox ?? null,
+      triangles: doc.triangles ?? null,
+      units: doc.units ?? 'unverified',
+      compatibility: doc.compatibility ?? { status: 'unknown' },
     };
   });
 };
@@ -94,7 +109,7 @@ const main = () => {
       console.error(`[search-assets] 批量文件不存在: ${batchPath}`);
       process.exit(2);
     }
-    const queries = readFileSync(batchPath, 'utf8')
+    const queries = readFileSync(batchPath, 'utf8').replace(/^\uFEFF/, '')
       .split(/\r?\n/)
       .map((l) => l.trim())
       .filter((l) => l && !l.startsWith('#'));
@@ -103,27 +118,27 @@ const main = () => {
       process.exit(2);
     }
     const byQuery = queries.map((query) => {
-      const results = searchAssets(index, query, opts.top);
+      const results = searchAssets(index, query, opts.top, opts.brief);
       return { query, count: results.length, results };
     });
     if (opts.json) {
-      console.log(JSON.stringify(byQuery, null, 2));
+      console.log(JSON.stringify(byQuery, null, opts.brief ? 0 : 2));
     } else {
       for (const item of byQuery) {
         console.log(`query: ${item.query}（${item.count} 命中）`);
         for (const r of item.results) {
-          console.log(`  ${r.score.toFixed(4)}  ${r.id}  ${r.name}  [${r.category}]`);
+          console.log(opts.brief ? JSON.stringify(r) : `  ${r.score.toFixed(4)}  ${r.id}  ${r.name}  [${r.category}]`);
         }
       }
     }
     process.exit(byQuery.some((b) => b.count > 0) ? 0 : 3);
   }
 
-  const results = searchAssets(index, opts.query, opts.top);
-  console.log(JSON.stringify(results, null, 2));
+  const results = searchAssets(index, opts.query, opts.top, opts.brief);
+  console.log(JSON.stringify(results, null, opts.brief ? 0 : 2));
   process.exit(results.length > 0 ? 0 : 3);
 };
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  main();
+  try { main(); } catch (e) { console.error(`RESULT: FAIL | ${e.message}`); process.exitCode = 2; }
 }

@@ -64,6 +64,7 @@ const textureUploadPlugin = (): Plugin => ({
 });
 
 export default defineConfig({
+  cacheDir: fileURLToPath(new URL('./.cache/vite', import.meta.url)),
   plugins: [vue(), textureUploadPlugin()],
   resolve: {
     alias: {

@@ -10,6 +10,7 @@ import { applyCompiledAppearance } from '@/scene-core/appearance-runtime';
 import { loadAssetManifest } from '@/scene-core/asset-manifest';
 import type { SceneData } from '@/scene-core/types';
 import { cardComponents, registerBusinessFactories } from './scene-profile';
+import { offlineData, installOfflineResources, showSceneError } from './scene-core/offline';
 
 export interface BootResult {
   handle: SceneHandle;
@@ -22,11 +23,18 @@ export interface BootResult {
  * @param host canvas 宿主元素（run 态 body / edit 态视口栏）
  */
 export const bootScene = async (host: HTMLElement, options: SceneOptions = {}): Promise<BootResult> => {
-  const res = await fetch('/scene-data.json');
-  if (!res.ok) {
-    throw new Error(`[boot] scene-data.json 加载失败: ${res.status}`);
+  installOfflineResources();
+  let data: SceneData;
+  const offline = offlineData();
+  if (offline) {
+    data = structuredClone(offline.scene);
+  } else {
+    const res = await fetch('/scene-data.json');
+    if (!res.ok) {
+      throw new Error(`[boot] scene-data.json 加载失败: ${res.status}`);
+    }
+    data = (await res.json()) as SceneData;
   }
-  const data = (await res.json()) as SceneData;
 
   // 资产映射先于建树加载（P2-R1）：内建/业务工厂的 URL 解析共用这一份
   await loadAssetManifest();
@@ -44,6 +52,9 @@ export const bootScene = async (host: HTMLElement, options: SceneOptions = {}): 
   // 编译外观应用（P4.1）：运行包（数据无私有区）时把 strip-edit 编译的视觉层/
   // 材质库写进引擎；编辑态（数据带 __visuals）由 createScene 私有区回灌优先，跳过
   applyCompiledAppearance(handle, data);
+  if (offlineData()) {
+    void handle.whenReady({ timeoutMs: 60000 }).catch(showSceneError);
+  }
 
   return { handle, data, canvas };
 };

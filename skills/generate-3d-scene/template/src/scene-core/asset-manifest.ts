@@ -9,6 +9,7 @@
  * 兼容已有项目不自动升级（§4.6）。
  */
 import type { AssetEngine } from './engine/AssetEngine';
+import { offlineData } from './offline';
 
 /** 映射条目：模型相对路径（相对 public/assets/，如 "models/x.glb"、"models/id/model.gltf"） */
 export interface AssetManifestEntry {
@@ -25,6 +26,8 @@ let cached: AssetManifest | null = null;
 
 /** 拉取并缓存资产映射（fetch 失败 = 无映射，返回空表走 legacy 回退） */
 export const loadAssetManifest = async (): Promise<AssetManifest> => {
+  const offline = offlineData();
+  if (offline) return (cached = offline.manifest);
   if (cached !== null) {
     return cached;
   }

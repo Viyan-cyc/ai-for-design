@@ -1,133 +1,38 @@
-# scene-workflow — 九步工作流逐步指引
+# 默认场景生成流程
 
-> SKILL.md 定骨架，本文档定细节。每步含 **DoD（完成判据）** 与**停止点**（什么时候必须停下问用户）。
-> 阅读时机：进入 S1 前通读一遍；执行中回到对应小节查 DoD。
+本页只用于生成场景；维护 skill、用户主动要求诊断时才读 verification.md。默认不打开浏览器，不截图、不做交互验收或性能采样。
 
-## S1 澄清需求
+## 1. 理解与选材
 
-**输入**：用户的文字描述 / 截图 / 参考图。
+信息足够直接开始，相机、配色和布局细节可合理默认；只询问影响核心交付的歧义。检索精确资产，未命中尝试近似复用，再用组件或几何组合。无匹配及时降级，不反复搜索，不为每个场景编写 Spec 或验证报告。
 
-**做**：
-1. 提取场景要素清单：物体（种类×数量）、规模（占地面积/楼层/密度）、交互（点选/卡片/换装）、数据更新（有没有实时状态要接）；
-2. 标注每个要素的资产策略预期：库里有 / 可能近似 / 大概率要建模；
-3. 缺关键信息**停下来问**，一次问全（不要挤牙膏）。
+## 2. 生成工程
 
-**必须问清的清单**：
-- 场景用途（监控大屏？数字孪生？展示 Demo？）——决定交互深度与性能预算取舍；
-- 有无实时数据源（MQTT/WebSocket/轮询？字段是什么？）——决定 update 片段翻译层要不要交付；
-- 有无参考截图/风格要求（写实/低多边形/线框风？）——决定材质与灯光基调；
-- 交付形态（要编辑态还是只要二开包？）。
+运行 init.mjs 建工程，使用 --assets referenced --deps shared --defer-build，只注入引用资产并准备依赖，避免在写场景之前重复编译；缺依赖时按现有安装提示处理。根据 scene-data.json、scene-profile.ts、handlers、materials 和 cards 实现场景。保留 v3 数据契约、模型槽位及场景核心/编辑器隔离。新工程需继承 template/scripts/build-offline.mjs 和 offline-entry.ts。
 
-**DoD**：要素清单落盘（可写进工作笔记），每个物体有预期策略；关键不确定项已问或已标注假设。
-**停止点**：上述「必须问清」清单有缺项 → 停。
+布局、尺度、相机、光照和材质在首版设计时完成；不能用取消截图验收作为省略设计的理由。代码使用的资源保存在 public/assets 内，使用完整相对路径；动态组合的额外资源在 public/offline-resources.json 中显式列出。
 
-## S2 检索资产
+## 3. 一次构建
 
-**做**：
-1. 对每个物体类目发起检索，**中文英文都试**（索引语料双语）：`node scripts/search-assets.mjs "机柜" --top 8`；
-2. 结果三分类：
-   - **命中**：score 靠前且语义对 → 直接用（记录 assetId）；
-   - **近似**：同类但细节不符（如要服务器机柜、命中的是仓储货架）→ 标记「参考改造」（第 2 层：scale/材质覆盖/组合）；
-   - **缺失**：无相关结果 → 进降级阶梯第 3/4 层；
-3. 组件需求评估：场景含「货架/墙体/路径/热力图/拓扑图」类结构时读 `references/component-catalog.md` 判断第 3 层可行性。
+在 skill 目录运行：
 
-**DoD**：每个物体类目有明确分层决策（1/2/3/4 层 + 理由），升级决策记录在案。
-**停止点**：无（检索 miss 是正常路径，不是问题）。
-
-## S3 缺口建模
-
-按降级阶梯补缺（SKILL.md 硬约束）：
-
-- **第 2 层（参考改造）**：近似资产 + `scale` 归一化 / `materials.ts` 覆盖 / 多资产组合。注意 mixamo 类厘米资产的 scale（见 SKILL.md 硬约束 4）；
-- **第 3 层（组件拼装）**：catalog 选件 → 按需读 `component-docs/<Name>.md` → handler 内 import。需要 `init.mjs --with-components`；
-- **第 4 层（LLM 直写）**：**先读 `references/modeling-channels.md`**——简模图元（参照 `procedural/tree.ts`，数百行内）与精模代码组合模型（参照 `procedural/car.ts`：轮廓挤出/车削/倒角手法 + 多节点拼装 + 子节点独立材质）。mesh 全部具名 snake_case。
-
-**实体 GLB 才过门禁**：`node scripts/validate-model.mjs <model> --strict`（AI 生成资产走 strict 档）。handler 过程化产物不走此门禁，走 build.mjs 场景预算。
-
-**DoD**：缺口全部有产出物（assetId / 组件接线 / handler 代码）；升级原因全部记录。
-**停止点**：第 4 层精模预期超过 ~500 行或需要贴图级细节 → 报告用户权衡（代码建模的表达上限），让用户决定降级为简模或近似资产。
-
-## S4 生成工程
-
-```bash
-node scripts/init.mjs <target-dir> --name <proj> --assets referenced [--with-components] [--deps skip|copy|install]
+```sh
+node scripts/build-offline.mjs <工程目录>
 ```
 
-- `--assets referenced`：只注入 scene-data.json 引用的资产（默认，体积最小）；
-- `--deps copy`：从母版复制 node_modules（离线、快）；`install`：npm 装依赖（走内网源）；
-- init 自带首次 build 门禁——拿到手就是「能开局」的工程。
+该命令依次执行静态契约检查、类型检查、离线编译、资源闭包打包，生成工程内 offline/index.3d.html 与配套文件。无需再重复 typecheck、npm run build、lint 或浏览器检查。工程自身 npm run build:offline 提供编译打包能力；默认生成必须走上面的统一命令以包含静态契约检查。
 
-**然后填三层业务代码**（v3 纪律，见 SKILL.md 硬约束 1）：
-1. `public/scene-data.json`：保留区（scene/camera/lights/controls/renderer，原生类型名）+ 业务区分组；
-2. `src/scene-core/handlers/`：有行为的物体写 handler（参照 `example/example.ts`；异步 GLB 一律 `makeAssetNodeFactory`）；静态摆放直接用 `asset` 分组零代码；
-3. `src/scene-core/materials.ts`：状态视觉 `stateMaterials`（数据无材质）；
-4. 卡片：`cards/` 写纯展示组件 + `main.ts` 注册 + 节点内联 `card` 字段。
+首次失败汇总实际错误并集中修复，最多两轮修复重跑（总计三次尝试）。无实质进展、脚本自身异常或环境失败提前停止；依照处理提示解决或报告阻塞，不能绕过检查、修改 skill 脚本求过关或重置次数。任意一次通过立即交付，不自行再优化。详细次数规则以 SKILL.md 为准。
 
-**DoD**：`npm run dev` 页面可开，物体全部渲染（GLB 加载徽标 N/M 收敛）；vue-tsc 0 错。
-**停止点**：无（此步产物未过验证是预期状态）。
+## 4. 交付
 
-## S5 build + 结构冒烟（硬门禁）
+交付 index.3d.html 的可点击绝对路径：双击打开，点击“编辑场景”调整材质、选择贴图和编排物体；保存下载 scene.3d.json，再次打开同一预览后“导入”恢复。移动预览时保留同目录配套文件。
 
-```bash
-node scripts/build.mjs <target>          # 结构 + 铁律 + 预算静态估算
-node scripts/verify/smoke-structural.mjs <url> --edit   # 场景图/渲染活性/零 rejection
-```
+不默认启动服务、strip-edit、输出第二份工程、验证报告或人工清单。构建通过不代表已经验证浏览器渲染，不作绝不白屏承诺。达到上限仍失败，明确“构建未通过”，列剩余错误及源码位置，旧预览不能冒充当前成功产物。
 
-- **fail-all**：build/冒烟失败时一次全列出，一轮改完再跑，不逐个试；
-- 预算超限默认 WARN（重类）——记录数值进验证报告，不阻塞；
-- 冒烟环境预检 5 秒不过 → 转人工验证清单（SKILL.md 硬约束 6）。
+## 按需操作
 
-**DoD**：build PASS + smoke-structural PASS（双模式 run/edit 各一次）。
-**停止点**：无——失败进修复循环，直到过。
-
-## S6 视觉 + 性能观测
-
-```bash
-node scripts/verify/smoke-visual.mjs <url>          # 四视口截图 → shots-visual/
-node scripts/verify/perf-fps.mjs <url> [--gpu]     # 预算三项 + fps 采样
-```
-
-- **多模态档**：读四张截图判定（比例/遮挡/漂浮/配色），断言清单见 `references/verification.md`；
-- **非多模态档**：跳过看图，验证报告标注「未经视觉确认」，交付人工验证清单；
-- 性能 WARN 必须逐条**回应**（优化了 / 为什么可接受）——数值留基线供用户反馈「卡」时对比；
-- fps 只在 `--gpu` 真机下有意义；软渲染数值仅记录不判断。
-
-**DoD**：验证报告含 ①②③④⑤ 全部结论 + 诚实分级标注。
-**停止点**：视觉发现结构性问题（物体穿模/比例崩坏/整体漂浮）→ 回 S4 修；主观风格不满意 → 记入 S8 待调项。
-
-## S7 交互联调
-
-卡片显隐/点击、handler 业务行为（旋转/换装）、**生产数据演示**（喂一段模拟 update 片段验证幂等 upsert 与 params 整块替换语义）→ 跑 `smoke-structural` 回归。
-
-**DoD**：交互路径全部走通；update 片段演示有验证记录。
-**停止点**：无。
-
-## S8 编辑调优
-
-起 dev server（`npm run dev`，默认 5183）→ `?edit=1` 自检微调：
-- 多模态档：`smoke-visual` 截图自查后改 scene-data.json / 代码；
-- 非多模态档：读数值（包围盒/位置/引擎 serialize 对照）调；
-- 需要人眼把关的视觉决策 → 交付人工验证清单等用户确认（SKILL.md 硬约束 6）；
-- 编辑器调参产物（`__visuals`/`__materialLib`）定稿后走转录（S9 strip-edit 自动出清单）。
-
-**环境注意**：多轮迭代后重启 dev server（HMR 累积态会让 CDP 断言超时）；临时端口验证后记得同步重启默认端口，防「时间胶囊」。
-
-**DoD**：scene-data.json 定稿（编辑器 SaveService 回写或手工对齐）；三绿。
-**停止点**：用户要求人工看效果时。
-
-## S9 交付
-
-```bash
-node scripts/strip-edit.mjs <src> --out <out-dir>
-```
-
-交付清单（缺一不算完成）：
-1. **编辑态工程路径** + 访问 URL（`http://localhost:5183/?edit=1`）；
-2. **二开包路径**（strip-edit 产物：纯 core + 定稿 scene-data + TRANSCRIPTION.md + INTEGRATION_GUIDE）；
-3. **人工验证清单**（操作步骤 + 预期现象，用户浏览器目检）；
-4. **验证报告**（S5–S6 结论 + 诚实分级 + 性能基线 + 每条 WARN 的回应）;
-5. **执行日志**（降级阶梯升级原因、偏离 spec 的决策）；
-6. 有实时数据需求 → **生产数据接入示例**（update 片段翻译层，见 `scene-engineering.md`）。
-
-**DoD**：上述 6 件齐 + 二开包 build PASS（`build.mjs <out> --stripped`）。
-**停止点**：无——到这就是收口，转用户验收。
+- 用户请求源码联调/指定端口：使用 npm run dev，保持现有服务端贴图上传能力。
+- 用户请求不含编辑器的源码：strip-edit.mjs 自动剥离并编译已保存外观；TRANSCRIPTION.md 是自动转换摘要，不要求 LLM 人工转录。它是源码包，不是已部署网站。
+- 用户请求部署：按目标环境构建和部署；普通网页构建使用 npm run build。
+- 用户反馈白屏、交互错误或卡顿：执行与问题相关的诊断；不要默认重新跑全套截图/性能流程。

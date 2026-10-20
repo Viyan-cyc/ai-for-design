@@ -22,9 +22,12 @@ const boot = async (): Promise<void> => {
   createApp(App, { handle }).mount('#app');
 
   // dev-only：调试口（冒烟脚本/控制台直接读引擎态；生产 build 自动剔除）
-  if (import.meta.env.DEV) {
+  if (import.meta.env.DEV || (window.__gts3dOffline && new URLSearchParams(window.location.search).get('debug') === '1')) {
     (window as unknown as Record<string, unknown>).__gts3d = handle;
   }
 };
 
-void boot();
+// An offline IIFE includes both entry modules; only boot the selected mode.
+if (!window.__gts3dOffline || new URLSearchParams(window.location.search).get('edit') !== '1') {
+  void boot();
+}

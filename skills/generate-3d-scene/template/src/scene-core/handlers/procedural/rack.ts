@@ -23,6 +23,7 @@ const readRows = (node: SceneNode | undefined): number => {
   return typeof r === 'number' && r >= 1 && r <= 12 ? Math.floor(r) : SERVER_ROWS;
 };
 
+// Legacy input compatibility only. New scenes edit appearance through the visual layer.
 const readBodyColor = (node: SceneNode | undefined): string => {
   const c = node?.params?.bodyColor;
   return typeof c === 'string' ? c : '#3a3f46';

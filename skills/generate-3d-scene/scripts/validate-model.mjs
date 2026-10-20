@@ -1,3 +1,4 @@
+import { dependencyPath } from './lib/environment.mjs';
 /**
  * validate-model.mjs — GLB/glTF 规格校验器（入库门禁 + 独立 CLI）
  *
@@ -656,8 +657,8 @@ const requireNode = (id) => {
 };
 
 /** three 解析路径：模板 node_modules（skill 脚本零依赖，three 是模板运行时依赖）。 */
-const gltfLoaderPath = () => join(SKILL_ROOT, 'template', 'node_modules', 'three', 'examples', 'jsm', 'loaders', 'GLTFLoader.js');
-const dracoLoaderPath = () => join(SKILL_ROOT, 'template', 'node_modules', 'three', 'examples', 'jsm', 'loaders', 'DRACOLoader.js');
+const gltfLoaderPath = () => dependencyPath('three', 'examples', 'jsm', 'loaders', 'GLTFLoader.js');
+const dracoLoaderPath = () => dependencyPath('three', 'examples', 'jsm', 'loaders', 'DRACOLoader.js');
 const dracoDecoderDir = () => join(SKILL_ROOT, 'template', 'public', 'assets', 'draco');
 const SKILL_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 

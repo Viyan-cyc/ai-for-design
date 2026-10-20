@@ -1,3 +1,4 @@
+import { assetMetadata } from './lib/asset-metadata.mjs';
 /**
  * build-search-index.mjs — 资产检索索引构建（n-gram TF-IDF 词法向量）
  *
@@ -200,7 +201,7 @@ const projectDoc = (doc) => Object.fromEntries(PROJECT_FIELDS.map((k) => [k, doc
  * @returns {{indexPath: string, index: object, docCount: number}}
  */
 export const buildIndexFile = (libDir = DEFAULT_LIB) => {
-  const docs = loadDocs(libDir).map(projectDoc);
+  const docs = loadDocs(libDir).map((doc) => ({ ...projectDoc(doc), ...assetMetadata(doc, libDir) }));
   const { vocab, idf, vectors } = buildIndex(docs);
   const index = {
     version: INDEX_VERSION,
