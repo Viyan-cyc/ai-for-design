@@ -1,7 +1,7 @@
 ---
 name: gts-ep-coder
 description: 根据用户需求生成 Vue 3 + Element Plus 2.13.5 页面（.vue SFC），样式严格遵循 design-language 设计 token；输出离线可开的双击即看 HTML 预览与可拷入真实工程的 src/ 源码。做页面、改页面、看效果时使用。
-version: 0.2.1
+version: 0.2.2
 ---
 
 # gts-ep-coder
@@ -10,7 +10,7 @@ version: 0.2.1
 
 交付两件东西：
 
-1. **`index.gts.html`** —— 离线预览（本地 UMD 运行时 + 浏览器内 SFC 编译，双击即看，无需服务器）；
+1. **`index.gts-ep.html`** —— 离线预览（本地 UMD 运行时 + 浏览器内 SFC 编译，双击即看，无需服务器）；
 2. **`src/`** —— 标准工程源码，可整目录拷入任何 Vue 3 + Element Plus 2.13.5 工程（接入说明见 `src/README.md`）。
 
 页面代码是主交付物；预览 HTML 只是让你和用户**当场看到编译渲染结果**的手段。
@@ -38,7 +38,7 @@ version: 0.2.1
 > build失败按“验证失败与重试上限”集中修复；若修复改变图标引用，再执行③.5。
 
 脚本都在本 skill 的 `scripts/` 下，**除 ⓪ 的安装脚本外都要 node 才能跑**。
-所有脚本的输出都是固定格式，**先读 `RESULT:` 那一行再决定下一步**：
+工作流脚本的输出采用以下格式，**先读 `RESULT:` 那一行再决定下一步**（可选的 `query-tokens.mjs` 返回 JSON，读取其 `result` 与每项 `status`）：
 
 ```
 RESULT: OK
@@ -109,21 +109,21 @@ node scripts/init.mjs "<artifact-folder 绝对路径>" "<slug>"
 - `<slug>`：小写英文/数字/连字符，2–6 段（如 `login-form`、`device-list`）。
 - 返回值记住三个：`HTML_PATH`（预览入口）、`SRC_DIR`（你写代码的地方）、`PAGE`（init返回的PascalCase页面目录名，如DeviceList）。
 
-init 会生成完整骨架：`index.gts.html` + `public/library/`（UMD 运行时）+ `src/`（App.vue、
+init 会生成完整骨架：`index.gts-ep.html` + `public/library/`（UMD 运行时）+ `src/`（App.vue、
 main.js、api 服务层示例、主题三件套、starter 页面）。
 **默认不含任何切换 UI**（国际化 / 主题切换均为按需能力，见下方判据）。
 
 ### ③ 写代码 —— 主战场
 
 **只写 `src/` 下**：页面放 `src/pages/{Page}/index.vue`（一页一目录，子组件/样式放同目录），
-`App.vue` 修改挂载与需求明确的装配。主题 css（`src/assets/themes/`）与 `index.gts.html` 是交付件骨架，
+`App.vue` 修改挂载与需求明确的装配。主题 css（`src/assets/themes/`）与 `index.gts-ep.html` 是交付件骨架，
 不改不删；换肤按 `src/assets/themes/README.md` 协议追加。
 
 #### 必须遵守的代码规则
 
 编码前完整读取 `vendor/vue-skill/references/code-rules.md` 并遵守所有适用条款；当前有效上下文已完整读取同版本时复用，不重复加载。该文件是项目编码规则的统一来源，不能以熟悉Vue、主入口摘要够用或追求速度为由跳过。
 
-其中包含组件职责拆分、800行审视界线、同构与嵌套循环、服务/mock与中英文分层、交互状态、命名、样式、通信和资源清理。交付前必须做一次代码自查，见该文件最后一节；构建通过不能代替规范自查。它们是编码要求，不新增机器门禁。
+其中包含组件职责拆分、800行审视界线、同构与嵌套循环、服务/mock与中英文分层、交互状态、命名、样式、通信和资源清理。编写同构区域时先组织配置数组，再写一份循环模板；不同图标或翻译key不构成重复手写的理由，详见规则5.8。交付前必须做一次代码自查，见该文件最后一节；构建通过不能代替规范自查。它们是编码要求，不新增机器门禁。
 
 #### 资料怎么读
 
@@ -178,7 +178,7 @@ main.js、api 服务层示例、主题三件套、starter 页面）。
   bridge.less 自动跟随、新增皮肤插槽）——这部分不删不用重做，页面颜色全程走 token。
 - **切换 UI 默认不在**。用户要求深浅切换 → 接入 UI，**形态按用户描述决定**（图标 toggle/
   下拉/菜单项均可），参考实现见 `references/on-demand-toggle.md`。
-- **内置 default + dark 两套皮肤**。两套皮肤均由 gen-tokens 从 design-language 统一双主题表（§1.2 `Token｜用途｜Light｜Dark`）生成，无工程回填项。
+- **内置 default + dark 两套皮肤**。两套皮肤均由 gen-tokens 从 `design-language/样式Token/设计系统.md` §1.2 统一双主题表（`Token｜用途｜Light｜Dark`）生成，无工程回填项。
 
 #### 页面自适应（桌面区间弹性）
 
@@ -207,25 +207,27 @@ IconPlus API（探测即取配置，再 `getIconInfo → getIcon×2` 并行拉�
 - 页面照常写 `import { Search } from '@element-plus/icons-vue'`，
   fetch-icons负责检索并接到本地统一图标入口；命中用公司图标，未命中仍用EP
 - **默认 base-url**：`https://octo.hdesign.huawei.com`（可通过 `--base-url` 覆盖）
-- **默认超时**：10s（单轮批量，超时整体 FAIL 不重试，已落盘的命中文件保留）
+- **超时**：配置探测固定5s；搜索与深浅SVG请求各默认10s（可用 `--timeout` 调整）。探测、搜索、并行下载分阶段执行，总耗时不是10s上限；无自动重试。配置不可达回退EP，搜索异常报FAIL，下载缺失按下述规则回退
 - `RESULT: OK` + `RESOLVED: <n>, MISSED: <m>, CACHED: <c>` → 继续走 ④ build
   （CACHED 是其中来自缓存、未发网络请求的图标数；`CACHED: n` 且全量命中时本轮零请求）
 - `RESULT: FAIL |` → 报给用户（服务异常）。已落盘的命中文件仍有效，不影响 build
 - **IconPlus 不可达时**：脚本输出 `RESOLVED: 0, MISSED: <n>` 正常退出（全部用 EP 原样），不是 FAIL
+- **匹配边界**：优先英文名称精确匹配，否则选候选最高分；名称有效不等于业务语义必然正确，不自行调整接口、评分阈值或搜索协议。
+- **深色缺失**：浅色成功、深色未返回时复用浅色并写出双文件；后续视为缓存命中，不会自动补取深色。双文件存在不等于两主题均独立获取成功。
 - **miss 是正常的**：不是所有 EP 图标名都能在公司库命中，未命中的保持 EP 原样，页面天然完整
 - 页面没有使用图标时可直接 build；手动执行也会正常输出 `RESOLVED: 0, MISSED: 0`
 
 ### ④ `build.mjs` —— 编译与交付检查
 
 ```bash
-node scripts/build.mjs --dir "<工程目录（含 index.html 与 src/）>"
+node scripts/build.mjs --dir "<工程目录（含 src/）>"
 ```
 
 build 用真实 `@vue/compiler-sfc`（parse + compileScript + compileTemplate）编译每个 `.vue`，
 并做 token/样式纪律检查。首次跑之前确保 ① 已通过。**错误一次全列出**：FAIL 时逐条给
 `ERROR: <file>: <msg>`，一轮改完再跑即可，不用逐个试。
 
-- `RESULT: OK` → 拿 `HTML_PATH` 走第 ⑤ 步；这是静态构建通过，不代表已做浏览器运行验收
+- `RESULT: OK` → 拿 `HTML_PATH` 走第 ⑤ 步；这是静态构建通过，不代表已做浏览器运行验收。构建输出 `index.gts-ep.html`；旧工程中已有的其他HTML不自动删除，交付以本次 `HTML_PATH` 为准
 - `RESULT: FAIL |` → 读每条 `ERROR:`（含 `file:line`），改代码，**再跑一次 build**。
   代码问题在重试额度内集中修复；达到上限或提前停止时如实报告未通过
 - `WARN: ...`（token 有 fallback 但未定义、样式内出现 hex 等）→ **必须处理**，
@@ -304,7 +306,7 @@ build的编译/token错误在重试额度内修复，达到上限或提前停止
 | ✅ 新建/修改 | `src/pages/{Page}/` 下的任何文件 |
 | ✅ 新建/修改 | `src/api/`、业务hooks/辅助模块与用户素材；请求多语言时的 `src/i18n/` |
 | ✅ 修改 | `src/App.vue`（挂载页面与按需装配）；启用i18n时main仅追加规定的安装接线 |
-| ❌ 不动 | `index.gts.html`、`public/library/`、`src/main.js`（仅允许上行i18n接线例外）、`src/assets/themes/*.less`（交付骨架，改了换肤/预览体系就散了） |
+| ❌ 不动 | `index.gts-ep.html`、`public/library/`、`src/main.js`（仅允许上行i18n接线例外）、`src/assets/themes/*.less`（交付骨架，改了换肤/预览体系就散了） |
 
 换肤需求走 `src/assets/themes/README.md` 协议**追加**皮肤文件，不动既有三件套。
 
@@ -312,7 +314,7 @@ build的编译/token错误在重试额度内修复，达到上限或提前停止
 
 - **样式一律 `<style scoped lang="less">`**；禁止 `:root` / `html` / `body` / `[data-theme]` 选择器（build 会拒）。
 - **所有颜色走 token**：`var(--color-brand)` 这类规范名；页面局部派生值用 `--page-*` 前缀定义；页面不得定义 `--el-*`，已有运行时变量可引用。
-  页面里不写 hex 色值（build 检查）。
+  页面里不写 hex 色值；build对硬编码hex给出WARN，按前述要求处理。名称检查不验证每处CSS继承/作用域，局部 `--page-*` 定义必须覆盖其使用位置。
 - **只用真实 Element Plus 组件**，模板标签一律 **PascalCase**（`<ElTable>`），模板里用到的每个
   组件、`ElMessage` 等命令式 API、vue 的 API（`ref`/`reactive`/…）**每个文件各自 import**——
   漏 import 编译能过但运行时白屏。编译宏（`defineProps` 等）不用 import。

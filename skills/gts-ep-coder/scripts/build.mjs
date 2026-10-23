@@ -14,7 +14,7 @@ async function build(){
   const root=path.resolve(args[i+1]),src=path.join(root,'src');
   if(!fs.existsSync(src))throw Error('src folder not found: '+src);
   // The loader is a fixed skill asset, not a business file. Sync it for existing projects too.
-  fs.copyFileSync(path.join(scripts,'preview/index.gts.html'),path.join(root,'index.gts.html'));
+  fs.copyFileSync(path.join(scripts,'preview/index.gts-ep.html'),path.join(root,'index.gts-ep.html'));
   const req=compilerRequire(),sfc=req('@vue/compiler-sfc'),less=req('less'),postcss=req('postcss');
   const files=walkFiles(src),key=f=>'/src/'+path.relative(src,f).split(path.sep).join('/');
   const byKey=Object.fromEntries(files.map(f=>[key(f),f]));
@@ -35,8 +35,8 @@ async function build(){
     ast.walkDecls(d=>{d.value=d.value.replace(/url\(\s*["']?([^"')]+)["']?\s*\)/g,(all,url)=>{if(/^(data:|https?:|blob:|#|\/\/)/i.test(url))return all;const clean=url.split(/[?#]/)[0],suffix=url.slice(clean.length),target=path.resolve(path.dirname(file),decodeURIComponent(clean));return 'url("./'+encodeURI(path.relative(root,target).split(path.sep).join('/'))+suffix+'")';});});
     return ast.toString();
   }
-  const html=fs.readFileSync(path.join(root,'index.gts.html'),'utf8');
-  for(const m of html.matchAll(/<(?:script|link)\b[^>]*(?:src|href)=["']([^"']+)["']/g))if(m[1]!=='./preview-data.js')localResource(m[1],path.join(root,'index.gts.html'));
+  const html=fs.readFileSync(path.join(root,'index.gts-ep.html'),'utf8');
+  for(const m of html.matchAll(/<(?:script|link)\b[^>]*(?:src|href)=["']([^"']+)["']/g))if(m[1]!=='./preview-data.js')localResource(m[1],path.join(root,'index.gts-ep.html'));
   for(const f of walkFiles(path.join(root,'public')).filter(f=>f.endsWith('.css')))try{cssResources(fs.readFileSync(f,'utf8'),f);}catch(e){fail(f+': CSS '+e.message);}
   // Read actual shipped UMD exports in a DOM-free context, not a browser/render test.
   const context=vm.createContext({console:{warn(){},error(){},log(){}},setTimeout,clearTimeout});
@@ -109,6 +109,6 @@ async function build(){
   for(const message of warnings)console.log('WARN: '+message);
   if(errors.size){console.log('RESULT: FAIL | '+errors.size+' error(s)');for(const message of errors)console.log('ERROR: '+message);process.exitCode=1;return;}
   const result=refresh(root,runtimeSources);if(!result.ok)throw Error(result.reason);
-  console.log('RESULT: OK\nHTML_PATH: '+path.join(root,'index.gts.html')+'\nPAGES: '+pages.length+'\nRUNTIME: not-run');
+  console.log('RESULT: OK\nHTML_PATH: '+path.join(root,'index.gts-ep.html')+'\nPAGES: '+pages.length+'\nRUNTIME: not-run');
 }
 build().catch(e=>{console.log('RESULT: FAIL | '+e.message+'\nHINT: ensure shared compiler dependencies are ready; inspect the reported source/resource.');process.exitCode=1;});

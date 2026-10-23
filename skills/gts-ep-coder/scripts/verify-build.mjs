@@ -15,13 +15,29 @@ function write(rel,text){const file=path.join(src,rel);fs.mkdirSync(path.dirname
 function clean(dir){const target=path.resolve(dir);assert(target.startsWith(path.resolve(work)+path.sep));fs.rmSync(target,{recursive:true,force:true});}
 try{
   const init=run('init.mjs',[work,'test-page']);assert.equal(init.status,0,init.text);
+  test('new preview entry contract',()=>{
+    assert(init.text.includes('HTML_PATH: '+path.join(project,'index.gts-ep.html')),init.text);
+    assert(init.text.includes('PAGE: TestPage'),init.text);
+    assert(fs.existsSync(path.join(project,'index.gts-ep.html')));
+    assert(!fs.existsSync(path.join(project,'index.gts.html')));
+  });
   const baseline=path.join(work,'baseline');fs.cpSync(src,baseline,{recursive:true});
   const vue=(script="const title='ok'",template='<div>{{title}}</div>',style='')=>`<script setup>${script}</script><template>${template}</template><style scoped lang="less">${style}</style>`;
   function fixture(source,extra={}){clean(src);fs.cpSync(baseline,src,{recursive:true});write('pages/TestPage/index.vue',source);for(const [rel,value]of Object.entries(extra))write(rel,value);}
   function check(name,source,expected,extra={}){fixture(source,extra);test(name,()=>{const p=run('build.mjs',['--dir',project]);assert.equal(p.status,expected,p.text);if(expected)assert(p.text.includes('RESULT: FAIL'));});}
   check('basic page',vue(),0);
+  test('existing project publishes new entry and preserves old file',()=>{
+    const legacy=path.join(project,'index.gts.html');
+    fs.writeFileSync(legacy,'legacy entry retained');
+    fs.unlinkSync(path.join(project,'index.gts-ep.html'));
+    const p=run('build.mjs',['--dir',project]);
+    assert.equal(p.status,0,p.text);
+    assert(p.text.includes('HTML_PATH: '+path.join(project,'index.gts-ep.html')),p.text);
+    assert(fs.existsSync(path.join(project,'index.gts-ep.html')));
+    assert.equal(fs.readFileSync(legacy,'utf8'),'legacy entry retained');
+  });
   check('extensionless JS',vue("import {value} from '../../api/portal';const title=value"),0,{'api/portal.js':'export const value=1'});
-  await test('published resolver matches loader',()=>{const ctx={window:{}};vm.runInNewContext(fs.readFileSync(path.join(project,'preview-data.js'),'utf8'),ctx);assert.equal(ctx.window.__UX_RESOLVE_SOURCE__('/src/api/portal','/src/App.vue',ctx.window.__UX_PROTO_SRC__),'/src/api/portal.js');const html=fs.readFileSync(path.join(project,'index.gts.html'),'utf8');const fragment=html.split('getFile: function (path) {')[1].split('                handleModule:')[0].trim().replace(/,$/,'');const fn=vm.runInNewContext('(function(path){'+fragment+')',{window:ctx.window,SRC:ctx.window.__UX_PROTO_SRC__,ASSET_EXT:[],Promise,Error});return fn('/src/api/portal').then(r=>assert.equal(r.type,'.mjs'));});
+  await test('published resolver matches loader',()=>{const ctx={window:{}};vm.runInNewContext(fs.readFileSync(path.join(project,'preview-data.js'),'utf8'),ctx);assert.equal(ctx.window.__UX_RESOLVE_SOURCE__('/src/api/portal','/src/App.vue',ctx.window.__UX_PROTO_SRC__),'/src/api/portal.js');const html=fs.readFileSync(path.join(project,'index.gts-ep.html'),'utf8');const fragment=html.split('getFile: function (path) {')[1].split('                handleModule:')[0].trim().replace(/,$/,'');const fn=vm.runInNewContext('(function(path){'+fragment+')',{window:ctx.window,SRC:ctx.window.__UX_PROTO_SRC__,ASSET_EXT:[],Promise,Error});return fn('/src/api/portal').then(r=>assert.equal(r.type,'.mjs'));});
   check('directory index',vue("import {value} from '../../api/portal';const title=value"),0,{'api/portal/index.js':'export const value=1'});
   check('explicit mjs',vue("import {value} from '../../api/portal.mjs';const title=value"),0,{'api/portal.mjs':'export const value=1'});
   check('missing named service export',vue("import {missing} from '../../api/portal.js';const title=missing"),1,{'api/portal.js':'export const value=1'});

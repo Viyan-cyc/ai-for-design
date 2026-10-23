@@ -15,7 +15,7 @@
    }
    ```
 3. **注册**：
-   - **预览工程**：无需注册——`index.gts.html` 在 boot 阶段自动发现并加载 `themes/` 下全部 `.less`；
+   - **预览工程**：无需注册——`index.gts-ep.html` 在 boot 阶段自动发现并加载 `themes/` 下全部 `.less`；
    - **真实工程**：在工程入口（见 `main.js` 换肤插槽注释处）追加一行：
      ```js
      import './assets/themes/dark.less'

@@ -8,7 +8,7 @@
 ## 通用前提
 
 - i18n 装配素材：`scripts/preview/i18n-scaffold/`（接线复用；两语言词典按业务同步更新）。
-- 预览加载器已就绪：`index.gts.html` 的 moduleCache 已映射 `vue-i18n` 与 EP locale 子路径，
+- 预览加载器已就绪：`index.gts-ep.html` 的 moduleCache 已映射 `vue-i18n` 与 EP locale 子路径，
   接入后预览直接生效，**无需改预览加载器**。
 - 标准入口在mount前调用installI18n(app)；离线入口在App调用useI18n前通过同一函数安装。
 
@@ -21,7 +21,7 @@ App.vue完整参考（XxxYyy是占位名，替换为init返回的PAGE，不固�
 // 应用壳：装配 i18n / 主题切换（预览与真实工程共用）
 import { ref, getCurrentInstance } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { ElConfigProvider, ElTooltip, ElIcon } from 'element-plus'
+import { ElConfigProvider, ElTooltip, ElIcon, ElButton } from 'element-plus'
 import { Moon, Sunny } from '@element-plus/icons-vue'
 import { installI18n, setLocale, EP_LOCALES } from './i18n/index.js'
 import Page from './pages/XxxYyy/index.vue'
@@ -63,14 +63,14 @@ const localeLabel = (loc) => (loc === 'zh-cn' ? 'EN' : '中文')
     <div class="app-shell">
       <div class="app-toolbar">
         <ElTooltip :content="localeLabel(locale)" placement="bottom">
-          <button class="icon-btn" type="button" :aria-label="localeLabel(locale)" @click="toggleLocale">
+          <ElButton class="icon-btn" text :aria-label="localeLabel(locale)" @click="toggleLocale">
             {{ localeLabel(locale) }}
-          </button>
+          </ElButton>
         </ElTooltip>
         <ElTooltip :content="isDark(theme) ? t('msg.demo.app.themeLight') : t('msg.demo.app.themeDark')" placement="bottom">
-          <button class="icon-btn" type="button" :aria-label="t('msg.demo.app.themeDark')" @click="nextTheme">
+          <ElButton class="icon-btn" text :aria-label="isDark(theme) ? t('msg.demo.app.themeLight') : t('msg.demo.app.themeDark')" @click="nextTheme">
             <ElIcon :size="16"><Moon v-if="isDark(theme)" /><Sunny v-else /></ElIcon>
-          </button>
+          </ElButton>
         </ElTooltip>
       </div>
       <Page />
@@ -99,23 +99,7 @@ const localeLabel = (loc) => (loc === 'zh-cn' ? 'EN' : '中文')
   min-width: var(--space-size-24);
   height: var(--space-size-24);
   padding: 0 var(--space-size-4);
-  border: 1px solid transparent;
-  border-radius: var(--radius-size-small);
-  background: transparent;
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-small);
-  cursor: pointer;
-  transition: color 0.2s, background-color 0.2s;
-
-  &:hover {
-    color: var(--color-brand);
-    background: var(--color-hover);
-  }
-
-  &:focus-visible {
-    outline: 1px solid var(--color-border-focus);
-    outline-offset: 1px;
-  }
+  margin: 0;
 }
 </style>
 ```
@@ -130,8 +114,7 @@ const localeLabel = (loc) => (loc === 'zh-cn' ? 'EN' : '中文')
 
 ## 二、只接主题切换（不接 i18n）
 
-不 import vue-i18n，去掉幂等补装与 `ElConfigProvider`（EP 文案由 `main.js` 的
-`app.use(ElementPlus, { locale: zhCn })` 保证中文），保留 `setTheme`/`nextTheme` + 切换控件即可：
+不 import vue-i18n，去掉幂等补装与 `ElConfigProvider`（标准工程由 `main.js`、离线预览由加载器安装EP中文locale），保留 `setTheme`/`nextTheme` + 切换控件即可：
 
 ```js
 // App.vue script 内

@@ -6,6 +6,8 @@
 - 组件文档明确指定的部位、状态和尺寸用于该组件，其余参数遵循 Design System；每份规范文档末尾的"不要"用于检查错误用法。
 - ★ = 高频组件（`vue-skill/components/` 下有可直接抄的示例 SFC）。
 
+本索引按GTS规范组织，不是Element Plus全部组件清单；未收录不代表不支持。名称先查 `scripts/verify/whitelists/element-plus-exports.json`（相对skill根）；白名单仅证明导出存在，属性/事件/插槽仍需核对实际版本资料。
+
 ## 组件选择
 
 | 需求 | GTS 组件 | Element Plus 组件 |
@@ -81,7 +83,7 @@
 | 锚点导航 Anchor | 组件规范/导航类/锚点导航.md | （需自行封装） |
 | 回到顶部 BackTop | 组件规范/导航类/回到顶部.md | ElBacktop |
 
-## 反馈类（10）
+## 反馈类（9）
 
 | GTS 组件 | GTS 规范路径 | Element Plus 组件 |
 | --- | --- | --- |

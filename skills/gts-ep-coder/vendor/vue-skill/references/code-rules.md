@@ -1,6 +1,6 @@
 # Vue3 代码规则
 
-规则版本：0.2.1
+规则版本：0.2.2
 
 > 使用 Element Plus + GTS 设计规范开发时的强制性规则。文档优先级：
 > 视觉与设计值以GTS规范及其生成的消费视图为准；API以实际版本的Vue/EP为准。本文为项目编码规则统一来源，错误清单与示例用于解释，不得覆盖规则。编码前必读；当前上下文已完整读取同版本可复用。
@@ -127,7 +127,7 @@ const handleSubmit = async () => {
 }
 ```
 
-- 页面里正常应完全无 hex；页面局部派生色值定义在 `--page-*` 变量中。
+- 页面里不写hex；局部派生色可在 `--page-*` 中用已有设计token组合，定义作用域须覆盖使用位置。
 
 ### 规则 3.3：间距使用 space-size-* Token
 
@@ -268,7 +268,7 @@ const list = ref([])
 
 ### 规则 5.8：同构结构必须数据驱动
 
-仅内容不同的卡片、栏目、链接、菜单和列表用数组与v-for；嵌套结构外层和内层分别循环，使用稳定的业务id/key，动态列表不用数组下标。不同职责或不同结构不为循环强行合并。
+仅内容不同的卡片、栏目、链接、菜单和列表，先定义配置数组，再写一份v-for模板；不先复制多段模板再等待自查重构。嵌套结构外层和内层分别循环，使用稳定的业务id/key，动态列表不用数组下标。联系方式的图标不同可用 `<component :is="item.icon" />`，显示业务值或 `t(item.labelKey)`；页脚用分组和链接两层配置。静态UI配置留在所属组件或辅助模块，不因此创建API。不同职责、插槽或结构不为循环强行合并。
 
 ```vue
 <ElCol v-for="group in footerGroups" :key="group.id" :xs="24" :sm="12" :md="6">
@@ -286,15 +286,19 @@ const list = ref([])
 
 ## 六、异步数据加载规范
 
-### 规则 6.1：网络请求尽可能并行
+### 规则 6.1：无依赖请求并行，依赖请求按顺序
 
 ```js
-// ❌ 错误：串行发出
+// 无数据依赖时，避免不必要的串行等待
 await getTableData()
 await getInfoData()
 
 // ✅ 正确：并行发出
 await Promise.all([getTableData(), getInfoData()])
+
+// 有依赖时按顺序，不为并行破坏参数与时序
+const info = await getInfoData()
+await getTableData({ ownerId: info.id })
 ```
 
 ---
@@ -336,13 +340,16 @@ onUnmounted(() => {
 ```js
 import { watch, onUnmounted } from 'vue'
 
-let unwatch = null
+let disposed = false
+let unwatch
 
 promise.then(() => {
-  unwatch = watch(() => {}, () => {})
+  if (disposed) return
+  unwatch = watch(source, handleChange)
 })
 
 onUnmounted(() => {
+  disposed = true
   unwatch?.()
 })
 ```
@@ -594,7 +601,7 @@ if (window.innerWidth < 1200) {
 完成源码后、最终build前，按以下适用项检查并直接修正；build通过不替代本项。不增加命令、门禁、审批、自查报告或每页浏览器操作。
 
 1. 职责是否合理拆分，800行以上是否已审视；文件/目录命名一致，无压缩行数规避。
-2. 同构及嵌套内容是否循环，动态项key稳定；无重复手写只换内容的模板。
+2. 检查实际模板中连续的同类兄弟节点：只有文字、图标、链接或字段值不同时，合并为配置与循环；分组的内外层都检查，key稳定。不同职责或结构保留独立实现。
 3. 业务数据是否经api/mock，组件是否只含必要UI配置；演示数据未冒充真实。
 4. 交互、表单、筛选重置、分页与对应加载/空/错误/提交状态是否完整；无仅toast的假动作。
 5. import/API是否真实，通信和实例状态边界正确；事件、定时器和外部资源是否清理。

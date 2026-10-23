@@ -487,26 +487,26 @@ const genTable = [
   '',
   '| 类别 | token 形态 | 示例 |',
   '| --- | --- | --- |',
-  `| 品牌色 | \`--color-brand(-hover/-active/...)\` | \`--color-brand: ${pick(buckets.brand, 'color-brand')?.light}\` |`,
+  `| 品牌色 | \`--color-brand(-hover/-active/-focus/-disabled)\` | \`--color-brand: ${pick(buckets.brand, 'color-brand')?.light}\` |`,
   `| 文本色 | \`--color-text-*\`、\`--color-link-*\` | \`--color-text-primary: ${pick(buckets.text, 'color-text-primary')?.light}\` |`,
   '| 图标色 | `--color-icon-*` | `--color-icon-secondary: #777777` |',
   '| 边框色 | `--color-border(-hover/-focus/...)` | `--color-border: #c9c9c9`（gray-20） |',
   '| 背景色 | `--color-bg-1..6`、`--color-bg-mask` | `--color-bg-1: #f3f3f3`（页面背景） |',
   '| 填充色 | `--color-hover/-select/-fill*` | `--color-select: #e6f2fd`（brand-05） |',
-  '| 功能色 | `--color-error/-alert/-warning/-success/-info*/-none(+*-subtle/-subtler)` | `--color-success: #09aa71` |',
+  '| 功能色 | `--color-{error|alert|warning|success|info-primary|info-secondary|none}*`（状态按目录取；info仅基础/subtle，warning另有strong） | `--color-success: #09aa71` |',
   '| 基础色板 | `--{rose|red|orange|yellow|green|mint|cyan|blue|indigo|purple|pink|brand|gray}-{05..90}` | `--brand-50` |',
   '| 图表色 | `--color-chart-1..11(+accessible)` | `--color-chart-1: #2070f3` |',
-  `| 间距 | \`--space-size-4..80\`（紧凑档 \`data-density="compact"\` 覆盖） | \`--space-size-16: ${pick(spacing, 'space-size-16')?.reg}px\` |`,
-  '| 圆角 | `--radius-size-{small|normal|medium|big|big1|big2|full}` | `--radius-size-normal: 4px` |',
+  `| 间距 | \`--space-size-{4|8|12|16|20|24|32|40|48|56|64|72|80}\`（紧凑档 \`data-density="compact"\` 覆盖） | \`--space-size-16: ${pick(spacing, 'space-size-16')?.reg}px\` |`,
+  '| 圆角 | `--radius-size-{small|normal|medium|big|big1|big2|full|infinity}` | `--radius-size-normal: 4px` |',
   '| 边框宽/线型 | `--border-width-{none|normal|medium|independent}`、`--border-style-*` | `--border-width-medium: 2px` |',
   "| 字体 | `--font-family(-zh/-en/-numeric)` | 'HarmonyOS Sans', 'Microsoft YaHei', 'PingFang SC', Arial, sans-serif |",
   `| 字号/行高 | \`--font-size-*\` + \`--font-line-height-*\` 成对 | \`--font-size-normal: ${pick(fontSizes, 'font-size-normal', 'fs')?.size}\` + \`${pick(fontSizes, 'font-size-normal', 'fs')?.height}\` |`,
   `| 字重 | \`--font-weight-{light|normal|bold}\` = ${fontWeight.map((t) => t.weight).join('/')} | 标题 600 |`,
-  `| 投影 | \`--shadow-1..6\`（含方向变体） | \`--shadow-1: ${pick(shadows, 'shadow-1')?.val}\` |`,
+  `| 投影 | \`--shadow-*\`（10个，含方向变体；准确名见目录） | \`--shadow-1: ${pick(shadows, 'shadow-1')?.val}\` |`,
   '| 毛玻璃 | `--frost-*` | 材质扩展场景成套取用 |',
   '',
   GEN_END,
-].join('\n');
+].map(line => line.replace(/`[^`]*`/g, span => span.replace(/\|/g, '\\|'))).join('\n');
 
 // ---------- 组装 dark.less ----------
 // 全量皮肤：data-theme="dark" 时 default.less 全部定义失效，深色皮肤必须提供

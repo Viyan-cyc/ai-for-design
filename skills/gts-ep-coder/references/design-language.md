@@ -11,22 +11,22 @@ token 全量定义在皮肤文件 `src/assets/themes/default.less`（375 个自�
 
 | 类别 | token 形态 | 示例 |
 | --- | --- | --- |
-| 品牌色 | `--color-brand(-hover/-active/...)` | `--color-brand: #0067d1` |
+| 品牌色 | `--color-brand(-hover/-active/-focus/-disabled)` | `--color-brand: #0067d1` |
 | 文本色 | `--color-text-*`、`--color-link-*` | `--color-text-primary: #191919` |
 | 图标色 | `--color-icon-*` | `--color-icon-secondary: #777777` |
 | 边框色 | `--color-border(-hover/-focus/...)` | `--color-border: #c9c9c9`（gray-20） |
 | 背景色 | `--color-bg-1..6`、`--color-bg-mask` | `--color-bg-1: #f3f3f3`（页面背景） |
 | 填充色 | `--color-hover/-select/-fill*` | `--color-select: #e6f2fd`（brand-05） |
-| 功能色 | `--color-error/-alert/-warning/-success/-info*/-none(+*-subtle/-subtler)` | `--color-success: #09aa71` |
-| 基础色板 | `--{rose|red|orange|yellow|green|mint|cyan|blue|indigo|purple|pink|brand|gray}-{05..90}` | `--brand-50` |
+| 功能色 | `--color-{error\|alert\|warning\|success\|info-primary\|info-secondary\|none}*`（状态按目录取；info仅基础/subtle，warning另有strong） | `--color-success: #09aa71` |
+| 基础色板 | `--{rose\|red\|orange\|yellow\|green\|mint\|cyan\|blue\|indigo\|purple\|pink\|brand\|gray}-{05..90}` | `--brand-50` |
 | 图表色 | `--color-chart-1..11(+accessible)` | `--color-chart-1: #2070f3` |
-| 间距 | `--space-size-4..80`（紧凑档 `data-density="compact"` 覆盖） | `--space-size-16: 16px` |
-| 圆角 | `--radius-size-{small|normal|medium|big|big1|big2|full}` | `--radius-size-normal: 4px` |
-| 边框宽/线型 | `--border-width-{none|normal|medium|independent}`、`--border-style-*` | `--border-width-medium: 2px` |
+| 间距 | `--space-size-{4\|8\|12\|16\|20\|24\|32\|40\|48\|56\|64\|72\|80}`（紧凑档 `data-density="compact"` 覆盖） | `--space-size-16: 16px` |
+| 圆角 | `--radius-size-{small\|normal\|medium\|big\|big1\|big2\|full\|infinity}` | `--radius-size-normal: 4px` |
+| 边框宽/线型 | `--border-width-{none\|normal\|medium\|independent}`、`--border-style-*` | `--border-width-medium: 2px` |
 | 字体 | `--font-family(-zh/-en/-numeric)` | 'HarmonyOS Sans', 'Microsoft YaHei', 'PingFang SC', Arial, sans-serif |
 | 字号/行高 | `--font-size-*` + `--font-line-height-*` 成对 | `--font-size-normal: 14px` + `22px` |
-| 字重 | `--font-weight-{light|normal|bold}` = 300/400/600 | 标题 600 |
-| 投影 | `--shadow-1..6`（含方向变体） | `--shadow-1: 0 1px 3px 0 rgba(0, 0, 0, 0.1)` |
+| 字重 | `--font-weight-{light\|normal\|bold}` = 300/400/600 | 标题 600 |
+| 投影 | `--shadow-*`（10个，含方向变体；准确名见目录） | `--shadow-1: 0 1px 3px 0 rgba(0, 0, 0, 0.1)` |
 | 毛玻璃 | `--frost-*` | 材质扩展场景成套取用 |
 
 <!-- GEN:TOKEN-TABLE END -->
@@ -57,8 +57,9 @@ token 全量定义在皮肤文件 `src/assets/themes/default.less`（375 个自�
 
 1. 先确定部位、用途与状态，再取 token；填充/文字/图标/边框分别选色，不近似互换。
 2. 未定义或待确认的值**不可使用**；`--color-bg-6` 已定义，用于带背景色的卡片，不替代页面背景。
-3. 状态不可推导：不自行推算缺失的交互态色值。
+3. 状态不可推导：不自行推算缺失的交互态色值；`info-secondary` 没有 `subtler`，不可类推补名。
 4. 默认浅色界面；深色经 dark 皮肤提供（见 themes/dark.less）。
+5. 信息控件交互态用 `info-primary` 系列；`color-info` / `color-info-subtle` 是规范保留的同值基础/浅色面，EP桥接使用它们，不因同值自行合并或补交互态。
 
 ## 2. Element Plus 桥接（bridge.less，FIXED 不改）
 
@@ -81,17 +82,17 @@ token 全量定义在皮肤文件 `src/assets/themes/default.less`（375 个自�
 
 ### 3.1 结构与作用域
 
-- 页面主组件 = `src/pages/{Page}/{Page}.vue` 或 `index.vue`，根类名 `page-root`。
-- 样式一律 `<style scoped>`；不得出现 `:root`、`html`、`body`、`[data-theme]` 选择器。
-- 自定义属性定义必须 `--page-*` 前缀（页面局部派生值）；引用皮肤/EP token 不受限。
-- **禁止写死色值**：所有颜色经 `var(--token)` 引用（EP 组件自身的 `--el-*` 引用亦合法）。
-- `var(--x)` 无 fallback 引用必须已定义；带 fallback 引用未定义 token 仅 WARN（`--el-*`/`--ux-mix-base` 免检）。
-- 页面内 hex 只允许出现在 `--page-*` 定义中（WARN 级）；正常应完全无 hex。
+- 页面主组件 = `src/pages/{Page}/index.vue`，根类名 `page-root`。
+- 样式一律 `<style scoped lang="less">`；不得出现 `:root`、`html`、`body`、`[data-theme]` 选择器。
+- 自定义属性定义必须 `--page-*` 前缀（页面局部派生值），定义作用域须覆盖使用位置；业务样式优先引用设计token，不覆盖EP主题。
+- **禁止写死色值**：所有颜色经已核实的设计token引用；EP组件主题由桥接层提供，不为业务样式重新选择EP默认色。
+- 不使用未定义token，即使有fallback。build对无fallback的未知名称报错、有fallback的未知名称报WARN；EP变量按随包CSS实际名称检查，不做整前缀免检，内部 `--ux-mix-base` 的fallback为专用例外。
+- 页面内不写hex，包括局部 `--page-*` 定义；build中的hex检查为WARN，编码要求不因此放宽。token名称检查不等于CSS作用域或运行效果验证。
 
 ### 3.2 组件使用
 
 - 只用真实 Element Plus 组件（118 个，白名单校验）；不要用外观近似的原生元素替代组件。
-- 2.13.5 实际导出的组件/属性/图标见 `scripts/verify/whitelists/*.json`（组件 118 / 导出 534 / 图标 293）。
+- 2.13.5 实际导出的组件/导出名/图标见 `scripts/verify/whitelists/*.json`（组件 118 / 导出 534 / 图标 293）。
 - 组件状态（默认/悬停/按下/聚焦/禁用/加载）由 EP 类名 + 桥接 token 自动获得，页面不重绘状态色。
 - 图标从 `@element-plus/icons-vue` 按需导入。
 

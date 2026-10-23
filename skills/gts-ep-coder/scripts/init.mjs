@@ -14,7 +14,7 @@
 //   │   └── assets/                        # 主题/素材（随源码交付）
 //   │       ├── uploads/  themes/{base,bridge,default}.less
 //   ├── public/library/       # 预览运行时 UMD（真实拷贝，非链接，不随工程交付）
-//   ├── index.gts.html        # 离线预览加载器（FIXED）
+//   ├── index.gts-ep.html        # 离线预览加载器（FIXED）
 //   └── preview-data.js       # 源码映射（build.mjs 自动生成/刷新）
 //
 // Usage:
@@ -23,7 +23,7 @@
 //
 // Output (agent-parseable):
 //   RESULT: OK
-//   HTML_PATH: <absolute path to {slug}/index.gts.html>
+//   HTML_PATH: <absolute path to {slug}/index.gts-ep.html>
 //   SRC_DIR: <absolute path to {slug}/src>
 //   PAGE: <PascalCase page directory name>
 //   RESULT: FAIL | <reason>
@@ -73,7 +73,7 @@ if (!/^[a-z0-9]+(-[a-z0-9]+){1,5}$/.test(slug)) {
 const preview = resolve(__dirname, 'preview');
 const scaffoldSrc = join(preview, 'src');          // main.js + assets/{themes,uploads}
 const libSrc = join(preview, 'public', 'library'); // preview-only UMD runtime
-const htmlSrc = join(preview, 'index.gts.html');
+const htmlSrc = join(preview, 'index.gts-ep.html');
 for (const p of [scaffoldSrc, libSrc, htmlSrc]) {
   if (!existsSync(p)) fail(`template incomplete, missing: ${p}`);
 }
@@ -246,7 +246,7 @@ import Page from './pages/${pageName}/index.vue'
 
 // ---------- 6. copy preview runtime + loader ----------
 cpSync(libSrc, join(dest, 'public', 'library'), { recursive: true });
-cpSync(htmlSrc, join(dest, 'index.gts.html'));
+cpSync(htmlSrc, join(dest, 'index.gts-ep.html'));
 
 // ---------- 7. generate preview-data.js ----------
 const result = refresh(dest);
@@ -254,7 +254,7 @@ if (!result.ok) fail(result.reason);
 
 // ---------- 8. done ----------
 console.log('RESULT: OK');
-console.log(`HTML_PATH: ${resolve(join(dest, 'index.gts.html'))}`);
+console.log(`HTML_PATH: ${resolve(join(dest, 'index.gts-ep.html'))}`);
 console.log(`SRC_DIR: ${resolve(srcDir)}`);
 console.log(`PAGE: ${pageName}`);
 process.exit(0);
