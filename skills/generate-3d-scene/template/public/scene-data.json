@@ -2,7 +2,7 @@
   "version": "1",
   "meta": {
     "name": "starter-scene",
-    "description": "模板起步场景（v3）：地面 + trees 过程化低模树 + cars 业务分组示例（状态视觉/卡片内联）+ examples 自定义 handler 演示"
+    "description": "Procedural-only demo; external models are supplied through asset packages."
   },
   "scene": {
     "background": "#eef0f3",
@@ -137,130 +137,57 @@
       "scale": 0.8
     }
   ],
-  "cars": [
-    {
-      "id": "car_01",
-      "parentId": null,
-      "position": [
-        -3,
-        0.5,
-        0
-      ],
-      "rotation": [
-        0,
-        0,
-        0
-      ],
-      "scale": 1,
-      "card": {
-        "type": "example",
-        "trigger": "always",
-        "offset": [
-          0,
-          1.4,
-          0
-        ]
-      },
-      "params": {
-        "assetId": "example",
-        "name": "巡逻车 01",
-        "status": "normal",
-        "speed": 1.2
-      }
-    },
-    {
-      "id": "car_02",
-      "parentId": null,
-      "position": [
-        0,
-        0.5,
-        -2
-      ],
-      "rotation": [
-        0,
-        0,
-        0
-      ],
-      "scale": 1,
-      "card": {
-        "type": "example",
-        "trigger": "click",
-        "offset": [
-          0,
-          1.4,
-          0
-        ]
-      },
-      "params": {
-        "assetId": "example",
-        "name": "巡逻车 02",
-        "status": "alarm",
-        "speed": 0.6
-      }
-    }
-  ],
-  "examples": [
-    {
-      "id": "example_01",
-      "parentId": null,
-      "position": [
-        2.5,
-        0.5,
-        1.5
-      ],
-      "rotation": [
-        0,
-        0,
-        0
-      ],
-      "scale": 1,
-      "params": {
-        "assetId": "example",
-        "spin": true
-      }
-    },
-    {
-      "id": "person_01",
-      "parentId": null,
-      "position": [
-        -2.5,
-        0.9,
-        2
-      ],
-      "rotation": [
-        0,
-        0,
-        0
-      ],
-      "scale": 0.0056,
-      "params": {
-        "assetId": "person"
-      }
-    }
-  ],
   "codecars": [
     {
       "id": "codecar_01",
-      "position": [4.5, 0, -1],
-      "rotation": [0, 0.6, 0],
+      "position": [
+        4.5,
+        0,
+        -1
+      ],
+      "rotation": [
+        0,
+        0.6,
+        0
+      ],
       "scale": 1,
-      "params": { "paintColor": "#2c5f9e" }
+      "params": {
+        "paintColor": "#2c5f9e"
+      }
     }
   ],
   "codeworkers": [
     {
       "id": "codeworker_01",
-      "position": [3.2, 0, 2.6],
-      "rotation": [0, -0.4, 0],
+      "position": [
+        3.2,
+        0,
+        2.6
+      ],
+      "rotation": [
+        0,
+        -0.4,
+        0
+      ],
       "scale": 1,
-      "params": { "suitColor": "#e07020" }
+      "params": {
+        "suitColor": "#e07020"
+      }
     }
   ],
   "coderacks": [
     {
       "id": "coderack_01",
-      "position": [-5, 0, -1.5],
-      "rotation": [0, 0.3, 0],
+      "position": [
+        -5,
+        0,
+        -1.5
+      ],
+      "rotation": [
+        0,
+        0.3,
+        0
+      ],
       "scale": 1
     }
   ]

@@ -51,10 +51,7 @@ const scenePath = join(project, 'public/scene-data.json');
 save(scenePath, { ...json(scenePath), ...groups });
 console.log('PASS editable node layout with stable IDs and independent params');
 
-const { index } = loadIndex(join(skill, 'assets'));
-const results = searchAssets(index, '机柜', 3, true);
-assert(results.some((r) => r.size && r.triangles > 0));
-assert(results.every((r) => !('description' in r)));
+assert.equal(existsSync(join(skill, 'assets/models')), false);
 assert.equal(runtimeCompatibility({ extensionsRequired: ['KHR_texture_basisu'] }).status, 'unsupported');
 assert.equal(runtimeCompatibility({ extensionsUsed: ['EXT_meshopt_compression'] }).status, 'unsupported');
 assert.equal(runtimeCompatibility({ extensionsRequired: ['KHR_draco_mesh_compression'] }).status, 'supported');

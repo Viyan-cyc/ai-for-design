@@ -1,0 +1,56 @@
+/** Production-path integration fixtures; generated geometry lives in temp, never in the skill. */
+import { pixelPNG } from './asset-fixture-data.mjs';
+import assert from 'node:assert/strict';
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync, symlinkSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { resolve } from 'node:path';
+import { createServer } from 'node:http';
+import { spawnSync } from 'node:child_process';
+import { receive, loadPackage, describe, confirm, inject, exportPackage, inputFiles, uploadAdapter, safePath, outsideSkill } from '../lib/designer-assets.mjs';
+import { previewPackage } from '../lib/asset-preview.mjs';
+import { searchRemote, downloadCandidate } from '../lib/asset-service.mjs';
+import { writeZip } from '../import-assets.mjs';
+import { initProject } from '../init.mjs';
+const temp=mkdtempSync(resolve(tmpdir(),'designer-assets-')),input=resolve(temp,'input'),pkgDir=resolve(temp,'package');mkdirSync(input);
+assert.throws(()=>outsideSkill(resolve('..hidden-output')),/outside/);
+const isolated=resolve(temp,'isolated'),external=resolve(temp,'external');mkdirSync(isolated);mkdirSync(external);symlinkSync(external,resolve(isolated,'link'),'junction');assert.throws(()=>safePath(isolated,'link/new.bin'),/escapes/);
+const model={asset:{version:'2.0'},scene:0,scenes:[{nodes:[0]}],nodes:[{name:'body',mesh:0}],meshes:[{primitives:[{attributes:{POSITION:0},material:0}]}],buffers:[{uri:'mesh.bin',byteLength:36}],bufferViews:[{buffer:0,byteLength:36}],accessors:[{bufferView:0,componentType:5126,count:3,type:'VEC3',min:[-0.5,0,-0.5],max:[0.5,1,0.5]}],materials:[{doubleSided:true,pbrMetallicRoughness:{baseColorFactor:[0.2,0.6,0.8,1]}}]};
+const bin=Buffer.from(new Float32Array([-0.5,0,-0.5,0.5,0,-0.5,-0.5,1,0.5]).buffer);
+writeFileSync(resolve(input,'object1.gltf'),JSON.stringify(model));writeFileSync(resolve(input,'mesh.bin'),bin);
+writeFileSync(resolve(input,'object2.gltf'),JSON.stringify({...model,buffers:[{uri:'missing.bin',byteLength:36}]}));
+writeFileSync(resolve(input,'notes.txt'),'company equipment');
+const zip=resolve(temp,'upload.zip');writeZip(['object1.gltf','object2.gltf','mesh.bin','notes.txt'].map(name=>({name,data:readFileSync(resolve(input,name))})),zip);
+let pkg=receive(zip,pkgDir,'Company equipment');assert.equal(pkg.assets.length,2);assert.equal(pkg.assets[0].files.length,2);assert.equal(pkg.assets[1].technicalStatus,'invalid');assert(pkg.unassociatedFiles.includes('notes.txt'));
+assert.throws(()=>receive(zip,pkgDir),/new directory/);
+const badZip=resolve(temp,'unsafe.zip');writeZip([{name:'../escape.gltf',data:Buffer.from('{}')}],badZip);assert.throws(()=>inputFiles(badZip),/Unsafe/);
+assert.throws(()=>inputFiles(zip,{files:1,totalBytes:100000,fileBytes:100000}),/entries|limit/);
+assert.throws(()=>confirm(pkgDir,1),/not loadable|No usable/);
+pkg=await previewPackage(pkgDir);assert.equal(pkg.assets[0].technicalStatus,'loadable',pkg.assets[0].error);assert(existsSync(resolve(pkgDir,pkg.assets[0].thumbnail)));
+const id=pkg.assets[0].id;pkg=describe(pkgDir,[{id,name:'Company device',description:'User supplied equipment',source:'user'}]);
+assert.throws(()=>confirm(pkgDir,pkg.revision-1,{allowPartial:true,confirmFront:true,confirmScale:true}),/Stale/);
+pkg=confirm(pkgDir,pkg.revision,{allowPartial:true,confirmFront:true,confirmScale:true});assert.deepEqual(pkg.confirmation.usable,[id]);
+const exported=resolve(temp,'library.zip');exportPackage(pkgDir,exported,{source_id:16});const exportedFiles=inputFiles(exported);const cfg=JSON.parse(exportedFiles.find(f=>f.name==='config.json').data);
+assert.equal(cfg.data.length,1);assert.equal(cfg.meta.source_id,16);assert(!('group_id' in cfg.meta));assert(exportedFiles.some(f=>f.name===cfg.data[0].file_path));assert.equal((await uploadAdapter(exported,{},{})).status,'not_configured');
+const project=resolve(temp,'project');const initialized=initProject(project,{deferBuild:true});assert(initialized.ok,JSON.stringify(initialized.errors));inject(pkgDir,project,[id]);
+const scenePath=resolve(project,'public/scene-data.json'),scene=JSON.parse(readFileSync(scenePath));scene.asset=[{id:'device_1',position:[0,0,0],params:{assetId:id}}];writeFileSync(scenePath,JSON.stringify(scene));
+const run=(...args)=>spawnSync(process.execPath,args,{encoding:'utf8'});
+const build=run('scripts/build-offline.mjs',project);assert.equal(build.status,0,build.stdout+build.stderr);console.log('PASS uploaded package -> offline build');
+const preview=run('scripts/verify/offline-preview.mjs',resolve(project,'offline/index.3d.html'));assert.equal(preview.status,0,preview.stdout+preview.stderr);console.log(preview.stdout);
+writeFileSync(resolve(pkgDir,'files/mesh.bin'),Buffer.alloc(36));assert.throws(()=>inject(pkgDir,project,[id]),/changed/);
+console.log('PASS package discovery/dependencies/preview/confirmation/export/isolation');
+const server=createServer((req,res)=>{if(req.url==='/search'){res.setHeader('content-type','application/json');res.end(JSON.stringify({results:[[{id:1,source_id:16,name:'rack',file_type:'gltf',file_path:`http://127.0.0.1:${server.address().port}/model.gltf`},{id:1,source_id:16,name:'duplicate',file_type:'gltf',file_path:`http://127.0.0.1:${server.address().port}/model.gltf`}]]}));}else if(req.url==='/model.gltf')res.end(JSON.stringify(model));else if(req.url==='/mesh.bin')res.end(bin);else{res.statusCode=404;res.end();}});
+await new Promise(ok=>server.listen(0,'127.0.0.1',ok));
+try{
+ const base=`http://127.0.0.1:${server.address().port}`,config={endpoint:base+'/search',allowedOrigins:[base],filters:{source_id:16}};
+ const found=await searchRemote(['rack'],config);assert.equal(found.results[0].assets.length,1);
+ const remoteDir=resolve(temp,'remote');await downloadCandidate(found.results[0].assets[0],remoteDir,config);const remote=await previewPackage(remoteDir);assert.equal(remote.assets[0].technicalStatus,'loadable');assert.equal(remote.assets[0].origin,'remote');
+ assert.equal((await searchRemote(['rack'],null)).status,'not_configured');
+ await assert.rejects(()=>downloadCandidate({...found.results[0].assets[0],entryUrl:'https://unconfigured.invalid/model.glb'},resolve(temp,'denied'),config),/origin/);
+ console.log('PASS mock batch retrieval/dedup/download dependency closure/allowed origins');
+}finally{await new Promise(ok=>server.close(ok));}
+const textures=resolve(temp,'texture-input');mkdirSync(textures);writeFileSync(resolve(textures,'mesh.bin'),bin);
+for(const [name,data] of [['good',pixelPNG],['bad',Buffer.from('invalid png')]]){writeFileSync(resolve(textures,name+'.png'),data);writeFileSync(resolve(textures,name+'.gltf'),JSON.stringify({...model,images:[{uri:name+'.png'}],textures:[{source:0}],materials:[{doubleSided:true,pbrMetallicRoughness:{baseColorTexture:{index:0}}}]}));}
+const textureDir=resolve(temp,'texture-package');receive(textures,textureDir);const checked=await previewPackage(textureDir);
+assert.equal(checked.assets.find(a=>a.entry==='good.gltf').technicalStatus,'loadable');assert.equal(checked.assets.find(a=>a.entry==='bad.gltf').technicalStatus,'preview_failed');
+console.log('PASS shared dependency and valid/corrupt texture rendering');
+console.log('FIXTURE:',temp);

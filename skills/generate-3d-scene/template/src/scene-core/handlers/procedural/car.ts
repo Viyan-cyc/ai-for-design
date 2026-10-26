@@ -123,13 +123,21 @@ export const registerCarHandler = (sceneEngine: SceneEngine): void => {
     const params = node.params ?? {};
     const paintColor = typeof params.paintColor === 'string' ? params.paintColor : '#2c5f9e';
 
+    // 轮廓沿 X 设计（车头 -X）；统一资产正面为 +Z（model-spec.md），在构造阶段整体转 90°
+    // （绕 +Y 旋转 +90°：局部 -X 车头指向世界 +Z），不在摆放时加特殊旋转补偿。
+    const build = new THREE.Group();
+    build.name = 'car_body';
+    build.rotation.y = Math.PI / 2;
+    group.add(build);
+    const host = build;
+
     // ── 车身（轮廓挤出 + 倒角）
     const paint = new THREE.MeshStandardMaterial({
       color: paintColor, metalness: 0.75, roughness: 0.28,
     });
     const body = new THREE.Mesh(extrudeOutline(BODY_OUTLINE, WIDTH, 0.06), paint);
     body.name = 'body';
-    group.add(body);
+    host.add(body);
 
     // ── 座舱玻璃（独立轮廓，缩进+抬高避免 z-fighting）
     const glass = new THREE.MeshPhysicalMaterial({
@@ -138,7 +146,7 @@ export const registerCarHandler = (sceneEngine: SceneEngine): void => {
     });
     const cabin = new THREE.Mesh(extrudeOutline(GLASS_OUTLINE, WIDTH - 0.14, 0.03), glass);
     cabin.name = 'cabin_glass';
-    group.add(cabin);
+    host.add(cabin);
 
     // ── 前后保险杠（哑光塑料，贴齐车身端面）
     const bumperMat = new THREE.MeshStandardMaterial({ color: '#1d1f24', metalness: 0.15, roughness: 0.75 });
@@ -149,7 +157,7 @@ export const registerCarHandler = (sceneEngine: SceneEngine): void => {
       );
       bumper.name = `bumper_${end}`;
       bumper.position.set(bx, 0.27, 0);
-      group.add(bumper);
+      host.add(bumper);
       // 通风口格栅
       const grille = new THREE.Mesh(
         new THREE.BoxGeometry(0.03, 0.10, WIDTH - 0.5),
@@ -157,7 +165,7 @@ export const registerCarHandler = (sceneEngine: SceneEngine): void => {
       );
       grille.name = `grille_${end}`;
       grille.position.set(bx - flip * 0.075, 0.34, 0);
-      group.add(grille);
+      host.add(grille);
     }
 
     // ── 车灯（嵌入端面，自发光）
@@ -171,11 +179,11 @@ export const registerCarHandler = (sceneEngine: SceneEngine): void => {
       const head = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.10, 0.34), headMat);
       head.name = `headlight_${side < 0 ? 'l' : 'r'}`;
       head.position.set(-2.06, 0.52, side * (WIDTH / 2 - 0.28));
-      group.add(head);
+      host.add(head);
       const tail = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.09, 0.30), tailMat);
       tail.name = `taillight_${side < 0 ? 'l' : 'r'}`;
       tail.position.set(2.06, 0.60, side * (WIDTH / 2 - 0.26));
-      group.add(tail);
+      host.add(tail);
     }
 
     // ── 后视镜
@@ -184,11 +192,11 @@ export const registerCarHandler = (sceneEngine: SceneEngine): void => {
       const arm = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.03, 0.12), mirrorMat);
       arm.name = `mirror_arm_${side < 0 ? 'l' : 'r'}`;
       arm.position.set(-0.62, 0.96, side * (WIDTH / 2 + 0.02));
-      group.add(arm);
+      host.add(arm);
       const cap = new THREE.Mesh(new THREE.BoxGeometry(0.10, 0.08, 0.05), paint);
       cap.name = `mirror_cap_${side < 0 ? 'l' : 'r'}`;
       cap.position.set(-0.62, 0.96, side * (WIDTH / 2 + 0.09));
-      group.add(cap);
+      host.add(cap);
     }
 
     // ── 车轮（四个，前轮略内束视觉可忽略）
@@ -203,7 +211,7 @@ export const registerCarHandler = (sceneEngine: SceneEngine): void => {
       const wheel = buildTire();
       wheel.name = `wheel_${pos}_${side}`;
       wheel.position.set(x, WHEEL.y, z);
-      group.add(wheel);
+      host.add(wheel);
       // 轮眉（拱形薄壳，半球柱裁一半）
       const fender = new THREE.Mesh(
         new THREE.CylinderGeometry(WHEEL.radius + 0.07, WHEEL.radius + 0.07, WHEEL.width + 0.06, 18, 1, false, 0, Math.PI),
@@ -213,7 +221,7 @@ export const registerCarHandler = (sceneEngine: SceneEngine): void => {
       fender.rotation.z = Math.PI / 2;
       fender.rotation.y = z > 0 ? -Math.PI / 2 : Math.PI / 2;
       fender.position.set(x, WHEEL.y, z);
-      group.add(fender);
+      host.add(fender);
     }
 
     // ── 车顶天线（小细节）
@@ -224,7 +232,7 @@ export const registerCarHandler = (sceneEngine: SceneEngine): void => {
     antenna.name = 'antenna';
     antenna.position.set(1.15, 1.16, -0.3);
     antenna.rotation.z = -0.15;
-    group.add(antenna);
+    host.add(antenna);
 
     return group;
   });

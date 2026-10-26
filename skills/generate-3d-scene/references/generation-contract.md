@@ -7,7 +7,7 @@
 - `node scripts/ensure-env.mjs`：每个会话检查一次；失败执行 HINT 的 setup 命令。
 - 没有 Node：Windows 用 `powershell -ExecutionPolicy Bypass -File "<skill>/scripts/install/install.ps1"`；macOS 用 `bash "<skill>/scripts/install/install.sh"`。下载和 npm 源策略与 EP 相同。
 - 依赖安装在外部环境；`GTS3D_ENV_DIR` 可指定位置。不要在 skill/template 中执行 npm install。
-- `node scripts/init.mjs <工程> --profile empty --assets <id列表或referenced> --deps shared --defer-build`。
+- `node scripts/init.mjs <工程> --profile empty --assets referenced --deps shared --defer-build`。
 - 空工程默认不登记示例业务。先创建工程，再写自定义 handler、scene-profile 和 scene-data；不要把尚未注册的自定义分组通过 init 的 --scene 提前传入。
 - 自定义依赖/组件工程使用独立依赖；不要在连接共享 node_modules 的工程执行 npm install。需要独立依赖时初始化使用 --deps copy 或 --deps install。
 
@@ -88,10 +88,11 @@ update 仅在 params 改变时调用；transform 更新由引擎完成。返回 
 
 ## 资产与布局
 
-- 用户明确要求纯几何体时跳过模型检索；否则一次批量查询主要对象，不循环改词穷搜。
-- `search-assets.mjs --batch <queries.txt> --json --brief`；PowerShell 用 UTF-8 文件，不使用 `< file` 重定向。单查也支持 --brief。
-- brief 只返回候选摘要（显示尺寸经过舍入）；选定后用 `asset-info.mjs <id> [id...]` 精确读取已缓存的尺寸、原点、面数与兼容性。bbox 数值是模型坐标；units=unverified 时不能当作已证实米制。null 表示未测，不猜数值。
-- compatibility 仅检查加载扩展，不代表视觉或交互验收；unsupported 换兼容资产或几何降级，unknown 时按需检查。
+- 默认必须先执行主要对象的批量检索，再编写未匹配对象的几何 handler。仅用户明确要求纯几何/不用模型库时跳过；低多边形、工业风格和速度要求不能作为跳过理由。已确认上传包覆盖的对象不重复查库，地面/墙体/标线等基础结构可直接几何。
+- 将缺少的对象类别写入 UTF-8 文件，执行 `node scripts/search-assets.mjs --batch <查询文件> --brief --json`；同类实例仅查一次。依据候选名称/用途选型，不仅看分数；匹配则下载检查注入，无合适候选或请求失败才降级。未调用不得说未命中，请求失败不得说库里没有。不循环改词穷搜。
+- 用户包及库模型按 designer-assets.md 接收、确认、下载、注入；无包时直接检索，纯几何跳过。PowerShell 查询文件使用 UTF-8。
+- 默认检索来自内网，不再读取 skill 内置模型。文件及依赖物化到工程，运行时离线。未配置检索时如实提示并按需求几何降级。
+- 具体尺寸和编辑限制读取模型包 list/package.json，单位未确认时不得宣称为真实米制。向量分数不是匹配正确率。
 - `layout-nodes.mjs <patterns.json> <groups.json>` 展开阵列、堆叠或沿直线排列；将结果分组合并进 scene-data，保留舞台配置。例如：
 
 ```json
@@ -139,3 +140,7 @@ PowerShell 文本读写显式指定 UTF-8，优先宿主编辑工具；不因终
 布局合并可复制 scripts/scaffolds/compose-scene.mjs 到工程 scripts。舞台与不规则节点存 scenes/stage.json，配方存 src/layout-recipe.json；脚本输出独立候选 scenes/scene.generated.json，检查节点范围后再用于首次 scene-data，不自动覆盖编辑存档。
 
 保存文件只保证导入保存时使用的同一预览；源码变化重新构建后可能因 sourceId 不同而拒绝旧存档。资产检索未命中时可几何降级，运行时加载失败不等于自动生成替代模型。
+
+## 统一坐标约定
+
+场景和资产使用右手坐标系、+Y 向上、+Z 为资产正面、长度单位米。标准落地资产以底部中心为原点，根节点 position/rotation 为零、scale 为一；不要通过逐模型隐式补偿宣称已标准化。相机局部 -Z 观察方向保持引擎原生约定。未确认的历史资产不能仅标记为米制或已符合正面/原点标准。

@@ -1,10 +1,1 @@
-{
-  "example": {
-    "model": "models/example.glb",
-    "format": "glb"
-  },
-  "person": {
-    "model": "models/person.glb",
-    "format": "glb"
-  }
-}
+{}

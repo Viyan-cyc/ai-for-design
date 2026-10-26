@@ -26,6 +26,7 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync, cpSync, readdirSync
 import { join, resolve, basename, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { spawnSync } from 'node:child_process';
+import { inject } from './lib/designer-assets.mjs';
 import { checkProject } from './build.mjs';
 import { checkEnvironment, npmEntry } from './lib/environment.mjs';
 import { buildAssetCatalog, resolveAsset, referencedAssetIds } from './lib/asset-catalog.mjs';
@@ -229,7 +230,7 @@ export const initProject = (target, opts = {}) => {
 
   /* ④ 资产注入（manifests 真相源：真实 modelPath + glTF 依赖闭包 + 状态贴图）
      assetsRoot 测试缝：gates 用假资产库验证目录闭包，生产恒为 SKILL_ROOT */
-  const assetsRoot = opts.assetsRoot ?? SKILL_ROOT;
+  const assetsRoot = opts.assetsRoot ?? process.env.GTS3D_LEGACY_ASSET_ROOT ?? SKILL_ROOT;
   const catalog = buildAssetCatalog(assetsRoot);
   const selector = opts.assets ?? 'referenced';
   let wanted;
@@ -274,6 +275,10 @@ export const initProject = (target, opts = {}) => {
     };
     copied.push(id);
   }
+  if (opts.assetPackage) {
+    // New packages are copied below after the legacy manifest is written.
+    missingAssets.length = 0;
+  }
   if (missingAssets.length) {
     errors.push(`skill 资产库无法解析以下资产（catalog manifests 为真相源）：${missingAssets.join('; ')}`);
   }
@@ -304,6 +309,11 @@ export const initProject = (target, opts = {}) => {
   // 落资产映射（P2-R1：build 与运行时 loader 的同一真相源；旧工程无此文件走 legacy）
   mkdirSync(join(out, 'public', 'assets'), { recursive: true });
   writeFileSync(join(out, 'public', 'assets', 'asset-manifest.json'), `${JSON.stringify(manifestOut, null, 2)}\n`);
+
+  if (opts.assetPackage) {
+    try { if(selector === 'all' || wanted.length) inject(opts.assetPackage, out, selector === 'all' ? undefined : wanted); }
+    catch(e) { errors.push(`Package injection: ${e.message}`); }
+  }
 
   /* ⑤ 组件库（可选；多 tgz 须显式选版本，不按字典序猜最新） */
   const components = { included: false };
@@ -425,6 +435,10 @@ const parseArgs = (argv) => {
       opts.profile = next();
     } else if (a === '--scene') {
       opts.scene = next();
+    } else if (a === '--asset-package') {
+      opts.assetPackage = next();
+    } else if (a === '--assets-root') {
+      opts.assetsRoot = next();
     } else if (a === '--assets') {
       opts.assets = next();
     } else if (a === '--with-components') {

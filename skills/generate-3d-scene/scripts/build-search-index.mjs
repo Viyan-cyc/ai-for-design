@@ -1,3 +1,4 @@
+import { environment } from './lib/environment.mjs';
 import { assetMetadata } from './lib/asset-metadata.mjs';
 /**
  * build-search-index.mjs — 资产检索索引构建（n-gram TF-IDF 词法向量）
@@ -25,7 +26,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const SKILL_ROOT = resolve(__dirname, '..');
-export const DEFAULT_LIB = resolve(SKILL_ROOT, 'assets');
+export const DEFAULT_LIB = resolve(environment().dir, 'legacy-assets');
 
 const INDEX_VERSION = 1;
 const INDEX_PROFILE = 'ngram-tfidf-v1';

@@ -228,6 +228,9 @@ export const openBrowserSession = async (options = {}, adapters = {}) => {
   let ownerClosing;
   const close = () => {
     ownerClosing ??= (async () => {
+      // Edge may relaunch: terminating only the launcher PID leaves the owned browser alive.
+      const ownedPage=[...pages][0];
+      if(ownedPage)try{await ownedPage.rpc('Browser.close',{},1000);}catch{/* closing the transport is expected */}
       await Promise.allSettled([...pages].map((page) => page.close()));
       if (proc.exitCode === null && proc.signalCode === null) {
         await new Promise((resolve) => {

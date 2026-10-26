@@ -1,3 +1,4 @@
+import { triangleGlb, seedProject } from './asset-fixture-data.mjs';
 import { dependencyPath } from '../lib/environment.mjs';
 // P1 regression tests use production modules, not copied implementations.
 // node scripts/verify/p1-fixtures.mjs --node-only
@@ -1469,6 +1470,7 @@ await test('P4-R3 stale slot fails closed with exact path; real slot passes (V19
       (n) => s.endsWith(n) || s.includes(`/${n}`) || s.includes(`\\${n}`),
     ),
   });
+  seedProject(src);
   if (!existsSync(join(src, 'node_modules'))) symlinkSync(dependencyPath(), join(src, 'node_modules'), process.platform === 'win32' ? 'junction' : 'dir');
   try {
     const p = join(src, 'public/scene-data.json');
@@ -1476,9 +1478,9 @@ await test('P4-R3 stale slot fails closed with exact path; real slot passes (V19
     const exId = data.examples?.[0]?.id ?? 'example_01';
     const out = join(tmp, 'out');
     // 负例：真实槽位 + 陈旧槽位混合 → FAIL 精确报陈旧路径，无产物
-    // （example 是非 Draco GLB——真 GLTFLoader 清单含 node_damagedHelmet_-6514）
+    // （example 是非 Draco GLB——真 GLTFLoader 清单含 body）
     data.__visuals = {
-      [exId]: { slots: { 'node_damagedHelmet_-6514': { color: '#00ff00' }, 'ghost/mesh': { color: '#ff0000' } } },
+      [exId]: { slots: { 'body': { color: '#00ff00' }, 'ghost/mesh': { color: '#ff0000' } } },
     };
     writeFileSync(p, JSON.stringify(data, null, 2));
     const r = await stripEdit(src, out, { force: true });
@@ -1488,7 +1490,7 @@ await test('P4-R3 stale slot fails closed with exact path; real slot passes (V19
       `错误报具体槽位路径：${JSON.stringify(r.errors)}`,
     );
     assert.ok(
-      !r.errors.some((e) => e.includes('node_damagedHelmet_-6514')),
+      !r.errors.some((e) => e.includes('body')),
       '真实槽位不误报',
     );
     // 正例：只留真实槽位 → PASS + 编译进 appearance
@@ -1497,7 +1499,7 @@ await test('P4-R3 stale slot fails closed with exact path; real slot passes (V19
     const r2 = await stripEdit(src, out, { force: true });
     assert.equal(r2.ok, true, JSON.stringify(r2.errors));
     const ap = readFileSync(join(out, 'src/scene-core/generated/appearance.ts'), 'utf8');
-    assert.ok(ap.includes('node_damagedHelmet_-6514'), '真实槽位编译进 appearance');
+    assert.ok(ap.includes('body'), '真实槽位编译进 appearance');
   } finally {
     rmSync(tmp, { recursive: true, force: true });
   }
@@ -1515,6 +1517,7 @@ await test('P4-RR2 procedural slots: runtime-manifest positive, stale negative, 
       (n) => s.endsWith(n) || s.includes(`/${n}`) || s.includes(`\\${n}`),
     ),
   });
+  seedProject(src);
   if (!existsSync(join(src, 'node_modules'))) symlinkSync(dependencyPath(), join(src, 'node_modules'), process.platform === 'win32' ? 'junction' : 'dir');
   try {
     assert.ok(existsSync(join(src, 'node_modules', 'typescript')), '夹具含 typescript（运行时清单前提）');
@@ -1581,6 +1584,7 @@ await test('P4-RRR1 multi-primitive model: loader-true slots export, stale fails
       (n) => s.endsWith(n) || s.includes(`/${n}`) || s.includes(`\\${n}`),
     ),
   });
+  seedProject(src);
   if (!existsSync(join(src, 'node_modules'))) symlinkSync(dependencyPath(), join(src, 'node_modules'), process.platform === 'win32' ? 'junction' : 'dir');
   try {
     // 构造审稿形态多 primitive 模型：node part / mesh surface / 2 primitive（数据 URI
@@ -1632,10 +1636,10 @@ await test('P4-RRR1 multi-primitive model: loader-true slots export, stale fails
     // emulateLoaderSlotKeys 为模块私有；等价性经 manifest 内 example 资产间接验证：
     // example.glb（非 Draco 单 primitive）真 loader 清单与运行时形态一致
     const exKeys = runtimeKeys.get(data.examples?.[0]?.id ?? 'example_01');
-    assert.ok(exKeys && [...exKeys].includes('node_damagedHelmet_-6514'), '非 Draco 资产真 loader 清单命中');
-    // Draco（person）清单：复刻路径产出 Armature/Ch23_*（运行时同形态）
+    assert.ok(exKeys && [...exKeys].includes('body'), '非 Draco 资产真 loader 清单命中');
+    // Generated hierarchical asset fixture; compressed assets require separate external fixtures.
     const personKeys = runtimeKeys.get('person_01');
-    assert.ok(personKeys && [...personKeys].some((k) => k.startsWith('Armature/Ch23_')), 'Draco 复刻清单与运行时槽位形态一致');
+    assert.ok(personKeys && [...personKeys].some((k) => k.startsWith('assembly/part')), '生成的层级资产清单与运行时槽位一致');
 
     // 正例：多 primitive 合法槽位 → strip 成功 + 编译进 appearance
     data.__visuals = { mp_01: { slots: { 'part/surface': { color: '#00ff00' }, 'part/surface_1': { color: '#0000ff' } } } };
@@ -1728,6 +1732,7 @@ await test('P4-RRRR1 external bin (encoded filename): real slot exports, missing
       (n) => s.endsWith(n) || s.includes(`/${n}`) || s.includes(`\\${n}`),
     ),
   });
+  seedProject(src);
   if (!existsSync(join(src, 'node_modules'))) symlinkSync(dependencyPath(), join(src, 'node_modules'), process.platform === 'win32' ? 'junction' : 'dir');
   try {
     // 合法多文件 glTF：具名节点 part + 外部 data.bin（磁盘文件名含空格/非 ASCII，
@@ -1934,7 +1939,7 @@ await test('P5-R3 import publish: commit-phase failure rolls back, placeholder d
     // 完整生产入口：合法包（真 GLB 过门禁）正常入库
     const pkg = join(tmp, 'pkg');
     mkdirSync(join(pkg, 'data'), { recursive: true });
-    writeFileSync(join(pkg, 'data', 'p5r3_probe.glb'), readFileSync(join(template, '..', 'assets', 'models', 'rack.glb')));
+    writeFileSync(join(pkg, 'data', 'p5r3_probe.glb'), triangleGlb());
     writeFileSync(join(pkg, 'manifest.json'), JSON.stringify({
       meta: { version: '1' },
       data: [{ name: 'P5R3 probe', file_name: 'p5r3_probe.glb', file_path: 'data/p5r3_probe.glb', tags: ['test'] }],
@@ -2318,7 +2323,7 @@ await test('P5-RR2 publish rollback-failure: backup preserved, journal on disk, 
     // 门禁全过的合法包，发布段被占位目录卡死 → 入口抛错且库无部分写入
     const pkg = join(tmp, 'pkg');
     mkdirSync(join(pkg, 'data'), { recursive: true });
-    writeFileSync(join(pkg, 'data', 'rr2_probe.glb'), readFileSync(join(template, '..', 'assets', 'models', 'rack.glb')));
+    writeFileSync(join(pkg, 'data', 'rr2_probe.glb'), triangleGlb());
     writeFileSync(join(pkg, 'manifest.json'), JSON.stringify({
       meta: { version: '1' },
       data: [{ name: 'RR2 probe', file_name: 'rr2_probe.glb', file_path: 'data/rr2_probe.glb', tags: ['test'] }],

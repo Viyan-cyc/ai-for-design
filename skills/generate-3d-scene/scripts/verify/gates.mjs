@@ -1,3 +1,4 @@
+import { seedLibrary, seedProject } from './asset-fixture-data.mjs';
 /**
  * gates.mjs — 构建门禁脚本的回归设施
  *
@@ -63,11 +64,13 @@ const run = (script, args, expectZero = true) => {
   return { ok: expectZero ? r.status === 0 : r.status !== 0, status: r.status, out };
 };
 
+const FIXTURE_LIB = seedLibrary(join(ROOT, 'external-library'));
+process.env.GTS3D_LEGACY_ASSET_ROOT = FIXTURE_LIB;
 const F = (n) => join(ROOT, n);
 const firstFail = (out) => out.split('\n').find((l) => l.includes('✗')) ?? '';
 
 /* ── 夹具 ──────────────────────────────────────────────────────────────────── */
-copy(TEMPLATE, F('tpl'));                       // 编辑态工程（含 src/edit）
+copy(TEMPLATE, F('tpl')); seedProject(F('tpl'));                       // 编辑态工程（含 src/edit）
 copy(F('tpl'), F('stripped'));
 rmSync(join(F('stripped'), 'src', 'edit'), { recursive: true, force: true });
 
@@ -392,8 +395,8 @@ rmSync(join(F('stripped'), 'src', 'edit'), { recursive: true, force: true });
   const r = run('init.mjs', [out, '--name', 'demo-proj', '--profile', 'demo'], true);
   const models = existsSync(join(out, 'public/assets/models')) ? readdirSync(join(out, 'public/assets/models')) : [];
   check(
-    'init: --profile demo 注入 demo 场景资产闭包（example+person）',
-    r.ok && models.length === 2 && ['example.glb', 'person.glb'].every((f) => models.includes(f)),
+    'init: --profile demo 注入 纯几何 demo 不注入业务模型',
+    r.ok && models.length === 0,
     `status=${r.status} [${models.join(',')}] ${firstFail(r.out)}`,
   );
 }
@@ -408,7 +411,7 @@ rmSync(join(F('stripped'), 'src', 'edit'), { recursive: true, force: true });
   );
   check(
     'init: --assets all 注入全部库内模型（catalog manifests 全集）',
-    r.ok && models.length >= 59 && ['example.glb', 'person.glb', 'rack.glb'].every((f) => models.includes(f)),
+    r.ok && models.length === 3 && ['example.glb', 'person.glb', 'rack.glb'].every((f) => models.includes(f)),
     `[${models.length} 个] ${firstFail(r.out)}`,
   );
 }
@@ -425,10 +428,10 @@ if (withBuild) {
 {
   // 负例：库内资产复制后破坏其贴图 bufferView 的 buffer 字段（复现 56 资产当年缺陷形态）
   // ——规格检查会过（自解析默认 buffer=0），但 three 加载必须 FAIL
-  const srcGlb = readdirSync(join(SKILL, 'assets', 'models')).find((f) => f.endsWith('.glb'));
+  const srcGlb = readdirSync(join(FIXTURE_LIB, 'assets', 'models')).find((f) => f.endsWith('.glb'));
   const badDir = F('gate-bad');
   mkdirSync(badDir, { recursive: true });
-  const glbBuf = readFileSync(join(SKILL, 'assets', 'models', srcGlb));
+  const glbBuf = readFileSync(join(FIXTURE_LIB, 'assets', 'models', srcGlb));
   const jsonLen = glbBuf.readUInt32LE(12);
   const json = JSON.parse(glbBuf.slice(20, 20 + jsonLen).toString('utf8'));
   // 挑一个无 target 的 view（贴图类）剥掉 buffer 字段；全有 target 时剥第一个
@@ -453,9 +456,9 @@ if (withBuild) {
 
   // 正例：库内真实资产（含 Draco person 的规格豁免路径只取门禁项——person 因面数基线 FAIL
   // 不适合当正例，用非 Draco 资产走完整 validate 含 three parse）
-  const okGlb = readdirSync(join(SKILL, 'assets', 'models'))
+  const okGlb = readdirSync(join(FIXTURE_LIB, 'assets', 'models'))
     .filter((f) => f.endsWith('.glb') && !['person.glb'].includes(f))[0];
-  const rOk = run('validate-model.mjs', [join(SKILL, 'assets', 'models', okGlb)], true);
+  const rOk = run('validate-model.mjs', [join(FIXTURE_LIB, 'assets', 'models', okGlb)], true);
   check('validate: 库内资产过消费端加载门禁（three 真实 parse）', rOk.ok, `status=${rOk.status} ${firstFail(rOk.out)}`);
 }
 

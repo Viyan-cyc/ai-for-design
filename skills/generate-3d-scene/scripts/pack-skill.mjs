@@ -9,7 +9,7 @@ const dest = process.argv[2] && resolve(process.argv[2]);
 const inside = (path) => { const rel = relative(root, path); return rel === '' || (!isAbsolute(rel) && rel !== '..' && !rel.startsWith(`..${sep}`)); };
 if (!dest || inside(dest)) throw new Error('Provide a ZIP output path outside the skill directory');
 const excluded = new Set(['node_modules', 'dist', 'offline', '.cache', '.git', '__pycache__']);
-const roots = ['SKILL.md', 'README.md', 'scripts', 'references', 'template', 'assets', 'vendor'];
+const roots = ['SKILL.md', 'README.md', 'scripts', 'references', 'template', 'vendor'];
 const files = [];
 function walk(path, name) {
   const stat = lstatSync(path);

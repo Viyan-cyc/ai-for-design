@@ -1,3 +1,4 @@
+import { pixelPNG } from './asset-fixture-data.mjs';
 import { dependencyPath } from '../lib/environment.mjs';
 /** One-time maintenance regression. Does not run during scene generation. */
 import assert from 'node:assert/strict';
@@ -25,14 +26,14 @@ for (const [i, name] of ['嵌套 A', '嵌套 B'].entries()) {
   mkdirSync(resolve(dir, 'images'), { recursive: true });
   const values = new Float32Array([0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1]);
   writeFileSync(resolve(dir, 'mesh/geometry.bin'), Buffer.from(values.buffer));
-  cpSync(resolve(template, 'public/assets/textures/example.jpg'), resolve(dir, 'images/texture.jpg'));
+  writeFileSync(resolve(dir, 'images/texture.png'), pixelPNG);
   save(resolve(dir, 'mesh/model.gltf'), {
     asset: { version: '2.0' }, scene: 0, scenes: [{ nodes: [0] }], nodes: [{ name: 'triangle', mesh: 0 }],
     meshes: [{ primitives: [{ attributes: { POSITION: 0, TEXCOORD_0: 1 }, material: 0 }] }],
     buffers: [{ uri: 'geometry.bin', byteLength: 60 }],
     bufferViews: [{ buffer: 0, byteOffset: 0, byteLength: 36 }, { buffer: 0, byteOffset: 36, byteLength: 24 }],
     accessors: [{ bufferView: 0, componentType: 5126, count: 3, type: 'VEC3', min: [0, 0, 0], max: [1, 1, 0] }, { bufferView: 1, componentType: 5126, count: 3, type: 'VEC2' }],
-    images: [{ uri: '../images/texture.jpg' }], textures: [{ source: 0 }],
+    images: [{ uri: '../images/texture.png' }], textures: [{ source: 0 }],
     materials: [{ pbrMetallicRoughness: { baseColorTexture: { index: 0 }, baseColorFactor: [i, 1 - i, 0, 1] }, doubleSided: true }],
   });
   manifest[`test${i}`] = { model: `models/${name}/mesh/model.gltf`, format: 'gltf' };

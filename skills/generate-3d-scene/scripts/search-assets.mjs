@@ -1,7 +1,7 @@
 /**
  * search-assets.mjs — 资产检索 CLI（降级阶梯第 1 层：检索命中直接用）
  *
- * 读 build-search-index.mjs 产出的 assets/search-index.json，query → top-k 资产。
+ * 默认检索已配置的内网服务；--lib 显式启用外部旧索引。
  * 输出字段（检索结果条目）：id / name / score / format / category / tags / modelPath / description。
  *
  * P5.2：批量检索——一次进程多查询（场景要素清单一次出全，不再逐查询起进程）。
@@ -14,13 +14,14 @@
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { serviceConfig, searchRemote } from './lib/asset-service.mjs';
 import { rank, DEFAULT_LIB } from './build-search-index.mjs';
 const USAGE = `用法: node search-assets.mjs <query> [选项]
        node search-assets.mjs --batch <queries.txt> [选项]
 
 选项:
   --top N              返回条数（默认 5）
-  --lib <dir>          资产库目录（默认 skill 的 assets/）
+  --lib <dir>          显式外部旧式资产库；默认使用配置的内网检索
   --batch <file>       批量检索：每行一个查询（# 注释行跳过），逐查询输出
   --json               仅输出 JSON（批量模式输出数组，逐项含 query 字段）
   --brief              Compact candidate summaries; asset-info provides full details
@@ -93,8 +94,17 @@ export const searchAssets = (index, query, top = 5, brief = false) => {
   });
 };
 
-const main = () => {
+const main = async () => {
   const opts = parseArgs(process.argv.slice(2));
+  if (!opts.help && !opts.lib) {
+    const queries = opts.batch ? readFileSync(opts.batch, "utf8").split(/\r?\n/).map(s=>s.trim()).filter(s=>s && !s.startsWith("#")) : [opts.query];
+    if (!queries.length || queries.some(q=>!q)) throw new Error("Query required");
+    const config = serviceConfig();
+    const result = await searchRemote(queries, {...config, topK: process.argv.includes("--top") ? opts.top : (config.topK ?? opts.top)});
+    console.log(JSON.stringify(result));
+    if (result.status !== "ok" || result.results.every(r=>!r.assets.length)) process.exitCode=3;
+    return;
+  }
   if (opts.help || (!opts.query && !opts.batch)) {
     console.log(USAGE);
     process.exit(opts.help ? 0 : 2);
@@ -140,5 +150,5 @@ const main = () => {
 };
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  try { main(); } catch (e) { console.error(`RESULT: FAIL | ${e.message}`); process.exitCode = 2; }
+  try { await main(); } catch (e) { console.error(`RESULT: FAIL | ${e.message}`); process.exitCode = 2; }
 }

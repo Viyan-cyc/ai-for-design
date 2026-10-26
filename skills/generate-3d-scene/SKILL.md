@@ -1,6 +1,6 @@
 ---
 name: generate-3d-scene
-description: 根据文字或截图需求生成可二次开发的 Vue 3 + Three.js 3D 场景，优先匹配模型，未命中复用组件或几何拼装。交付可离线打开的 index.3d.html 与配套资源，支持材质、贴图、拖拽布局及保存导入。
+description: 根据文字或截图需求生成可二次开发的 Vue 3 + Three.js 3D 场景，优先使用用户上传包和内网模型，未命中复用组件或几何拼装。交付可离线打开的 index.3d.html 与配套资源，支持材质、贴图、拖拽布局及保存导入。
 version: 0.1.0
 ---
 
@@ -8,28 +8,46 @@ version: 0.1.0
 
 目标是快速交付清晰、丰富、可编辑的场景。默认输出 index.3d.html 与配套文件和源码；不默认另出二开包或启动服务。
 
+## 意图分流
+
+先判断用户这轮要的是“接收/检查模型包”还是“生成场景”。上传模型包只是提供资产，不是生成场景的授权，也不等于授权公共上传。
+
+- 只上传 ZIP＋“这是我们公司的机房模型”/“检查这些模型能不能用”：接收并生成模型清单页（index.3d 卡片）交付给用户；用户在页面更新模型、确认名称/用途/方向/尺寸及性能预算，全部通过后把下载的完整 models.3d.zip 发回对话，Agent 导入后回复“模型包已准备好，之后可以告诉我要设计什么场景”并停止。不初始化场景工程、不运行 build-offline、不调用检索、不自动入库、不索要设计参数。
+- ZIP＋“用这些模型设计一个双排机房”：记录已有场景需求，先完成检查与确认；用户确认后直接继续该需求，不重复追问“要设计什么”。
+- 已确认包＋“现在做个双排机房”：复用未变更的检查结果直接生成，不重跑已成功的检查。
+- 无 ZIP 的场景需求：先批量检索主要对象，再使用匹配模型；没有合适候选或检索服务失败时才对相应对象几何降级。不要求用户上传模型。
+- 用户明确要求“纯几何体”“不要使用模型库”：跳过检索，直接组件/几何建模。“低多边形”“工业风格”“数据可视化”“快速生成”均不代表纯几何授权。
+
+只有用途确实无法判断时才简短澄清一句，不能用一串参数问题挡住模型检查。
+
 ## 默认生成路径
 
 1. 读 `references/generation-contract.md`，再按需要选一个样例。普通生成不通读引擎、编辑器、材质系统或构建脚本。
 2. 会话首次运行 `node scripts/ensure-env.mjs`；缺环境按 HINT 安装。无 Node 时按速查中的 install 脚本处理。依赖位于外部环境，不在 skill/template 安装。
-3. 理解主要对象、布局、尺度、编辑粒度，批量检索资产。用户明确要求纯几何时跳过检索。未命中及时降级，不循环穷搜。
-4. `node scripts/init.mjs <工程目录> --profile empty --assets referenced --deps shared --defer-build`。已选定模型可用 ID 列表替换 referenced。需组件时加 --with-components，由 init 准备独立依赖。
+3. 上传包可选：无包时直接内网检索；有包时按 references/designer-assets.md 全量接收并生成单页模型清单（index.3d 卡片），名称自动预填、用户在页面检查、反复更新模型、命名、确认正面/尺寸及性能预算；默认全部使用，全部就绪后下载 models.3d.zip（内含模型和清单）。Agent 执行 import-delivery <原包目录> <回传ZIP> --out <新目录> 校验并导入，优先使用该包模型，缺项才查库。仅检查而本轮无场景需求时，导入成功后回复准备好并停止；重复收到同一清单不重复生成场景。优先在页面“更新模型”；用户另传完整新包时才用 update-package 保留填写内容（见 designer-assets.md）。明确纯几何时跳过检索。未命中及时降级，不循环穷搜。
+4. `node scripts/init.mjs <工程目录> --profile empty --assets referenced --deps shared --defer-build`。模型确认后用 designer-assets inject 注入资源，或 --asset-package 指定已确认资产包；skill 不携带模型库。需组件时加 --with-components，由 init 准备独立依赖。
 5. 读取生成工程现状，局部修改业务 handler、scene-profile 的注册项和 scene-data。设计相机、光照、材质与布局；不要从 demo 模板覆盖现有文件。
 6. `node scripts/build-offline.mjs <工程目录>`。一次执行静态契约、类型检查、资源检查和离线打包。成功直接交付并停止。
 
-不追加 typecheck、普通 build、lint、浏览器、截图、性能采样、验证报告或审美修复。真实错误按下文处理；未经运行不能声称已验证渲染或交互。
+场景构建后不追加 typecheck、普通 build、lint、浏览器、截图、性能采样、验证报告或审美修复。模型接收的固定缩略图/加载检查与整包确认属于资产阶段，不是场景复核。真实错误按下文处理；未经运行不能声称已验证渲染或交互。
 
 ## 选材与复用
 
-资产精确匹配 → 合适的近似模型 → 匹配的现成组件 → 复用 procedural 或自定义几何。
+已确认用户模型包 → 内网合适模型 → 匹配的现成组件 → 复用 procedural 或自定义几何。
 
-- 一次批量检索主要对象：`node scripts/search-assets.mjs --batch <UTF-8查询文件> --brief --json`；选定后 `node scripts/asset-info.mjs <id> [id...]` 读取精确元信息。
+- 开始编写主要业务对象的几何 handler 前，先从需求提取对象类别（如叉车、货架、集装箱），扣除已确认上传包中已匹配的类别，将剩余类别写入 UTF-8 查询文件，一次执行 `node scripts/search-assets.mjs --batch <查询文件> --brief --json`。不同数量/位置的同类对象不重复查询；无需用户提醒或批准检索。
+- 根据实际返回候选的名称、用途和模型信息判断匹配；匹配者进入下载、检查、注入流程。向量分数高不等于类别正确。没有合适候选才使用组件/几何；请求失败允许降级，但必须说明“检索失败”，不能说“库中没有”。未执行检索不得声称“未命中”。
+- 已确认上传包覆盖全部主要对象时不重复查库；地面、墙体、标线等基础结构可直接几何生成，不必为它们查询。组件已经存在、几何更方便、用户要求快速生成，都不是跳过主要对象检索的理由。
+- 交付时简短说明哪些主要对象用了模型、哪些使用几何及降级原因；不生成额外报告，不新增构建门禁、浏览器验收或循环改词重试。配置与下载见 designer-assets.md。
+- 库模型 preview 只生成检查页，不能据此 accept-remote。页面检查结果文件先 import-check，技术通过且类别匹配后再 accept-remote/inject；细节见 designer-assets.md。
 - 普通 GLB 用内建 asset 分组。自定义加载行为使用 makeAssetNodeFactory，不另写异步加载/克隆/过期处理。
 - 组件按用途和编辑粒度选择，见速查的复用表；不要求每次遍历组件目录。
 - 独立编排对象保留独立节点；稳定 snake_case 子网格名决定编辑槽位。不要为了合批牺牲用户要求的编辑粒度。
 - 代码建模直接写 handler，不生成 GLB 脚本。模型入库校验属于另行请求的维护任务。
 
 ## 数据与修改边界
+
+- 统一右手坐标系、+Y 向上、+Z 为资产正面、长度单位米；相机局部 -Z 观察方向不变。资产制作与校验约定见 model-spec.md。
 
 - scene-data 的舞台区：scene/camera/lights/controls/renderer；业务区：type 分组数组。
 - 节点字段：id、parentId、position、rotation、scale、params、card。params 放业务/结构参数；材质颜色、贴图等默认外观写在 handler，编辑覆盖由视觉层保存。
@@ -58,6 +76,7 @@ version: 0.1.0
 
 | 需求 | 入口 |
 |---|---|
+| 上传模型包、内网模型和入库 ZIP | references/designer-assets.md |
 | 普通生成、接口和样例 | references/generation-contract.md |
 | 默认流程的补充说明 | references/scene-workflow.md |
 | 自定义轮廓与精细建模 | references/modeling-channels.md |
