@@ -17,9 +17,9 @@ skill 不携带业务模型。上传 ZIP 不需要 manifest；系统关联模型
 
 ## 模型检查页与完整包回传
 
-`preview <包目录>` 交付静态 index.3d 页面，支持更新模型、明确恢复版本、核对尺寸/方向及选择性能预算。默认全部使用；所有模型就绪后下载 models.3d.zip（模型、依赖和描述清单），Agent 使用 `import-delivery <原包> <ZIP> --out <新包>` 导入，再注入工程。失败项阻止下载并列出原因。未下载修改不会自动保存到宿主。
+`preview <包目录>` 交付静态 index.3d-model.html 页面，支持更新模型、明确恢复版本、核对尺寸/方向及选择性能预算。默认全部使用；所有模型就绪后下载 models.3d.zip（模型、依赖和描述清单），Agent 使用 `import-delivery <原包> <ZIP> --out <新包>` 导入，再注入工程。失败项阻止下载并列出原因。未下载修改不会自动保存到宿主。
 
-无后台服务，不捆绑业务模型，不需要设计师填写 JSON。旧清单 import-review 保留兼容；库模型技术 JSON 继续使用 import-check。Windows Chromium 实测，macOS 尚未实测。维护闭环测试：`node scripts/verify/delivery-workflow-fixtures.mjs`。
+无后台服务，不捆绑业务模型，不需要设计师填写 JSON。旧清单 import-review 保留兼容；库模型直接 download → inject，无需浏览器检查或再次确认。Windows Chromium 实测，macOS 尚未实测。维护闭环测试：`node scripts/verify/delivery-workflow-fixtures.mjs`。
 
 ## 模型标准与包更新（2026-10-22）
 

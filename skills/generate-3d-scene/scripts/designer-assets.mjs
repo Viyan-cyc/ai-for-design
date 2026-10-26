@@ -1,6 +1,6 @@
 /** Designer asset CLI: users speak naturally; the agent operates these internal commands. */
 import { resolve } from 'node:path';
-import { receive, readJSON, loadPackage, describe, confirm, inject, exportPackage, uploadAdapter, sceneScope } from './lib/designer-assets.mjs';
+import { receive, readJSON, loadPackage, describe, confirm, selected, inject, exportPackage, uploadAdapter, sceneScope } from './lib/designer-assets.mjs';
 import { previewPackage } from './lib/asset-preview.mjs';
 import { generateIntakePage, importReview } from './lib/intake-page.mjs';
 import {importDelivery} from './lib/delivery-import.mjs';
@@ -31,7 +31,7 @@ try {
  case 'accept-remote':{
   const pkg=loadPackage(need(pos[0],'package'));
   if(pkg.assets.some(a=>a.origin!=='remote'))throw new Error('Uploaded packages require user confirmation');
-  result=summary(confirm(pos[0],pkg.revision));break;
+  selected(pos[0]);result={status:'library_ready',message:'库模型可直接 inject，无需浏览器检查或确认'};break;
  }
  case 'inject':result=inject(need(pos[0],'package'),need(opts.project,'--project'),opts.ids?.split(','));break;
   case 'search':result=await searchRemote(opts.queries?readJSON(opts.queries):[need(pos.join(' '),'query')],serviceConfig());break;

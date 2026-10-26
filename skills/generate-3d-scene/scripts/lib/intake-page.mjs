@@ -14,7 +14,7 @@ import { RULES_VERSION, evaluateAsset } from './model-policy.mjs';
 
 export const MANIFEST_SCHEMA_VERSION = 2;
 export const MANIFEST_FILENAME = 'models.3d.json';
-export const INTAKE_PAGE_NAME = 'index.3d.html';
+export const INTAKE_PAGE_NAME = 'index.3d-model.html';
 export const INTAKE_DATA_NAME = 'index.3d.data.js';
 /** Bounded intake defaults, centralized per spec §17.5. */
 import { intakeLimits, validateManifest, proposedAsset } from './viewer/intake-contract.js';
@@ -87,7 +87,7 @@ function assetPayload(pkgDir, asset, embedFiles) {
   return payload;
 }
 
-/** Generates <pkgDir>/index.3d.html plus its data companion. Reuses existing caches; re-checks nothing itself. */
+/** Generates <pkgDir>/index.3d-model.html plus its data companion. Reuses existing caches; re-checks nothing itself. */
 export function generateIntakePage(pkgDir) {
   const dir = resolve(pkgDir);
   const pkg = withFileLock(resolve(dir, '.package-write.lock'), () => {
@@ -119,7 +119,7 @@ export function generateIntakePage(pkgDir) {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>index.3d</title>
+<title>index.3d-model</title>
 <style>
 :root{color-scheme:light;--ink:#172b44;--muted:#6b7c91;--line:#e2e8f0;--blue:#245fe5;--surface:#fff;font-family:Inter,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;font-size:14px;line-height:1.6;color:var(--ink);background:#f4f6fa}
 *{box-sizing:border-box}body{margin:0}button,input,select{font:inherit}button,input,select,summary{outline-offset:4px}button,input[type=checkbox],select,summary{cursor:pointer}button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:3px solid #91b8ff}input[type=checkbox]{accent-color:var(--blue);width:16px;height:16px;flex:none}button:disabled{opacity:.45;cursor:not-allowed}
@@ -153,6 +153,16 @@ body[data-step="2"] #rows,body[data-step="2"] #toolbar,body[data-step="2"] #page
 #viewer{width:min(96vw,1200px);height:min(88vh,800px)}#viewer[open]{display:grid;grid-template-columns:minmax(0,1fr) 300px}#view-stage{position:relative;min-width:0;min-height:0;overflow:hidden}#view-stage canvas{display:block}#view-panel{background:white;padding:24px;overflow:auto;border-left:1px solid #dce5ef}#view-panel h2{font-size:18px;margin-top:0;overflow-wrap:anywhere}#view-panel p{font-size:12px;color:#61738a;line-height:1.7}#view-panel .model-size{font-size:20px;color:#172b44}#view-panel details td{padding:7px 4px}#view-confirm{width:100%;margin-top:22px;padding:10px;border:0;border-radius:8px;background:#245fe5;color:white}#origin-label{position:absolute;z-index:2;transform:translateX(-50%);pointer-events:none;background:#fff4e9;color:#a94324;border-radius:5px;padding:3px 7px;font-size:11px;white-space:nowrap}.review-status{font-size:12px;color:#61738a;margin-bottom:0}
 @media(max-width:700px){#viewer[open]{grid-template-columns:1fr;grid-template-rows:minmax(240px,55%) minmax(0,1fr)}#view-panel{border-left:0;border-top:1px solid #dce5ef;padding:16px}}
 #download-blocked{height:auto;max-height:80vh;overflow:auto;background:white;padding:24px;max-width:720px}#download-reasons li{margin:14px 0;overflow-wrap:anywhere}.budget-panel{border-top:1px solid #e2e8f0;margin-top:18px;padding-top:16px}.budget-panel select{width:100%;margin-top:8px}#view-stage .bar{left:12px;display:flex;justify-content:flex-end;flex-wrap:wrap;gap:5px}#view-stage .bar select{max-width:170px;font-size:12px}.status-col select{max-width:100%;font-size:12px}
+
+#viewer[open]{grid-template-columns:minmax(0,1fr) 340px}#view-panel{padding:22px;background:#fcfdff}.viewer-actions{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:22px}.viewer-actions button,.viewer-actions select{padding:8px 12px;border:1px solid #dce5ef;border-radius:8px;background:white;color:#334c6c;font-size:12px}.issue-panel{padding:14px;margin:18px 0;border:1px solid #e2e8f0;border-radius:10px;background:#f6f8fc;font-size:12px;line-height:1.7}.issue-panel ul{padding-left:17px;margin:8px 0 0}.success-text{color:#16835c!important;font-size:12px}.budget-panel{padding:16px 0;border-top:1px solid #e6ebf2}.budget-panel h3{font-size:13px;margin:0 0 10px}.budget-options{display:flex;gap:6px}.budget-options label{flex:1;cursor:pointer}.budget-options input{position:absolute;opacity:0;width:1px;height:1px}.budget-options span{display:block;text-align:center;padding:8px 4px;border:1px solid #dce5ef;border-radius:8px;font-size:12px;color:#62748c}.budget-options b{display:block;margin-top:3px;color:#223b5b}.budget-options input:checked+span{background:#eef4ff;border-color:#6090ed;color:#245fe5}.budget-options input:focus-visible+span{outline:2px solid #245fe5}.ack-option{font-size:12px;line-height:1.7}.ack-option input{width:auto}.viewer-help{margin-top:12px}#view-confirm.confirmed{background:#edf2f8;color:#526782;margin-top:4px}#view-empty{position:absolute;inset:90px 30px;display:grid;place-content:center;color:#667b95;text-align:center}#view-empty[hidden]{display:none}#view-panel .more{font-size:12px}#view-panel table{table-layout:auto}#view-panel td{overflow-wrap:anywhere}
+@media(max-width:700px){#viewer[open]{grid-template-columns:1fr;grid-template-rows:42vh minmax(0,1fr)}#view-panel{padding:16px}.viewer-actions{margin-bottom:14px}}
+.confirm-footer{position:sticky;bottom:-22px;background:#fcfdff;padding:12px 0;border-top:1px solid #e6ebf2;margin-top:16px}#view-confirm{margin-top:0}.confirm-footer p{margin:0 0 8px}@media(max-width:700px){.confirm-footer{bottom:-16px}}
+.review-row{border-top:1px solid #e4eaf2;padding:14px 0}.review-row>summary{display:flex;justify-content:space-between;gap:12px;cursor:pointer;font-size:12px;line-height:1.6}.review-row>summary:after{content:'＋';color:#7b8da4}.review-row[open]>summary:after{content:'−'}.review-row>summary span{margin-left:auto;text-align:right;color:#61738a}.row-body{padding-top:10px}.row-body button{border:1px solid #cddbef;border-radius:7px;padding:7px 10px;background:#f2f6ff;color:#245fe5;font-size:12px}.viewer-field{display:block;font-size:12px;margin:14px 0;color:#526782}.viewer-field input,.viewer-field textarea{display:block;box-sizing:border-box;width:100%;margin-top:6px;padding:9px;border:1px solid #dce5ef;border-radius:8px;font:inherit;color:#172b44;resize:vertical}#view-text-status{display:block;color:#7b8da4;font-size:11px;margin-bottom:18px}#view-progress{color:#245fe5!important}
+.size-prominent{display:block;color:#172b44;font-size:17px;line-height:1.8;font-weight:700}.review-row.row-ok>summary>span{color:#16835c}.review-row.row-error>summary>span{color:#c53535}.review-row.row-warning>summary>span{color:#a5650e}.review-row.row-pending>summary>span,.pending-text{color:#245fe5}.row-body button,#confirm-name{min-height:30px;height:30px;padding:4px 10px;font-size:12px;line-height:20px;border:1px solid #cddbef;border-radius:7px;background:#f2f6ff;color:#245fe5}#view-name-check{font-size:12px;margin-top:-7px}#view-confirm:disabled{background:#e7ebf1;color:#79889b;cursor:not-allowed}
+
+.review-row>summary>strong{flex-shrink:0;white-space:nowrap}.dimension-grid{display:flex;justify-content:flex-start;gap:24px;margin:4px 0 16px;text-align:left;color:#172b44}.dimension-grid>div{min-width:0}.dimension-grid small{display:block;font-size:11px;font-weight:400;color:#718299;margin-bottom:6px}.dimension-grid b{display:block;font-size:20px;font-weight:600;line-height:1.3;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.current-values{margin-top:10px;font-size:12px;color:#718299}.current-values>summary{font-size:12px;font-weight:400;cursor:pointer}.current-values p{font-size:12px!important;margin:8px 0;line-height:1.6!important}
+.dimension-grid{display:grid;gap:12px;margin:8px 0 20px}.dimension-grid .dimension-line{display:flex;align-items:baseline;gap:24px}.dimension-line>span{width:24px;flex:none;font-size:13px;color:#61738a}.dimension-grid .dimension-line b{font-size:18px;line-height:1.5;font-weight:600}.dimension-grid .dimension-line small{display:inline;margin:0 0 0 5px;font-size:12px;font-weight:400;color:#718299}
 </style>
 <script src="./${INTAKE_DATA_NAME}"></script>
 <script type="module">
@@ -270,7 +280,7 @@ try {
   <button id="next" type="button">下一步：下载并发回</button>
   <button id="save" type="button" hidden disabled>下载清单</button>
 </div>
-<dialog id="viewer" aria-label="查看模型与摆放规范"><div id="view-stage"><div class="bar"><button id="view-update" type="button">更新模型</button> <select id="view-restore"><option value="">恢复版本…</option><option value="previous">上次成功加载版本</option><option value="initial">初始版本</option></select> <button id="view-front" type="button" disabled>正面视角</button> <button id="view-close" type="button">关闭</button></div><span id="front-label" hidden>正面方向 +Z</span><span id="origin-label" hidden>摆放原点 (0, 0, 0)</span><p class="viewer-note">地面 Y=0 · 箭头指向约定的正面，不代表自动识别结果。</p></div><aside id="view-panel"><div id="view-info"></div><button id="view-confirm" type="button" disabled>方向与尺寸正确</button></aside></dialog>
+<dialog id="viewer" aria-label="查看模型与摆放规范"><div id="view-stage"><div class="bar"><button id="view-front" type="button" disabled>正面视角</button> <button id="view-close" type="button">关闭</button></div><span id="front-label" hidden>正面方向 +Z</span><span id="origin-label" hidden>摆放原点 (0, 0, 0)</span><div id="view-empty" hidden></div></div><aside id="view-panel"><div id="view-info"></div><div class="confirm-footer"><div class="viewer-actions"><button id="view-retry" type="button" hidden>重新加载</button><button id="view-update" type="button">更新模型</button> <select id="view-restore"><option value="">恢复版本…</option><option value="previous">上次成功加载版本</option><option value="initial">初始版本</option></select> </div><p id="view-confirmed" class="success-text" hidden>✓ 方向与尺寸已核对</p><button id="view-confirm" type="button" disabled>方向与尺寸正确</button></div></aside></dialog>
 <input id="model-file" type="file" accept=".glb,.gltf,.zip" hidden>
 <dialog id="download-blocked"><h2>暂时无法下载模型包</h2><p>请先处理以下项目。全部模型完成检查与确认后才能下载。</p><ul id="download-reasons"></ul><button id="download-close" type="button">返回处理</button></dialog>
 </body>

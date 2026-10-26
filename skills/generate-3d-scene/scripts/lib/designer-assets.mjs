@@ -232,7 +232,13 @@ function confirmUnlocked(dir,revision,{allowPartial=false,confirmFront=false,con
  atomicJSON(resolve(dir,'package.json'),pkg);return pkg;
 }
 export function selected(dir,ids) {
- const pkg=loadPackage(dir);if(!pkg.confirmation || pkg.confirmation.revision!==pkg.revision)throw new Error('Package needs user confirmation');
+ const pkg=loadPackage(dir);
+ // Published library models are already approved upstream. No browser report or designer confirmation.
+ if(pkg.assets.length&&pkg.assets.every(a=>a.origin==='remote')){
+  const wanted=ids??pkg.assets.map(a=>a.id);if(!wanted.length)throw new Error('No library assets selected');
+  return wanted.map(id=>{const a=pkg.assets.find(a=>a.id===id);if(!a)throw new Error('Unknown library asset');if(a.technicalStatus==='invalid')throw new Error(a.error||'Downloaded model cannot be parsed');verifyContent(dir,a);return a;});
+ }
+ if(!pkg.confirmation || pkg.confirmation.revision!==pkg.revision)throw new Error('Package needs user confirmation');
  const wanted=ids??pkg.confirmation.usable;if(!wanted.length)throw new Error('No usable assets selected');
  return wanted.map(id=>{const a=pkg.assets.find(a=>a.id===id);if(!a?.confirmed || a.technicalStatus!=='loadable')throw new Error('Asset not confirmed/loadable');
   Object.assign(a,assertUsable(a,{semantic:a.origin!=='remote'}));

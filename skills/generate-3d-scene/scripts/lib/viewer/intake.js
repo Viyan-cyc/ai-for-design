@@ -15,6 +15,8 @@ const MAPPING_TEXT = { unchanged: '未变化', updated: '模型已更新', renam
 
 /** Derived display state (standards spec §6.3): 通过/待确认/性能提醒/需整改/检查未完成. */
 function deriveState(s, a) {
+  if(s.updateError)return 'failed';
+  if(!remoteMode&&!s.name?.trim())return 'pending';
   if (['checking', 'unchecked', 'structure_valid'].includes(s.status)) return 'incomplete';
   if (s.status === 'stale') return 'incomplete';
   if (s.status === 'invalid' || s.status === 'preview_failed' || s.status === 'preview_unavailable' || s.status === 'page_failed') return 'failed';
@@ -156,21 +158,52 @@ async function checkInPage(three, addons, runtime, asset, signal) {
   }
 }
 
-let viewer = null, updateAssetHandler=null, restoreAssetHandler=null, exporting=false;
+let viewer = null, updateAssetHandler=null, restoreAssetHandler=null, retryAssetHandler=null, exporting=false;
 const histories=new Map();
 function closeViewer() {
   const old=viewer;viewer=null;old?.controller.abort();old?.dispose?.();
   const d=el('viewer');if(d?.open)d.close();
 }
+function transformValue(text){
+  const match=text.match(/(translation|rotation|scale)=\[([^\]]+)\]/);
+  if(!match)return readableIssue(text);
+  const values=match[2].split(',').map(Number);
+  const format=v=>Number(v.toFixed(3));
+  if(match[1]==='translation')return '当前位置（米）：'+values.map((v,i)=>['X','Y','Z'][i]+' '+format(v)).join('，');
+  if(match[1]==='scale')return '当前缩放：'+values.map((v,i)=>['X','Y','Z'][i]+' '+format(v)).join('，');
+  // Quaternion angle avoids presenting quaternion components as designer-facing Euler angles.
+  const length=Math.hypot(...values),angle=length?2*Math.acos(Math.min(1,Math.abs(values[3]/length)))*180/Math.PI:NaN;
+  return Number.isFinite(angle)?'当前整体旋转角度：'+format(angle)+'°（标准为 0°）':'当前旋转数据异常，请重新导出模型。';
+}
+function readableIssue(text){
+  if(/translation=|有平移/.test(text))return '模型初始位置未归零。标准位置为 (0, 0, 0)。请在建模软件中将整体位置归零，并保持模型底部贴地。';
+  if(/rotation=|有旋转/.test(text))return '模型初始旋转未归零。标准旋转为 (0°, 0°, 0°)。请在建模软件中应用旋转，确保归零后正面仍朝 +Z。';
+  if(/scale=|有缩放/.test(text))return '模型初始缩放不是 1。标准缩放为 (1, 1, 1)。请在建模软件中应用缩放，保持实际尺寸不变。';
+  return text;
+}
+function outstanding(a,s) {
+  const items=[];
+  if(s.updateError)items.push('更新失败：'+s.updateError+'。请更新模型或恢复版本。');
+  if(s.status!=='loadable')items.push(s.error||'模型尚未成功加载，请更新完整模型及依赖。');
+  items.push(...(a.forbidden??[]).map(f=>'请在建模软件中移除'+(f.kind==='camera'?'相机':'灯光')+'后重新导出。'),...(s.placementViolations??[]));
+  if(!remoteMode){
+    if(!s.name?.trim()||(a.namePending&&!s.nameConfirmed))items.push('请在清单中填写或确认模型名称。');
+    if(a.mappingPending&&!s.mappingConfirmed)items.push('请在清单中确认新旧模型的对应关系。');
+    if(s.status==='loadable'&&(!s.frontConfirmed||!s.scaleConfirmed))items.push('请核对正面方向与实际尺寸。');
+    if(s.budgetWarnings?.length&&!s.budgetAckAll)items.push('请优化超出预算的项目，或确认接受性能影响。');
+  }
+  return [...new Set(items.map(readableIssue))];
+}
+function viewerIssues(a){const items=outstanding(a,state.get(a.assetId));el('view-issues').innerHTML=items.length?`<strong>待处理 · ${items.length} 项</strong><ul>${items.map(x=>`<li>${escapeHtml(x)}</li>`).join('')}</ul>`:'<strong class="success-text">已通过全部核对</strong>';}
 async function openViewer(three, addons, runtime, asset) {
   closeViewer();
   const operation={controller:new AbortController(),dispose:null,assetId:asset.assetId};viewer=operation;
   const d=el('viewer');d.showModal();
-  el('view-update').hidden=remoteMode;el('view-update').onclick=()=>updateAssetHandler?.(asset);
+  el('view-confirmed').hidden=true;el('view-retry').hidden=!['preview_failed','preview_unavailable','page_failed'].includes(state.get(asset.assetId).status);el('view-retry').onclick=()=>retryAssetHandler?.(asset);el('view-update').hidden=remoteMode;el('view-update').onclick=()=>updateAssetHandler?.(asset);
   el('view-restore').hidden=remoteMode||!histories.has(asset.assetId);el('view-restore').value='';el('view-restore').disabled=!histories.has(asset.assetId);el('view-restore').onchange=event=>restoreAssetHandler?.(asset,event.target.value);
   let entry,model,renderer,draco,controls,raf,resize,helpers;
   const viewport=el("view-stage"),originLabel=el("origin-label"),confirm=el("view-confirm");
-  confirm.disabled=true;confirm.onclick=null;originLabel.hidden=true;el("view-info").textContent="正在加载模型…";
+  confirm.disabled=true;confirm.onclick=null;originLabel.hidden=true;el("view-info").innerHTML=`<h2>${escapeHtml(state.get(asset.assetId).name)}</h2><section id="view-issues" class="issue-panel"></section>`;viewerIssues(asset);confirm.hidden=true;el('view-empty').hidden=true;
   const frontButton=el("view-front"),label=el("front-label");frontButton.disabled=true;label.hidden=true;
   const cleanup=()=>{
     cancelAnimationFrame(raf);if(resize)removeEventListener('resize',resize);
@@ -180,6 +213,7 @@ async function openViewer(three, addons, runtime, asset) {
     if(entry)URL.revokeObjectURL(entry);
   };
   operation.dispose=cleanup;
+  if(state.get(asset.assetId).status!=='loadable'){el('view-empty').hidden=false;el('view-empty').textContent='暂时无法预览，请按右侧建议更新模型。';return;}
   const timer=setTimeout(()=>operation.controller.abort(new Error('预览加载超时')),CHECKER_TIMEOUT_MS);
   try {
     entry=await entryUrl(asset);
@@ -214,15 +248,29 @@ async function openViewer(three, addons, runtime, asset) {
     const placement=[];
     if(Math.abs(box.min.y)>.1)placement.push(`模型底部${box.min.y>0?'高于':'低于'}地面 ${number(Math.abs(box.min.y))} 米`);
     if(Math.abs(center.x)>.1||Math.abs(center.z)>.1)placement.push(`底部中心偏离原点：X ${number(center.x)} 米，Z ${number(center.z)} 米`);
-    el('view-info').innerHTML=`<h2>${escapeHtml(assetState.name)}</h2><p class="size-label">宽 × 深 × 高（米）</p><strong class="model-size">${[size.x,size.z,size.y].map(number).join(' × ')}</strong><p>${escapeHtml(placement.join('；')||'底部贴地，底部中心与原点对齐（允许误差 0.1 米）。')}</p><p class="hint">地面网格位于 Y=0；橙色十字为摆放原点 (0, 0, 0)。${asset.animated?'尺寸为默认姿态，不代表动画运动范围。':''}</p>${modelDetails(asset,assetState)}`;
-    if(!remoteMode){
-      const panel=document.createElement('section');panel.className='budget-panel';panel.innerHTML=`<label for="budget-tier">性能预算</label><select id="budget-tier">${[['simple','严格 · 200 面'],['medium','标准 · 500 面'],['complex','精细 · 1,000 面']].map(([value,text])=>`<option value="${value}" ${assetState.tier===value?'selected':''}>${text}</option>`).join('')}</select><p>仅调整三角面预算。较高预算在大量重复使用时可能影响性能。</p><div id="view-budget"></div>`;el('view-info').appendChild(panel);
-      const budget=()=>{el('view-budget').innerHTML=`<p>当前 ${fmtNum(measureOf(asset,assetState,'triangles'))} 面 / 建议上限 ${budgetTarget(asset).triangles} 面</p>${(assetState.budgetWarnings??[]).map(w=>`<p>${escapeHtml(w.advice)}</p>`).join('')}${assetState.budgetWarnings?.length?`<label><input type="checkbox" id="view-budget-ack" ${assetState.budgetAckAll?'checked':''}>我了解性能影响，仍使用此模型</label>`:''}`;const ack=el('view-budget-ack');if(ack)ack.onchange=()=>{assetState.budgetAckAll=ack.checked;dirty=true;paint(currentIntake,asset.assetId);updateCounts(currentIntake);};};budget();
-      el('budget-tier').onchange=event=>{assetState.tier=event.target.value;assetState.budgetAckAll=false;refreshPolicy(asset,assetState);dirty=true;const details=el('view-info').querySelector('details');details.outerHTML=modelDetails(asset,assetState);budget();paint(currentIntake,asset.assetId);updateCounts(currentIntake);};
-    }
-    confirm.hidden=remoteMode||blocked;
-    const syncConfirm=()=>{confirm.textContent=assetState.frontConfirmed&&assetState.scaleConfirmed?'已核对 · 点击撤销':'方向与尺寸正确';};syncConfirm();confirm.disabled=false;
-    confirm.onclick=()=>{if(viewer!==operation)return;const confirmed=!(assetState.frontConfirmed&&assetState.scaleConfirmed);assetState.frontConfirmed=confirmed;assetState.scaleConfirmed=confirmed;dirty=true;syncConfirm();paint(currentIntake,asset.assetId);updateCounts(currentIntake);el('banner').textContent='核对结果尚未导出，请下载清单后发回对话。';};
+    const row=(title,value,body,open=false)=>`<details class="review-row ${title==='实际尺寸'?'dimensions-row':''} ${/需修改/.test(value)?'row-error':/超出|已接受/.test(value)?'row-warning':/待核对/.test(value)?'row-pending':'row-ok'}" ${open?'open':''}><summary><strong>${title}</strong><span>${value}</span></summary><div class="row-body">${body}</div></details>`;
+    const renderPanel=()=>{
+      const problems=outstanding(asset,assetState),all=assetState.placementViolations??[],isTransform=x=>/translation=|rotation=|scale=|有平移|有旋转|有缩放/.test(x),isPosition=x=>!isTransform(x)&&/中心|底部|地面|偏移/.test(x);
+      const transforms=all.filter(isTransform),position=all.filter(isPosition),structural=[...(asset.forbidden??[]).map(f=>'请移除'+(f.kind==='camera'?'相机':'灯光')+'后重新导出。'),...all.filter(x=>!isTransform(x)&&!isPosition(x))];
+      const finish=()=>{const left=outstanding(asset,assetState).length;confirm.disabled=left>0;confirm.textContent=left?'还有 '+left+' 项待处理':'完成核对';};finish();
+      const list=items=>items.map(x=>`<p class="err">${escapeHtml(readableIssue(x))}</p>`).join('');
+      const status=done=>done?'已核对':'待核对';
+      el('view-info').innerHTML=`<h2>核对模型</h2><p id="view-progress">${problems.length?'还需处理 '+problems.length+' 项':'已通过全部核对'}</p><label class="viewer-field">模型名称<input id="view-name" maxlength="200" value="${escapeHtml(assetState.name)}" ${remoteMode?'readonly':''}></label><div id="view-name-check"></div><label class="viewer-field">用途描述<textarea id="view-description" maxlength="2000" rows="2" placeholder="描述模型是什么、适合用在哪里（可空）" ${remoteMode?'readonly':''}>${escapeHtml(assetState.description??'')}</textarea></label><small id="view-text-status">编辑后同步到本页清单，下载后发回对话。</small>${assetState.updateError?list(['更新失败：'+assetState.updateError+'。请重新更新或恢复版本。']):''}${asset.mappingPending&&!assetState.mappingConfirmed?'<p class="err">请在外部清单确认新旧模型的对应关系。</p>':''}`+
+      row('实际尺寸',status(assetState.scaleConfirmed),`<div class="dimension-grid">${[['宽',size.x],['深',size.z],['高',size.y]].map(([label,value])=>`<div class="dimension-line" style="display:flex;align-items:baseline;column-gap:24px;margin-bottom:12px"><span style="display:inline-block;min-width:28px;color:#61738a;font-size:13px">${label}</span><b style="font-size:18px;font-weight:600;white-space:nowrap">${number(value)}<small style="margin-left:8px;font-size:12px;font-weight:400;color:#718299">米</small></b></div>`).join('')}</div><p>宽 × 深 × 高。请核对是否符合真实尺寸。${asset.animated?'当前为默认姿态，不包含动画运动范围。':''}</p><button id="confirm-size" type="button">${assetState.scaleConfirmed?'重新核对尺寸':'尺寸正确'}</button>`,!assetState.scaleConfirmed)+
+      row('正面方向',`+Z · ${status(assetState.frontConfirmed)}`,`<p>蓝色箭头指向约定正面 +Z，请判断是否与模型实际正面一致。</p><button id="panel-front" type="button">正面视角</button> <button id="confirm-direction" type="button">${assetState.frontConfirmed?'重新核对方向':'方向正确'}</button>`,!assetState.frontConfirmed)+
+      row('摆放位置',position.length?'需修改':'符合规范',list(position)+'<p>地面网格为 Y=0，橙色十字为原点。底部贴地、底部中心对齐原点，允许误差 0.1 米。</p>',!!position.length)+
+      row('初始变换',transforms.length?'需修改':'符合规范',list(transforms)+'<p>标准：位置 (0, 0, 0)，旋转 (0°, 0°, 0°)，缩放 (1, 1, 1)。这是模型最外层整体变换，与实际几何是否贴地分别检查。</p>'+(transforms.length?`<details class="current-values"><summary>当前数值</summary>${transforms.map(x=>`<p>${escapeHtml(transformValue(x))}</p>`).join('')}</details>`:''),!!transforms.length)+
+      row('模型结构',structural.length?'需修改':'符合规范',list(structural)||'<p>模型应具有统一父级，不包含相机或灯光。</p>',!!structural.length)+
+      row('性能预算',`${fmtNum(measureOf(asset,assetState,'triangles'))} / ${budgetTarget(asset).triangles} 面${assetState.budgetWarnings?.length?(assetState.budgetAckAll?' · 已接受':' · 超出'):''}`,`<div class="budget-options">${[['simple','严格','200'],['medium','标准','500'],['complex','精细','1,000']].map(([value,text,n])=>`<label><input type="radio" name="budget-tier" value="${value}" ${assetState.tier===value?'checked':''}><span>${text}<b>≤ ${n}</b></span></label>`).join('')}</div><p>大量重复摆放建议严格；默认标准，少量精细模型可选精细。</p>${(assetState.budgetWarnings??[]).map(w=>`<p class="budget-warn">${escapeHtml(w.advice)}</p>`).join('')}${assetState.budgetWarnings?.length?`<label class="ack-option"><input type="checkbox" id="view-budget-ack" ${assetState.budgetAckAll?'checked':''}>我了解性能影响，仍使用此模型</label>`:''}${modelDetails(asset,assetState)}`,!!assetState.budgetWarnings?.length&&!assetState.budgetAckAll);
+      const nameStatus=()=>{const pending=!assetState.name?.trim()||(asset.namePending&&!assetState.nameConfirmed);el('view-name-check').innerHTML=pending?'<span class="pending-text">建议名称，待确认</span> <button type="button" id="confirm-name">名称正确</button>':'<span class="success-text">✓ 名称已确认</span>';const button=el('confirm-name');if(button){button.disabled=!assetState.name?.trim();button.onclick=()=>{assetState.nameConfirmed=true;sync();renderPanel();};}};nameStatus();
+      const sync=()=>{dirty=true;paint(currentIntake,asset.assetId);updateCounts(currentIntake);};
+      for(const [id,key] of [['view-name','name'],['view-description','description']])el(id).oninput=e=>{assetState[key]=e.target.value;if(key==='name')assetState.nameConfirmed=true;sync();nameStatus();finish();el('view-text-status').textContent='已同步到本页清单';const left=outstanding(asset,assetState).length;el('view-progress').textContent=left?'还需处理 '+left+' 项':'已通过全部核对';};
+      for(const [id,key] of [['confirm-size','scaleConfirmed'],['confirm-direction','frontConfirmed']]){el(id).hidden=remoteMode;el(id).onclick=()=>{assetState[key]=!assetState[key];sync();renderPanel();};}
+      el('panel-front').onclick=()=>frontButton.click();
+      el('view-info').querySelectorAll('[name="budget-tier"]').forEach(input=>{input.disabled=remoteMode;input.onchange=()=>{assetState.tier=input.value;assetState.budgetAckAll=false;refreshPolicy(asset,assetState);sync();renderPanel();};});
+      const ack=el('view-budget-ack');if(ack)ack.onchange=()=>{assetState.budgetAckAll=ack.checked;sync();renderPanel();};
+    };renderPanel();
+    confirm.hidden=false;confirm.onclick=closeViewer;el('view-confirmed').hidden=true;
     const framing=box.clone().expandByPoint(new three.Vector3()).expandByPoint(tip);
     const focus=framing.getCenter(new three.Vector3()),viewSpan=framing.getSize(new three.Vector3()).length();
     const camera=new three.PerspectiveCamera(45,1,Math.max(span/10000,0.0001),viewSpan*30);
@@ -240,7 +288,7 @@ async function openViewer(three, addons, runtime, asset) {
       originLabel.style.top=`${Math.max(70,Math.min(viewport.clientHeight-65,(1-zero.y)*viewport.clientHeight/2+25))}px`;
     };loop();
   } catch(error) {
-    if(viewer===operation){closeViewer();el('banner').textContent='预览打开失败：'+error.message;}
+    if(viewer===operation){cleanup();el('view-empty').hidden=false;el('view-empty').textContent='预览打开失败：'+error.message;}
   } finally {clearTimeout(timer);if(viewer!==operation)cleanup();}
 }
 
@@ -267,7 +315,7 @@ function modelDetails(a,s) {
 function renderCard(a) {
   const s = state.get(a.assetId) ?? { status: a.technicalStatus, error: a.error, result: null };
   const derived = deriveState(s, a);
-  const disabled = s.status !== 'loadable';
+  const disabled = s.status === 'checking'||exporting;
   const blocked = derived === 'blocked';
   const thumb = s.image ? `<img src="data:image/png;base64,${s.image}" alt="">`
     : a.thumbnail && (s.status === 'loadable') ? `<img src="data:image/png;base64,${a.thumbnail}" alt="">`
@@ -293,7 +341,7 @@ function renderCard(a) {
       <div><label>用途描述（可空）</label><input type="text" data-desc="${escapeHtml(a.assetId)}" value="${escapeHtml(s.description ?? a.description ?? '')}" maxlength="2000" ${remoteMode ? 'readonly' : ''} placeholder="例如：精密空调，摆放在机柜行末端"></div>
       <div class="field-full">${remoteMode?ackBox:""}</div>
     </div>
-    <div class="status-col">${badge}${err}${violations}${budgetRows}${s.updateError?`<div class="err">更新失败：${escapeHtml(s.updateError)}。当前显示旧模型，请重新更新或明确恢复后再下载。</div>`:""}${!remoteMode?`<button type="button" class="secondary" data-update="${escapeHtml(a.assetId)}">更新模型</button>${histories.has(a.assetId)?`<select data-restore="${escapeHtml(a.assetId)}"><option value="">恢复版本…</option><option value="previous">上次成功加载版本</option><option value="initial">初始版本</option></select>`:""}`:""}${["preview_failed","preview_unavailable","page_failed"].includes(s.status)&&a.files?`<button type="button" class="secondary retry-one" data-retry="${escapeHtml(a.assetId)}" ${checking?"disabled":""}>重新加载</button>`:""}</div>
+    <div class="status-col">${badge}<p class="review-status">${outstanding(a,s).map(escapeHtml).join('<br>')}</p></div>
   </div>
   ${mappingControl}
   ${s.status==='loadable'&&!blocked&&!remoteMode?`<p class="review-status">${s.frontConfirmed&&s.scaleConfirmed?'方向与尺寸已核对':'请查看模型，核对方向与尺寸'}</p>`:''}
@@ -347,7 +395,7 @@ function blockingReasons(intake){
   const reasons=[];
   if(checking)reasons.push({reason:'正在检查或更新模型，请等待完成。'});
   if(!intake.assets.length)reasons.push({reason:'模型包为空。'});
-  for(const a of intake.assets){const s=state.get(a.assetId),d=deriveState(s,a);let reason=s.updateError?`更新失败：${s.updateError}。请重新更新或恢复版本。`:!s.name.trim()?'请填写模型名称。':d==='failed'?(s.error||'加载失败，请更新完整模型及依赖。'):d==='blocked'?[...(a.forbidden??[]).map(f=>'请移除'+(f.kind==='camera'?'相机':'灯光')),...(s.placementViolations??[])].join('；'):d==='incomplete'?'尚未完成模型检查。':d==='pending'?'请核对名称、方向、尺寸及更新关系。':d==='overbudget'?'请处理性能提醒，或明确接受性能影响。':null;
+  for(const a of intake.assets){const s=state.get(a.assetId),d=deriveState(s,a);let reason=s.updateError?`更新失败：${s.updateError}。请重新更新或恢复版本。`:!s.name.trim()?'请填写模型名称。':d==='failed'?(s.error||'加载失败，请更新完整模型及依赖。'):d==='blocked'?[...(a.forbidden??[]).map(f=>'请移除'+(f.kind==='camera'?'相机':'灯光')),...(s.placementViolations??[])].join('；'):d==='incomplete'?'尚未完成模型检查。':d==='pending'?outstanding(a,s).join('；'):d==='overbudget'?'请处理性能提醒，或明确接受性能影响。':null;
     if(reason)reasons.push({assetId:a.assetId,name:s.name,reason});
   }
   return reasons;
@@ -442,6 +490,10 @@ export async function start(intake,{three,runtime,addons}) {
     const box=event.target.closest('.thumb-box:not(.disabled)');if(box){const a=intake.assets.find(a=>a.assetId===box.dataset.view);if(a)void openViewer(three,addons,runtime,a);return;}
   });
   el('view-close').addEventListener('click',closeViewer);
+  let outsideDown=false;
+  const outside=e=>{const r=el('viewer').getBoundingClientRect();return e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom;};
+  el('viewer').addEventListener('pointerdown',e=>outsideDown=outside(e));
+  el('viewer').addEventListener('click',e=>{if(outsideDown&&outside(e))closeViewer();outsideDown=false;});
   el('viewer').addEventListener('close',()=>{if(!el('viewer').open)closeViewer();});
   addEventListener('beforeunload',event=>{if(dirty){event.preventDefault();event.returnValue='';}});
   let activeCheck;
@@ -453,7 +505,7 @@ export async function start(intake,{three,runtime,addons}) {
     if(checking||exporting||!version)return;const h=histories.get(a.assetId),saved=h?.[version];if(!saved){el('banner').textContent='没有可恢复的成功版本，请更新模型。';return;}
     closeViewer();const s=state.get(a.assetId),text={name:s.name,description:s.description,tier:s.tier,nameConfirmed:s.nameConfirmed};
     for(const key of Object.keys(a))delete a[key];Object.assign(a,structuredClone(saved.asset));
-    Object.assign(s,structuredClone(saved.state),text,{selected:true,frontConfirmed:false,scaleConfirmed:false,budgetAckAll:false,updateError:null});refreshPolicy(a,s);dirty=true;paint(intake,a.assetId);updateCounts(intake);el('banner').textContent='已恢复版本，请重新核对方向与尺寸。';
+    Object.assign(s,structuredClone(saved.state),text,{selected:true,frontConfirmed:false,scaleConfirmed:false,budgetAckAll:false,updateError:null});refreshPolicy(a,s);dirty=true;paint(intake,a.assetId);updateCounts(intake);el('banner').textContent='已恢复版本，请重新核对方向与尺寸。';void openViewer(three,addons,runtime,a);
   };
   el('model-file').addEventListener('change',async event=>{
     const file=event.target.files?.[0],a=updateTarget;if(!file||!a||checking||exporting)return;
@@ -468,7 +520,7 @@ export async function start(intake,{three,runtime,addons}) {
       checking=false;paint(intake,a.assetId);await check(a.assetId);
       el('banner').textContent=s.status==='loadable'?'模型已更新，请查看模型并重新核对方向、尺寸与性能预算。':'更新模型加载失败，请重新更新或恢复版本。';
     }catch(error){s.updateError=String(error.message??error);el('banner').textContent='更新失败：'+s.updateError;}
-    finally{checking=false;paint(intake,a.assetId);updateCounts(intake);event.target.value='';}
+    finally{checking=false;paint(intake,a.assetId);updateCounts(intake);event.target.value='';void openViewer(three,addons,runtime,a);}
   });
   addEventListener('pagehide',()=>{activeCheck?.abort();closeViewer();});
   const check=async(retryId=null)=>{
@@ -494,8 +546,9 @@ export async function start(intake,{three,runtime,addons}) {
         paint(intake,a.assetId);updateCounts(intake);
       }
     } finally {checking=false;updateCounts(intake);}
-    if(!dirty)el('banner').textContent=intake.updateSummary?'模型包更新：'+intake.updateSummaryText+'。已完成检查，请核对模型的更新关系。':'已完成模型检查。请核对模型信息；加载失败的模型可点击对应的“重新加载”。';
+    if(!dirty)el('banner').textContent=intake.updateSummary?'模型包更新：'+intake.updateSummaryText+'。已完成检查，请核对模型的更新关系。':'已完成模型检查。请核对模型信息；加载失败的模型可在“查看模型”中重新加载或更新。';
   };
+  retryAssetHandler=async a=>{closeViewer();await check(a.assetId);void openViewer(three,addons,runtime,a);};
   el('save').addEventListener('click',async()=>{
     if(step!==2||exporting)return;
     const reasons=blockingReasons(intake);

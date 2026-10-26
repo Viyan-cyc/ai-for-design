@@ -11,7 +11,7 @@
 ## 上传包：页面更新与完整模型包交付
 
 1. `node scripts/designer-assets.mjs receive <ZIP或目录或GLB/glTF> --out <新资产包目录> --description "整包说明"`。自动关联模型与依赖，预填名称。
-2. `node scripts/designer-assets.mjs preview <资产包目录>` 生成静态 `index.3d.html` 和数据文件。只交付一个 index.3d 卡片，无服务。Agent 交付后让出对话，不轮询等待。
+2. `node scripts/designer-assets.mjs preview <资产包目录>` 生成静态 `index.3d-model.html` 和数据文件。只交付一个 index.3d-model 卡片，无服务。Agent 交付后让出对话，不轮询等待。
 3. 包内模型默认全部使用，不显示选择、排除或删除操作。核对模型 → 下载并发回两步；名称和用途可编辑。查看模型窗口内显示原点、地面、正面方向、尺寸、详情及“方向与尺寸正确”确认。
 4. “更新模型”可多次选择一个 GLB 或一个模型及依赖组成的 ZIP。GLTF 缺失 bin/贴图会明确失败。页面保留初始版本与上次成功加载版本供明确恢复；失败不静默回退为可交付。更新保留名称/用途，重置方向、尺寸与性能确认。新文件自动检查一次，不反复自动重试。单文件 256 MiB，ZIP 解压总量 512 MiB、最多 10000 文件；不支持加密、多卷、ZIP64。
 5. 查看窗口的性能预算为严格 200 / 标准 500 / 精细 1000 三角面，默认标准。只调整面数预算；节点、绘制次数、贴图限制独立。改变预算清除旧的性能同意，超预算需显式接受，不能绕过坐标/相机/灯光等硬规范。
@@ -19,7 +19,7 @@
 7. 成功下载 `models.3d.zip`，内含全部模型最新确认版本、必要依赖和 `models.3d.json`。不含历史版本、无关文件、HTML 或运行时。每个模型独立目录，避免同名文件覆盖。
 8. 收到回传 ZIP：`node scripts/designer-assets.mjs import-delivery <原资产包目录> <models.3d.zip> --out <新资产包目录>`。命令核对来源/版本、完整资产集合、文件闭包摘要、规则、检查记录与确认，成功后原子发布新包，不覆盖原包。对同一 submissionId 复用同一输出目录；相同交付返回 duplicate，不再次生成场景。导入后需要场景则对新包 inject；仅检查则回复准备好并停止。
 
-新交付清单为内部 `kind=model-delivery,schemaVersion=1`，绑定原包身份和 revision，每项绑定原资产 ID、交付路径和内容摘要。Agent 不手写或修补用户确认。旧 `model-intake` JSON 的 import-review 保留兼容旧回传，不再是新页面上传包的交付方式。库模型 remote-check 仍下载技术结果 JSON 并走 import-check。
+新交付清单为内部 `kind=model-delivery,schemaVersion=1`，绑定原包身份和 revision，每项绑定原资产 ID、交付路径和内容摘要。Agent 不手写或修补用户确认。旧 `model-intake` JSON 的 import-review 保留兼容旧回传，不再是新页面上传包的交付方式。库模型直接 download → inject，无需检查结果文件。
 
 ## 更新模型包（保留填写内容）
 
@@ -34,7 +34,7 @@
 
 技术状态与语义状态分开；导入不会修好坏文件。修改模型文件后拒绝沿用旧确认，应重新 receive 新版本。仅改名称/选择不需要重新加载模型。跨会话持久使用依赖宿主的项目/个人目录授权；未提供时只承诺当前项目可复用。
 
-技术状态与语义状态分开；confirm 不会修好坏文件（该命令保留给远程包 accept-remote 与维护场景；上传包的正式确认走 import-delivery）。修改文件后拒绝沿用旧确认，应重新 receive 新版本。跨会话持久使用依赖宿主的项目/个人目录授权；未提供时只承诺当前项目可复用。
+技术状态与语义状态分开；confirm 不会修好坏文件（该命令保留给维护场景；上传包的正式确认走 import-delivery）。修改文件后拒绝沿用旧确认，应重新 receive 新版本。跨会话持久使用依赖宿主的项目/个人目录授权；未提供时只承诺当前项目可复用。
 
 ## 使用与内网补缺
 
@@ -44,7 +44,7 @@
 
 检索：`search --queries <内部查询数组文件> --config <外部配置>`。固定来源按管理员配置，不把示例分组写死。响应中 file URL 仅用于受控下载，不嵌入运行页面。
 
-选中一个库候选后，将完整候选作为内部 JSON 输入 `download <candidate.json> --out <新目录>`；下载器收集依赖，重写本地 URI，限制资源来源和下载大小。然后 preview 生成同一静态检查页（全 remote 来源自动显示“下载检查结果”，无需填写用途或整包语义确认）。取得页面下载的 models.3d.json 后执行 `import-check <目录> --file <结果文件>` 写入技术检查结果；Agent 判断候选类别匹配、检查通过后执行 `accept-remote <目录>`，再 inject。宿主具备浏览器操作能力时可操作同一页面取得下载文件；没有时明确提示用户打开页面保存并发回检查结果，或在用户允许时几何降级。仅生成 HTML 不算检查完成，不直接 accept-remote，不强制 Edge，不启动服务。库候选不触发设计师上传包的全量确认；accept-remote 拒绝上传来源，不能绕过用户包确认。
+选中类别匹配的库候选后，将完整候选 JSON 输入 `download <candidate.json> --out <新目录>`，随后直接 `inject <目录> --project <工程目录>`，使用返回的 assetId 构建场景。检索库是已审核可用模型来源，不再执行 preview → import-check → accept-remote，不要求浏览器、技术报告或设计师再次确认。下载器仍收集 GLB/glTF 依赖并重写本地 URI；实际下载或文件解析失败时报告具体原因并降级。不得把未运行浏览器当作模型不可用。旧工作区中已经下载的 remote 包也可直接 inject；accept-remote 仅保留兼容入口。上传模型包仍保留原有检查与用户确认流程。
 
 发布前走既有统一 build-offline；运行时不访问模型库。sourceId 存档限制保持不变。
 
@@ -63,7 +63,7 @@
 - 首版 GLB/glTF 2.0；FBX/OBJ/MAX/BLEND 作为需更新为 GLB/glTF 的模型条目列入清单，并提示导出 GLB，不自动安装转换器。
 - 资源限制可通过 receive --limits <内部配置> 设置 files/totalBytes/fileBytes；默认 10000 文件、展开 1 GiB、单文件 256 MiB。超过限制报告原因，不无限解压。
 - 预览只确认当前加载器条件下能加载与渲染，不确认业务身份或最终场景美观。组合/实例/蒙皮编辑限制由清单展示。
-- 正式检查路径是用户普通浏览器打开静态 index.3d.html（file:// 直开，无服务、无 Edge/CDP 前提）。`preview --headless` 保留为受控浏览器维护测试后端，不是设计师流程。
+- 正式检查路径是用户普通浏览器打开静态 index.3d-model.html（file:// 直开，无服务、无 Edge/CDP 前提）。`preview --headless` 保留为受控浏览器维护测试后端，不是设计师流程。
 - 原始附件不改写、不执行包内代码、不自动访问包内外网资源。
 - 人工确认和视觉识别通过宿主对话能力完成，没有内置外部视觉云服务，也不默认上传模型到任何识别平台。
 
