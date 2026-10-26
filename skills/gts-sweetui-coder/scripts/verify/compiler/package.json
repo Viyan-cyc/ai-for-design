@@ -1,0 +1,7 @@
+{
+  "dependencies": {
+    "@rgrove/parse-xml": "^4.2.0",
+    "@vue/compiler-sfc": "^3.5.25",
+    "esbuild": "0.18.20"
+  }
+}

@@ -74,7 +74,7 @@
 
 ### 4.1 File Changes
 - **改** `design-language/样式Token/设计系统.md`：按 §4.0 重构（统一表 + 各节校准）。保留行：§0 全部、锚点 id 全部（`#ui-colors`/`#palette`/`#charts` 等冻结锚点不动，`#dark-colors` 锚点保留但重定义到统一表说明或保留空节指引）。
-- **改** `ep-coder/skills/generate-ux-prototype/scripts/gen-tokens.mjs`：
+- **改** `ep-coder/skills/gts-ep-coder/scripts/gen-tokens.mjs`：
   1. §1.2 解析改统一四列表（同表取 Light/Dark 两列），输出 default.css 用 Light 列、dark.css 用 Dark 列；废弃 parseDarkSection 的五列逻辑与 DARK_SECTION_ANCHOR；
   2. DARK_BACKFILL 10 项全删（真值已全覆盖）；DARK_REQUIRED 检查保留（现在校验统一表 Dark 列完整性）；
   3. chart 解析适配新版（default 11 色 + accessible 6 色，Light/Dark 双列；default.css 出 Light 全 11 色 + accessible Light，dark.css 出 Dark 全 11 色 + accessible Dark）；
@@ -85,7 +85,7 @@
 - **生成** default.css / dark.css / references/design-language.md GEN 段（gen-tokens 产出）。
 - **改** `references/dark-theme-intake.md`：状态更新——缺口全清（阴影深色/填充/表格/accessible 已正式化）、回填 10 项退役、倒退说明段保留但标注"新版已修正"。§C 验收记录追加。
 - **改** `design-language/00索引.md`：深色条目更新为"全量正式化完成"；version 记录追加本次变更说明。
-- **改** `ep-coder/skills/generate-ux-prototype/SKILL.md`：dark 相关表述更新（缺口清零）。
+- **改** `ep-coder/skills/gts-ep-coder/SKILL.md`：dark 相关表述更新（缺口清零）。
 - **验证试点**：`.uxproto-pilot/pilot-dual/` init → build → CDP 冒烟（浅色 subtle 新值断言 + dark 全链路断言沿用 cdp-full.mjs 的 dark 段 + 图表 token 抽样）。
 
 ### 4.2 Signatures

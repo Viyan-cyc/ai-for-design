@@ -1,4 +1,4 @@
-# SDD Spec: generate-ux-prototype 内网图标检索替换（EP 占位 → 公司图标库）
+# SDD Spec: gts-ep-coder 内网图标检索替换（EP 占位 → 公司图标库）
 
 ## 0. Open Questions
 - [x] SVG 清洗（fill→currentColor）：用户拍板"源码清洗先不做了"（2026-09-22）
@@ -11,7 +11,7 @@
 - [x] size/style 默认值（2026-09-22 回填）：size=24（key="24"），style=border（key="border"，value="线性"）。getIcon 参数用 style 的 **key**（如 "border"），不是 value
 
 ## 1. Requirements (Context)
-- **Goal**: generate-ux-prototype（ep-coder 变体）在内网环境使用公司图标库替换 EP 图标：AI 照常写 EP 图标名，新增 fetch 脚本按用到的图标名检索公司向量库，命中的 SVG 落盘并在预览运行时替换 EP 图标；未命中的图标保持 EP 原样，页面天然完整。
+- **Goal**: gts-ep-coder（ep-coder 变体）在内网环境使用公司图标库替换 EP 图标：AI 照常写 EP 图标名，新增 fetch 脚本按用到的图标名检索公司向量库，命中的 SVG 落盘并在预览运行时替换 EP 图标；未命中的图标保持 EP 原样，页面天然完整。
 - **In-Scope**:
   - 新增 `scripts/fetch-icons.mjs`：扫描 src/ 中 `@element-plus/icons-vue` 实际 import 的图标名 → 单轮批量请求检索服务 → **深浅两套 SVG** 落盘到工程 `src/assets/icons/`（`{name}.light.js` / `{name}.dark.js`）→ 生成 barrel `src/assets/icons/index.js`
   - barrel 语义：命中图标名导出**双份 SVG 组件**（同时渲染 light/dark 两个 svg，class 区分）+ barrel 顶部注入三条 CSS 切换规则（`.ux-icon-pair` 默认显 light；`[data-theme="dark"]` 下显 dark、隐 light）——主题跟随走纯 CSS，不改 SVG 颜色
@@ -30,7 +30,7 @@
 - Design Refs: 无新设计稿
 - Chat/Business Refs: 内网环境无法用 EP 图标包在线源；公司图标在向量检索库，返回 SVG 源码可存文件
 - Extra Context:
-  - `ep-coder/skills/generate-ux-prototype/SKILL.md`（工作流与脚本契约）
+  - `ep-coder/skills/gts-ep-coder/SKILL.md`（工作流与脚本契约）
   - `scripts/preview/index.gts.html`（moduleCache 接线点，L89-100）
   - `scripts/build.mjs`（图标名门禁 L230-237；bare import 白名单 L89-97）
   - `scripts/build-data.mjs`（preview-data 源码映射机制）
@@ -123,10 +123,10 @@
 
 ## 4. Plan (Contract)
 ### 4.1 File Changes
-- `ep-coder/skills/generate-ux-prototype/scripts/fetch-icons.mjs`: **新增**。图标检索落盘脚本（详见 §4.2）
-- `ep-coder/skills/generate-ux-prototype/scripts/preview/index.gts.html`: **修改**。moduleCache `@element-plus/icons-vue` 键值改为动态合并模块；新增 barrel 存在性判断逻辑（有 barrel 走合并模块，无 barrel 保持 EP UMD 原样）
-- `ep-coder/skills/generate-ux-prototype/SKILL.md`: **修改**。工作流 ③/④ 之间插入图标检索步骤说明 + 脚本输出格式
-- `ep-coder/skills/generate-ux-prototype/references/`（如需）: 无新文件；SKILL.md 内嵌说明即可（任务单元小，不散落文档）
+- `ep-coder/skills/gts-ep-coder/scripts/fetch-icons.mjs`: **新增**。图标检索落盘脚本（详见 §4.2）
+- `ep-coder/skills/gts-ep-coder/scripts/preview/index.gts.html`: **修改**。moduleCache `@element-plus/icons-vue` 键值改为动态合并模块；新增 barrel 存在性判断逻辑（有 barrel 走合并模块，无 barrel 保持 EP UMD 原样）
+- `ep-coder/skills/gts-ep-coder/SKILL.md`: **修改**。工作流 ③/④ 之间插入图标检索步骤说明 + 脚本输出格式
+- `ep-coder/skills/gts-ep-coder/references/`（如需）: 无新文件；SKILL.md 内嵌说明即可（任务单元小，不散落文档）
 
 ### 4.2 Signatures
 - `fetch-icons.mjs`（CLI）:
@@ -194,5 +194,5 @@
 - 偏差：无
 
 ## 9. Project Sync Candidates
-- 候选: "内网图标替换机制"若验证成立，属可复用工程事实 → 建议同步至 [[ep-coder-generate-ux-prototype]] 记忆
+- 候选: "内网图标替换机制"若验证成立，属可复用工程事实 → 建议同步至 [[ep-coder-gts-ep-coder]] 记忆
 - Sync decision: Not synced（任务收口时处理）

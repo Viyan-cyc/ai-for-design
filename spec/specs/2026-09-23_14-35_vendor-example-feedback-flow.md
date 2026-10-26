@@ -7,7 +7,7 @@
 
 ## 1. 最终目标与边界
 
-**Goal**：给 `skills/generate-ux-prototype/vendor/code-example/references/` 新增 **007 feedback-flow**（操作反馈流整页示范）：用户操作触发的三层反馈——即时消息（ElMessage）、系统通知（ElNotification）、确认与高危确认（ElDialog + ElCheckbox），对应《组件规范/反馈类》消息.md + 通知.md + 对话框.md 三份真值。
+**Goal**：给 `skills/gts-ep-coder/vendor/code-example/references/` 新增 **007 feedback-flow**（操作反馈流整页示范）：用户操作触发的三层反馈——即时消息（ElMessage）、系统通知（ElNotification）、确认与高危确认（ElDialog + ElCheckbox），对应《组件规范/反馈类》消息.md + 通知.md + 对话框.md 三份真值。
 
 **In Scope**
 - 示例目录 `references/feedback-flow/`：`index.vue` + `components/` 子组件

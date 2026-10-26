@@ -1,0 +1,90 @@
+{
+  "mode": "l1-accept",
+  "status": "PASS",
+  "errors": [],
+  "exceptions": [],
+  "networkFailed": [],
+  "requests": [
+    {
+      "url": "file:///D:/cyc/project/octo/gts/test/ep-coder/_e2e/l1-fixture/l1-check/index.gts.html",
+      "type": "Document"
+    },
+    {
+      "url": "file:///D:/cyc/project/octo/gts/test/ep-coder/_e2e/l1-fixture/l1-check/public/library/vue.global.prod.js",
+      "type": "Script"
+    },
+    {
+      "url": "file:///D:/cyc/project/octo/gts/test/ep-coder/_e2e/l1-fixture/l1-check/public/library/dayjs.min.js",
+      "type": "Script"
+    },
+    {
+      "url": "file:///D:/cyc/project/octo/gts/test/ep-coder/_e2e/l1-fixture/l1-check/public/library/element-plus.full.min.js",
+      "type": "Script"
+    },
+    {
+      "url": "file:///D:/cyc/project/octo/gts/test/ep-coder/_e2e/l1-fixture/l1-check/public/library/element-plus-icons-vue.iife.min.js",
+      "type": "Script"
+    },
+    {
+      "url": "file:///D:/cyc/project/octo/gts/test/ep-coder/_e2e/l1-fixture/l1-check/public/library/element-plus-locale-zh-cn.min.js",
+      "type": "Script"
+    },
+    {
+      "url": "file:///D:/cyc/project/octo/gts/test/ep-coder/_e2e/l1-fixture/l1-check/public/library/element-plus-locale-en.min.js",
+      "type": "Script"
+    },
+    {
+      "url": "file:///D:/cyc/project/octo/gts/test/ep-coder/_e2e/l1-fixture/l1-check/public/library/vue-i18n.global.prod.js",
+      "type": "Script"
+    },
+    {
+      "url": "file:///D:/cyc/project/octo/gts/test/ep-coder/_e2e/l1-fixture/l1-check/public/library/echarts.min.js",
+      "type": "Script"
+    },
+    {
+      "url": "file:///D:/cyc/project/octo/gts/test/ep-coder/_e2e/l1-fixture/l1-check/public/library/vue-echarts.iife.min.js",
+      "type": "Script"
+    },
+    {
+      "url": "file:///D:/cyc/project/octo/gts/test/ep-coder/_e2e/l1-fixture/l1-check/public/library/less.min.js",
+      "type": "Script"
+    },
+    {
+      "url": "file:///D:/cyc/project/octo/gts/test/ep-coder/_e2e/l1-fixture/l1-check/public/library/vue3-sfc-loader.js",
+      "type": "Script"
+    },
+    {
+      "url": "file:///D:/cyc/project/octo/gts/test/ep-coder/_e2e/l1-fixture/l1-check/public/library/element-plus.index.css",
+      "type": "Stylesheet"
+    },
+    {
+      "url": "file:///D:/cyc/project/octo/gts/test/ep-coder/_e2e/l1-fixture/l1-check/public/library/vue-echarts.style.css",
+      "type": "Stylesheet"
+    },
+    {
+      "url": "file:///D:/cyc/project/octo/gts/test/ep-coder/_e2e/l1-fixture/l1-check/preview-data.js",
+      "type": "Script"
+    }
+  ],
+  "shots": [
+    "D:\\cyc\\project\\octo\\gts\\test\\ep-coder\\_e2e\\browser-acceptance\\shots\\l1-accept\\l1-accept.png"
+  ],
+  "url": "file:///D:/cyc/project/octo/gts/test/ep-coder/_e2e/l1-fixture/l1-check/index.gts.html",
+  "browser": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/155.0.0.0 Safari/537.36",
+  "initial": {
+    "rows": 10,
+    "title": "演示工作台",
+    "input": true,
+    "buttons": [
+      "查询"
+    ],
+    "bodyBg": "rgb(243, 243, 243)",
+    "bootError": ""
+  },
+  "interaction": {
+    "filtered": 3,
+    "firstFiltered": "Ankara-Server-01",
+    "restored": 10,
+    "page2Rows": 2
+  }
+}

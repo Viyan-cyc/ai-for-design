@@ -1,6 +1,6 @@
 # Handoff: 内网图标检索替换 — 三个待回答问题（给检索服务方/图标库负责人）
 
-> 用途：回答以下问题后，把答案转给负责实现"generate-ux-prototype 内网图标替换"的 AI 会话（或原会话）即可继续推进。
+> 用途：回答以下问题后，把答案转给负责实现"gts-ep-coder 内网图标替换"的 AI 会话（或原会话）即可继续推进。
 > 背景 Spec：`ep-coder/spec/specs/2026-09-22_14-44_ep-coder-intranet-icon-fetch.md`（仓库 `gts/test` 根下）
 
 ## 背景（30 秒版）

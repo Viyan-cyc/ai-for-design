@@ -1,4 +1,4 @@
-# Spec: ep-coder / generate-ux-prototype skill
+# Spec: ep-coder / gts-ep-coder skill
 
 - **层级**: Feature Spec
 - **创建**: 2026-09-17 17:37
@@ -8,7 +8,7 @@
 
 ## 1. 最终目标（Goal）
 
-在 `ep-coder/` 仓库内实现 skill **`generate-ux-prototype`**：
+在 `ep-coder/` 仓库内实现 skill **`gts-ep-coder`**：
 
 1. **输入**：用户需求（文本描述等）。
 2. **输出**：Vue 3 + **Element Plus v2.13.5** 页面代码（`.vue` SFC），页面样式严格遵循 `design-language/`（GTS 设计语言 v2.2.1）定义的 token 与规范。
@@ -22,7 +22,7 @@ Task-1：搭出 skill 骨架（SKILL.md + scripts + references + vendor 占位�
 ## 2. In Scope / Out of Scope
 
 **In Scope**
-- `ep-coder/skills/generate-ux-prototype/` 下新建 SKILL.md、scripts/、references/、vendor/。
+- `ep-coder/skills/gts-ep-coder/` 下新建 SKILL.md、scripts/、references/、vendor/。
 - 把 gts-autin-coder 的 `init.mjs / build.mjs / build-data.mjs / preview/ / verify/whitelists` 迁移改造（去 node_modules 依赖）。
 - 引入 fastui-vue-creator 的 node 检测/安装模式（install.ps1 / install.sh + ensure-env 思路）。
 - verify/compiler 改为：`package.json + package-lock.json` 随 skill 携带，运行时检测 node → npm i（npmmirror 源）。
@@ -70,7 +70,7 @@ Task-1：搭出 skill 骨架（SKILL.md + scripts + references + vendor 占位�
 
 ### 4.3 design-language 侧（样式真值源）
 
-- `design-language/00索引.md` 明确指出：**"怎么写代码（Element Plus API、Vue 方言、页面骨架）由工程侧 skill 资产库（`skills/generate-ux-prototype/library/`）负责"** —— 即 design-language 预期本 skill 存在，且其资产目录名叫 `library/`（与用户说的 vendor/ 后续放"组件示例/代码示例/设计规范"对应，命名待用户确认）。
+- `design-language/00索引.md` 明确指出：**"怎么写代码（Element Plus API、Vue 方言、页面骨架）由工程侧 skill 资产库（`skills/gts-ep-coder/library/`）负责"** —— 即 design-language 预期本 skill 存在，且其资产目录名叫 `library/`（与用户说的 vendor/ 后续放"组件示例/代码示例/设计规范"对应，命名待用户确认）。
 - Token 命名体系：`color-brand`、`color-text-primary`、`space-size-16`、`radius-size-normal`、`shadow-1..6` 等（W3C DTCG 惯例，无 `--gts-` 前缀写入规范文档；毛玻璃处出现 `var(--brand-50)` 写法）。
 - **设计文档 token 名（`color-brand` 等）≠ gts-autin-coder 皮肤 token 名（`--gts-color-primary` 等）**。两套名字不同、粒度不同（设计系统 436 行 token 表 vs gts 皮肤 ~30 个变量）。
 - 组件库适配要求：EP 通过主题接口接入 GTS token，适配层做映射；不能直接用 EP 默认配色。
@@ -122,10 +122,10 @@ Task-1：搭出 skill 骨架（SKILL.md + scripts + references + vendor 占位�
 - **D-15 node_modules 永不进 skill 包**（2026-09-17 用户质询后确立）：`scripts/verify/compiler/` 只携带 `package.json` + `package-lock.json`（几 KB 文本，锁传递依赖 + 供 ensure-env 做 hash 比对），`node_modules` 一律装到 `<envDir>/compiler/`。setup-env（复制清单+npm ci）、ensure-env（从 envDir 加载）、build.mjs（按 env-config 解析 envDir 后加载 compiler-sfc）三处一致。
 - **D-11 node 版本校验**：下载后用同镜像的 `SHASUMS256.txt` 比对（替代 fastui 的 manifest 内嵌 sha256）。
 
-### 6.1 Target 结构（ep-coder/skills/generate-ux-prototype/）
+### 6.1 Target 结构（ep-coder/skills/gts-ep-coder/）
 
 ```
-ep-coder/skills/generate-ux-prototype/
+ep-coder/skills/gts-ep-coder/
 ├── SKILL.md                                   # [新写] 融合：gts-autin 工作流（去 gts 命名）+ fastui 环境策略（去 yarn）
 ├── references/
 │   ├── design-language.md                     # [新写] 从 design-language/ 派生的消费版：token 全表 + 布局/组件要点（D-12：gts-autin design_system.md 不迁移）
@@ -287,7 +287,7 @@ ep-coder/skills/generate-ux-prototype/
 
 **执行时间**：2026-09-17（Plan Approved 后连续执行）
 
-**产物**：`d:\cyc\project\octo\gts\test\ep-coder\skills\generate-ux-prototype\`（28 个文件，不含 node_modules / vendored library）
+**产物**：`d:\cyc\project\octo\gts\test\ep-coder\skills\gts-ep-coder\`（28 个文件，不含 node_modules / vendored library）
 
 ```
 SKILL.md                       # 工作流 ⓪-⑤ + 硬约束（继承 fastui：禁删/禁绕/npm-only）

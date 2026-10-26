@@ -61,11 +61,11 @@
 - **修改** `design-language/样式Token/设计系统.md`：从新版整段抽入 §1.2D（锚点 `<a id="dark-colors"></a>`，含字段定义、12 个分组表、重版提醒色异常记录、标注差异与未覆盖声明）。老版 §1.2 等其余内容**一字不动**（不加"浅色原版"后缀——那是新版配套改动）。
 - **修改** `design-language/组件规范/组件规则.md`：并入新版新增的深色消费规则条目（"深色先查第 1.2D 节，同名键取 Dark 值，未覆盖参数不得以浅色值兜底"）。
 - **修改** `design-language/00索引.md`：待确认项区"深色模式语义值缺失"条目更新为"设计师已正式补表（§1.2D，2026-09-21 集成），工程侧按表生成 dark 皮肤"。
-- **生成** `ep-coder/skills/generate-ux-prototype/scripts/preview/src/assets/themes/dark.css`：由扩展后的 gen-tokens 生成（不手写）。作用域 `html[data-theme="dark"]`；§1.2D Dark 列真值 + F13 工程回填缺口（文件头注释标注回填项清单）+ F12 非颜色组原样复制 + `--ux-mix-base: #191919`。
-- **修改** `ep-coder/skills/generate-ux-prototype/scripts/gen-tokens.mjs`：新增 §1.2D 解析段（识别五列表、取 Dark 列、透传 alpha 格式），组装输出 dark.css；**不动** default.css 生成逻辑；解析失败即停原则保持。
-- **修改** `ep-coder/skills/generate-ux-prototype/scripts/preview/index.gts.html`：换肤插槽追加 `<link rel="stylesheet" href="./src/assets/themes/dark.css">`。
-- **修改** `ep-coder/skills/generate-ux-prototype/references/dark-theme-intake.md`：§B 状态更新（第 1-5/7 组 + 图表/告警状态色已补齐；剩余缺口=填充色 8 项/表格色 3 项/阴影深色/frost 深色材质/ux-mix-base 裁决记录/色板深色变体裁决/深色 accessible）+ 新增"新版规范倒退项说明"段（命名 5 组/frost 清空/拼写 typo 不采纳及原因）+ 拼写修正建议（`color-erroe-subtle`→error、`color-info-seconday`→secondary）。
-- **修改** `ep-coder/skills/generate-ux-prototype/SKILL.md` 与 `references/design-language.md`：主题相关段落从"深色等设计补表"更新为"dark 皮肤已内置（§1.2D 真值 + 工程回填缺口标注）"。
+- **生成** `ep-coder/skills/gts-ep-coder/scripts/preview/src/assets/themes/dark.css`：由扩展后的 gen-tokens 生成（不手写）。作用域 `html[data-theme="dark"]`；§1.2D Dark 列真值 + F13 工程回填缺口（文件头注释标注回填项清单）+ F12 非颜色组原样复制 + `--ux-mix-base: #191919`。
+- **修改** `ep-coder/skills/gts-ep-coder/scripts/gen-tokens.mjs`：新增 §1.2D 解析段（识别五列表、取 Dark 列、透传 alpha 格式），组装输出 dark.css；**不动** default.css 生成逻辑；解析失败即停原则保持。
+- **修改** `ep-coder/skills/gts-ep-coder/scripts/preview/index.gts.html`：换肤插槽追加 `<link rel="stylesheet" href="./src/assets/themes/dark.css">`。
+- **修改** `ep-coder/skills/gts-ep-coder/references/dark-theme-intake.md`：§B 状态更新（第 1-5/7 组 + 图表/告警状态色已补齐；剩余缺口=填充色 8 项/表格色 3 项/阴影深色/frost 深色材质/ux-mix-base 裁决记录/色板深色变体裁决/深色 accessible）+ 新增"新版规范倒退项说明"段（命名 5 组/frost 清空/拼写 typo 不采纳及原因）+ 拼写修正建议（`color-erroe-subtle`→error、`color-info-seconday`→secondary）。
+- **修改** `ep-coder/skills/gts-ep-coder/SKILL.md` 与 `references/design-language.md`：主题相关段落从"深色等设计补表"更新为"dark 皮肤已内置（§1.2D 真值 + 工程回填缺口标注）"。
 - **验证试点**：`.uxproto-pilot/pilot-dark/`（init 生成 → build → CDP 冒烟）。
 
 ### 4.2 Signatures

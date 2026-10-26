@@ -1,4 +1,4 @@
-# Spec: generate-ux-prototype 页面自适应能力（全链路落地）
+# Spec: gts-ep-coder 页面自适应能力（全链路落地）
 
 ## 0. 元信息
 
@@ -21,7 +21,7 @@
 
 ## 1. 最终目标
 
-让 `ep-coder/skills/generate-ux-prototype` 生成的页面具备良好的自适应能力：
+让 `ep-coder/skills/gts-ep-coder` 生成的页面具备良好的自适应能力：
 桌面区间弹性（约 1024–1920+，重点检查值 1280/1680/1920，1024 窄桌面），策略为**布局折叠式**
 （内容重排、不缩放），落地范围为**全链路**（消费视图规范 → 编码规则 → vendor 示例 →
 SKILL.md → build 门禁）。
@@ -117,15 +117,15 @@ SKILL.md → build 门禁）。
 
 - `design-language/设计规范/响应式与无障碍.md`（真值源：断点、适配规则、缩放红线）
 - `design-language/设计规范/页面布局.md`（真值源：五档表、栅格公式、侧栏）
-- `ep-coder/skills/generate-ux-prototype/references/design-language.md`（消费视图）
-- `ep-coder/skills/generate-ux-prototype/vendor/vue-skill/references/code-rules.md`
-- `ep-coder/skills/generate-ux-prototype/vendor/code-example/references/*`（3 整页示例）
-- `ep-coder/skills/generate-ux-prototype/vendor/vue-skill/templates/*`（5 模板）
-- `ep-coder/skills/generate-ux-prototype/SKILL.md`
-- `ep-coder/skills/generate-ux-prototype/scripts/build.mjs`（L340–370 样式检查段）
-- `ep-coder/skills/generate-ux-prototype/scripts/init.mjs`（starter 内嵌模板）
+- `ep-coder/skills/gts-ep-coder/references/design-language.md`（消费视图）
+- `ep-coder/skills/gts-ep-coder/vendor/vue-skill/references/code-rules.md`
+- `ep-coder/skills/gts-ep-coder/vendor/code-example/references/*`（3 整页示例）
+- `ep-coder/skills/gts-ep-coder/vendor/vue-skill/templates/*`（5 模板）
+- `ep-coder/skills/gts-ep-coder/SKILL.md`
+- `ep-coder/skills/gts-ep-coder/scripts/build.mjs`（L340–370 样式检查段）
+- `ep-coder/skills/gts-ep-coder/scripts/init.mjs`（starter 内嵌模板）
 - EP 2.13.5 UMD 实测断点（element-plus.index.css @media）
-- memory: [[ep-coder-generate-ux-prototype]]（D-1~D-30 决策链）、[[skill-output-style]]
+- memory: [[ep-coder-gts-ep-coder]]（D-1~D-30 决策链）、[[skill-output-style]]
 
 ## 5. In Scope / Out of Scope
 

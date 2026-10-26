@@ -1,4 +1,4 @@
-# SDD Spec: sweetui-vue-creator Skill（SweetUI 页面生成 Skill，EP generate-ux-prototype 对等复刻）
+# SDD Spec: sweetui-vue-creator Skill（SweetUI 页面生成 Skill，EP gts-ep-coder 对等复刻）
 
 ## 0. Open Questions
 - [x] 交付范围？→ 用户定：**完整 harness 骨架**
@@ -15,7 +15,7 @@
 ## 1. Requirements (Context)
 
 ### 1.1 Goal
-产出一套与 `ep-coder/skills/generate-ux-prototype` **功能对等**的 SweetUI 页面生成 Skill：目录 `ep-coder/skills/sweetui-vue-creator`，name=`sweetui-vue-creator`。产物 = **完整 harness 骨架 + HANDOFF 内网交接清单**。本地（无 SweetUI 源码/UMD）可交付；内网 LLM 拿到包后，基于骨架补齐 SweetUI 专属细节并闭环验证。最终效果：内网用户给自然语言需求 → skill 产出 Vue3 + SweetUI 的 `.vue` 页面 + 离线双击可开的预览 HTML + 可拷入真实工程的 `src/`。
+产出一套与 `ep-coder/skills/gts-ep-coder` **功能对等**的 SweetUI 页面生成 Skill：目录 `ep-coder/skills/sweetui-vue-creator`，name=`sweetui-vue-creator`。产物 = **完整 harness 骨架 + HANDOFF 内网交接清单**。本地（无 SweetUI 源码/UMD）可交付；内网 LLM 拿到包后，基于骨架补齐 SweetUI 专属细节并闭环验证。最终效果：内网用户给自然语言需求 → skill 产出 Vue3 + SweetUI 的 `.vue` 页面 + 离线双击可开的预览 HTML + 可拷入真实工程的 `src/`。
 
 ### 1.2 In-Scope（本会话交付）
 - 骨架目录 + 全套脚本的 SweetUI 化版本：`SKILL.md`、`references/`、`scripts/`、`vendor/`、`README.md`
@@ -40,10 +40,10 @@
   - `C:\Users\Tony\Documents\xwechat_files\...\2026-09\sweetui-frontend-development.md`（SweetUI 组件指南：150+ 组件、5 模板、`@hw-seq/sweet-ui-base`、`sweet-*` 前缀、`sweet-config-provider namespace`、`sweetUIBase.i18n/setTheme`、`SweetMessageBox/$sweetNotify`、`sweet-icon name=`）
   - `C:\Users\Tony\Documents\xwechat_files\...\2026-09\gts-ux-spec.txt`（GTS UX 规范：`--swt-*` 全表 + `body[theme='uDesign2.2-{light,dark}']` 双主题 CSS 块）——token 值**作废替换**，仅作 SweetUI 槽位命名的参考线索
 - 复用蓝本（功能对等的 EP skill，结构照抄、EP 专属部分换 SweetUI）:
-  - `ep-coder/skills/generate-ux-prototype/SKILL.md`（工作流 ⓪–⑤、硬约束、交付口径）
-  - `ep-coder/skills/generate-ux-prototype/references/design-language.md`（同一 token 消费视图）
-  - `ep-coder/skills/generate-ux-prototype/scripts/*`（ensure-env/init/build/build-data/gen-tokens/gen-whitelists/preview/install）
-  - `ep-coder/skills/generate-ux-prototype/vendor/vue-skill/*`（SKILL/code-rules/components_index/error-checklist/模板/示例）
+  - `ep-coder/skills/gts-ep-coder/SKILL.md`（工作流 ⓪–⑤、硬约束、交付口径）
+  - `ep-coder/skills/gts-ep-coder/references/design-language.md`（同一 token 消费视图）
+  - `ep-coder/skills/gts-ep-coder/scripts/*`（ensure-env/init/build/build-data/gen-tokens/gen-whitelists/preview/install）
+  - `ep-coder/skills/gts-ep-coder/vendor/vue-skill/*`（SKILL/code-rules/components_index/error-checklist/模板/示例）
   - `ep-coder/design-language/`（真值源：`样式Token/设计系统.md` 统一双主题表、`组件规范/`、`设计规范/`）
 - Chat/Business Refs: 本会话用户三决策（§0）
 
@@ -361,9 +361,9 @@ fetch-icons IconPlus API 实跑、Spec §2.1 Next Actions 打勾。
 
 ## 9. Project Sync Candidates
 - Stable facts（跨任务复用价值高）：
-  - 「sweetui-vue-creator」任务 = EP generate-ux-prototype 的 SweetUI 对等复刻，落位 `ep-coder/skills/sweetui-vue-creator`，用户三决策（完整 harness / 命名 / icon-plus 混合图标）
+  - 「sweetui-vue-creator」任务 = EP gts-ep-coder 的 SweetUI 对等复刻，落位 `ep-coder/skills/sweetui-vue-creator`，用户三决策（完整 harness / 命名 / icon-plus 混合图标）
   - SweetUI 材料来源：WeChat 2026-09 两文件；SweetUI 在内网、本机不可达；组件 API 与 EP 高度同构
   - SweetUI 双体系变量**实跑口径（2026-09-28 内网轮）**：`--el-*` 358 槽位 + `--swt-*` 646 槽位（探针估 359/667 已修正）；组件 140（探针 137）；图标 715 CSS 类 = 404 语义名（探针估 720）；ancilary/ancillary 拼写双存；11 处硬编码 hex 不可外部覆盖
   - 内网单向传输：文件发不出来，回传 = 可复制 Markdown 报告（本轮已验证其数字全部对账命中）
-- Suggested destination: 本项目 memory（[[ep-coder-generate-ux-prototype]] 关联条目追加）
+- Suggested destination: 本项目 memory（[[ep-coder-gts-ep-coder]] 关联条目追加）
 - Sync decision: 待任务收口后由用户确认

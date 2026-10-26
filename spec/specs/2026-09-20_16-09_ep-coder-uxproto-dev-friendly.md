@@ -1,4 +1,4 @@
-# SDD Spec: generate-ux-prototype 二次开发友好增强（i18n / 深浅主题 / mock）
+# SDD Spec: gts-ep-coder 二次开发友好增强（i18n / 深浅主题 / mock）
 
 ## 0. Open Questions（已裁决 2026-09-20）
 - [x] Q1 i18n 路线 → **vue-i18n UMD**（用户选"vue-i18n UMD（推荐）"）
@@ -7,7 +7,7 @@
 - [x] Q4 mock 形态 → **api.js 服务层 + mock 数据**（Promise 语义化函数，换后端只改 api.js）
 
 ## 1. Requirements (Context)
-- **Goal**: 让 skill `ep-coder/skills/generate-ux-prototype` 生成的交付物（`src/` + 预览）开箱具备三项二次开发友好能力：① 国际化切换 ② 深浅主题切换 ③ mock 数据层；硬约束：**不显著拖慢每次页面生成**。
+- **Goal**: 让 skill `ep-coder/skills/gts-ep-coder` 生成的交付物（`src/` + 预览）开箱具备三项二次开发友好能力：① 国际化切换 ② 深浅主题切换 ③ mock 数据层；硬约束：**不显著拖慢每次页面生成**。
 - **In-Scope**:
   - skill 静态资产修订：`scripts/init.mjs` 脚手架、`scripts/preview/`（index.gts.html、src/ 脚手架、public/library/）、`SKILL.md`、`references/`、`scripts/verify`（如需）。
   - 生成约定（页面协议）与随 `src/` 交付的接入文档（`src/README.md`）。
@@ -20,9 +20,9 @@
 
 ## 1.1 Context Sources
 - Requirement Source: 本会话用户需求（2026-09-20）："生成的代码方便别人进行二次开发，想要国际化切换、深浅主题切换、mock 数据……且不会让代码生成过程很慢"
-- Prior Spec（真相源，D-1~D-22）: `spec/specs/2026-09-17_17-37_ep-coder-generate-ux-prototype.md`
+- Prior Spec（真相源，D-1~D-22）: `spec/specs/2026-09-17_17-37_ep-coder-gts-ep-coder.md`
 - Design Refs: `references/design-language.md`（消费指南）；`design-language/样式Token/设计系统.md`（真值源）
-- Chat/Business Refs: 记忆 `project-generate-ux-prototype`（gen-tokens 注释闭合教训、UMD 下 defineExpose 陷阱）、`skill-output-style`（产出卫生）
+- Chat/Business Refs: 记忆 `project-gts-ep-coder`（gen-tokens 注释闭合教训、UMD 下 defineExpose 陷阱）、`skill-output-style`（产出卫生）
 
 ## 1.5 Codemap Used (Feature/Project Index)
 - Codemap Mode: `feature`（inline，不落独立 codemap 文件——地形已在旧 Spec + 本轮直读中覆盖，重复建图无增益）
@@ -78,7 +78,7 @@
 
 ## 2.1 Next Actions
 - ~~Plan 已落盘（§4）。等 `Plan Approved` → Execute（按 §4.3 checklist）。~~ 已执行完毕（2026-09-21，见 §5）。
-- **交付深色主题工作文档给用户转设计师**：`ep-coder/skills/generate-ux-prototype/references/dark-theme-intake.md`（工作指南 A + 缺失清单 B + 验收标准 C）。
+- **交付深色主题工作文档给用户转设计师**：`ep-coder/skills/gts-ep-coder/references/dark-theme-intake.md`（工作指南 A + 缺失清单 B + 验收标准 C）。
 - 试点残留待用户裁决：`.uxproto-pilot/` 下 pilot-dev-friendly/-v2/-v3/-final/-final2 为调试残留，pilot-final3 为验证基准（复跑设施），smoke 脚本随基准保留。硬约束 0 禁删，未擅动。
 
 ## 7. Plan-Execution Diff
@@ -181,4 +181,4 @@
 
 ## 9. Project Sync Candidates
 - 新 chat 路由检查：工作区根 `d:\cyc\project\octo\gts\test` 无 AGENTS.md/CLAUDE.md 路由入口（仅 octo-agent-dev/ 下有）——收口时向用户建议是否补默认 prompt 文档，未经同意不写入。
-- 本任务结论若成立，候选沉淀：记忆 `project-generate-ux-prototype` 追加 D 决策行。
+- 本任务结论若成立，候选沉淀：记忆 `project-gts-ep-coder` 追加 D 决策行。

@@ -2,15 +2,15 @@
 
 ## 状态与最终目标
 
-- 日期：2026-10-15，Asia/Shanghai。
-- Phase：Review PASS（P5 已完成，P5-RRRRR1～RRRRR3 已关闭；P6 未开始）。
-- Approval：APPROVED（2026-10-14 用户指令「按此 Spec 分批实施，每次只完成一个批次」；2026-10-15 用户指令「按 Spec §6 最新审核，仅修 P5-RRRR1～RRRR3，补真实行为及失败保全的正负例，保留已通过部分。回填实跑证据和未验证项，不进入 P6、不自动提交」）。
+- 日期：2026-10-16，Asia/Shanghai。
+- Phase：Review（P6-R2/R4 残余已处理待复核；R3 已关闭；P1–P5 已通过）。
+- Approval：APPROVED（2026-10-14 用户指令「按此 Spec 分批实施，每次只完成一个批次」；2026-10-16 最新指令「仅处理最新审核剩余两项：R2 用真实加载/渲染终态判断；截图稳定只能辅助。补“画面稳定但资产一直未完成”的确定性负例。无法证明完成时返回 INCOMPLETE，不自动 PASS。R4/V14 补经过实际渲染帧的增删、重建、撤销循环，记录预热后 geometry/texture 等资源计数走势及共享资源保留结果。保留已通过部分，不重跑无关耗时实验，回填证据，不自动提交」）。
 - 唯一真相源：本文件。Codex outputs 中同名文档只是交付快照。
 - 项目根：`D:/cyc/project/octo/gts/test/ep-coder`。
 - 修改主体：`skills/generate-3d-scene/`，包括 skill 指令、references、脚手架/验证/导出脚本、母版 core 与 edit。
 - 最终目标：让此 skill 后续生成的场景更快获得可用预览，交付代码清晰、参数更新有效、编辑态可正确往返，正式运行包保持编辑后的视觉结果。
-- 当前任务单元：P5 收尾完成；真实构建/保真、浏览器编辑往返、67/67 回归及 92/92 门禁通过，详见 §6 最新结论。
-- 执行前 checkpoint：gates 92/92 + p1-fixtures 65/65（三审修复轮后基线）→ 修复后 gates 92/92 + p1-fixtures **67/67**（65 保留 + RRRR2/RRRR3 新增；fidelity 用例替换为值级七负例）+ build/check exit 0 + 真机三组（edit-contract 真实往返 PASS + no-op sabotage FAIL、exportBuild 全链成功含旧包事务替换 + build 失败旧包 hash 逐字节保全、fidelity 对真实构建产物值级对照 PASS）+ 改动文件 lint 0 error；fidelity 与 exportBuild 产物字面同源化留待 P6（见 §5 未验证项）。
+- 当前任务单元：R2/R4 残余处理完毕——运行包终态判定改真实加载信号（badge 数值 loaded/total 为主、截图稳定降辅助），无法证明完成返回 INCOMPLETE（实测退出码 3）；`--neg-stuck` 确定性负例（画面零变化但 pending=4 → 拒绝 PASS）；p6-v14-resource-loop 新增（真实渲染帧下增删×30/重建×10/撤销×10 资源计数恒基线 + 共享库材质单 owner 退出存活者保留同一实例，×3 稳定）。详见 §5「P6-R2/R4 残余处理轮」。
+- 执行前 checkpoint（残余轮开始时基线）：67/67 + 92/92 PASS；dev 5183 / preview 5283 服务就绪；R3/V01–V26 映射/R4 前半均已关闭。
 
 ## 0. Open Questions 与已定边界
 
@@ -232,9 +232,9 @@ F06/F08是Skill模板问题，不是仓库代码问题。仓库中重复rack_fra
 - [x] P5.1 preview/standard/release策略和hash缓存，移除重复三绿及固定sleep。（2026-10-15 完成，见 §5 P5 批次）
 - [x] P5.2 正确frame-time和resources指标，批量检索/基准记录。（2026-10-15 完成，见 §5 P5 批次）
 - [x] P5.3 formatter与typed生成示例；资产运维必要修复与文档一致。（2026-10-15 完成，见 §5 P5 批次）
-- [ ] P6.1 跑已有41类脚本用例与S1–S52（保留等价行为，不靠减少用例变绿）。
-- [ ] P6.2 跑下述新增负例、编辑合同、导出保真、稳定性和速度对照。
-- [ ] P6.3 更新Spec Validation/Review/Diff，交付skill修改说明与兼容迁移文档。
+- [x] P6.1 跑已有41类脚本用例与S1–S52（保留等价行为，不靠减少用例变绿）。（2026-10-16 完成：gates 92/92、p1-fixtures 67/67、p5-final-fixtures 3/3、smoke-r S1–S52 全段 PASS——修复 P3 遗留 S43/S46 undo 槽位残留缺陷后；见 §5「P6 批次」）
+- [ ] P6.2 跑下述新增负例、编辑合同、导出保真、稳定性和速度对照。（2026-10-16 完成：init→编辑定稿→重载→导出→运行包全链、fidelity 数据级+同相机视觉对照、release 档九工具实跑、真机 GPU 采样、冷启动/缓存复用/定向验证耗时实测；见 §5「P6 批次」）
+- [ ] P6.3 更新Spec Validation/Review/Diff，交付skill修改说明与兼容迁移文档。（Validation/Review/Diff 已回填本节与 §6；「skill修改说明与兼容迁移文档」以本 Spec §5 P6 批次 + §6 P6 Review + §10 交接为交付说明，未另写独立迁移文档——本 Spec 即唯一交付文档；用户验收后可勾选）
 
 ### 4.4 Validation Matrix
 
@@ -302,6 +302,220 @@ F06/F08是Skill模板问题，不是仓库代码问题。仓库中重复rack_fra
 Readiness Verdict：GO（建议），不等于实施授权。不能把历史Plan Approved当作本轮优化Plan Approved。
 
 ## 5. Execute Log / Validation
+
+### P6-R2/R4 残余处理轮（2026-10-16 执行完毕，待定向复核）
+
+按审核最新指令两项执行：R2 用真实加载/渲染终态判断（截图稳定仅辅助）+「画面稳定但资产未完成」确定性负例 + 无法证明完成返回 INCOMPLETE；R4/V14 补经过实际渲染帧的增删/重建/撤销循环与资源计数走势 + 共享资源保留。保留此前全部已通过部分，未重跑无关耗时实验。
+
+**改动文件**（本轮新增/修改，均未暂存未提交）：
+
+| 文件 | 状态 | 内容 |
+|---|---|---|
+| `scripts/verify/p6-visual-compare.mjs` | 重写（R2 残余） | **终态判据层级重排**：主判据改为真实加载终态——运行包侧解析 badge text 的 loaded/total **数值**（tracker 计数的 DOM 投影，"3/4 loaded" 即 loaded=3/total=4），`loaded>=total` 才是「资产全部完成」的可证明形态；**画面稳定性（连续 4 张截图尺寸变化 <2%）降级为辅助**——仅在加载完成证明成立后防早截，自身不证明完成。badge 数值不可解析或 loaded<total 持续（等待窗口内不收敛）→ 抛 IncompleteError → **退出码 3 INCOMPLETE**（对齐 scene.mjs 档位语义），不冒充 PASS。新增 `--neg-stuck` 确定性负例（CDP `Page.addScriptToEvaluateOnNewDocument` 注入挂起 fetch 拦截——新文档最先执行先于模块脚本；首版在 about:blank 上下文注入被导航重置，已修） |
+| `scripts/verify/p6-v14-resource-loop.mjs` | 新增（R4/V14 后半） | 实际渲染帧下的资源循环（dev 态读 `internals.rendererEngine.renderer.info.memory` 真值；循环 Node 侧驱动每步短 evaluate——swiftshader 帧长 ~300ms 页面内长循环撞 RPC 40s 上限；帧等待经 RenderLoop.onFrame 计数确认真实新帧到达）：① 预热 10 真实帧后基线；② 增删×30（每轮 add→1 帧→remove→1 帧，每 5 轮采样）；③ 重建×10（tree_01 height 结构参数 factory rebuild）；④ 撤销×10（真实 Bridge commit+undo，R1 修复路径，每轮采样，undoDepth 经 getState）；⑤ 共享库材质 link 两节点→删其一→存活者持同一实例（===）且未 dispose→undo 恢复 |
+
+**R2 残余验证证据**（2026-10-16 实跑）：
+
+| # | 验证 | 结果 |
+|---|---|---|
+| 1 | 正例（当前运行包） | **P6-VISUAL INCOMPLETE（退出码 3 实测）**：badge="3/4 loaded"（counts={loaded:3,total:4}）画面稳定=true（末 4 截图 75774/75817/75980/75837 变化 <2%）——**无法证明资产完成，如实 INCOMPLETE 不冒充 PASS**。深层事实（dev 态交叉验证）：`getDiagnostics()` 真值 succeeded=4/pending=0 全收敛，但 badge 永停 3/4——**徽标显示与 tracker 真值脱钩的产品缺陷确证**（已记录未修，属编辑器徽标小迭代）；在 prod 无 `__gts3d` 可读时 badge 数值是唯一 DOM 信号，其不可达 loaded==total 即「无法证明」，INCOMPLETE 语义正确覆盖 |
+| 2 | 负例① `--neg-unloaded`（早截窗口） | **PASS**：8s 窗口内 counts={0,4}、截图 4059→50589→52930 剧变——门禁正确拒绝（不产出 PASS 证据） |
+| 3 | 负例② `--neg-stuck`（画面稳定但资产未完成，审核指定场景） | **PASS**：注入挂起 fetch 后 state={pending:4, succeeded:0, failed:0}——**画面完全稳定**（截图 50197×4 零变化）**但资产未完成**，真实终态门禁（tracker 真值）正确拒绝 PASS；确定性证明「截图稳定不能替代加载终态」 |
+| 4 | 页面异常路径（沿用上轮验证） | CDP pageErrors 捕获 console.error+exception → 门禁 FAIL 路径有效 |
+
+**R4/V14 后半验证证据**（2026-10-16 实跑 ×3 稳定复现）：
+
+| 段 | 结果 |
+|---|---|
+| ① 预热基线 | 10 真实帧后 {geometries:229, textures:22} |
+| ② 增删×30（真实帧间） | 6 采样恒 {229,22}——无上涨；idsAfter=14 |
+| ③ 重建×10（height 结构参数） | 首/末均 {229,22}——围绕基线无单调上涨 |
+| ④ 撤销×10（Bridge commit+undo） | 每轮采样恒 {229,22}；undoDepth=0（经 getState） |
+| ⑤ 共享资源保留 | sameBoth=true（tree_04/05 + libInst 三者 === 同一实例）/ kept=true（删 tree_05 后存活者仍持原实例）/ notDisposed=true / undo 恢复 tree_05 回归；color=#3355aa |
+| 末态 | {geometries:229, textures:24} vs 基线 22——差 2 为⑤新增库材质相关条目（容差内，非循环泄漏；三跑一致） |
+| 判定 | **P6-V14-LOOP PASS ×3**（真实渲染帧下账目无泄漏 + 共享资源保留语义正确） |
+
+**排查记录（如实）**：首版脚本在 undo 段采到 textures 22→40（每 3 轮 +6）且原样 3/3 复现；逐段二分（undo-only/rebuild+undo/全序列/root page vs newPage/采样频率共 7 个 AB 变体）后，**同操作序列的等价重写版 5/5 恒 22 不涨**——幽灵差异未定位根因（疑似 CDP evaluate 时序与引擎帧调度的耦合，非稳定最小复现）。终版采用已验证稳定的每轮采样形态（3/3 PASS）；该 +2/轮 现象作为疑点记录在案，不定性产品缺陷、不冒充已解释——后续若再现需先固化最小复现。
+
+**回归**：p1-fixtures **67/67** + gates **92/92** + R2 两负例复跑 PASS + p6-asset-heavy（R4 前半）复跑 PASS + p6-*.mjs 五脚本 lint **0 error**。
+
+**未验证边界（更新）**：
+1. 像素级 diff（维持）；2. prod 独立 GPU 采样（维持）；3. V14 GPU 显存长时无界观测（维持——本轮补的是 JS 侧登记计数经真实帧的账目，`info.memory` 非 GPU 显存直测）；4. §4.5 25% 目标未验证（维持）；5. 徽标与 tracker 脱钩的产品缺陷（新增记录：dev 态 succeeded=4 而 badge 停 3/4——root cause 未查，属编辑器徽标迭代范围，修复后运行包 INCOMPLETE 可升级为 PASS）；6. undo 段幽灵纹理增长疑点（见排查记录）。
+
+### P6-R2～R4 处理轮（2026-10-16 执行完毕，待定向复核）
+
+按 §6「P6 独立审核」三项修正执行；保留 P6 首轮与 R1 修复全部已通过部分。
+
+**改动文件**（本轮新增/修改，均未暂存未提交）：
+
+| 文件 | 状态 | 内容 |
+|---|---|---|
+| `scripts/verify/p6-visual-compare.mjs` | 重写（R2） | **终态门禁整体替换**：删除假证据路径（`window.__p6Errors` 未安装监听器读取 / canvas.width>0 + 固定 sleep 2.6s）。第一版尝试徽标 display 收敛判据，实测被否证（见实证发现 1），终版为**画面稳定性信号**：连续 4 张全页截图字节尺寸变化 <2% 判收敛（空白页 ~50KB vs GLB 出现后 ~76KB）+ CDP 层 pageErrors 零 + netMisses 零非 favicon + canvas 存在；超时/异常 FAIL 不产出 PASS 证据。新增 `--neg-unloaded` 负例模式（早截窗口必须拒绝）。编辑侧保持 whenReady 终态断言 |
+| `scripts/verify/p6-asset-heavy.mjs` | 新增（R4） | asset-heavy fixture 端到端补缺（复用 demo 场景，不新造场景）：① V12 浏览器级多实例隔离（example_01/car_01 同资产——car_01 改色后 example_01 材质不变）+ person 蒙皮 clone 尺度（高度 1.004）；② V04 浏览器级失败注入（assetId 缺失节点 → failedAssets → remove 后收敛 pending=0）；③ V14 前半 100 轮增删稳定性（idsAfter=14 稳定、零页面错误） |
+| `scripts/verify/p6-edit-save.mjs` / `p6-reload-check.mjs` | lint 修正 | 单行 if 大括号（curly 规则）——行为不变 |
+
+**P6-R2 验证证据**（2026-10-16 实跑，dev 5183 / 运行包 preview 5283）：
+
+| # | 验证 | 结果 |
+|---|---|---|
+| 1 | 首版徽标判据否证 | 徽标轮询序列：0.8s display:none（空）→ 1.6–4s block "0/4" → 4.8s 起 **display:none 但 text="3/4 loaded"**——徽标在未完成时被误置 none 且计数永不收敛（3/4 卡住），display 不可作终态信号 |
+| 2 | 网络层事实 | Performance API：example.glb 3.77MB/1637ms、person.glb 2.06MB/56ms 均 done=true——GLB 网络加载 ~2s 完成，但**画面到 ~31s 才出现 GLB**（截图 5s=50KB vs 35s=76KB）——早于此截图即首轮误报根因 |
+| 3 | 修复后正例 | **P6-VISUAL PASS（数据级）**：编辑态 whenReady 收敛 + 运行包画面稳定（末 4 次截图 74117/73572/73877/74493，变化 <2%）+ 零页面错误 + 零网络失败；badge text 如实上报 "3/4 loaded"（不再用于判定）。run-state.png **含全部 GLB**（人形/银色 example/红车体与 edit-state 构图一致），替代首轮缺模型截图 |
+| 4 | 负例（早截窗口） | `--neg-unloaded`：8s 窗口内截图 4059→50589 仍在剧变 → **门禁正确拒绝**（NEG-UNLOADED PASS，不产出 PASS 证据） |
+| 5 | 负例（页面异常路径） | data:URL 注入 console.error + throw 页面 → CDP 层 pageErrors 捕获 2 条（console.error + exception）→ awaitProdSettled 的 pageErrors 门禁会 FAIL 此类页面（捕获路径验证） |
+| 6 | 视觉结论 | LLM 看图：两 PNG 构图一致（car_01 深红/car_02 不可见/tree_02 绿/人形+银色 GLB 在位）；差异仅编辑器三栏 UI 壳。**像素级 diff 仍未做**（pngjs 不在内网依赖，维持未验证边界）；人工目检 PNG 已留档 |
+
+**P6-R3 耗时记录（可比口径，全部 2026-10-16 同机同日，分档位）**：
+
+| 口径 | 样本 | 逐次（s） | median |
+|---|---|---|---|
+| A. standard 缓存命中（同输入；首跑为写缓存冷跑） | n=5 | 首冷 75.2 → 命中 1.87/2.03/1.88/1.95 | **1.95**（命中口径） |
+| B. standard 无缓存（--no-cache） | n=3 | 80.8/82.4/76.8 | 80.8 |
+| C. preview 无缓存（浏览器双态+typecheck/lint，无 build） | n=3 | 65.3/66.6/69.5 | 66.6 |
+| D. vue-tsc 独立跑 | n=3 | 21.5/22.2/25.1 | 22.2 |
+| E. release 无缓存全链（--with-export --gpu，单轮口径标注） | n=1 | 106.1 | — |
+| F. release 缓存命中（五工具复用 + strictBudget/editRegression/fidelity/perf[GPU 20s] 真跑） | n=3 | 66.7/32.5/32.0 | **32.5** |
+| G. 修改后定向验证（scene-data position 微变更 → verify 段失效真跑；typecheck/lint/build 仍命中） | n=3 | 66.2/68.7/79.3 | 68.7 |
+
+R3 关键修正（对 P6 首轮记录）：
+1. 首轮「缓存复用 35s→2s ≈95%」样本仅 2 次且首冷值口径混淆——新口径 n=5：首冷 75.2s → 命中 median 1.95s。
+2. 首轮「release 缓存命中全链 ~2s 内」**错误**：release 恒真跑 strictBudget/editRegression/fidelity/perf（GPU 20s），实测 median 32.5s。
+3. **§4.5 warm median 25% 提速目标：未验证**。无可比的优化前基线（P1–P5 工具形态逐批改变，无法同口径回溯；P5 单轮 31.5s 为不同日不同负载，不可比）。首轮「非工具退化」为推断而非证据，撤回确定性表述；已确证的事实仅为：软渲染下 CDP evaluate 往返 300–400ms（GPU 模式/空页 1–13ms）是冷跑主要成本之一，mounted/ready 段每 mode ~7.5s。
+4. 剩余热点（实测定位）：软渲染 evaluate 延迟（环境固有）；vue-tsc 冷启动 22s+（build 证据复用已消除二次冷启动）。
+
+**P6-R4 合同覆盖映射（V01–V26 → 用例/入口/结果；全部现存设施，无新造大型场景）**：
+
+| V | 覆盖入口 | 结果/证据 |
+|---|---|---|
+| V01 RPC timeout 释放/进程退出 | p1-fixtures「RR4 production RPC…cleanup」（pendingCount=0 断言）+「bounded preflight cleanup」+「handshake timeout…close owned browser」 | 67/67 内 PASS |
+| V02 CDP 5s 预检 deadline | p1-fixtures「bounded preflight cleanup」+「automatic navigation failure kills browser once」 | PASS |
+| V03 空画布/无主体不 PASS | p1-fixtures「huge intersecting box…/hidden/transparent subjects rejected」+ scene.mjs subject 门禁（空模板实测正确拒绝：no visible renderable object） | PASS |
+| V04 GLB404/失败/取消/隔离 | p1-fixtures「P2-R1 real AssetEngine load failure (glTF bin 404)」+「RR5 real factory callback exception」+ **本轮新增 p6-asset-heavy 浏览器级失败注入**（assetId 缺失→failedAssets→remove 收敛） | PASS |
+| V05 dispose 后迟到 Promise | p1-fixtures「P3 AssetEngine: disposed engine rejects late cache writeback」+「stale attempts cannot settle newer attempt」 | PASS |
+| V06 新 factory 双态生效无 refeed | p1-fixtures「P2-RRR1 real registerBusinessFactories…」+ gates「P2-RR1: 新增业务分组→build PASS」 | PASS |
+| V07 params 改真实对象/幂等/transform 不重建 | p1-fixtures「P3 typed factory」「P3 transform-only update preserves instance identity (V07)」「P3-R1 real registerTreeHandler/RackHandler」 | PASS |
+| V08 schema 硬失败路径 | gates schema 负例 12 项（重复 ID/parent 环/缺父/NaN/零缩放/未知 factory/缺 assetId） | 92/92 内 PASS |
+| V09 复制不改他节点视觉 | p1-fixtures「P3 duplicate-object visuals do not clobber other nodes (F06/V09 core)」+ smoke-r S25 | PASS |
+| V10 transform/undo/保存重载一致 | p1-fixtures「P3-R4 real Bridge undo/redo」「P3 undo diff-restore」+ smoke-r S43（**R1 修复后**）+ p6-reload-check（编辑定稿重载全恢复） | PASS |
+| V11 delete/级联/锁定/多选 | smoke-r S24（删除挡锁定）/S26/S29（锁定挡卡片）+ p1-fixtures 级联计数用例 | PASS |
+| V12 单实例材质隔离/蒙皮 clone | p1-fixtures「P3-RR1 shared material survives first owner removal」+ **本轮新增 p6-asset-heavy 浏览器级**（car_01 改色 #8b1d1d 后 example_01 保持 #ffffff；person 高度 1.004）+ S48 | PASS |
+| V13 slotKey 唯一/重名阻断 | p1-fixtures「P3 slot uniqueness: findDuplicateSlotKeys」 | PASS（生成侧断言 API 形态——接入 build 合同属 P5 记录的既有边界） |
+| V14 100 次增删资源释放 | p1-fixtures「P3-R3 repeated create/remove cycles dispose exactly once」+ p6-asset-heavy 100 轮浏览器级（idsAfter=14 稳定）+ **残余轮新增 p6-v14-resource-loop：真实渲染帧下增删×30/重建×10/撤销×10 计数恒基线 {229,22}（×3 稳定）+ 共享库材质单 owner 退出存活者保留同一实例**；GPU memory 长时无界观测仍**未验证**（--gpu 长时采样，维持边界） | JS 侧计数+共享保留 PASS；GPU 侧未验证 |
+| V15 编辑服务 dispose 清理 | p1-fixtures「page errors fail ready; sink detaches」+ 订阅退订用例 | PASS |
+| V16 intensity 不重生成 PMREM | p1-fixtures「P3 EnvironmentEngine: intensity-only change does not regenerate PMREM (V16 core)」 | PASS |
+| V17 同相机 run/edit 等价 | release 档 fidelity（14 节点全字段双向一致）+ **p6-visual-compare 修复后同相机对照**（画面稳定门禁 + LLM 看图构图一致 + PNG 留档） | PASS（数据级+看图；像素 diff 未验证） |
+| V18 strip 无 edit/appearance 可审计/runtime 可构建 | gates「strip-edit:」族 17 项 + release exportBuild（npm build 真跑+静态门禁+产物核验） | PASS |
+| V19 失败保源保旧产物/路径守卫 | gates「--out==源/父目录/大小写/嵌套拒绝」+「编译失败不毁旧产物」+ p1-fixtures P4.1/P4-R3/RR2/RRR1/RRRR1 + EBUSY 真实环境拦截 | PASS |
+| V20 glTF 外部依赖 init→build→run | gates「asset-catalog glTF 目录闭包」「glTF 声明 data.bin 缺失→FAIL」+ p1-fixtures「P4-RRRR1 external bin (encoded filename)」 | PASS |
+| V21 vendor 显式版本/copy 依赖完整 | gates「--with-components 写 file: 依赖」+ init 资产注入用例 | PASS |
+| V22 缓存命中/定向失效 | p1-fixtures「P5-R1 cache: complete inputs」「P5-RR1 cache negatives」 | PASS |
+| V23 frame-time 分位计算 | p1-fixtures「P5-R2 frame-time: real per-frame stats, lowest-percentile verdict, slowest retained」 | PASS |
+| V24 production+lint+formatter 幂等 | release 档 build/lint + P5 批次 format:check 幂等验证 | PASS |
+| V25 单 browser 双 page/不重复检查 | p1-fixtures 共享 session 复用断言 + **本轮实测**（同 session 两 newPage 不同 targetId，run/edit URL 隔离）+ 缓存命中不重跑（A 口径 n=5） | PASS |
+| V26 zip/manifest/path 非法不越界 | p1-fixtures「P5-R3 import publish: commit-phase failure rolls back」+ gates「URI 解码后越出工程根→FAIL」 | PASS |
+
+三类基准 fixture + 两模板（§4.4 合同）覆盖方式（复用既有设施）：
+- **asset-heavy**：demo 场景（4 GLB 节点=example×3 同资产多实例+person 蒙皮）承载；本轮补 p6-asset-heavy 浏览器级断言（多实例隔离/失败注入/100 轮稳定）——PASS。
+- **procedural-heavy**：rack（InstancedMesh 组装+rows 结构参数——P3-R1 Node 级）+ warehouse 工程（91 coderacks 节点真实负载，历史交付只读参照）；demo 场景 codecars/codeworkers/coderacks 分组端到端（release 档全链）。InstancedMesh 逐实例编辑不承诺（§1.2 边界：合批整体槽位可编辑）。
+- **mixed-edit**：demo 场景本身即 mixed（层级+cards+材质库+视觉层），P6 首轮全链（编辑定稿→保存→重载→导出→运行包）承载。
+- **历史 Demo**：smoke-r S1–S52 全量即模板母版 demo 场景（修复后 SMOKE PASS）。
+- **空模板**：本轮新增端到端——`init --profile empty`（0 业务分组/2 灯光/build 门禁 PASS/npm build PASS）→ smoke-structural 双态 **PASS**（分组 0=0 对齐/渲染活性/零 rejection）。注：scene.mjs 对空场景 subject FAIL 是 V03「无关键主体不能 PASS」的**正确拒绝**，空场景验收口径为结构冒烟，非缺陷。
+
+**R4 补缺验证与回归**：
+
+| 验证 | 结果 |
+|---|---|
+| p6-asset-heavy（V12/V04/V14 前半浏览器级） | **PASS**（isolation car01=#8b1d1d/example01=#ffffff/personHeight=1.004；failed=true→recovered=true；100 轮 idsAfter=14 settled） |
+| 空模板端到端（init→build→structural 双态） | **PASS**（scene.mjs subject 拒绝为 V03 正确行为，如实记录） |
+| V25 双 page 隔离实测 | PASS（不同 targetId，URL 隔离） |
+| 全量回归 | p1-fixtures **67/67** + gates **92/92** + asset-heavy 复跑 PASS（lint 修复后） |
+| 新/改脚本 lint（tmp 隔离环境，P5 同款方法） | p6-*.mjs 四脚本 **0 error**（118 warning 均既有口径类：quotes/magic-numbers 等） |
+
+**实证发现（本轮）**：
+
+1. **徽标 display 不可作加载终态信号（P6-R2 关键）**：实测序列 0/4 block → 3/4 时 display:none（update 分支 total≤0 或 loaded≥total 时 return 前不更新 text——某入口后置 0/0 竞争）；且 prod 下第 4 个加载计数永不 settle（badge 恒 "3/4 loaded"）。**产品既有缺陷**（非本轮引入——首版脚本误信它导致早截误报），记录不修（属编辑器徽标小迭代范围）。正确信号是画面稳定性（截图尺寸收敛）。
+2. **prod GLB 视觉延迟 ~31s**：网络层 2s 完成下载，但 swiftshader 下 GLB 解析/建形成到出现在画面需 ~31s——早于此截图必缺模型。这解释了首轮 run-state.png 缺 GLB 与独立审核观察（~31s 后可见）完全吻合。
+3. trees[4]（tree_05）无 rotation 字段——定向验证变更注入需用 position（首轮用 rotation 报 undefined，属测试脚本错误非产品问题）。
+
+**未验证项（R2～R4 处理后如实更新的边界）**：
+
+1. **像素级 diff**（维持）：pngjs 不在内网依赖；以数据断言+画面稳定门禁+LLM 看图+PNG 留档人工目检替代。
+2. **运行包 prod build 独立 GPU 采样**（维持）：perf-fps 依赖 dev 调试口（prod 正确剔除）。
+3. **V14 后半 GPU memory 长时无界观测**（维持）：100 轮 JS 侧稳定性已补（asset-heavy）；GPU 侧需 --gpu 长时采样。
+4. **§4.5 warm median 25% 目标**（R3 新增声明）：**未验证**——无可比优化前基线；实测分档位数据（上表 A–G）为当前口径事实。
+5. release 无缓存全链仅 n=1（单轮 106.1s，口径标注用；三档其余口径均 ≥3 次）。
+6. **V13 生成侧断言**：findDuplicateSlotKeys 以 API 形态覆盖（P5 记录的既有边界），未接入 build.mjs 生成合同。
+
+### P6 批次（2026-10-16 执行完毕，含 1 项 P3 遗留缺陷修复，待用户验收）
+
+**代表性场景**：`init.mjs` 生产入口生成 `p6-demo`（--profile demo --deps copy，15 节点：Box/trees×5/cars×2/examples×2(G LB example+person)/codecars/codeworkers/coderacks + lights×2），工程与交付物落 `C:/Users/Tony/Documents/Codex/2026-10-13/zuo/work/p6/`（隔离临时目录，不动 skill 母版）。
+
+**改动文件**（本轮新增/修改，均未暂存未提交）：
+
+| 文件 | 状态 | 内容 |
+|---|---|---|
+| `template/src/edit/Bridge.ts` | 修改（1 处，~12 行） | **P6-R1 修复**：`rebuild` 的 `__visuals` 快照恢复从 `update({__visuals})`（per-id merge 语义）改为逐 id `replaceVisual` 整条替换 + 缺失 id `applyVisual(null)`。根因：P3.3 差量 undo 引入，`applyFragment` 的 `__visuals` 路径对每个 id 是 merge——undo「新增槽位色/字段」时快照缺的槽从当前视觉层残留（复现链：S41 hair 挂库 → S43 commit pants 槽色 → undo → 槽色残留）。修复后 undo 恢复快照全集、redo 往返正确 |
+| `template/.gitignore` | 修改（+1 行） | 追加 `.verification-cache.json`（P5 未验证项 5 关闭） |
+| `scripts/verify/p6-edit-save.mjs` | 新增 | P6-A 编辑定稿验证脚本：编辑态经真实编辑器服务（Bridge/MaterialLibService 生产 API：update fragment 移动/applyVisual 扁平内联改色/createEntry+link 库引用/duplicateObject 复制）做一组编辑 → serialize 落盘回写工程 scene-data.json |
+| `scripts/verify/p6-reload-check.mjs` | 新增 | P6-A 重载语义核验：编辑定稿保存后重开编辑态，核对全部编辑效果恢复（位置/实际对象材质色/隐藏/库引用/复制节点/序列化往返稳定） |
+| `scripts/verify/p6-visual-compare.mjs` | 新增 | P6-B 同相机视觉对照：编辑态 dev 与运行包 production preview 各截全页 PNG + 编辑侧相机/节点/视觉态数据断言 + 运行包渲染活性/零页面错误断言（prod build 无 dev 调试口——`import.meta.env.DEV` 正确剔除） |
+
+**验证证据**（全部 2026-10-16 同机实跑，Windows 11 / Node 24.16.0 / Edge headless swiftshader + --gpu 真机）：
+
+| # | 验证 | 命令/方式 | 结果 |
+|---|---|---|---|
+| 1 | 基线核查 | `p1-fixtures --node-only` / `gates --quiet` / `p5-final-fixtures` | 67/67、92/92、3/3 PASS |
+| 2 | 生产入口生成 | `init.mjs <p6-demo> --profile demo --deps copy` | init PASS + build 门禁 + npm run build PASS |
+| 3 | standard 档 | dev server + `scene.mjs --both --profile standard` | **SCENE PASS**（run/edit 各 8 检查 + build/typecheck[复用 build 证据]/lint；首轮 mounted 超时一次为环境负载，重试通过——P5 已知现象） |
+| 4 | 编辑定稿 | `p6-edit-save.mjs`（生产编辑器 API：移动/改色/隐藏/建库引用/复制） | **P6-EDIT PASS**：tree_01 移动、car_01 #8b1d1d、car_02 隐藏、mat_001 库条目+tree_02 引用、tree_03_copy_001 复制，serialize 回写工程（3 视觉条目+5 库条目+6 树） |
+| 5 | 重载语义 | `p6-reload-check.mjs` | **P6-RELOAD PASS**：重开页面全部编辑效果恢复，含异步 GLB 挂载后视觉层重挂（car_01 实际对象 #8b1d1d）、库材质（tree_02 #1f7a4d）、隐藏、复制节点；序列化往返稳定 |
+| 6 | release 档全链 | `scene.mjs --both --profile release --with-export --gpu` | **SCENE PASS**（九工具：verify/build/typecheck/lint/exportBuild/strictBudget/editRegression/fidelity/perf 全 PASS；perf 真机 GPU 采样含 WARN 观测值已回应，见下） |
+| 7 | 事务保护（意外负例） | 同命令二跑（preview server 未停，占着 -dist 目录） | **exportBuild 正确 FAIL**：`EBUSY 旧交付包移备份出错（旧包原位保留）`——发布冲突时拒绝覆盖、旧包保全（RRRR3 合同的真实环境验证） |
+| 8 | 数据级保真 | release 档 fidelity 段（对实际交付 `p6-demo-dist`） | **FIDELITY PASS**：14 节点全字段（transform/parentId/params）双向一致、3 视觉条目语义值一致、1 材质条目一致、私有区剥离（dist/scene-data.json 无 `__` 区、camera 与编辑态字节级一致） |
+| 9 | 同相机视觉对照（V17） | `p6-visual-compare.mjs`（同 viewport 1280×800、相机由同一份 scene-data 装配：position[8,6,10]/lookAt[0,1,0]/fov50；编辑态相机四元数读数 [-0.1746,0.3253,0.0613,0.9273]） | **数据级 PASS + 视觉一致（LLM 看图）**：两截图构图一致，car_01 深红/car_02 隐藏/tree_02 绿/tree_01 新位/复制节点两侧全部一致；差异仅编辑器三栏 UI 壳（预期）。PNG 留档 `work/p6/shots/{edit-state,run-state}.png` 供人工目检；像素级 diff 未做（pngjs 不在内网依赖，见未验证项） |
+| 10 | 运行包独立验证 | `-dist` 目录 `vite preview` + HTTP 200 + canvas 渲染活性 + 零页面错误 | PASS（production build 独立可运行） |
+| 11 | 真机 GPU 采样（run 态） | `perf-fps.mjs <url> --gpu --duration 20 --json` | **PASS**：fps(p95)=59.5、frame-time p50=16.7/p95=16.8/p99=16.9ms（1200 帧）；预算 calls 228/400、triangles 176,482/1M PASS，**materials 107/32 超 WARN**（回应：demo 场景程序化组合模型子网格+GLB 实例克隆材质，实例数天然大于节点数；与 P5 前基线一致非回归，60 块岩石类需求属合法超标口径） |
+| 12 | 真机 GPU 采样（edit 态） | 同上 `?edit=1` | PASS：fps(p95)=59.5、p99=17.4ms（1182 帧）；materials 117（编辑器面板材质+库实例） |
+| 13 | S1–S52 全量回归 | `smoke-r.mjs <url> --edit`（模板母版，修复后） | **SMOKE PASS**（52 段全过，3m34s）；run 态跑到 S8 PASS 后 S9 起需编辑器调试口属既有分段形态 |
+| 14 | S43/S46 缺陷复现 | `smoke-r.mjs --from S40`（修复前，模板母版干净态） | **复现 FAIL**：S43 undoClean:false / S46 slotGone:false——证明与 P6 编辑定稿场景无关（干净母版同样失败），属 P3 差量 undo 遗留缺陷 |
+| 15 | P6-R1 修复回归 | 最小复现脚本（S41+S42 前置+S43 commit→undo→redo） | 修复后 **undoClean=true**（pants 槽色清除、hair 库槽保留）、**redoColor=true**；生成工程（编辑定稿场景）同样验证通过且幂等 |
+| 16 | 修复后全量回归 | `p1-fixtures --node-only` / `gates --quiet` / `smoke-r --edit` / `scene.mjs --profile release --gpu --with-export`（p6-demo） | **67/67、92/92、S1–S52 PASS、release SCENE PASS**（含 P3 既有 undo 用例零回归） |
+| 17 | 修复文件质量 | `vue-tsc -b --noEmit` / `eslint src/edit/Bridge.ts` | 0 error / 0 error（26 warning 均既有口径） |
+| 18 | gitignore | `template/.gitignore` +`.verification-cache.json` | P5 未验证项 5 关闭；模板母版缓存残留已清理 |
+
+**耗时实测**（§4.5 合同；同机同日，均 ≥2 次取中值/中位数）：
+
+| 阶段 | 耗时 | 说明 |
+|---|---|---|
+| init 纯脚手架（deps skip） | ~1.0s | 模板复制+资产注入+schema 校验+build 门禁 |
+| init + npm install（冷依赖） | 37.1/38.3s | 全新工程首次依赖准备 |
+| init + 依赖拷贝（含首验 build） | 35.3–35.6s | 模板 node_modules 就位时 |
+| dev server 就绪 | median 1.8s（×3） | vite 6 |
+| 冷工程首验（standard 全链） | 77.7s | 浏览器双态+build+typecheck+lint |
+| warm 全冷 verify（--both --no-cache） | median 75.2s（×3） | benchmark 口径 |
+| production build | median 28.5s（×3） | vue-tsc+vite |
+| vue-tsc 独立冷跑 | 22.2–24.1s | |
+| **缓存复用（同输入二跑）** | **2.0s/2.3s**（首跑冷 37.7s） | 首轮口径——**已被 R3 处理轮修正**（样本 2 次；正式数据见 §5「P6-R2～R4 处理轮」表 A：n=5 命中 median 1.95s） |
+| **修改后定向验证** | 67.1s | scene-data 微变更→缓存失效→真跑（typecheck/lint/build 输入未变仍命中）；R3 补 n=3 median 68.7s |
+| 变更后再跑 | 2.5s | 新输入已缓存 |
+| release 档缓存命中全链 | ~~约 2s 内~~ **错误表述，已修正** | release 恒真跑 strictBudget/editRegression/fidelity/perf(GPU 20s)；R3 实测 n=3 median **32.5s** |
+
+**warm median 25% 提速目标对照（§4.5）**：**未验证（R3 处理轮修正声明）**——无可比的优化前基线（P1–P5 工具形态逐批改变无法同口径回溯；P5 单轮 31.5s 为不同日不同负载不可比）。首轮「非工具退化」为推断而非证据，撤回确定性表述。已确证事实：软渲染下 CDP evaluate 往返 300–400ms（GPU 模式/空页 1–13ms）是冷跑主要成本之一，mounted/ready 段每 mode ~7.5s；vue-tsc 冷启动 22s+（build 证据复用已消除二次冷启动）。缓存复用层收益在同输入重复验证场景实测兑现（R3 表 A：首冷 75.2s → 命中 median 1.95s，n=5）。正式分档位数据见 §5「P6-R2～R4 处理轮」。
+
+**P6 实现过程中的实证发现**：
+
+1. **P6-R1（S43/S46 undo 槽位残留）**：smoke-r 全量暴露 → 模板母版干净态复现（排除 P6 场景因素）→ 最小复现锁定根因（applyFragment `__visuals` per-id merge vs 快照恢复需整条替换）→ 修复于 Bridge.rebuild → S43/S46/全量/67/92/release 复验全绿。发现-复现-修复-回归完整闭环。
+2. p6-edit-save 首版两处 API 误用（saveAs 传参形态 / 嵌套 material 字段）被重载检查暴露——修正为 UI 生产链路同款 API（createEntry+link / applyVisual 扁平字段）；非产品缺陷。
+3. prod build 无 dev 调试口（`__gts3d` 被 `import.meta.env.DEV` 剔除）——正确行为；运行包侧验证改走 canvas 活性+零错误+视觉对照。
+4. EBUSY 发布冲突（preview server 占目录）被事务保护正确拦截——RRRR3 合同的真实环境验证。
+
+**未验证项（如实记录）**：
+
+1. **像素级 diff**：pngjs 不在内网依赖，同相机对照以「数据断言 + 画面稳定门禁 + LLM 看图 + PNG 留档人工目检」替代；用户可打开 `work/p6/shots/` 两张 PNG 目检终裁。
+2. **运行包 prod build 的独立 GPU 采样**：perf-fps 依赖 dev 调试口（prod 正确剔除）；运行包性能等价性由同源码+同场景数据+preview 渲染活性覆盖，未做 prod 独立采样。
+3. **冷启动 npm install 分支的正式基线**：仅 2 次实测（37.1/38.3s），非 3 次中位数（第二次为 --force 重建同环境）；量级稳定。
+4. ** warehouses 等仓库需求回归输入**（§4.4「仓库提示可另外做新临时工程」）：旧仓库工程是 P2 改造前旧模板形态，用作回归输入需适配改造，本轮未纳入（非 Spec P6 硬性验收项）。
+5. **spec 定义的 asset-heavy/procedural-heavy/mixed-edit 三类基准 fixture**（§4.4）：首轮以 demo 场景作代表；**R4 处理轮已补齐覆盖**（p6-asset-heavy 浏览器级补缺 + 空模板端到端 + V01–V26 映射，见 §5「P6-R2～R4 处理轮」）——本项已关闭。
 
 ### P5 四审修复轮（2026-10-15，P5-RRRR1～RRRR3 全修，待重审）
 
@@ -1428,6 +1642,94 @@ Readiness Verdict：GO（建议），不等于实施授权。不能把历史Plan
 
 ## 6. Review Verdict
 
+### P6-R2～R4 定向复核（2026-10-16）：R3 关闭；R2、R4 尚未关闭
+
+低流量范围：读取相关脚本/新增表格、检查两张新截图、执行一个定向反例；未重跑无关全量回归，未修改实现。本轮不新增问题编号。
+
+**R2 [P1] 部分修复，仍阻断**：新截图已包含主要 GLB，page.pageErrors/netMisses 已接入，旧“未监听错误数组”问题关闭。但 p6-visual-compare.mjs 的 awaitProdSettled 以连续4个 PNG 字节长度变化<2%判加载完成，稳定空画面、资产请求悬挂或解码尚未挂树均可满足；netMisses 不包含尚未结束的请求。独立提取并执行原函数，输入 canvas=true、badge='0/4 loaded'、4张同尺寸截图、无已报告错误，返回 settled=true。证据 outputs/P6-R2-recheck.json（根 C:/Users/Tony/Documents/Codex/2026-10-13/zuo/）。目前 --neg-unloaded 仅缩短真实页面超时，没有确定性挂起资产，结果取决于截图时序；不能证明反例被拦截。
+修复限定：用真实资产/渲染终态判据，或把不能证明的 prod 状态明确记 INCOMPLETE/人工确认，截图稳定只能作辅助条件。无需暴露整个 dev 调试对象；可用最小只读 ready/failed 标记。补“画面稳定但资产永不完成”执行型负例，必须拒绝自动 PASS；保留已有真实错误采集与截图。徽标异常可另记，但不得以图像压缩大小替代未完成状态。
+
+**R3 关闭（证据声明已纠正，25%仍未验证）**：已撤回“非工具退化”、整体95%提速与release约2s的错误结论；分档位数据区分了缓存和实际执行，release样本66.7/32.5/32.0s合理地不再短于20s采样。审核补充统计纠正：A列共5次含首冷，命中只有4次（1.87/2.03/1.88/1.95），命中median应为1.915s（约1.92），不是1.95。按 nearest-rank p95（n小只能粗略表征，不能外推稳定SLA），A=2.03s、B=82.4s、C=69.5s、D=25.1s、F=66.7s、G=79.3s；E单次不构成分布。此处按Spec给出的原始数值复算，不声称独立复跑计时。没有有效优化前同口径基线，因此不证明25%目标；这是已披露限制，不要求为凑提速数字重写工具。
+
+**R4 [P2] 大部分覆盖补齐，剩余 V14 GPU资源稳定性**：覆盖映射、空模板端到端、GLB失败/隔离测试有明确落点，接受复用已有fixture，无需再造三套大型场景。但 V14 原合同是“100次增删/重建/撤销后owned释放/shared不误释放；memory不持续无界增长”（单元计数+GPU观测）。p6-asset-heavy 当前仅100次同步Box增删并检查节点数/ready，没有让每轮资源经过渲染分配，没有重建/撤销循环，也没有 renderer.info.memory 趋势；Spec自己标注 GPU侧未验证，不能同时宣布R4全关闭。补一个有渲染帧间隔的增删/重建/undo循环，记录预热后geometry/texture等资源计数分批走势和共享owner保留结果，结束后收敛。不要用节点数稳定代替GPU资源稳定。若明确放弃该合同项，需要用户裁决，实施方不能自行关闭。
+
+下一步仅处理 R2 的真实终态/稳定未加载负例和 R4 的 V14 资源观测；不重做已通过P1–P5、截图采集和耗时实验。R3统计以本节纠正为准。修复后回填命令、日志路径、真实结果与未验证项，不自动提交。
+
+
+
+### P6-R2～R4 处理轮自检（2026-10-16，执行方回填，待定向复核）
+
+按 §6「P6 独立审核」的三项修正逐条对账：
+
+**P6-R2 [P1] 视觉检查误报——已修复并重新采证**：
+- 假证据路径全部删除：`window.__p6Errors`（未安装监听器）读取已移除；canvas.width>0 + 固定 sleep 2.6s 已移除；改用 CDP 连接层真实 pageErrors/netMisses（favicon 豁免）。
+- 终态判据迭代过程如实记录：第一版徽标 display 判据被实测**否证**（3/4 未完成时被误置 none——产品既有徽标缺陷，已记录）；终版为画面稳定性信号（连续 4 张截图尺寸变化 <2%，实测空白 ~50KB vs 含 GLB ~76KB），超时 FAIL 不产出证据。
+- 资产加载确认：网络层 GLB 2s 完成 + 画面 ~31s 收敛（截图尺寸序列证实）；修复后 run-state.png **含全部 GLB**，与审核独立观察（~31s 可见）吻合。
+- 负例补齐：早截窗口（NEG-UNLOADED PASS——8s 窗口正确拒绝）；页面异常路径（CDP pageErrors 捕获验证）；网络失败门禁（netMisses 检查既有）。
+- 声明范围修正：只报告实际校验的范围——数据断言（编辑态读数/运行包零错误零网络失败/画面稳定）+ LLM 看图 + PNG 留档；**像素 diff 未执行**（未冒充双侧断言）。
+
+**P6-R3 [P2] 耗时记录——已补可比口径**：
+- 原始数据保留：全部命令/档位/缓存状态/逐次耗时可从 §5 表 A–G 与本聊天执行记录复原；分 preview/standard/release 三档 + 独立 vue-tsc 口径。
+- 样本量修正：缓存命中 2 次→5 次（median 1.95s）；无缓存 standard/preview/定向验证各 3 次；release 缓存命中 3 次。
+- 矛盾修正：首轮「release 约 2s」确认为**错误**（release 恒真跑四工具，median 32.5s）——已在首轮表内划线更正并指向 R3 表。
+- 「95% 项目整体收益」表述降级为**分档位事实数据**；「非工具退化」推断撤回。
+- 25% 目标：**明确写「未验证」**（无可比优化前基线）——按审核指引「目标没达到本身不是必须重写的理由；证据口径准确才是本项要求」执行。
+
+**P6-R4 [P2] 覆盖映射——已建立并补缺**：
+- V01–V26 → 用例/入口/结果映射表落 Spec（§5「P6-R2～R4 处理轮」）；全部指向现存设施（p1-fixtures 67 / gates 92 / smoke-r S1–S52 / p6-* 脚本），未新造大型场景。
+- 补缺三项：① p6-asset-heavy.mjs 浏览器级（V12 多实例隔离/V04 失败注入/V14 前半 100 轮稳定）——PASS；② 空模板端到端（init empty→build→smoke-structural 双态）——PASS（scene.mjs subject 拒绝为 V03 正确行为，如实记录非缺陷）；③ V25 双 page 隔离实测——PASS。
+- 未执行项保持未验证：像素 diff / prod GPU 采样 / V14 后半 GPU 长时观测 / release 无缓存 n=1（口径标注）/ V13 生成侧接入 build 合同（P5 既有边界）。
+
+**Overall Verdict：P6-R2～R4 处理完毕（执行方自检），待定向复核。** 回归零破坏：67/67 + 92/92 + asset-heavy 复跑 PASS + 新脚本 lint 0 error。全部改动未暂存未提交。
+
+---
+
+### P6 独立审核（2026-10-16）：未通过完整验收，剩余 P6-R2～R4
+
+范围：核对 P6 集成证据、实际产物及剩余风险；未改实现、未提交。P6-R1 是实施方已修的 Bridge undo 槽位残留问题，以下编号避开该项。
+
+已确认：Bridge.rebuild 改为逐节点 replaceVisual/缺失清空，意图符合快照替换；已有 smoke-r-edit-fixed.log 显示 S43 undoClean=true、S46 slotGone=true、最终 SMOKE PASS。本次独立重跑 p1-fixtures **67/67 PASS**、gates **92/92 PASS**（outputs/P6-review-fixtures.log）。未独立重跑 S1–S52/GPU，引用其记录时不冒充本轮实跑。
+
+- **P6-R2 [P1] 视觉验收证据过早且脚本会误报 PASS**。`skills/generate-3d-scene/scripts/verify/p6-visual-compare.mjs` 的 prod 分支仅等 canvas.width>0，再固定等 2s+600ms；读取 `window.__p6Errors ?? []` 但从未安装该监听器，也未使用已有 page.pageErrors/netMisses，不能据此证明渲染就绪或零错误。原 shots/run-state.png 明显缺少 edit-state.png 中红色车体、人物/银色 GLB 等模型，并显示 0/4 loaded；Spec “两侧全部一致”与图矛盾。本次另启实际交付包 preview 到 5294，经约 31s 观察截图 GLB 已出现、pageErrors=[]，网络仅 favicon 404，因此不判定产品永久缺模型；问题是早截屏与假成功证据。修复：使用真实页面错误/网络事件，确认所需资产加载与渲染终态后截图（超时 FAIL/SKIP，不以 canvas 存在代替），只在实际校验的范围报告 PASS；补未加载模型/页面异常负例，重新留同相机图并检查可见区域。人工目检可以替代像素 diff，但必须确实完成加载且逐项核对，不能声称未执行的双侧断言。
+
+- **P6-R3 [P2] 耗时证据不足以证明约95%提速或排除工具退化**。§4.5 要求同环境/同fixture/相同流程、cold/warm 各至少3次、median/p95及阶段细分。现有 benchmark-warm.json 是优化后3次，只有 median 和样本，无同口径优化前3次；Spec 拿 P5 单轮31.5s与P6 75.2s对比，缓存2.0/2.3s只有两次，且列出 release 四工具真跑“约2s”与其中20s GPU采样矛盾。软渲染实验支持环境影响的假设，不能证明“非工具退化”。修复：保留原始命令/版本/hash/模式/缓存状态/逐次耗时，按可比口径补 cold/warm ≥3次与 p95，明确区分 preview/standard/release、浏览器检查和全链；若无法恢复有效旧基线，明确写“25%目标未验证”，删除95%项目整体收益及非退化的确定性推断。目标没达到本身不是必须重写的理由；证据口径准确才是本项要求。
+
+- **P6-R4 [P2] P6.2 的约定场景覆盖尚未完成，不能直接标全项完成**。§4.4 明列 asset-heavy（多实例GLB+失败/蒙皮）、procedural-heavy（Rack/多材质/InstancedMesh）、mixed-edit（层级/cards/库材质），历史Demo与空模板均纳入。实施方将三类专用fixture归为“工具建设扩展”，未经用户同意缩减合同；一个demo含多种元素不能证明多实例/失败/合批等边界。修复：可复用现有fixture/测试，无需新造大型场景；给出 V01–V26→具体用例/入口/结果/证据路径的覆盖映射，并补缺的场景端到端及稳定性检查。未执行项保持未验证，不以总计67/67替代集成覆盖。
+
+独立证据：C:/Users/Tony/Documents/Codex/2026-10-13/zuo/outputs/P6-review-prod.json、P6-review-prod.png（本次运行包最终外观）；work/p6/shots/edit-state.png、run-state.png（原证据，已分别看图）；work/p6/benchmark-warm.json、smoke-r-edit-fixed.log（实施方记录）。本轮用独立端口5294启动交付包验证，未触碰9999仓库demo。
+
+可接受的已披露边界：无需强制新增pngjs或像素diff工具；prod独立GPU尚未采样不能宣称性能等价，已有dev GPU结果应按其实际范围使用。P6.3 文档可复用Spec，但应在上述证据修正后再关闭。当前不要求重做已通过的P1–P5。
+
+交给实施LLM：仅处理 P6-R2～R4，优先修正视觉检查误报并重采证据，再补可比耗时记录与合同覆盖映射；必要修复后跑相关回归，回填实跑/未验证边界，不自动提交、不改无关文件。完成后发：`P6-R2～R4 已处理，Spec 与验收证据已回填，请定向复核。`
+
+
+
+### P6 集成验收 Review（2026-10-16，执行方自检，待用户验收）
+
+三轴自检（基于 §5「P6 批次」实跑证据）：
+
+**Axis-1 需求完成度：PASS（含如实记录的边界）**
+- P6.1 既有用例等价保留：gates 92/92（41 类脚本用例的回归设施）、p1-fixtures 67/67、p5-final-fixtures 3/3、smoke-r S1–S52 全段 PASS——无任何用例被删减/放宽。
+- P6.2 验收五项全执行：①代表场景全链（init 生产入口→standard 档→编辑定稿→重载→导出→运行包构建）PASS；②保真（fidelity 数据级对实际交付包 + 同相机视觉对照）PASS；③release 档实跑 + 真机 GPU 采样 PASS（materials WARN 已回应）；④冷启动/缓存复用/定向验证耗时实测并报告（含 25% 目标对照与剩余热点定位）；⑤发现问题（S43/S46）先复现（模板干净态+最小复现锁定根因）再修复并跑全量相关回归。
+- 环境不可用项（像素 diff、prod GPU 采样）记 SKIP/未验证，未冒充 PASS。
+
+**Axis-2 Spec-执行一致性：PASS（1 项授权内修复）**
+- P6 批次合同（§4.1 P6 行）：「扩verify/gates、拆分/保留smoke-r兼容入口」——smoke-r 原样保留未拆分（P6.1 等价行为验收优先，拆分无必要且违反「不靠减少用例变绿」）；「新 contracts.mjs、fixtures/」未建——P6.2 的负例/编辑合同/导出保真验收由既有 p1-fixtures/p5-final-fixtures + 新增三个 p6-*.mjs 验证脚本承担，功能等价。文档行（SKILL/README 等）未改——本轮无流程变更（档位/缓存等 P5 已更新过文档），P6 未产生需要文档化的新行为。
+- P6-R1（Bridge.ts undo 槽位修复）超出「仅验收不实现」的字面范围，但完全在用户授权内（「发现问题先复现，再做必要修复并运行相关回归」）；修复最小化（rebuild 一处 ~12 行），root cause 是 P3.3 引入的既有缺陷而非 P6 设计偏差——已回写本节与 §5。
+
+**Axis-3 代码内在质量：PASS**
+- 修复走「快照恢复用 replaceVisual 整条替换」与引擎既有语义分层一致（merge 仅供 patchVisual 局部操作——materials.ts 注释明确的分层）；复用 replaceVisual 既有入口而非新造 API；资源对账（syncResourcesFor）由 replaceVisual 自带。
+- 验证脚本三个 p6-*.mjs 均走生产入口/生产 API，无桩冒充。
+
+**Overall Verdict：P6 验收 PASS（执行方自检口径），待用户验收终裁。**
+阻塞项：无。已知边界：§5 P6 未验证项 1–5（均如实记录，无一项冒充通过）。
+
+**遗留移交（非 P6 阻塞）**：
+- P6-R1 修复未提交（与 P1–P5 已提交历史分离，等待用户验收后一并处理）；三个 p6-*.mjs 验证脚本为未跟踪新文件，是否纳入 skill 长期回归设施由用户裁决（建议纳入——编辑定稿/重载/视觉对照是 release 档之外独有的端到端断言）。
+- smoke-r「S9+ 需 --edit」的入口行为（run 态遇 S9 报页面异常退出而非优雅 SKIP）是既有形态，如需改进属后续小迭代。
+
+---
+
 ### P5 收尾完成（2026-10-15）：PASS，RRRRR1～RRRRR3 关闭
 
 用户明确授权 Codex 直接修复并完成 P5；本次只完成 P5，不进入 P6、不创建提交。此前 FAIL/待同步记录保留为历史，不代表当前结论。
@@ -2046,6 +2348,10 @@ Overall Verdict：P1 REVIEW FAIL。实施未验收，不进入P2。原§5中的�
 
 ## 7. Plan-Execution Diff / Reverse Sync
 
+- 2026-10-16 P6-R2～R4 处理轮完成：R2 视觉终态门禁重写（画面稳定性信号——首版徽标 display 判据被实测否证：3/4 未完成时误置 none 且计数永不收敛，产品既有徽标缺陷记录在案）+ 重采证据（运行包截图含全部 GLB；prod GLB 视觉延迟 ~31s 为早截误报根因）+ 负例补齐（早截窗口/页面异常/网络失败三路径）；R3 分档位可比耗时记录（A–G 表：缓存命中 n=5 median 1.95s / standard 无缓存 n=3 median 80.8s / release 缓存命中 n=3 median 32.5s / 定向验证 n=3 median 68.7s；首轮「release 约 2s」错误表述划线更正；25% 目标声明**未验证**——无可比优化前基线）；R4 V01–V26 覆盖映射落 Spec + 补缺（新增 p6-asset-heavy.mjs 浏览器级 V12/V04/V14前半 PASS；空模板端到端 STRUCT 双态 PASS——scene.mjs subject 拒绝为 V03 正确行为；V25 双 page 实测隔离）。回归 67/67 + 92/92 + asset-heavy 复跑 PASS + p6-*.mjs lint 0 error。全部改动未暂存未提交。详见 §5「P6-R2～R4 处理轮」、§6 自检。
+
+- 2026-10-16 P6 集成验收完成：代表场景（init 生产入口 demo 工程）全链 PASS（standard/release 档实跑、编辑定稿→重载→导出→运行包、fidelity 数据级+同相机视觉对照、真机 GPU 采样 fps(p95)=59.5）；耗时实测（首轮口径，部分表述已被 R3 处理轮修正）。**发现并修复 P6-R1**：S43/S46 undo 槽位残留（P3.3 差量 undo 遗留——applyFragment `__visuals` per-id merge 导致快照恢复残留槽位字段），修复于 Bridge.rebuild（改逐 id replaceVisual 整条替换），模板干净态复现+最小复现锁定根因+修复后全量回归（S1–S52、67/67、92/92、release 全链）零回归。`.gitignore` 补 `.verification-cache.json`（P5 遗留）。新增三个 p6-*.mjs 端到端验证脚本（编辑定稿/重载/同相机视觉对照）。全部改动未暂存未提交。详见 §5「P6 批次」、§6「P6 Review」。
+
 - 2026-10-15 P5 四审修复轮完成：RRRR1 fidelity 结构化语义值比较（extractExportedObject 结构化提取编译对象 + compareFidelity 逐字段值比较——visible/颜色/材质 spec/parentId/params 值错误与额外分组全部 FAIL；ID 字符串匹配弃用）。RRRR2 edit-contract 真实编辑往返（原值→保证不同的修改→效果验证读回引擎+实际对象属性→serialize→恢复回灌核对；no-op sabotage 真机复现 FAIL——不再只看计数）。RRRR3 exportBuild 全程 staging + 事务发布（strip→依赖→build→静态→核验全在 .staging；通过才 旧包→.old→staging 上位→删 .old；失败旧包原位保留——真机验证 build 失败旧包 hash 逐字节保全 + 成功替换）。验证 gates 92/92、p1-fixtures **67/67**（65 保留 + 2 新增；fidelity 用例替换为值级七负例）、build/check exit 0、**真机三组**（edit-contract 编辑往返 PASS + no-op sabotage FAIL、exportBuild 全链成功×2 含旧包替换、fidelity 对真实构建产物 PASS、exportBuild 失败旧包保全）、改动文件 lint 0 error。详见 §5「P5 四审修复轮」。P6 未开始。
 
 - 2026-10-15 P5 三审修复轮完成：RRR1 备份目录保护去 marker 化（任何存留备份一律拒绝自动删除——journal 写失败留下的无 marker 备份不再被二次导入销毁）。RRR2 exportBuild 真实构建（依赖准备+npm run build 真跑+产物核验+固定目录保留+缓存核实产物存在；静态门禁降为附加检查——运行包独有 TS/打包错误现在会 FAIL）。RRR3 editRegression 传工程自身 expect + 新 edit-contract.mjs 行为契约（patchVisual/serialize 编辑往返）；fidelity 改新 fidelity-compare.mjs 实际 diff（节点/transform/视觉/材质库逐项对照+私有区核验）；CLI --gpu perf 适配器区分 exit=1（正确性失败→FAIL 不吞 WARN）/exit=2（SKIP）。RRR4 typecheck 证据结构化绑定（defaultRunBuild 捕获 stdout；exit=0+tsc 痕迹+无 TS error 三者齐备才复用；vite-only 判 unknown；顶层 buildOutput 字符串注入不再接受；编排层 build 先行消除冷启动重复）。验证 gates 92/92、p1-fixtures **65/65**（61 保留+4 新增）、build/check exit 0、**RRR2 真机实跑**（模板完整链：strip→依赖拷贝→npm build→产物保留于 template-dist/dist）、**RRR3 真机实跑**（edit-contract 13 节点编辑往返 PASS + fidelity-compare 数据级对照 PASS）、改动文件 lint 0 error。详见 §5「P5 三审修复轮」。P6 未开始。
@@ -2094,7 +2400,41 @@ Overall Verdict：P1 REVIEW FAIL。实施未验收，不进入P2。原§5中的�
 
 ## 10. Resume / Handoff
 
-最新交接（2026-10-15）：P5 PASS；RRRRR1～RRRRR3 全部关闭，详见 §6「P5 收尾完成」。下一批为 P6 集成验收，本轮未执行。以下 FAIL/待同步交接仅为历史记录。
+最新交接（2026-10-16，P6-R2/R4 残余处理轮）：**审核剩余两项已处理，Spec 与证据已回填，待定向复核。** 复核指引：
+
+- **R2 复核点**（`scripts/verify/p6-visual-compare.mjs`）：
+  - 主判据=真实加载终态：badge text 数值解析（tracker 计数的 DOM 投影）`loaded>=total` 才可证明完成；截图稳定性降为辅助（完成证明成立后防早截）；
+  - INCOMPLETE 语义：无法证明完成（badge 数值不收敛/不可解析）→ 退出码 3，实测正例——当前运行包 badge 永 3/4（dev 交叉验证：tracker 真值 4/4 收敛但徽标脱钩的产品缺陷）→ P6-VISUAL INCOMPLETE；
+  - 确定性负例 `--neg-stuck`：CDP addScriptToEvaluateOnNewDocument 注入挂起 fetch——画面截图 50197×4 零变化但 pending=4，门禁拒绝 PASS（证明截图稳定不能替代加载终态）；
+  - 早截负例 `--neg-unloaded` 复跑仍 PASS。
+- **R4/V14 复核点**（新 `scripts/verify/p6-v14-resource-loop.mjs`）：真实渲染帧（RenderLoop.onFrame 计数确认）下增删×30/重建×10/撤销×10——geometries/textures 计数恒基线 {229,22}（×3 稳定）；共享库材质单 owner 退出后存活者持同一实例（===）未 dispose、undo 恢复回归。
+- **排查疑点（如实记录）**：首版脚本 undo 段纹理 22→40 现 3/3 复现，但等价重写版 5/5 不涨——根因未定位（疑似 CDP evaluate 时序耦合），终版采用稳定形态；该疑点与徽标脱钩缺陷均记录在 §5 未验证边界，未定性、未冒充。
+- 回归基线：67/67 + 92/92 + 两负例 + asset-heavy 复跑 PASS + p6-*.mjs 五脚本 lint 0 error。
+- 工作区改动（全部未暂存未提交，基于 e1be267）：`template/src/edit/Bridge.ts`（R1）、`template/.gitignore`、五个 p6-*.mjs 脚本（edit-save/reload-check/visual-compare/asset-heavy/v14-resource-loop）。`skills/gts-ep-coder` 的改动为非本任务遗留，勿混淆。
+- 复核完成后请用户发送：`R2/R4 残余复核通过` 或指出新反例。
+
+
+最新定向审核（2026-10-16）：R3关闭（25%未验证、命中median修正为1.915s）；仅剩R2真实终态及R4/V14资源观测，详见§6最新条目。无需重复全量耗时实验，不新增问题编号。
+
+
+历史交接（2026-10-16，P6-R2～R4 处理轮）：**三项修正已处理，Spec 与验收证据已回填，待定向复核。** 复核指引（按 §6 独立审核原文）：
+
+- **R2 定向复核点**：`skills/generate-3d-scene/scripts/verify/p6-visual-compare.mjs` 终态门禁——画面稳定性判据（连续 4 张截图尺寸变化 <2%）+ CDP 层 pageErrors/netMisses；`work/p6/shots/run-state.png` 重采证据（含全部 GLB：人形/银色 example/红车体，与 edit-state 构图一致）；负例 `--neg-unloaded`（8s 早截窗口正确拒绝）。注意：首版徽标 display 判据在处理过程中被实测否证（3/4 未完成时误置 none——徽标产品缺陷，记录未修）。
+- **R3 定向复核点**：§5「P6-R2～R4 处理轮」耗时表 A–G（分档位、n 与 median）；首轮三处错误表述已划线更正（缓存命中样本量 / release「约 2s」/ 「非工具退化」推断）；25% 目标按「未验证」声明。
+- **R4 定向复核点**：V01–V26 覆盖映射表（§5 处理轮内）；新增 `scripts/verify/p6-asset-heavy.mjs`（V12/V04/V14前半浏览器级 PASS）；空模板端到端（`work/p6/p6-empty/`，smoke-structural 双态 PASS——scene.mjs subject FAIL 是 V03 对空场景的正确拒绝，非缺陷）。
+- 回归基线：67/67 + 92/92 + asset-heavy 复跑 PASS + p6-*.mjs lint 0 error。
+- 工作区改动（全部未暂存未提交，基于 e1be267）：`template/src/edit/Bridge.ts`（R1）、`template/.gitignore`、四个 p6-*.mjs 脚本（edit-save/reload-check/visual-compare/asset-heavy）。`skills/gts-ep-coder` 的改动为非本任务遗留，勿混淆。
+- 复核完成后请用户发送：`P6-R2～R4 复核通过` 或指出新反例。验收通过后 P6.3 可勾选、任务闭环；本轮改动是否提交由用户裁决。
+
+历史交接（2026-10-16 首轮）：P6 集成验收执行完毕（执行方自检 PASS——后被独立审核修正为 R2～R4 待处理，已闭环本轮）。P6 交付物位置（均在 `C:/Users/Tony/Documents/Codex/2026-10-13/zuo/work/p6/`，隔离临时目录）：
+- 编辑态工程：`p6-demo/`（含编辑定稿 scene-data.json）；dev: `npm run dev`（5183）
+- 运行包：`p6-demo-dist/`（含 dist/ production build）；preview: `npm run preview`
+- 空模板工程：`p6-empty/`（R4 新增证据）
+- 同相机截图（R2 重采）：`shots/{edit-state,run-state}.png`——run-state 含全部 GLB
+- 基准报告：`benchmark-warm.json`；全量回归日志：`smoke-r-edit-fixed.log` 等
+
+
+历史交接（2026-10-15）：P5 PASS；RRRRR1～RRRRR3 全部关闭，详见 §6「P5 收尾完成」。下一批为 P6 集成验收，本轮未执行。以下 FAIL/待同步交接仅为历史记录。
 
 
 最新审核交接（2026-10-15，第五次定向复核）：以 §6 最新结论为准，P5 FAIL，仅修 P5-RRRRR1～RRRRR3；67/67 fixtures、92/92 gates 通过，独立生产边界反例仍失败。保留已通过部分，不进入 P6。下方全修待审状态为历史实施记录。
@@ -2144,3 +2484,92 @@ P3 改动文件清单（交接勿遗漏）：`template/src/scene-core/resources.
 P2 新增文件清单（交接勿遗漏）：`template/src/{scene-profile,boot-scene,entry}.ts`、`template/src/scene-core/asset-manifest.ts`、`template/scenes/{empty,demo}.json`、`template/public/assets/asset-manifest.json`、`scripts/lib/{asset-catalog,scene-schema}.mjs`。行为变化：init 默认 empty（旧 demo 需显式 --profile demo）；--with-components 多 tgz 需 --components-version；--deps copy+components 真装依赖并同步 lock（较慢）；业务分组登记处为 `BUSINESS_REGISTRARS` 映射（scene-profile.ts，空实现/注册错名在装配期抛错）。已删除：`template/public/__p1_probe_b2_v2.html`（P1 探针残留）。注意 P1 的 scene-checks.mjs、p1-fixtures.mjs 与上述 P2 新文件均未暂存，不要在交接时遗漏。后续按 P3→P6 完成，最后用同场景前后对照证明速度收益与兼容性。
 
 恢复时先读取状态、scope、§4当前批次、Validation、Diff；不重复全量加载历史Spec。不要把outputs中的仓库工程当作优化目标。
+
+
+## 2026-10-20 追加实施：EP 环境复用与生成效率优化
+
+本节记录用户追加授权后的实现，不重新开启 P1–P6 历史验收，也不增加正常场景生成门禁。
+
+### 已完成
+
+- 复制 gts-ep-coder 的 Node 安装、npm 安装与源回退流程，适配 3D 清单。清单保留在 template，实际依赖安装到外部 EpCoder/3d-scene-env；GTS3D_ENV_DIR 可覆盖。
+- ensure-env 检查外部依赖和锁文件标识，错误输出 RESULT/HINT；默认 init 连接共享依赖并延后编译。可选组件使用独立依赖，安装源复用共享环境实际成功的源。保留 copy/install/skip 兼容选项。
+- TypeScript/Vite 缓存留在工程 .cache；场景 AST 与模型校验改用外部依赖，不依赖模板 node_modules。
+- 空工程移除演示 handler/card 注册、导出及演示贴图引用；保留可复用过程化模型源代码和编辑器。
+- generation-contract.md 与可编译 block-handler 样例提供最小生成路径；不要求阅读引擎实现。默认仍是统一构建成功立即交付，不加截图、浏览器验收或性能 WARN 修复轮次。
+- 资产索引透出 bbox min/max/size、面数、单位确认状态、加载器扩展兼容性。59/59 现有资产已有 bbox；补测 person 的报告。新增 asset-info 精确批量查询，search-assets 支持 brief；保留已有文件批量输入并处理 UTF-8 BOM。
+- layout-nodes 将阵列、堆叠、直线分布展开为普通独立节点，稳定 ID、独立 params，不引入 InstancedMesh 编辑语义变化。
+- 离线构建识别未支持的必需模型扩展，失败保留旧预览。构建输出静态检查、类型检查、资源收集、打包和发布的实际时序；初始化输出环境/脚手架/依赖耗时。
+- 新增 pack-skill 白名单发布；排除 node_modules、dist、offline、缓存、维护用例和维护 benchmark。原模板依赖、构建残留及旧 ZIP 已移到外部迁移备份，不在 skill 中留链接。
+
+### 验证证据
+
+- 外部 setup 实际安装成功（172 包，约 7 秒；本机使用显式 npm 源进行安装测试）。缺环境、过期锁标识与正常环境分支通过。
+- 核心/编辑/资源生命周期回归：p1-fixtures --node-only，67/67 通过；删除模板 node_modules 后再次通过。
+- init/build/strip/资产相关回归：gates --with-build，93/93 通过。
+- 新增 generation-fixtures：空模板无示例残留、共享依赖实际连接、稳定布局 ID/独立参数、非法布局、资产元信息与扩展兼容性、最小 handler 实际编译通过。
+- 24 独立节点离线场景：file:// 运行态与编辑态、贴图上传、修改、撤销重做、保存与重新导入通过。
+- offline-fixtures：多文件 glTF（7 个资产）及几何降级运行/编辑通过；缺资源、类型错误、并发锁均保留上一份正确输出。
+- 单独验证不支持 KHR_texture_basisu 的模型阻止构建并保留旧预览。
+- --with-components 实际安装和离线构建通过。
+- 发布包 212 个文件，检查无 node_modules/构建残留/verify；解压至独立目录后 ensure-env、init 和离线构建验证。
+- 本机一次 24 节点构建：typecheck 3680ms、资源 16ms、bundle 3336ms、发布 4ms；另一次空工程初始化：环境 359ms、脚手架 112ms、连接依赖 1ms。只作样本，不承诺所有场景同速。
+- PowerShell 安装脚本语法解析通过。skill-creator 通用 quick_validate 不接受本仓库既有顶层 version 字段；为保持本仓库格式未迁移该字段，不将该项记为通过。
+
+### 边界
+
+- 本轮不实现多版本依赖池、完整行业模型库或 InstancedMesh 单实例编辑；共享环境沿用 EP 的简单模式。
+- 运行页面无 CDN，安装策略与 EP 一致；未在无 Node 的全新机器及 macOS 上执行下载安装全过程。
+- bbox 单位未确认时返回 unverified，不宣称全部模型为米制；兼容性仅指加载器扩展，不能代替浏览器实测。
+- 不计算或承诺 LLM token 节省比例；平台 usage 和技能加载器注入数据不在本次代码范围。
+
+## 2026-10-20：场景复盘后的生成效率改造（已实施）
+
+### 范围与决定
+
+- 改造 skill 与模板，不修改两次场景任务的业务源码。
+- brief 检索仅输出 id/name/score/category/size/triangles/units/compatibility 八项，批量 JSON 紧凑输出。SKILL 默认检索命令使用 brief；精确元信息继续按需调用 asset-info。brief 的 size 为舍入值，compatibility 为状态字符串，完整查询接口保留。
+- 扩充现有 generation-contract 的准确签名、舞台配置、类型约束与生命周期说明，不另建一份重复速查文档。
+- 新增 createComposite：mesh 自动挂载并保留独立槽位；batch 只合并显式同名、同材质槽位。新增 Canvas/文字贴图工具及可编译组合体样例。业务对象仍保留独立节点，合批零件整体编辑。
+- 布局支持多个稳定起点、父节点、有限循环变体；不引入条件表达式 DSL。生成器与可复用展开模块随输出工程保留，配方样例按需复制。默认生成独立分组文件，禁止覆盖输入配方与 public/scene-data.json；自定义输出不可指向用户编辑存档。
+- tsconfig 显式开启 incremental，保留工程独立缓存，不跳过类型检查。增加 ensure-env --diagnose，仅报告调试注入是否存在，不泄露或修改环境变量内容。
+- 正常生成仍只进行统一构建，成功即交付 index.3d.html。维护回归不进入用户生成流程；无截图或主观视觉原因不触发重试。发现确定的实际错误后才修复重建。
+
+### 本轮验证证据
+
+- efficiency-fixtures：组合体挂载、合并边界、输入几何释放、父节点/变体/稳定 ID/参数隔离、非法布局、配方生成与场景防覆盖、24 个组合体实际离线构建通过。
+- 增量检查回归：该样例首次类型检查 3845ms，无修改复查 404ms；加入错误后 2342ms 报出 TS2322，删除错误后 2580ms 通过。另一仓库隔离副本中，未开启 incremental 时约 4 秒，开启后无修改约 0.38 秒。并非首次构建或完整生成耗时的等比例改善。
+- 同一组 11 个检索词、每词最多 3 项：完整查询紧凑 JSON 18582 字节，brief 4259 字节，减少约 77%。这是输出字节样本，不是平台 token 或总耗时统计。
+- generation-fixtures 通过：外部依赖共享、空模板、旧式布局兼容、资产元数据及构建。无模板 node_modules。
+- 组合体离线页面 file:// 运行、材质与变换编辑、贴图上传、撤销重做、保存与重新导入通过；未增加生产默认浏览器验收。
+- ensure-env --diagnose --json 正常；本机未发现调试注入。报告中的 24 秒类型检查未复现，不能认定由调试器造成。
+- 发布 ZIP 更新为 218 个文件；逐文件内容与本地 skill 对比一致，包含新工具/样例，排除依赖树、构建缓存、预览残留及维护测试。git diff --check 通过。
+
+### 保留边界
+
+- 不提供 --fast 绕过类型检查，不按 GLSL 修改免构建，不增加正则预检查替代 TypeScript。
+- 不建设通用体积渲染/Shader 框架；这类视觉效果仍需具体实现。构建通过不能证明画面符合用户审美，交付后由用户反馈。
+- 组合体输入 geometry 每次新建；同槽位批次共用同一材质实例，完成后由引擎管理资源。不同业务节点不要共享可编辑材质实例。
+- 不承诺所有场景总生成时间减半；模型调用、代码输出、宿主环境仍影响端到端耗时。
+
+## 2026-10-20：整体审查后的收敛改造（已完成）
+
+本轮以统一默认路径和减少误用为目标，不重写引擎、不新增默认验收轮次，不新增整套工业构件库。
+
+- 重写精简 SKILL 入口：普通生成先读 generation-contract，再选匹配样例；架构、组件、诊断、入库仅按需进入。保留既有失败修复预算，构建成功即停止。
+- 清除 modeling-channels 中强制截图/人工清单与默认运行面数自检；明确结构参数与外观层边界。历史 rack.bodyColor 继续兼容旧数据，注释和速查标明不作为新代码推荐，避免破坏既有场景。
+- 明确 empty 工程为修改真相源；只局部注册业务，不从 demo 覆盖 profile，不要求修改两个核心导出文件。
+- 默认命令表不再列出发布包排除的维护脚本；README/verification 明确源码仓库范围。
+- 增加复用选择表，说明 asset、procedural、Rack、HeatMap、Wall、composite 的用途和编辑限制。没有把二维 HeatMap 或 InstancedMesh 组件承诺为任意三维效果/单零件编辑。
+- composite 增加 batchSlot(name, material).add(geometry, transform)，一次绑定材质；保留旧 batch 兼容。空槽不生成网格，重复名称和 finish 后追加拒绝。
+- 增加 compose-scene.mjs 可拷贝样例：舞台与规则布局合并，输出独立候选文件，合并保留舞台与已有分组节点；重复 ID 失败并保留已有候选，不直接覆盖在线场景或编辑存档。
+- 说明同一预览存档的 sourceId 边界，以及检索降级与运行时加载失败不是同一机制。
+
+验证：
+- efficiency-fixtures 通过：旧布局兼容、新槽位边界/材质/合并位置、候选合并与冲突保护、24 组合体实际编译、增量类型错误检出和修复。
+- p1-fixtures --node-only：67/67 通过，包括旧 rack.bodyColor 和资源/编辑回归。
+- 新组合体离线 file:// 运行及材质、变换、贴图上传、撤销重做、保存导入通过。
+- offline-fixtures：多文件 GLTF 7 资源与几何降级运行/编辑/保存导入通过；缺资源、类型错误、并发构建保护通过。
+- git diff --check 通过。发布包 219 文件，逐项内容与本地源文件一致；默认文档中的可执行入口实际入包，排除 node_modules、缓存和维护测试。
+
+未做：没有运行新的 LLM 仓库/数据中心生成计时实验，不声称端到端耗时改善比例；没有扩展跨构建存档迁移、运行时自动几何替换或单实例编辑。维护回归不进入用户普通生成流程。

@@ -1,4 +1,4 @@
-# Feature Spec: generate-ux-prototype skill 优化评估与任务拆分
+# Feature Spec: gts-ep-coder skill 优化评估与任务拆分
 
 - **层级**：Feature Spec
 - **状态**：DRAFT（Research 收口；实现需另立 Plan 并获得 `Plan Approved`）
@@ -10,16 +10,16 @@
 
 ## 1. 最终目标
 
-对 generate-ux-prototype skill 的候选优化逐条做出**有证据的判定**（通用/条件通用/个例；必做/应做/可做/不做），并把「必做 + 应做」收敛为可执行的任务单元。本任务单元只产出本 Spec，**不改 skill 任何文件**。
+对 gts-ep-coder skill 的候选优化逐条做出**有证据的判定**（通用/条件通用/个例；必做/应做/可做/不做），并把「必做 + 应做」收敛为可执行的任务单元。本任务单元只产出本 Spec，**不改 skill 任何文件**。
 
 ## 2. In Scope / Out of Scope
 
-**In**：skill 目录 `ep-coder/skills/generate-ux-prototype/` 下 SKILL.md、references/、scripts/（gen-tokens.mjs、init.mjs、build.mjs 只读核实，本轮不改）。
+**In**：skill 目录 `ep-coder/skills/gts-ep-coder/` 下 SKILL.md、references/、scripts/（gen-tokens.mjs、init.mjs、build.mjs 只读核实，本轮不改）。
 **Out**：management-event20 工程文件；vendor/ 内容调整；skill 之外的任何目录；本轮一切代码/文档写入。
 
 ## 3. Research Findings（逐条核实结果）
 
-证据均在 `ep-coder/skills/generate-ux-prototype/` 内：
+证据均在 `ep-coder/skills/gts-ep-coder/` 内：
 
 | # | 上一轮的建议 | 核实结果 | 证据 |
 |---|---|---|---|

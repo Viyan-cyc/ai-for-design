@@ -7,7 +7,7 @@
 
 ## 1. 最终目标与边界
 
-**Goal**：给 `skills/generate-ux-prototype/vendor/code-example/references/` 新增两个整页示例，把"有完整设计真值但零代码消费"的两大缺口闭合：
+**Goal**：给 `skills/gts-ep-coder/vendor/code-example/references/` 新增两个整页示例，把"有完整设计真值但零代码消费"的两大缺口闭合：
 - **005 frost-material**：设计系统 §7 整块毛玻璃材质（含 §7.7 调用约定的页面级实现）；
 - **006 content-states**：内容状态规范（内容状态.md）的空/加载/错误七类状态整页示范。
 
@@ -251,4 +251,4 @@ defineProps({ level: String, tint: { type: String, default: 'none' }, title: Str
 - 截图 4 张（`.uxproto-pilot/frost-states-shots/`）：frost-material-light / frost-material-dark / content-success-light / content-success-dark——**用户视觉验收通过**。
 - F4/F5 索引登记：README 总览表 005/006 两行 + 两详情节 + 分类索引（按功能/按组件）+ SKILL.md 路由表两行，已与实际文件人工核对一致。
 - 试点目录 `frost-states-pilot` 用户裁决：**保留**。
-- 记忆锚点已追加 2026-09-23 段（project-generate-ux-prototype.md）。
+- 记忆锚点已追加 2026-09-23 段（project-gts-ep-coder.md）。

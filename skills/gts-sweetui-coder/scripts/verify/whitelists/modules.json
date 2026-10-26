@@ -1,0 +1,10 @@
+[
+  "vue",
+  "@hw-seq/sweet-ui-base",
+  "@hw-dtn/dt-ui",
+  "echarts",
+  "vue-echarts",
+  "dayjs",
+  "three",
+  "@antv/g6"
+]

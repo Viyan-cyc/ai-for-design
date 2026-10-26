@@ -4,11 +4,11 @@
 - [x] Q1 资产管线落位 → **已裁决（2026-09-30）**：skill 自带 `assets/`；后续再迁云端。上传方本地丢压缩包+manifest 给 skill 入库即可，上传方不接触检索库
 - [x] Q2 embedding 服务 → **已裁决（2026-09-30）**：先用本地方案，不引入大模型；放 skill 下某目录。内网有 API 但后续再接
 - [x] Q3 "LLM 自己建模"边界 → **已裁决（2026-09-30）**：用户倾向 Blender MCP（LLM 驱动 Blender 建模导出 GLB）；LLM 直接写 three.js 建模代码是兜底方案。**→ 已推翻（2026-10-12 用户裁决，2026-10-13 补录）：Blender 通道完全剔除，LLM 直写 three.js 代码建模（含代码组合精模）为唯一过程化建模通道；资产缺口靠 Poly Haven 精选库预填（批次 PH 已完成 56 资产）。详见 §8.1 范围变更记录**
-- [x] Q4 skill 交付形态 → **已裁决（2026-09-30）**：与 generate-ux-prototype 同级（ep-coder/skills/ 下）；内网投递纪律延续（npm 内网源、零 CDN）
+- [x] Q4 skill 交付形态 → **已裁决（2026-09-30）**：与 gts-ep-coder 同级（ep-coder/skills/ 下）；内网投递纪律延续（npm 内网源、零 CDN）
 - [x] Q5 组件库去留 → **已裁决（2026-09-30）**：组件库代码保留（用户沉淀的资产，非废弃对象）；components.json 形式可换。处理方式（检索 vs vendor）由模型给方案、用户确认——见 §3
 
 ## 1. Requirements (Context)
-- **Goal**: 参照 generate-ux-prototype 的工程化外壳模式，新建 skill `generate-3d-scene`：输入自然语言场景需求，产出 Vue3 + three.js 0.185.1 + TS 的可二次开发 3D 场景工程。核心机制是"资产优先 + 降级阶梯"：模型库/组件库检索命中即复用或参考，未命中走 LLM 过程化建模，兜底简模。全程带验证回路（build + 截图冒烟）。
+- **Goal**: 参照 gts-ep-coder 的工程化外壳模式，新建 skill `generate-3d-scene`：输入自然语言场景需求，产出 Vue3 + three.js 0.185.1 + TS 的可二次开发 3D 场景工程。核心机制是"资产优先 + 降级阶梯"：模型库/组件库检索命中即复用或参考，未命中走 LLM 过程化建模，兜底简模。全程带验证回路（build + 截图冒烟）。
 - **In-Scope**:
   - skill 目录（SKILL.md + references + scripts）
   - 资产入库管线：用户上传压缩包（gltf/glb + manifest JSON），解析、校验、构建向量索引
@@ -31,8 +31,8 @@
 ## 1.1 Context Sources
 - Requirement Source: 本会话用户消息（2026-09-30，四条决策：上传+manifest 格式 / 向量检索 / three 0.185.1 / 要验证）
 - Design Refs:
-  - `ep-coder/skills/generate-ux-prototype/`（工程化外壳参照：init/build/预览/冒烟/vendor 示例）
-  - Spec 真相源 `ep-coder/spec/specs/2026-09-17_17-37_ep-coder-generate-ux-prototype.md`（D-1~D-30）
+  - `ep-coder/skills/gts-ep-coder/`（工程化外壳参照：init/build/预览/冒烟/vendor 示例）
+  - Spec 真相源 `ep-coder/spec/specs/2026-09-17_17-37_ep-coder-gts-ep-coder.md`（D-1~D-30）
 - Chat/Business Refs:
   - 用户 manifest JSON 样例（meta: type/source_id/group_id + data[]: name/file_name/file_path/thumbnail_path/description/tags/search_text/raw_data）
   - 用户决策：已有代码和模板可作废，以业界最佳为准，不为适配硬套
@@ -47,10 +47,10 @@
   - 3d-components（@a3d/a3d-components）：14+ 组件（Rack/Wall/HeatMap/Sky/BitmapText/InstancedMesh2 等），docs/components.json 机器可读目录，peerDeps three>=0.150 兼容 0.185.1——是否保留待 Q5
 
 ## 1.5 Codemap Used (Feature/Project Index)
-- Codemap Mode: 按需（skill 是新建目录，无存量代码地形；generate-ux-prototype 结构已探明，见 §1.1）
+- Codemap Mode: 按需（skill 是新建目录，无存量代码地形；gts-ep-coder 结构已探明，见 §1.1）
 - Codemap File: 暂不生成（新建任务，地形清晰后如需要再补）
 - Key Index:
-  - generate-ux-prototype：SKILL.md（工作流+硬约束）/ scripts（init/build/gen-tokens/install）/ references（design-language/env-config）/ vendor（code-example 001-007）
+  - gts-ep-coder：SKILL.md（工作流+硬约束）/ scripts（init/build/gen-tokens/install）/ references（design-language/env-config）/ vendor（code-example 001-007）
   - 3d-templete：src/3d（scene/managers/components/editBridge）+ assetsLibrary（assetCatalog/manifest）
   - 3d-components：src（core/heat/material/graph/camera/controls/interactive/loader/animation/helper/utils）+ docs/components.json
 
@@ -83,23 +83,23 @@
 ## 2. Research Findings
 - 事实与约束:
   - **业界先例证实 agent skill 形态可行**：threejs-architecture-effects 与 3dviz-pro-max 都是"SKILL.md + 模板工程 + 验证回路"的 skill 打包形态，方法论可移植（装配分级、reason-before-render、截图自检、诚实分级）
-  - **验证回路是业界共识核心**：3dviz-pro-max 用 Playwright capture 让 agent 看真实渲染帧而非凭空断言；threejs-architecture-effects 自带 verification 文档。与用户 generate-ux-prototype 的 CDP 冒烟经验同构
+  - **验证回路是业界共识核心**：3dviz-pro-max 用 Playwright capture 让 agent 看真实渲染帧而非凭空断言；threejs-architecture-effects 自带 verification 文档。与用户 gts-ep-coder 的 CDP 冒烟经验同构
   - **向量检索喂料现成**：用户 manifest 格式的 search_text/tags/description 字段即 embedding 输入；thumbnail_path 支持多模态选型（缩略图给人看/给多模态模型看）
   - **three 0.185.1 与组件库兼容**：@a3d/a3d-components peerDeps `three>=0.150.0`，0.185.1 满足
   - **Blender MCP 是成熟建模通道**：~29.7k stars 活跃项目；LLM 可场景操作/Python 执行/**导出 GLB**/Poly Haven 素材/AI 生成（Rodin/混元）。~~作为建模主通道已裁决~~。**→ 通道已剔除（2026-10-12 用户裁决，见 §8.1）——以下 Blender 相关条目全部转为历史归档，不再是执行依据**。风险记录（历史）：execute_blender_code 是任意代码执行面（localhost 使用、保存现场）、socket 无鉴权、大资源下载冻结 UI 主线程
   - **Blender 通道双模式（2026-09-30 向用户说明，已归档）**：~~① MCP 交互式；② headless 脚本式；③ 两者皆无→LLM 直写兜底~~ → **2026-10-12 裁决：三通道只留 LLM 直写**
   - **用户澄清（2026-09-30）**：skill 是给很多人用的——用户只发文字/截图描述收工程，用户零建模工具操作；目标机器零外部依赖
   - **Blender 分发裁决（2026-09-30，已随 2026-10-12 剔除裁决作废）**：~~A/B 混合——便携版增强包 + install-blender 脚本~~ → **install-blender.mjs 取消（批次 5.1 撤销），本机 `~/.gts3d/blender/` 已清理（2026-10-13）**
-  - **非 multimodal LLM 能力分层（2026-09-30；Blender 引用已随通道剔除过时，保留场景冒烟部分）**：skill 启动探测 LLM 多模态能力（或用户配置声明），分档执行——多模态档：渲染帧视觉判断；非多模态档：场景冒烟走结构化断言（WebGL canvas 像素统计/readPixels 采样、场景图 JSON 导出、CDP 布局断言，复用 generate-ux-prototype CDP 设施模式）。非多模态档结论按"诚实分级"标注"结构验证通过，未经视觉确认"。可选增强：截图先经本地脚本提特征（色彩分布/边缘密度/空白占比）变数字给 LLM 读
+  - **非 multimodal LLM 能力分层（2026-09-30；Blender 引用已随通道剔除过时，保留场景冒烟部分）**：skill 启动探测 LLM 多模态能力（或用户配置声明），分档执行——多模态档：渲染帧视觉判断；非多模态档：场景冒烟走结构化断言（WebGL canvas 像素统计/readPixels 采样、场景图 JSON 导出、CDP 布局断言，复用 gts-ep-coder CDP 设施模式）。非多模态档结论按"诚实分级"标注"结构验证通过，未经视觉确认"。可选增强：截图先经本地脚本提特征（色彩分布/边缘密度/空白占比）变数字给 LLM 读
   - **性能规格重定（2026-09-30 用户补充，2026-09-30 二次修订）**：真实场景复杂——模型数量成百上千，性能要求 ≥40fps。推导：单模型 prop≤2k 三角（多数几百）、少量主角≤10k、场景总预算≤1M 三角；draw call 约束——**同类物体实例数 >1000 才强制 InstancedMesh**（≤1000 普通 mesh + 静态几何合并），场景 draw call 超预算由性能冒烟打回触发优化；全场景材质数上限（≤32 草案）；贴图降到单张≤1024² 图集优先。运行侧门禁：CDP 实测帧率 ≥40fps 不达标打回。**推论**：此性能档下工业级低模只能人工/专业管线产出，资产库检索复用从"优先"升为"性能刚需"；LLM 建模通道退为库未命中最后手段且必须过 validator
-  - **母版工程机制确认（2026-09-30）**：LLM 每次生成 = 复制母版 + 填业务层。母版三层：① 引擎层（固定，LLM 永不修改：场景初始化/渲染循环/相机灯光/资产加载/增量更新协议/handler 注册机制）② 接入层（固定契约，LLM 只产出此处业务代码：handlers/<type>/<type>.ts、scene-data.json、cards/*.vue 可选、assets 引用清单）③ 文档（INTEGRATION_GUIDE.md 一份即可接手）。效果：引擎层跨交付物完全一致（bug 修一次全受益），二开者"数据级二开不需要懂 three.js，深度二开有完整源码"——与 generate-ux-prototype starter 模式同构，3d-templete handler 注册制思想一脉相承
+  - **母版工程机制确认（2026-09-30）**：LLM 每次生成 = 复制母版 + 填业务层。母版三层：① 引擎层（固定，LLM 永不修改：场景初始化/渲染循环/相机灯光/资产加载/增量更新协议/handler 注册机制）② 接入层（固定契约，LLM 只产出此处业务代码：handlers/<type>/<type>.ts、scene-data.json、cards/*.vue 可选、assets 引用清单）③ 文档（INTEGRATION_GUIDE.md 一份即可接手）。效果：引擎层跨交付物完全一致（bug 修一次全受益），二开者"数据级二开不需要懂 three.js，深度二开有完整源码"——与 gts-ep-coder starter 模式同构，3d-templete handler 注册制思想一脉相承
   - **母版工程代码四要求（2026-09-30 用户）**：① 2D 卡片为可修改 Vue 组件，参考 3d-templete 卡片机制但用自己的想法重写；② 模板代码简洁可读、单一职责（场景/灯光/控制器/射线拾取/renderer 各自独立文件）；③ 遵循 3d-templete 的 eslint 配置；④ 双模式架构：编辑态（LLM 交流中选中调参：场景/控制器/灯光/renderer/材质/贴图，可调布局，类 Spline 可编辑）+ 二开态（二开者拿到的代码物理不含编辑态代码）。双模式隔离方案见下条
   - **双模式隔离方案（2026-09-30）**：edit → core 单向依赖。core（scene-core/：engine 各单一职责文件 + handlers/ + cards/ + scene-data.json + createScene.ts 唯一入口）不知道 edit 存在；edit/（SelectionService 射线选中复用 core 拾取、PropertyPanel 调参 UI、LayoutGizmo 布局拖拽、Bridge 唯一桥梁只调 core 公开 API sceneHandle、edit-main.ts 独立入口）整体可删除。两种交付：编辑态工程=core+edit（调参结果序列化回写 scene-data.json）；二开交付=build 剔除 edit/ + 回写后 scene-data.json（二开者代码里物理无编辑态）。机器保证：build 门禁规则——core 文件 import edit/ 即 FAIL；core 暴露有限 API（get/set 属性、serialize、updateObject 增量），edit 不得伸手进 core 内部。3d-templete editBridge/ 契约思想可参考、代码重写
   - **3d-templete 处置裁决（2026-09-30）**：代码不直接用（现有实现/assetLibrary 文本检索/lowPolyFallback 丢弃或重写）；三个架构思想吸收进新 skill：① LiveDataConfig JSON 驱动（数据进场景出，二开者改数据不改引擎）② handler 注册制（LLM 业务代码以 handler 插入，引擎母版不动——受控沙箱思想）③ 增量更新协议（物体移动/状态变色不重建场景，监控场景刚需）。新场景工程模板=重写，设计输入=3d-templete 三思想 + 业界最佳 + 新性能规格；LiveDataConfig schema 与 handler 契约作为起点重新推导
   - **模型生成规格 + 校验器双层机制（2026-09-30 修订版；2026-10-13 随 Blender 剔除改写「三条建模通道」表述）**：skill 内置 model-spec.md（用户可覆盖默认值）：底面中心 y=0 向上生长 / 三角面数 prop≤2k（多数几百）、主角≤10k、场景总预算≤1M / 子节点≤64 扁平化 / 命名小写 snake_case 语义化 / 贴图单张≤1024² 图集优先 / 米制 +Y up 导出转 glTF -Z forward / **同类物体实例数 >1000 才强制 InstancedMesh，≤1000 普通 mesh+静态几何合并**、材质数上限（草案≤32）。LLM 代码建模通道（唯一通道）：handler 内建约束（mesh 必须 .name 具名，见 GUIDE §3.2 命名约定）；产出实体 GLB 入库前统一 validator 脚本硬门禁（GLB 解析：面数/节点树/命名/贴图尺寸/bbox 原点），不合格打回而非警告；场景级性能冒烟门禁 CDP 实测≥40fps（draw call 超预算同样打回）
   - **Blender glTF 导出保证（已归档，通道剔除）**：~~原生 glTF 2.0 导出器支持 GLB~~——Blender 通道剔除后此条仅历史记录
   - **建模↔检索闭环（保留，通道改写）**：LLM 代码建模产出 GLB（若经入库）+ manifest 元数据回注册进资产库——下次检索命中，库随使用增长。**代码组合模型（修复轮九 car/rack/worker.ts）当前为 handler 过程化路线（不产 GLB），GLB 回库仅在产出实体模型文件时适用**
-  - **generate-ux-prototype 外壳可复用模式**（非代码，模式）：init 脚手架（starter 工程）、build 门禁（结构扫描+import 白名单）、预览（file:// 或 dev server）、CDP 冒烟断言、vendor 示例沉淀
+  - **gts-ep-coder 外壳可复用模式**（非代码，模式）：init 脚手架（starter 工程）、build 门禁（结构扫描+import 白名单）、预览（file:// 或 dev server）、CDP 冒烟断言、vendor 示例沉淀
   - **内网约束传承**：npm 走内网源 mirrors.tools.huawei.com、无 CDN 依赖——新 skill 延续此纪律
   - **本地 embedding 可行性**：不引大模型的前提 = 轻量词法向量（如 TF-IDF/字符 n-gram 哈希向量 + 余弦相似度）或极小 onnx 模型；检索对象是"资产描述文本"（search_text/tags/description 拼接），语料小且领域窄，词法方案够用——精确方案 Plan 内定，先记方向
 - 风险与不确定项:
@@ -133,7 +133,7 @@
 - Pros: 与模型资产统一管线；组件多时精准定位
 - Cons: 组件是**源代码**不是二进制——检索只能匹配元数据（name/description/tags），但命中后 LLM 需要读完整源码才能正确 import/使用，索引行价值低；组件数量少（14+），检索是杀鸡用牛刀
 
-### Option B：组件库走"vendor 参考"（generate-ux-prototype 同款）
+### Option B：组件库走"vendor 参考"（gts-ep-coder 同款）
 - Pros: 已验证的成功模式（vendor 示例 001-007 是该 skill 质量最高的部分）；组件源码常驻 references，LLM 直接读、直接抄、直接 import——匹配"能直接使用"的定位；无需索引构建
 - Cons: 全量常驻上下文有体积开销（需按需加载路由控制）
 
@@ -143,7 +143,7 @@
 
 ### Decision
 - Selected: **C**（经 Plan Approved 2026-09-30 一并确认）
-- Why: 组件的本质是"可 import 的代码"而非"待加载的模型"——LLM 用组件的正确姿势是"知道有什么 → 读源码学用法 → import 使用"，这是 vendor 模式而非检索模式；但 14+ 组件全量塞上下文不经济，目录清单+按需读源码是业界（含 generate-ux-prototype 的 vendor 路由）验证过的平衡点。模型库则保持向量检索（二进制模型无法常驻上下文，检索是唯一入口）
+- Why: 组件的本质是"可 import 的代码"而非"待加载的模型"——LLM 用组件的正确姿势是"知道有什么 → 读源码学用法 → import 使用"，这是 vendor 模式而非检索模式；但 14+ 组件全量塞上下文不经济，目录清单+按需读源码是业界（含 gts-ep-coder 的 vendor 路由）验证过的平衡点。模型库则保持向量检索（二进制模型无法常驻上下文，检索是唯一入口）
 - User Decision: Accepted（2026-09-30 Plan Approved 即确认；2026-10-08 评审复核时锚定）
 
 ### Decision 增补：组件库接入机制终裁（2026-10-09，用户裁决）
@@ -184,7 +184,7 @@
 
 ### 4.1 File Changes（skill 目录树，全部新建）
 
-> 落位：`ep-coder/skills/generate-3d-scene/`（与 generate-ux-prototype 同级）
+> 落位：`ep-coder/skills/generate-3d-scene/`（与 gts-ep-coder 同级）
 
 ```
 generate-3d-scene/
@@ -710,7 +710,7 @@ S9 交付        strip-edit 出二开包 + INTEGRATION_GUIDE 校验 + 验证报�
 
 #### P3（低优先级，投递卫生/顺序）
 
-- **R3-1 模板投递残留**：template/ 内含 `dist/`（831K）、`node_modules/`、`.smoke-r4/`，无 .gitignore；package-lock.json resolved 全为 registry.npmjs.org（内网纪律要求 mirrors.tools.huawei.com，参照 skill generate-ux-prototype 有 install.sh --registry 模式）。批次 3.3 init.mjs 需明确排除规则；README（5.5）需写内网安装方式；建议补 .gitignore/.skillignore。
+- **R3-1 模板投递残留**：template/ 内含 `dist/`（831K）、`node_modules/`、`.smoke-r4/`，无 .gitignore；package-lock.json resolved 全为 registry.npmjs.org（内网纪律要求 mirrors.tools.huawei.com，参照 skill gts-ep-coder 有 install.sh --registry 模式）。批次 3.3 init.mjs 需明确排除规则；README（5.5）需写内网安装方式；建议补 .gitignore/.skillignore。
 - **R3-2 checklist 顺序**：5.2 SKILL.md 依赖 5.4 component-catalog.md 产物（降级阶梯第 3 层引用），顺序倒置——5.4 提前到 5.2 前或注记。
 - **R3-3 40fps 门禁测量环境未定义**：swiftshader 软渲染下 fps 天然偏低，40fps 门禁在冒烟机可能永不达标。建议：fps 门禁在交付目标环境（真机 GPU）实测；软渲染冒烟只做结构验证不计 fps。
 - **R3-4 ensure-env 多模态声明格式未定义**：checklist 4.4"多模态档位声明解析"——声明载体（环境变量/配置文件/SKILL.md 指令）未定，批次 4 会撞 TBD。
@@ -2544,10 +2544,10 @@ Signatures：
 
 ### 8.2 范围变更记录：R1-3 性能门禁降级为 WARN 观测（裁决 2026-10-13，即时落盘）
 
-**用户裁决（2026-10-13，本会话，参考 generate-ux-prototype 验证策略对比后）**：
+**用户裁决（2026-10-13，本会话，参考 gts-ep-coder 验证策略对比后）**：
 > 「是不是应该放宽检测标准啊」「卡就卡一点不行吗，然后用户自己觉得卡再让 llm 修复呢」
 
-**对比研究结论（generate-ux-prototype 实读）**：其唯一硬门禁 build.mjs 是**秒级**真实编译检查（fail-all 一次全列出错误），视觉验收交**用户人眼**（预览 HTML 双击即看），**无性能门禁**（2D 无此风险）——「循环至过」无等待焦虑靠的是每轮秒级成本结构，不是标准松。CDP 冒烟设施只在开发期跑不随 skill 交付。
+**对比研究结论（gts-ep-coder 实读）**：其唯一硬门禁 build.mjs 是**秒级**真实编译检查（fail-all 一次全列出错误），视觉验收交**用户人眼**（预览 HTML 双击即看），**无性能门禁**（2D 无此风险）——「循环至过」无等待焦虑靠的是每轮秒级成本结构，不是标准松。CDP 冒烟设施只在开发期跑不随 skill 交付。
 
 **裁决内容**（三层分类取代原「预算+fps 双 FAIL」）：
 1. **坏**（报错/白屏/无法渲染/场景图不符/加载失败）= 唯一硬 FAIL——机器无关客观标准（用户定义），进修复循环，秒级断言 fail-all；

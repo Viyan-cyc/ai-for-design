@@ -1,15 +1,15 @@
-# Spec: ep-coder / generate-ux-prototype 组件库（assets/ 知识库）
+# Spec: ep-coder / gts-ep-coder 组件库（assets/ 知识库）
 
 - **层级**: Feature Spec
 - **创建**: 2026-09-18 09:11
 - **状态**: Plan（待批准）
 - **phase**: Plan
 - **approval status**: 待字面 `Plan Approved`
-- **前置**: `2026-09-17_17-37_ep-coder-generate-ux-prototype.md`（GO，本 Spec 在其交付物上叠加）
+- **前置**: `2026-09-17_17-37_ep-coder-gts-ep-coder.md`（GO，本 Spec 在其交付物上叠加）
 
 ## 1. 最终目标（Goal）
 
-为 skill `generate-ux-prototype` 建立 fastui 模式的组件库（用户原话："先把ep-coder的组件库搭建起来，跟fastui对齐"）：
+为 skill `gts-ep-coder` 建立 fastui 模式的组件库（用户原话："先把ep-coder的组件库搭建起来，跟fastui对齐"）：
 
 1. **形态**：assets/ 知识库，agent 生成页面时走直线路径——查组件索引 → 读单组件文档 → 抄可复制示例（复刻 fastui vendor 的"信息确定性"模式，见 SPEC-fastui-vs-aifordesign-speed.md 根因 2/6）。
 2. **覆盖**：全量映射组件（用户拍板）——派生源 GTS prompt-new.md 附录 A 全部 EP 组件各一份文档（索引镜像"高频 20 置顶"结构）；§9 核心组件文档更详尽；新增 vue-echarts 图表文档。
@@ -24,7 +24,7 @@ Task-1：交付 assets/ 结构（doc/ 复制 + components/ 组件文档 + vendor
 ## 2. In Scope / Out of Scope
 
 **In Scope**
-- `skills/generate-ux-prototype/assets/` 新建：`doc/`（design-language v2.2.1 副本）、`components/`（工程侧组件库，GTS prompt-new 派生）、`code-skill/`（编码规则+页面模板+示例）、`vendor/`（原三类资产占位迁入）。
+- `skills/gts-ep-coder/assets/` 新建：`doc/`（design-language v2.2.1 副本）、`components/`（工程侧组件库，GTS prompt-new 派生）、`code-skill/`（编码规则+页面模板+示例）、`vendor/`（原三类资产占位迁入）。
 - 单组件文档（附录 A 全量映射，预计 65-75 份）+ 索引（高频 20 置顶）+ 图表文档（VChart）+ 编码规则 + 页面模板 + 可复制示例。
 - 图表运行时：`preview/public/library/` 新增 `echarts.min.js`（6.1.0）+ `vue-echarts` 浏览器构建（8.3.0）+ `index.html` script 标签；build.mjs 白名单/结构检查扩展 `v-chart`；图表示例纳入 build 门禁。
 - SKILL.md 更新：工作流加"查组件库"步骤、vendor 章节改写为 assets 章节、位置覆盖协议、硬约束（assets 只读）。
@@ -86,7 +86,7 @@ vendor/ 205 md / 103 组件目录；读取路径 `components_index.md → 单组
 
 - **D-16 assets/ 伞形结构 + 位置覆盖**（2026-09-18 用户拍板）：
   - `assets/` 下放 `vendor/`（三类资产）+ `doc/`（design-language 目录内容）+ 组件库目录（落位见 D-17b，待确认）。
-  - 默认位置 `ep-coder/skills/generate-ux-prototype/assets/`；使用者设置环境变量 `EP_UX_PROTO_ASSETS_DIR` 后用指定位置。
+  - 默认位置 `ep-coder/skills/gts-ep-coder/assets/`；使用者设置环境变量 `EP_UX_PROTO_ASSETS_DIR` 后用指定位置。
   - **覆盖缺失不静默回退**：env var 已设但目录不存在 → agent 显式报错停下（HINT 指回默认位置或修正路径），防止读到过期文档产出错样式。
   - 动机（用户原话）："设计师后续想更新设计规范文档，但又不想找我重写发布skill包"。
 - **D-17a 覆盖范围=全量映射组件**（2026-09-18 用户拍板）：派生源换至 GTS_ElementPlus_Vue3_Prompt-new.md（v2，用户 2026-09-18 上午交付）。附录 A 全部 EP 组件各一份文档；索引镜像"高频 20 置顶"结构；§3.4 无 EP 对应项单列 non-ep-components.md；§9 核心组件文档更详尽。
@@ -100,7 +100,7 @@ vendor/ 205 md / 103 组件目录；读取路径 `components_index.md → 单组
   - `assets/components/` — 组件库：`components_index.md`（入口）+ ~70 份单组件文档 + `api/`。
   - `assets/code-skill/` — 代码规范与生成代码：`coding-rules.md` + `page-templates.md` + `non-ep-components.md` + `examples/`。目录名采用用户原话（"可能是code-skill（代码规范，生成代码的目录）"）。
   - 通用原则（用户原话）："反正有什么功能，就会新建一个文件夹来存放"——后续新功能类资产在 assets/ 下新建同级目录，README 维护目录清单。
-- **D-18 doc/ 副本唯一许可偏差**：复制 design-language 时仅修正 `00索引.md` 中对旧锚定路径的引用（"skills/generate-ux-prototype/library/" → "assets/components/"），其余 61 个文件字节级忠实复制。理由：锚定行指向不存在路径会误导 agent。design-language 源不动。
+- **D-18 doc/ 副本唯一许可偏差**：复制 design-language 时仅修正 `00索引.md` 中对旧锚定路径的引用（"skills/gts-ep-coder/library/" → "assets/components/"），其余 61 个文件字节级忠实复制。理由：锚定行指向不存在路径会误导 agent。design-language 源不动。
 - **D-19 references/design-language.md 处置 = 瘦身为指针**（2026-09-18 用户拍板）：真值移 assets/doc/，该文件改写为"真值指针（→ assets/doc/）+ EP 桥接速查表"，消除双源。
 - **D-20 API 真值 = 提取脚本**（2026-09-18 用户拍板）：新增维护脚本 `scripts/gen-component-api.mjs`——临时 npm 安装 EP 2.13.5（沿用 gen-whitelists 模式），从 UMD 枚举每组件 props/emits → 生成 `assets/components/api/element-plus-2.13.5.api.json`；Execute 期照抄进各组件文档，杜绝 API 幻觉。fallback：提取不完整时该组件文档只写 GTS prompt 来源约束 + 保守 API。
 - **D-21 "gts" 字符串纪律延伸**（D-14 延伸澄清）：派生文档 prose 中用"设计语言组件名"等表述替代"GTS 组件名"，保持全库 grep `gts` 卫生检查可用（E5 同标准）。
@@ -114,7 +114,7 @@ vendor/ 205 md / 103 组件目录；读取路径 `components_index.md → 单组
 ### 6.1 Target 结构
 
 ```
-ep-coder/skills/generate-ux-prototype/
+ep-coder/skills/gts-ep-coder/
 ├── SKILL.md                                   # [改] ②读文档步骤接入组件库直线路径；§4 vendor→assets；
 │                                              #      位置覆盖协议；硬约束+1（assets 只读）
 ├── references/

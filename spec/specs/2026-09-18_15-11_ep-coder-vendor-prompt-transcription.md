@@ -1,16 +1,16 @@
-# Spec: ep-coder / generate-ux-prototype vendor 知识库（fastui 三块对齐）
+# Spec: ep-coder / gts-ep-coder vendor 知识库（fastui 三块对齐）
 
 - **层级**: Feature Spec
 - **创建**: 2026-09-18 15:11
 - **状态**: Plan v3（已执行完毕，2026-09-20 收口；Execute Log 见 §8）
 - **phase**: Done
 - **approval status**: `Plan Approved`（2026-09-18）
-- **前置**: `2026-09-17_17-37_ep-coder-generate-ux-prototype.md`（GO，本 Spec 在其交付物上叠加）
+- **前置**: `2026-09-17_17-37_ep-coder-gts-ep-coder.md`（GO，本 Spec 在其交付物上叠加）
 - **前置关系**: 曾有 Spec `2026-09-18_09-11_ep-coder-component-library.md`（assets/ 全量组件文档路线），**已作废**。本 Spec 决策编号用 **VD-** 前缀，与主 Spec 的 D-1~D-22 结构性隔离。
 
 ## 1. 最终目标（Goal）
 
-为 skill `generate-ux-prototype` 落地 `vendor/` 知识库：借鉴 fastui vendor 的分块+索引纪律，
+为 skill `gts-ep-coder` 落地 `vendor/` 知识库：借鉴 fastui vendor 的分块+索引纪律，
 落地为**两块 + 顶层路由**（vue-skill / code-example + README；style-skill 职责并入顶层
 README，VD-1/VD-12）。agent 生成页面走直线路径：查索引 → 查规则 → 抄模板/示例 → 生成 →
 自检；vendor 对绝大多数常规页面自足，design-language/ 源树仅作升级路径（VD-12）。
@@ -33,7 +33,7 @@ Task-1：vendor 三块落地 + 图表运行时 + 门禁扩展 + SKILL.md 轻整�
 ## 2. In Scope / Out of Scope
 
 **In Scope**
-- `skills/generate-ux-prototype/vendor/` 按 6.1 树新建（替换 PLACEHOLDER.md），38 文件。
+- `skills/gts-ep-coder/vendor/` 按 6.1 树新建（替换 PLACEHOLDER.md），38 文件。
 - preview 运行时加 echarts/vue-echarts UMD + loader 映射 + build 门禁扩展。
 - SKILL.md 轻整合（③ 加查 vendor 直线 + 硬约束 4 改写）。
 - 示例代码统一 `<style scoped lang="less">`、禁静态内联 style。
@@ -199,7 +199,7 @@ token 合规、换肤自动跟随、build 零告警。mixed-chart 示例与 VCha
 ### 6.1 Target 结构（文件级，38 文件）
 
 ```
-ep-coder/skills/generate-ux-prototype/
+ep-coder/skills/gts-ep-coder/
 ├── SKILL.md                                  # [改] ③ 查 vendor 直线；硬约束 4 改写
 ├── scripts/build.mjs                         # [改] ALLOWED_BARE +2；REQUIRED_HTML +2；CHART_TAGS（VD-7a）
 ├── scripts/preview/

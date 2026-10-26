@@ -45,9 +45,9 @@
 
 | # | 文件 | 动作 |
 |---|---|---|
-| F1 | `ep-coder/skills/generate-ux-prototype/SKILL.md` | 编辑（两处插入） |
-| F2 | `ep-coder/skills/generate-ux-prototype/vendor/vue-skill/references/code-rules.md` | 编辑（规则十扩展） |
-| F3 | `ep-coder/skills/generate-ux-prototype/scripts/preview/src/README.md` | 编辑（两处插入） |
+| F1 | `ep-coder/skills/gts-ep-coder/SKILL.md` | 编辑（两处插入） |
+| F2 | `ep-coder/skills/gts-ep-coder/vendor/vue-skill/references/code-rules.md` | 编辑（规则十扩展） |
+| F3 | `ep-coder/skills/gts-ep-coder/scripts/preview/src/README.md` | 编辑（两处插入） |
 | F4 | 试点工程 `i18n-rule-pilot`（init 新建） | init + build 验证 |
 | F5 | `D:/cyc/project/octo/gts/test/.uxproto-pilot/cdp-i18n-rule.mjs` | 新建（冒烟脚本） |
 
@@ -121,7 +121,7 @@ t(`msg.event5.mock.title.${event.title}`) // 真实后端标题进来 → 显示
 
 ### 3.4 F4/F5：试点验证
 
-1. `node ep-coder/skills/generate-ux-prototype/scripts/init.mjs "D:/cyc/project/octo/gts/test/i18n-rule-pilot" "i18n-rule-pilot"`
+1. `node ep-coder/skills/gts-ep-coder/scripts/init.mjs "D:/cyc/project/octo/gts/test/i18n-rule-pilot" "i18n-rule-pilot"`
 2. build → RESULT: OK（验证 skill 编辑未破坏 init/build 链路——三处编辑均为文档文本，不涉代码路径，此层验证为回归性质）
 3. cdp-i18n-rule.mjs：starter 页挂载 + demo.js 服务层取数（列表行数 > 0）——证明「保留 demo」路线下 starter 链路完好
 4. 试点目录 i18n-rule-pilot 验证完删除（纯回归用途，不同于 frost-states-pilot 的留存裁决）
@@ -192,7 +192,7 @@ t(`msg.event5.mock.title.${event.title}`) // 真实后端标题进来 → 显示
 - CDP 冒烟（cdp-i18n-rule.mjs，端口 9237）：`RESULT: OK | 3/3 PASS`（挂载 + demo 服务层喂表 rows>0 + 零 unhandledrejection）。
 - 三文件口径一致性核对（grep 实证）：判定法同一表述三处齐（SKILL.md L138 / code-rules L381 / README L54）；保守口径条款三处齐（SKILL.md L144 / code-rules L394 / README 隐含于同一句）；demo 卫生条双落点（SKILL.md L126-127 / README L92-93）。
 - 试点目录 i18n-rule-pilot 已删除。
-- 记忆锚点已追加（project-generate-ux-prototype.md）。
+- 记忆锚点已追加（project-gts-ep-coder.md）。
 
 ## 6. Resume / Handoff
 

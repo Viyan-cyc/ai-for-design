@@ -1,10 +1,10 @@
-# SDD Spec: generate-ux-prototype 安装脚本外网回落（intranet-first → public fallback）
+# SDD Spec: gts-ep-coder 安装脚本外网回落（intranet-first → public fallback）
 
 ## 0. Open Questions
 - [x] 外网回落源选型 → **已决策：Option B（本地 fallback manifest）**，用户 2026-09-20 会话内确认
 
 ## 1. Requirements (Context)
-- **Goal**: `ep-coder/skills/generate-ux-prototype` 的环境安装链路（node 下载 + npm 依赖安装）当前是纯内网单点；增加"内网不通 → 回落外网"逻辑，使 skill 包在外网机器也能自举。
+- **Goal**: `ep-coder/skills/gts-ep-coder` 的环境安装链路（node 下载 + npm 依赖安装）当前是纯内网单点；增加"内网不通 → 回落外网"逻辑，使 skill 包在外网机器也能自举。
 - **In-Scope**: env-config.json、install.ps1、install.sh、setup-env.mjs、SKILL.md ⓪ 段的下载/回落逻辑与文档。
 - **Out-of-Scope**: node 版本变更、compiler 依赖清单变更、ensure-env.mjs（只读校验，无需改）、vendor 转录等其他 skill。
 
@@ -75,12 +75,12 @@
 ## 4. Plan (Contract)
 
 ### 4.1 File Changes
-- `ep-coder/skills/generate-ux-prototype/references/fallback-node-manifest.json`: **新增**。本地 fallback manifest，协议同内网 manifest，额外加 `baseUrl` 字段（资产 URL = baseUrl + "/" + file，不依赖 manifest 自身路径）。内容：node v24.16.0 四平台 {file, sha256, stripComponents:1}，sha256 取自 npmmirror 官方 SHASUMS256.txt（真实值，见 4.2）。
-- `ep-coder/skills/generate-ux-prototype/references/env-config.json`: 新增 `fallbackManifestUrl` 字段 = `"fallback-node-manifest.json"`（相对 skill 根的相对路径，ps1/sh 解析为 skill 内绝对路径）。既有 4 字段不动。
-- `ep-coder/skills/generate-ux-prototype/scripts/install/install.ps1`: 主 manifest 失败（Get-Manifest 返回 false 或 JSON 解析失败）时，读 `fallbackManifestUrl`，解析为 `<SkillDir>\references\<file>`，重走"拉 manifest → 取平台包 → 下载 → sha256 → 解压"流程；其中资产 URL 拼接改为 `if ($Entry.baseUrl) { "$($Entry.baseUrl)/$($Entry.file)" } else { "$Base/$($Entry.file)" }`。回落成功后输出 `[manifest] fallback (intranet unreachable): <path>`，失败码带 `FALLBACK_` 前缀。`-Check` 模式对本地 fallback manifest 只报 `FALLBACK_MANIFEST: OK(local)`，不 probe 资产（既有行为对本地路径本就会失败，明确跳过）。
-- `ep-coder/skills/generate-ux-prototype/scripts/install/install.sh`: 同 ps1 的回落逻辑（curl 侧用本地文件路径，`http_get` 已支持：非 URL 直接 `Test-Path` + copy 通道在 sh 中对应 `cp`；sh 的 `http_get` 当前只处理 URL——需加本地文件分支 `[ -f "$url" ] && { cp "$url" "$out"; HTTP_CODE=200; return 0; }`）。fallback manifest 的 JSON 解析复用既有 `require_py` 路径。
-- `ep-coder/skills/generate-ux-prototype/scripts/setup-env.mjs`: registry 链增加一层回落：`--registry 参数 > manifest 透传 > env-config.fallbackNpmRegistry > npmmirror 公网源`。实现：新增常量 `PUBLIC_NPM_REGISTRY = "https://registry.npmmirror.com"`；npm ci 与 npm i 各自失败后，若当前 registry ≠ PUBLIC_NPM_REGISTRY，自动以 PUBLIC_NPM_REGISTRY 重试一轮（ci → i），并在输出中标注 `[npm] fallback registry: https://registry.npmmirror.com`。全败仍报 `NPM_INSTALL_FAILED`（HINT 说明已试过的两个源）。
-- `ep-coder/skills/generate-ux-prototype/SKILL.md`: ⓪ 段三处修正——①"从 npmmirror 下载 portable node"改为"优先内网 manifest 下载；内网不通时自动回落到 skill 内置的 fallback manifest（npmmirror 包源，node v24.16.0）"；② 补一句 node 版本升级维护提示（升级 node 版本时同步更新 fallback-node-manifest.json 的 file/sha256/baseUrl，与内网 manifest 对齐）；③ 日志说明补 `[manifest] fallback` 行的含义（出现即代表走了内网回落）。
+- `ep-coder/skills/gts-ep-coder/references/fallback-node-manifest.json`: **新增**。本地 fallback manifest，协议同内网 manifest，额外加 `baseUrl` 字段（资产 URL = baseUrl + "/" + file，不依赖 manifest 自身路径）。内容：node v24.16.0 四平台 {file, sha256, stripComponents:1}，sha256 取自 npmmirror 官方 SHASUMS256.txt（真实值，见 4.2）。
+- `ep-coder/skills/gts-ep-coder/references/env-config.json`: 新增 `fallbackManifestUrl` 字段 = `"fallback-node-manifest.json"`（相对 skill 根的相对路径，ps1/sh 解析为 skill 内绝对路径）。既有 4 字段不动。
+- `ep-coder/skills/gts-ep-coder/scripts/install/install.ps1`: 主 manifest 失败（Get-Manifest 返回 false 或 JSON 解析失败）时，读 `fallbackManifestUrl`，解析为 `<SkillDir>\references\<file>`，重走"拉 manifest → 取平台包 → 下载 → sha256 → 解压"流程；其中资产 URL 拼接改为 `if ($Entry.baseUrl) { "$($Entry.baseUrl)/$($Entry.file)" } else { "$Base/$($Entry.file)" }`。回落成功后输出 `[manifest] fallback (intranet unreachable): <path>`，失败码带 `FALLBACK_` 前缀。`-Check` 模式对本地 fallback manifest 只报 `FALLBACK_MANIFEST: OK(local)`，不 probe 资产（既有行为对本地路径本就会失败，明确跳过）。
+- `ep-coder/skills/gts-ep-coder/scripts/install/install.sh`: 同 ps1 的回落逻辑（curl 侧用本地文件路径，`http_get` 已支持：非 URL 直接 `Test-Path` + copy 通道在 sh 中对应 `cp`；sh 的 `http_get` 当前只处理 URL——需加本地文件分支 `[ -f "$url" ] && { cp "$url" "$out"; HTTP_CODE=200; return 0; }`）。fallback manifest 的 JSON 解析复用既有 `require_py` 路径。
+- `ep-coder/skills/gts-ep-coder/scripts/setup-env.mjs`: registry 链增加一层回落：`--registry 参数 > manifest 透传 > env-config.fallbackNpmRegistry > npmmirror 公网源`。实现：新增常量 `PUBLIC_NPM_REGISTRY = "https://registry.npmmirror.com"`；npm ci 与 npm i 各自失败后，若当前 registry ≠ PUBLIC_NPM_REGISTRY，自动以 PUBLIC_NPM_REGISTRY 重试一轮（ci → i），并在输出中标注 `[npm] fallback registry: https://registry.npmmirror.com`。全败仍报 `NPM_INSTALL_FAILED`（HINT 说明已试过的两个源）。
+- `ep-coder/skills/gts-ep-coder/SKILL.md`: ⓪ 段三处修正——①"从 npmmirror 下载 portable node"改为"优先内网 manifest 下载；内网不通时自动回落到 skill 内置的 fallback manifest（npmmirror 包源，node v24.16.0）"；② 补一句 node 版本升级维护提示（升级 node 版本时同步更新 fallback-node-manifest.json 的 file/sha256/baseUrl，与内网 manifest 对齐）；③ 日志说明补 `[manifest] fallback` 行的含义（出现即代表走了内网回落）。
 
 ### 4.2 Signatures
 - `fallback-node-manifest.json` 结构（契约，Execute 按此生成）:
@@ -174,7 +174,7 @@
 
 ## 9. Project Sync Candidates
 - Stable project facts discovered:
-  - generate-ux-prototype 安装链路采用"内网 manifest 优先 + 本地 fallback manifest（npmmirror 包源）回落"双源结构；node 版本升级时需同步更新 `references/fallback-node-manifest.json` 的 file/sha256/baseUrl。
+  - gts-ep-coder 安装链路采用"内网 manifest 优先 + 本地 fallback manifest（npmmirror 包源）回落"双源结构；node 版本升级时需同步更新 `references/fallback-node-manifest.json` 的 file/sha256/baseUrl。
   - **npm ci / npm i 优先使用 `package-lock.json` 内嵌 `resolved` URL，`--registry`/`npm_config_registry` 被旁路**；依赖源切换必须删除 staged lock 触发 re-resolve。compiler `package-lock.json` 全部 resolved 硬编码内网镜像源（17 条）。这是本 skill 及任何依赖该 lock 的 npm 安装流程的可复用约束。
   - npm ci 的 content-addressable 缓存按 integrity 命中，未命中时才走网络——验证网络回落实测时需用空 cache（`NPM_CONFIG_CACHE`）才会真正触发网络失败。
 - Suggested destination:

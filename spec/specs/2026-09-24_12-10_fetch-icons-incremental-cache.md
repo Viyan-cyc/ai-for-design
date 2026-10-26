@@ -12,8 +12,8 @@
 ## 2. In Scope / Out of Scope
 
 **In Scope**
-- `ep-coder/skills/generate-ux-prototype/scripts/fetch-icons.mjs`（主改动）
-- `ep-coder/skills/generate-ux-prototype/SKILL.md`（③.5 节：重跑语义 + CACHED 字段判读）
+- `ep-coder/skills/gts-ep-coder/scripts/fetch-icons.mjs`（主改动）
+- `ep-coder/skills/gts-ep-coder/SKILL.md`（③.5 节：重跑语义 + CACHED 字段判读）
 
 **Out of Scope（用户明确排除）**
 - 裁决点 1：匹配兜底策略——**保留最高分兜底，不改 exact-only**
@@ -46,8 +46,8 @@
 
 ### File Changes
 
-- `ep-coder/skills/generate-ux-prototype/scripts/fetch-icons.mjs` —— 四处修改（见 Signatures）
-- `ep-coder/skills/generate-ux-prototype/SKILL.md` —— ③.5 节两处小改
+- `ep-coder/skills/gts-ep-coder/scripts/fetch-icons.mjs` —— 四处修改（见 Signatures）
+- `ep-coder/skills/gts-ep-coder/SKILL.md` —— ③.5 节两处小改
 
 ### Signatures（fetch-icons.mjs 内部函数级变更）
 
