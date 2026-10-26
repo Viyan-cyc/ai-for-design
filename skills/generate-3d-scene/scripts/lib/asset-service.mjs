@@ -8,7 +8,7 @@ import { receive, outsideSkill, safePath, atomicJSON, loadPackage, readJSON, lim
 const DEFAULT_TOKEN = 'octo_vs_5e2ef6429611ff3c39efc7cddf86d035';
 const DEFAULT_CONFIG = {
   endpoint: 'https://octo.hdesign.huawei.com/lib-resource-service/api/vector/search',
-  filters: { source_id: 16, group_id: 972 },
+  filters: { source_id: 22, group_id: 1116 },
   allowedOrigins: ['https://octo.hdesign.huawei.com'],
   authOrigins: ['https://octo.hdesign.huawei.com'],
   topK: 5,
