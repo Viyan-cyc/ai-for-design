@@ -21,6 +21,21 @@
 | 页面内持续的重要提示 | 警告 Alert | ElAlert |
 | 要求确认或处理独立任务 | 对话框 Dialog | ElDialog ★ |
 
+## 高频组件使用要点
+
+只读取本页使用的条目；熟悉EP API不能代替GTS使用约定。以下摘自对应GTS组件规范（源路径见后文映射表），未覆盖的细节按需查原条款。样式状态由组件和桥接层提供，不据此手写组件皮肤；示例仅在API或结构不确定时读取。
+
+| 组件 | GTS使用要点 | 按需示例 |
+| --- | --- | --- |
+| ElButton | 每组最多一个主要按钮，主要操作通常在右侧。单列表单底部操作左对齐；弹窗、抽屉、多列表单底部操作右对齐。图标按钮允许使用，并提供可访问名称及说明；提交中阻止重复触发。 | [ElButton.vue](../components/ElButton.vue) |
+| ElLink | 用于真实跳转；独立链接默认无下划线、悬停出现，段落内链接默认带下划线，字号随上下文。没有目的地时不以 `href="#"` 冒充已实现导航。 | 无独立示例；属性按实际版本核对 |
+| ElInput / ElSelect | 输入项保留标签，placeholder说明输入要求；错误说明原因和修正方法。选择器不混入命令操作、不把分组标题做成可选项；需用户明确同意时不预选。 | [ElInput.vue](../components/ElInput.vue)、[ElSelect.vue](../components/ElSelect.vue) |
+| ElForm / ElFormItem | 标签较长、多语言或宽度不足时优先上下布局；同层标签对齐一致，字段错误就近展示，placeholder不代替标签。校验与提交按代码规则实现，保持只读与禁用语义。 | [ElForm.vue](../components/ElForm.vue) |
+| ElTable / ElTableColumn | 全局操作、批量操作、行操作分别明确归属；批量操作显示已选范围，筛选和排序状态保持可见。操作区、表格和分页之间用 `--space-size-16`；列内内容排列一致，不汇总不同计量单位的数据。 | [ElTable.vue](../components/ElTable.vue) |
+| ElPagination | 与所控数据区域相邻；每页通常10条，单页可隐藏，窄区域按需使用简化分页；无效翻页禁用。数据查询、重置及切页大小时的页码同步按代码规则处理。 | [ElPagination.vue](../components/ElPagination.vue) |
+| ElDialog | 确认、短表单或简单流程用对话框；高危确认默认不勾选，确认前禁用执行，默认焦点在取消。关闭与取消等效，重要风险说明不藏进滚动区；一列窄弹窗不挤多列表单。 | [ElDialog.vue](../components/ElDialog.vue) |
+| ElDrawer | 需要同时操作原页面时使用非模态；独立任务可用模态，遮罩下页面不可操作。多层钻取关闭后保留上一级状态，同类任务关闭方式一致。 | [ElDrawer.vue](../components/ElDrawer.vue) |
+
 ## 通用类（4）
 
 | GTS 组件 | GTS 规范路径 | Element Plus 组件 |

@@ -45,10 +45,16 @@ token 全量定义在皮肤文件 `src/assets/themes/default.less`（375 个自�
 | 边框 | `--color-border` |
 | 成功 / 错误 | `--color-success` / `--color-error` |
 | 小间距 | `--space-size-8` / `--space-size-12` |
-| 常规间距 | `--space-size-16` / `--space-size-24` |
+| 按钮组、表格与分页间距、栅格槽宽 | `--space-size-16` |
+| 框架内容左右边距 | `--space-size-20` |
+| 表单标题与首个字段间距 | `--space-size-24` |
+| 表单字段组纵向间距 | `--space-size-20` |
+| 表单标签与控件间距 | `--space-size-8` |
 | 正文 / 小标题 | `--font-size-normal` / `--font-size-normal1` |
 | 常规圆角 | `--radius-size-normal` |
 | 常规投影 | `--shadow-1` |
+
+间距用途来自GTS页面布局、按钮、表格和表单规范；用于组织页面或自有容器，组件已经提供的内部间距不重复覆盖。
 
 名称或用途不确定时，可用 `node scripts/query-tokens.mjs "次要文本" "边框" "--color-brand" --limit 5` 一次批量查询；返回真实候选、用途和值，未命中明确列出。只复制返回名称，不拼接前后缀；结果截断时缩小关键词，不因此读完整目录。已有准确名称就直接写，不强制查询。 多个参数分别查询；同一参数内空格表示同时满足，查不同用途请分参数。常用中文词可归一化为候选类别，未命中会给分类提示；准确名称不自动纠正。 完整数据在 [分类目录](token-catalog.md)，仅在查询结果不足时定向读取。
 
