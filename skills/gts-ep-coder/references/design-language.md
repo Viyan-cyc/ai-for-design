@@ -1,63 +1,16 @@
 # design-language 消费指南（skill 内参考）
 
-> 真值源是 `design-language/样式Token/设计系统.md`（token 表）与 `design-language/设计规范/组件库适配.md`（接入规则）。
-> 本文件是面向生成 agent 的**消费视图**：浓缩 token 速查、EP 桥接映射和页面协议；数值以真值源为准，冲突时真值源胜出。
+> 本文件说明 EP 主题接入与页面样式规则；准确 token 名称与用途统一见 [token 参考](token-catalog.md)。
+> 原始 `design-language/` 是维护源，不随 skill 分发；生成页面只使用包内资料，不要求查找外部路径。
 
 ## 1. token 体系总览
 
 <!-- GEN:TOKEN-TABLE START (由 scripts/gen-tokens.mjs 生成，勿手改) -->
 
-token 全量定义在皮肤文件 `src/assets/themes/default.less`（375 个自定义属性，由 `scripts/gen-tokens.mjs` 从设计文档生成），命名即 design-language 规范名，无前缀：
-
-| 类别 | token 形态 | 示例 |
-| --- | --- | --- |
-| 品牌色 | `--color-brand(-hover/-active/-focus/-disabled)` | `--color-brand: #0067d1` |
-| 文本色 | `--color-text-*`、`--color-link-*` | `--color-text-primary: #191919` |
-| 图标色 | `--color-icon-*` | `--color-icon-secondary: #777777` |
-| 边框色 | `--color-border(-hover/-focus/...)` | `--color-border: #c9c9c9`（gray-20） |
-| 背景色 | `--color-bg-1..6`、`--color-bg-mask` | `--color-bg-1: #f3f3f3`（页面背景） |
-| 填充色 | `--color-hover/-select/-fill*` | `--color-select: #e6f2fd`（brand-05） |
-| 功能色 | `--color-{error\|alert\|warning\|success\|info-primary\|info-secondary\|none}*`（状态按目录取；info仅基础/subtle，warning另有strong） | `--color-success: #09aa71` |
-| 基础色板 | `--{rose\|red\|orange\|yellow\|green\|mint\|cyan\|blue\|indigo\|purple\|pink\|brand\|gray}-{05..90}` | `--brand-50` |
-| 图表色 | `--color-chart-1..11(+accessible)` | `--color-chart-1: #2070f3` |
-| 间距 | `--space-size-{4\|8\|12\|16\|20\|24\|32\|40\|48\|56\|64\|72\|80}`（紧凑档 `data-density="compact"` 覆盖） | `--space-size-16: 16px` |
-| 圆角 | `--radius-size-{small\|normal\|medium\|big\|big1\|big2\|full\|infinity}` | `--radius-size-normal: 4px` |
-| 边框宽/线型 | `--border-width-{none\|normal\|medium\|independent}`、`--border-style-*` | `--border-width-medium: 2px` |
-| 字体 | `--font-family(-zh/-en/-numeric)` | 'HarmonyOS Sans', 'Microsoft YaHei', 'PingFang SC', Arial, sans-serif |
-| 字号/行高 | `--font-size-*` + `--font-line-height-*` 成对 | `--font-size-normal: 14px` + `22px` |
-| 字重 | `--font-weight-{light\|normal\|bold}` = 300/400/600 | 标题 600 |
-| 投影 | `--shadow-*`（10个，含方向变体；准确名见目录） | `--shadow-1: 0 1px 3px 0 rgba(0, 0, 0, 0.1)` |
-| 毛玻璃 | `--frost-*` | 材质扩展场景成套取用 |
+准确名称、常用用途与分类条目统一见 [token 参考](token-catalog.md)。页面使用 var(--token-name)，不按系列拼接名称。
+普通 EP 组件直接使用桥接主题；只有自定义布局和样式需要额外选择 token。
 
 <!-- GEN:TOKEN-TABLE END -->
-
-### 常用用途速查
-
-以下为实际可用键名，直接按用途取用；分类表中的范围仅作命名示意，不表示范围内每个名称都存在。
-
-| 用途 | 准确 token |
-| --- | --- |
-| 品牌动作 | `--color-brand` |
-| 主文字 | `--color-text-primary` |
-| 次文字 | `--color-text-secondary` |
-| 页面背景 | `--color-bg-1` |
-| 容器背景 | `--color-bg-2` |
-| 边框 | `--color-border` |
-| 成功 / 错误 | `--color-success` / `--color-error` |
-| 小间距 | `--space-size-8` / `--space-size-12` |
-| 按钮组、表格与分页间距、栅格槽宽 | `--space-size-16` |
-| 框架内容左右边距 | `--space-size-20` |
-| 表单标题与首个字段间距 | `--space-size-24` |
-| 表单字段组纵向间距 | `--space-size-20` |
-| 表单标签与控件间距 | `--space-size-8` |
-| 正文 / 小标题 | `--font-size-normal` / `--font-size-normal1` |
-| 常规圆角 | `--radius-size-normal` |
-| 常规投影 | `--shadow-1` |
-
-间距用途来自GTS页面布局、按钮、表格和表单规范；用于组织页面或自有容器，组件已经提供的内部间距不重复覆盖。
-
-名称或用途不确定时，可用 `node scripts/query-tokens.mjs "次要文本" "边框" "--color-brand" --limit 5` 一次批量查询；返回真实候选、用途和值，未命中明确列出。只复制返回名称，不拼接前后缀；结果截断时缩小关键词，不因此读完整目录。已有准确名称就直接写，不强制查询。 多个参数分别查询；同一参数内空格表示同时满足，查不同用途请分参数。常用中文词可归一化为候选类别，未命中会给分类提示；准确名称不自动纠正。 完整数据在 [分类目录](token-catalog.md)，仅在查询结果不足时定向读取。
-
 
 关键守则（真值源 §0）：
 

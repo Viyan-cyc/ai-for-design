@@ -1,7 +1,7 @@
 ---
 name: gts-ep-coder
 description: 根据用户需求生成 Vue 3 + Element Plus 2.13.5 页面（.vue SFC），样式严格遵循 design-language 设计 token；输出离线可开的双击即看 HTML 预览与可拷入真实工程的 src/ 源码。做页面、改页面、看效果时使用。
-version: 0.2.3
+version: 0.2.4
 ---
 
 # gts-ep-coder
@@ -38,7 +38,7 @@ version: 0.2.3
 > build失败按“验证失败与重试上限”集中修复；若修复改变图标引用，再执行③.5。
 
 脚本都在本 skill 的 `scripts/` 下，**除 ⓪ 的安装脚本外都要 node 才能跑**。
-工作流脚本的输出采用以下格式，**先读 `RESULT:` 那一行再决定下一步**（可选的 `query-tokens.mjs` 返回 JSON，读取其 `result` 与每项 `status`）：
+工作流脚本的输出采用以下格式，**先读 `RESULT:` 那一行再决定下一步**：
 
 ```
 RESULT: OK
@@ -129,7 +129,7 @@ main.js、api 服务层示例、主题三件套、starter 页面）。
 
 代码规则必读；下面的token目录、组件API与详细示例才按需查询，每次查询解决一个具体不确定项：
 
-- **Token**：先复用已核实名称或常用速查。名称或用途不确定时，可用 `node scripts/query-tokens.mjs "次要文本" "边框" "--color-brand" --limit 5` 一次批量查询；返回真实候选、用途和值，未命中明确列出。只复制返回名称，不拼接前后缀；结果截断时缩小关键词，不因此读完整目录。已有准确名称就直接写，不强制查询。 多个参数分别查询；同一参数内空格表示同时满足，查不同用途请分参数。常用中文词可归一化为候选类别，未命中会给分类提示；准确名称不自动纠正。
+- **Token**：准确名称与用途只查 `references/token-catalog.md`：首次需要自定义样式时读开头的常用用途速查；已有已核实名称直接复用。不常用的按用途或准确名称搜索，只读命中行和必要分类，不默认读取完整目录，不拼接名称。组件自身状态样式使用桥接主题，无需逐项选 token。
 - **组件**：选定组件后，在 `vendor/vue-skill/references/components_index.md` 的“高频组件使用要点”定向读取本页所用条目；同版本已在当前上下文则复用，不读取其他条目。API写法不确定再查对应示例的属性、插槽或事件；已有答案即停。未列入要点的组件只在选型、GTS规则或API有疑问时查对应映射，不从其他组件推断API。
 - **布局**：需要结构参考时才查 `vendor/code-example/references/README.md` 或 `vendor/vue-skill/templates/README.md`，选一个合适起点；没有合适项就按需求编写，不继续遍历示例库。示例的数据、slot和接口占位按业务补全。
 - **规则与自查**：按上面的必读约定执行；自查覆盖全部适用规则，不以“没有报错”跳过。需要错误示例解释时才查 `error-checklist.md`，不用反复阅读同一示例。
@@ -329,7 +329,7 @@ build的编译/token错误在重试额度内修复，达到上限或提前停止
 - **自适应纪律**：布局容器禁写死总宽（内容流式，控件固有定宽配 `max-width: 100%` 兜底）；
   字体禁用 vw/vh 视口缩放；多卡片用响应式栅格（细则见 code-rules 第十二节）。
   build 会对 `zoom` 与 font-size vw/vh 出 WARN。
-- token 速查与协议见 `references/design-language.md`；组件/导出/图标白名单见
+- token 名称与用途见 `references/token-catalog.md`，样式协议见 `references/design-language.md`；组件/导出/图标白名单见
   `scripts/verify/whitelists/*.json`（EP 2.13.5：118 组件 / 534 导出 / 293 图标）。
 
 #### UMD 运行时已知坑（预览跑 UMD、真实工程跑构建工具，行为有差异——按下面写法写两边都稳）

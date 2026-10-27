@@ -1,9 +1,34 @@
-# 完整 token 目录
+# Token 参考
 
-> 由 scripts/gen-tokens.mjs 生成，勿手改。先查常用速查；不足时按用途搜索本文件，只读命中行及必要的分类上下文，满足需求即停止。不要默认全量读取。
+> 由 scripts/gen-tokens.mjs 生成，勿手改。先读本文件的常用用途速查；不确定时用已有文件搜索按用途或准确名称定位，只读命中行及必要的分类上下文。多个用途可一次搜索；找到答案即停，不全量读取，不安装额外工具。
 
 共 375 个公共名称；浅色/深色同名，仅实际值随主题变化。内部桥接变量 --ux-mix-base 不作为页面候选。
 使用 var(--token-name)；代码配色 -dark 用于深色代码区。
+
+## 常用用途速查
+
+以下为实际可用键名，直接按用途取用；不要从名称规律推导其他键。
+
+| 用途 | 准确 token |
+| --- | --- |
+| 品牌动作 | `--color-brand` |
+| 主文字 | `--color-text-primary` |
+| 次文字 | `--color-text-secondary` |
+| 页面背景 | `--color-bg-1` |
+| 容器背景 | `--color-bg-2` |
+| 边框 | `--color-border` |
+| 成功 / 错误 | `--color-success` / `--color-error` |
+| 小间距 | `--space-size-8` / `--space-size-12` |
+| 按钮组、表格与分页间距、栅格槽宽 | `--space-size-16` |
+| 框架内容左右边距 | `--space-size-20` |
+| 表单标题与首个字段间距 | `--space-size-24` |
+| 表单字段组纵向间距 | `--space-size-20` |
+| 表单标签与控件间距 | `--space-size-8` |
+| 正文 / 小标题 | `--font-size-normal` / `--font-size-normal1` |
+| 常规圆角 | `--radius-size-normal` |
+| 常规投影 | `--shadow-1` |
+
+间距用途来自GTS页面布局、按钮、表格和表单规范；用于组织页面或自有容器，组件已经提供的内部间距不重复覆盖。
 
 ## 分类索引
 

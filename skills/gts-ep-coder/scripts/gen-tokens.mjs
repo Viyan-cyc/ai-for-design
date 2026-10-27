@@ -481,32 +481,11 @@ const pick = (arr, name, key = 'name') => arr.find((t) => t[key] === name);
 // 324 口径随统一表演进：default.less 声明数 − 紧凑档覆盖（同名 token 二次赋值）
 const uniqueTokens = totalTokens - spacing.length;
 const genTable = [
-  GEN_START,
-  '',
-  `token 全量定义在皮肤文件 \`src/assets/themes/default.less\`（${uniqueTokens} 个自定义属性，由 \`scripts/gen-tokens.mjs\` 从设计文档生成），命名即 design-language 规范名，无前缀：`,
-  '',
-  '| 类别 | token 形态 | 示例 |',
-  '| --- | --- | --- |',
-  `| 品牌色 | \`--color-brand(-hover/-active/-focus/-disabled)\` | \`--color-brand: ${pick(buckets.brand, 'color-brand')?.light}\` |`,
-  `| 文本色 | \`--color-text-*\`、\`--color-link-*\` | \`--color-text-primary: ${pick(buckets.text, 'color-text-primary')?.light}\` |`,
-  '| 图标色 | `--color-icon-*` | `--color-icon-secondary: #777777` |',
-  '| 边框色 | `--color-border(-hover/-focus/...)` | `--color-border: #c9c9c9`（gray-20） |',
-  '| 背景色 | `--color-bg-1..6`、`--color-bg-mask` | `--color-bg-1: #f3f3f3`（页面背景） |',
-  '| 填充色 | `--color-hover/-select/-fill*` | `--color-select: #e6f2fd`（brand-05） |',
-  '| 功能色 | `--color-{error|alert|warning|success|info-primary|info-secondary|none}*`（状态按目录取；info仅基础/subtle，warning另有strong） | `--color-success: #09aa71` |',
-  '| 基础色板 | `--{rose|red|orange|yellow|green|mint|cyan|blue|indigo|purple|pink|brand|gray}-{05..90}` | `--brand-50` |',
-  '| 图表色 | `--color-chart-1..11(+accessible)` | `--color-chart-1: #2070f3` |',
-  `| 间距 | \`--space-size-{4|8|12|16|20|24|32|40|48|56|64|72|80}\`（紧凑档 \`data-density="compact"\` 覆盖） | \`--space-size-16: ${pick(spacing, 'space-size-16')?.reg}px\` |`,
-  '| 圆角 | `--radius-size-{small|normal|medium|big|big1|big2|full|infinity}` | `--radius-size-normal: 4px` |',
-  '| 边框宽/线型 | `--border-width-{none|normal|medium|independent}`、`--border-style-*` | `--border-width-medium: 2px` |',
-  "| 字体 | `--font-family(-zh/-en/-numeric)` | 'HarmonyOS Sans', 'Microsoft YaHei', 'PingFang SC', Arial, sans-serif |",
-  `| 字号/行高 | \`--font-size-*\` + \`--font-line-height-*\` 成对 | \`--font-size-normal: ${pick(fontSizes, 'font-size-normal', 'fs')?.size}\` + \`${pick(fontSizes, 'font-size-normal', 'fs')?.height}\` |`,
-  `| 字重 | \`--font-weight-{light|normal|bold}\` = ${fontWeight.map((t) => t.weight).join('/')} | 标题 600 |`,
-  `| 投影 | \`--shadow-*\`（10个，含方向变体；准确名见目录） | \`--shadow-1: ${pick(shadows, 'shadow-1')?.val}\` |`,
-  '| 毛玻璃 | `--frost-*` | 材质扩展场景成套取用 |',
-  '',
+  GEN_START, '',
+  '准确名称、常用用途与分类条目统一见 [token 参考](token-catalog.md)。页面使用 var(--token-name)，不按系列拼接名称。',
+  '普通 EP 组件直接使用桥接主题；只有自定义布局和样式需要额外选择 token。', '',
   GEN_END,
-].map(line => line.replace(/`[^`]*`/g, span => span.replace(/\|/g, '\\|'))).join('\n');
+].join('\n');
 
 // ---------- 组装 dark.less ----------
 // 全量皮肤：data-theme="dark" 时 default.less 全部定义失效，深色皮肤必须提供
@@ -715,10 +694,37 @@ for (const [name, entry] of publicLight) {
   catalogGroups.get(title).push({ name, purpose, light: entry.value, dark: publicDark.get(name).value });
 }
 const catalogLines = [
-  '# 完整 token 目录', '',
-  '> 由 scripts/gen-tokens.mjs 生成，勿手改。先查常用速查；不足时按用途搜索本文件，只读命中行及必要的分类上下文，满足需求即停止。不要默认全量读取。', '',
+  '# Token 参考', '',
+  '> 由 scripts/gen-tokens.mjs 生成，勿手改。先读本文件的常用用途速查；不确定时用已有文件搜索按用途或准确名称定位，只读命中行及必要的分类上下文。多个用途可一次搜索；找到答案即停，不全量读取，不安装额外工具。', '',
   `共 ${publicLight.size} 个公共名称；浅色/深色同名，仅实际值随主题变化。内部桥接变量 --ux-mix-base 不作为页面候选。`,
   '使用 var(--token-name)；代码配色 -dark 用于深色代码区。', '',
+  ...[
+    "## 常用用途速查",
+    "",
+    "以下为实际可用键名，直接按用途取用；不要从名称规律推导其他键。",
+    "",
+    "| 用途 | 准确 token |",
+    "| --- | --- |",
+    "| 品牌动作 | `--color-brand` |",
+    "| 主文字 | `--color-text-primary` |",
+    "| 次文字 | `--color-text-secondary` |",
+    "| 页面背景 | `--color-bg-1` |",
+    "| 容器背景 | `--color-bg-2` |",
+    "| 边框 | `--color-border` |",
+    "| 成功 / 错误 | `--color-success` / `--color-error` |",
+    "| 小间距 | `--space-size-8` / `--space-size-12` |",
+    "| 按钮组、表格与分页间距、栅格槽宽 | `--space-size-16` |",
+    "| 框架内容左右边距 | `--space-size-20` |",
+    "| 表单标题与首个字段间距 | `--space-size-24` |",
+    "| 表单字段组纵向间距 | `--space-size-20` |",
+    "| 表单标签与控件间距 | `--space-size-8` |",
+    "| 正文 / 小标题 | `--font-size-normal` / `--font-size-normal1` |",
+    "| 常规圆角 | `--radius-size-normal` |",
+    "| 常规投影 | `--shadow-1` |",
+    "",
+    "间距用途来自GTS页面布局、按钮、表格和表单规范；用于组织页面或自有容器，组件已经提供的内部间距不重复覆盖。",
+    "",
+  ],
   '## 分类索引', '', '| 分类 | 数量 |', '| --- | --- |',
   ...[...catalogGroups].filter(([, rows]) => rows.length).map(([title, rows]) => `| ${title} | ${rows.length} |`), '',
 ];
