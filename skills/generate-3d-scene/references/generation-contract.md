@@ -74,7 +74,7 @@ update 仅在 params 改变时调用；transform 更新由引擎完成。返回 
 | controls | type: OrbitControls、target、minDistance/maxDistance、minPolarAngle/maxPolarAngle、enablePan、autoRotate/autoRotateSpeed、enableDamping/dampingFactor、zoomSpeed |
 | renderer | toneMapping: NoToneMapping/Linear/Reinhard/Cineon/ACESFilmic/AgX/Neutral；exposure；shadowMap: Basic/PCF/PCFSoft/VSM；shadowMapEnabled；maxPixelRatio |
 
-保留模板的有效默认值，只修改场景确实需要的字段。纯几何需求不要求评估组件目录；确定需要某个现成组件时才查对应条目。正常生成不读 build.mjs/init.mjs 源码来猜接口。
+模板舞台是小场景起点：按实际业务范围设置相机、控制距离、光源位置及阴影覆盖，不能直接沿用固定范围。其他有效默认值可保留。纯几何需求不要求评估组件目录；确定需要某个现成组件时才查对应条目。正常生成不读 build.mjs/init.mjs 源码来猜接口。
 
 ## 组合体与贴图复用
 
@@ -89,8 +89,8 @@ update 仅在 params 改变时调用；transform 更新由引擎完成。返回 
 ## 资产与布局
 
 - 默认必须先执行主要对象的批量检索，再编写未匹配对象的几何 handler。仅用户明确要求纯几何/不用模型库时跳过；低多边形、工业风格和速度要求不能作为跳过理由。已确认上传包覆盖的对象不重复查库，地面/墙体/标线等基础结构可直接几何。
-- 将缺少的对象类别写入 UTF-8 文件，执行 `node scripts/search-assets.mjs --batch <查询文件> --brief --json`；同类实例仅查一次。依据候选名称/用途选型，不仅看分数；匹配则下载检查注入，无合适候选或请求失败才降级。未调用不得说未命中，请求失败不得说库里没有。不循环改词穷搜。
-- 用户包及库模型按 designer-assets.md 接收、确认、下载、注入；无包时直接检索，纯几何跳过。PowerShell 查询文件使用 UTF-8。
+- 将缺少的对象类别写入 UTF-8 文件，执行 `node scripts/search-assets.mjs --batch <查询文件> --brief --json`；同类实例仅查一次。依据候选名称/用途选型，不仅看分数；匹配的库模型直接下载注入，无合适候选或请求失败才降级。未调用不得说未命中，请求失败不得说库里没有。不循环改词穷搜。
+- 用户上传包按 designer-assets.md 接收检查并确认；库模型直接下载注入，不要求浏览器报告；无包时直接检索，纯几何跳过。PowerShell 查询文件使用 UTF-8。
 - 默认检索来自内网，不再读取 skill 内置模型。文件及依赖物化到工程，运行时离线。未配置检索时如实提示并按需求几何降级。
 - 具体尺寸和编辑限制读取模型包 list/package.json，单位未确认时不得宣称为真实米制。向量分数不是匹配正确率。
 - `layout-nodes.mjs <patterns.json> <groups.json>` 展开阵列、堆叠或沿直线排列；将结果分组合并进 scene-data，保留舞台配置。例如：
@@ -144,3 +144,8 @@ PowerShell 文本读写显式指定 UTF-8，优先宿主编辑工具；不因终
 ## 统一坐标约定
 
 场景和资产使用右手坐标系、+Y 向上、+Z 为资产正面、长度单位米。标准落地资产以底部中心为原点，根节点 position/rotation 为零、scale 为一；不要通过逐模型隐式补偿宣称已标准化。相机局部 -Z 观察方向保持引擎原生约定。未确认的历史资产不能仅标记为米制或已符合正面/原点标准。
+
+
+### 组合体命名与结束顺序
+同一 builder 内 mesh/batchSlot 名称唯一，格式为小写字母开头及小写字母、数字、下划线。循环中的独立零件用稳定业务索引或 neg_z/pos_z 等方向名，不直接插入坐标、负号或小数。整体编辑的重复零件在循环外创建一次 batchSlot，循环内 add。所有槽位（包括文字）添加完成后最后调用一次 finish，再 applyTransform 和 return。
+统一构建增加组合体源码检查：直接调用的字面量名称、明确数组循环中的固定名称/负号插值、直接语句 finish 后调用。它不是运行验证，不覆盖别名、跨函数、条件路径和所有动态表达式；不能据此声称全部 handler 已运行成功。

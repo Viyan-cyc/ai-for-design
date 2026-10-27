@@ -22,7 +22,7 @@ version: 0.1.0
 
 ## 默认生成路径
 
-1. 读 `references/generation-contract.md`，再按需要选一个样例。普通生成不通读引擎、编辑器、材质系统或构建脚本。
+1. 读 `references/generation-contract.md`，再读 `references/scene-design-examples/README.md`，仅选一个风格与一个领域示例。普通生成不通读引擎、编辑器、材质系统或构建脚本。
 2. 会话首次运行 `node scripts/ensure-env.mjs`；缺环境按 HINT 安装。无 Node 时按速查中的 install 脚本处理。依赖位于外部环境，不在 skill/template 安装。
 3. 上传包可选：无包时直接内网检索；有包时按 references/designer-assets.md 全量接收并生成单页模型清单（index.3d-model 卡片），名称自动预填、用户在页面检查、反复更新模型、命名、确认正面/尺寸及性能预算；默认全部使用，全部就绪后下载 models.3d.zip（内含模型和清单）。Agent 执行 import-delivery <原包目录> <回传ZIP> --out <新目录> 校验并导入，优先使用该包模型，缺项才查库。仅检查而本轮无场景需求时，导入成功后回复准备好并停止；重复收到同一清单不重复生成场景。优先在页面“更新模型”；用户另传完整新包时才用 update-package 保留填写内容（见 designer-assets.md）。明确纯几何时跳过检索。未命中及时降级，不循环穷搜。
 4. `node scripts/init.mjs <工程目录> --profile empty --assets referenced --deps shared --defer-build`。模型确认后用 designer-assets inject 注入资源，或 --asset-package 指定已确认资产包；skill 不携带模型库。需组件时加 --with-components，由 init 准备独立依赖。
@@ -36,7 +36,7 @@ version: 0.1.0
 已确认用户模型包 → 内网合适模型 → 匹配的现成组件 → 复用 procedural 或自定义几何。
 
 - 开始编写主要业务对象的几何 handler 前，先从需求提取对象类别（如叉车、货架、集装箱），扣除已确认上传包中已匹配的类别，将剩余类别写入 UTF-8 查询文件，一次执行 `node scripts/search-assets.mjs --batch <查询文件> --brief --json`。不同数量/位置的同类对象不重复查询；无需用户提醒或批准检索。
-- 根据实际返回候选的名称、用途和模型信息判断匹配；匹配者进入下载、检查、注入流程。向量分数高不等于类别正确。没有合适候选才使用组件/几何；请求失败允许降级，但必须说明“检索失败”，不能说“库中没有”。未执行检索不得声称“未命中”。
+- 根据实际返回候选的名称、用途和模型信息判断匹配；匹配的库模型直接下载并注入，不重复检查。向量分数高不等于类别正确。没有合适候选才使用组件/几何；请求失败允许降级，但必须说明“检索失败”，不能说“库中没有”。未执行检索不得声称“未命中”。
 - 已确认上传包覆盖全部主要对象时不重复查库；地面、墙体、标线等基础结构可直接几何生成，不必为它们查询。组件已经存在、几何更方便、用户要求快速生成，都不是跳过主要对象检索的理由。
 - 交付时简短说明哪些主要对象用了模型、哪些使用几何及降级原因；不生成额外报告，不新增构建门禁、浏览器验收或循环改词重试。配置与下载见 designer-assets.md。
 - 检索库只存已审核可用模型。候选类别匹配后直接 download → inject 并在场景使用；不执行 preview/import-check/accept-remote，不要求浏览器报告或用户确认。不得因缺少检查报告改用几何体；只有无合适候选或实际下载/依赖解析失败才降级并说明原因。
@@ -77,6 +77,7 @@ version: 0.1.0
 | 需求 | 入口 |
 |---|---|
 | 上传模型包、内网模型和入库 ZIP | references/designer-assets.md |
+| 场景风格、构图与领域布局 | references/scene-design-examples/README.md → 一个风格＋一个领域 |
 | 普通生成、接口和样例 | references/generation-contract.md |
 | 默认流程的补充说明 | references/scene-workflow.md |
 | 自定义轮廓与精细建模 | references/modeling-channels.md |
@@ -84,8 +85,8 @@ version: 0.1.0
 | 生产数据接入或架构排障 | references/scene-engineering.md |
 | 资产导入、检索库维护 | references/asset-pipeline.md |
 | 模型入库规格 | references/model-spec.md |
-| 源码仓库维护/用户明确要求诊断 | references/verification.md（所需维护脚本不在精简发布包内） |
 
 用户要求服务联调时使用工程 npm run dev；要求不含编辑器的源码时使用 scripts/strip-edit.mjs；部署按目标环境构建。上述均非默认生成步骤。
 
-维护发布使用 `node scripts/pack-skill.mjs <skill目录外的zip路径>`。依赖树、构建产物、缓存及维护测试不入包。不要为让场景通过而修改 skill 的校验脚本。
+
+不要为让场景通过而修改 skill 的校验脚本。

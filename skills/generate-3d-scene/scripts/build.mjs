@@ -1,3 +1,4 @@
+import { checkCompositeSource } from './lib/composite-check.mjs';
 /**
  * build.mjs — 工程构建门禁（结构扫描 + 三条铁律 + import 白名单 + 场景预算静态估算）
  *
@@ -303,6 +304,7 @@ export const checkProject = (dir, opts = {}) => {
   }
 
   /* 5. import 白名单：src/** 裸模块导入 */
+  for (const file of srcFiles) errors.push(...checkCompositeSource(readFileSync(file, "utf8"), relative(root,file)));
   const imports = { ok: true, violations: [] };
   for (const file of srcFiles) {
     for (const { spec, line } of extractImports(readFileSync(file, 'utf8'))) {
