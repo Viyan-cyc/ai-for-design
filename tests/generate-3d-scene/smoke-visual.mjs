@@ -17,7 +17,7 @@
  *   退出码：0 四张产出 / 1 缺失 / 2 CDP 环境不可用
  *
  * 注意：本脚本只负责产出截图。看图判定由多模态 LLM 做（读 PNG 判比例/遮挡/漂浮/配色），
- * 断言清单见 references/verification.md。
+ * 断言清单见 docs/generate-3d-scene/verification.md。
  */
 import { mkdirSync, existsSync, statSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';

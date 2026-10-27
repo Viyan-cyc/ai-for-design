@@ -5,9 +5,10 @@ import { fileURLToPath } from 'node:url';
 import { writeZip } from '../../skills/generate-3d-scene/scripts/import-assets.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '../../skills/generate-3d-scene');
-const dest = process.argv[2] && resolve(process.argv[2]);
+const checkOnly = process.argv[2] === '--check';
+const dest = !checkOnly && process.argv[2] && resolve(process.argv[2]);
 const inside = (path) => { const rel = relative(root, path); return rel === '' || (!isAbsolute(rel) && rel !== '..' && !rel.startsWith(`..${sep}`)); };
-if (!dest || inside(dest)) throw new Error('Provide a ZIP output path outside the skill directory');
+if (!checkOnly && (!dest || inside(dest))) throw new Error('Provide a ZIP output path outside the skill directory');
 const excluded = new Set(['node_modules', 'dist', 'offline', '.cache', '.git', '__pycache__']);
 const roots = ['SKILL.md', 'README.md', 'scripts', 'references', 'template', 'vendor'];
 const files = [];
@@ -24,6 +25,9 @@ function walk(path, name) {
 for (const name of roots) {
   try { walk(join(root, name), name); } catch (e) { if (e.code !== 'ENOENT') throw e; }
 }
-mkdirSync(dirname(dest), { recursive: true });
-writeZip(files, dest);
-console.log(`RESULT: OK\nZIP_PATH: ${dest}\nFILES: ${files.length}`);
+if (checkOnly) console.log(`RESULT: OK\nFILES: ${files.length}\nMODE: check-only (no ZIP written)`);
+else {
+ mkdirSync(dirname(dest), { recursive: true });
+ writeZip(files, dest);
+ console.log(`RESULT: OK\nZIP_PATH: ${dest}\nFILES: ${files.length}`);
+}

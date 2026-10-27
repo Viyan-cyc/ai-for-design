@@ -22,7 +22,7 @@ version: 0.1.0
 
 ## 默认生成路径
 
-1. 读 `references/generation-contract.md`，再读 `references/scene-design-examples/README.md`，仅选一个风格与一个领域示例。普通生成不通读引擎、编辑器、材质系统或构建脚本。
+1. 读 `references/generation-contract.md`，再读 `references/scene-design-examples/README.md`，读取共享规范与命中的领域方案。普通生成不通读引擎、编辑器、材质系统或构建脚本。
 2. 会话首次运行 `node scripts/ensure-env.mjs`；缺环境按 HINT 安装。无 Node 时按速查中的 install 脚本处理。依赖位于外部环境，不在 skill/template 安装。
 3. 上传包可选：无包时直接内网检索；有包时按 references/designer-assets.md 全量接收并生成单页模型清单（index.3d-model 卡片），名称自动预填、用户在页面检查、反复更新模型、命名、确认正面/尺寸及性能预算；默认全部使用，全部就绪后下载 models.3d.zip（内含模型和清单）。Agent 执行 import-delivery <原包目录> <回传ZIP> --out <新目录> 校验并导入，优先使用该包模型，缺项才查库。仅检查而本轮无场景需求时，导入成功后回复准备好并停止；重复收到同一清单不重复生成场景。优先在页面“更新模型”；用户另传完整新包时才用 update-package 保留填写内容（见 designer-assets.md）。明确纯几何时跳过检索。未命中及时降级，不循环穷搜。
 4. `node scripts/init.mjs <工程目录> --profile empty --assets referenced --deps shared --defer-build`。模型确认后用 designer-assets inject 注入资源，或 --asset-package 指定已确认资产包；skill 不携带模型库。需组件时加 --with-components，由 init 准备独立依赖。
@@ -77,7 +77,7 @@ version: 0.1.0
 | 需求 | 入口 |
 |---|---|
 | 上传模型包、内网模型和入库 ZIP | references/designer-assets.md |
-| 场景风格、构图与领域布局 | references/scene-design-examples/README.md → 一个风格＋一个领域 |
+| 场景风格、构图与领域布局 | references/scene-design-examples/README.md → 共享规范＋命中领域 |
 | 普通生成、接口和样例 | references/generation-contract.md |
 | 默认流程的补充说明 | references/scene-workflow.md |
 | 自定义轮廓与精细建模 | references/modeling-channels.md |

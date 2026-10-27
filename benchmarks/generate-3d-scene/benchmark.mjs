@@ -12,7 +12,7 @@
  *   - search.batch      批量检索（可选 --queries）
  *
  * 用法：
- *   node scripts/benchmark.mjs --project <dir> [--runs 3] [--out <report.json>]
+ *   node benchmarks/generate-3d-scene/benchmark.mjs --project <dir> [--runs 3] [--out <report.json>]
  *                              [--with-export] [--queries <file>] [--keep]
  *   --runs N          重复次数（默认 3；取 median，输出逐次明细）
  *   --keep            保留临时导出目录
@@ -46,7 +46,7 @@ const WITH_EXPORT = flag('--with-export');
 const KEEP = flag('--keep');
 
 if (flag('--help') || flag('-h')) {
-  console.log(`用法: node scripts/benchmark.mjs --project <dir> [--runs 3] [--out <report.json>]
+  console.log(`用法: node benchmarks/generate-3d-scene/benchmark.mjs --project <dir> [--runs 3] [--out <report.json>]
                         [--with-export] [--queries <file>] [--keep]`);
   process.exit(0);
 }
