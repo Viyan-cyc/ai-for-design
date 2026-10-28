@@ -21,6 +21,38 @@ try{
     assert(fs.existsSync(path.join(project,'index.gts-ep.html')));
     assert(!fs.existsSync(path.join(project,'index.gts.html')));
   });
+  test('resize delivery notices do not become boot failures; real errors stay visible',()=>{
+    const html=fs.readFileSync(path.join(project,'index.gts-ep.html'),'utf8');
+    const inline=html.match(/<script>\s*([\s\S]*?)<\/script>/)[1];
+    const prefix=inline.slice(0,inline.indexOf('            var ASSET_EXT'))+'})();';
+    function boot(hasSource=true){
+      const banner={textContent:'',style:{}};
+      const listeners={};
+      const window={addEventListener:(name,handler)=>{listeners[name]=handler;}};
+      if(hasSource)window.__UX_PROTO_SRC__={};
+      vm.runInNewContext(prefix,{window,document:{getElementById:()=>banner,documentElement:{setAttribute(){}}}});
+      return {banner,listeners};
+    }
+    for(const message of ['ResizeObserver loop completed with undelivered notifications.','ResizeObserver loop limit exceeded']){
+      const {banner,listeners}=boot();
+      listeners.error({message,error:null,preventDefault(){throw Error('must not cancel native event');}});
+      assert.equal(banner.textContent,'');
+      assert.notEqual(banner.style.display,'block');
+      listeners.error({message,error:new Error(message)});
+      assert.equal(banner.textContent,'预览加载失败：'+message);
+    }
+    for(const message of ['ReferenceError: missing is not defined','ResizeObserver callback failed','ResizeObserver loop limit exceeded in application']){
+      const {banner,listeners}=boot();listeners.error({message});
+      assert.equal(banner.textContent,'预览加载失败：'+message);
+    }
+    const {banner,listeners}=boot();
+    listeners.unhandledrejection({reason:new Error('ResizeObserver loop completed with undelivered notifications.')});
+    assert.equal(banner.style.display,'block');
+    const saved=banner.textContent;
+    listeners.error({message:'ResizeObserver loop limit exceeded',error:null});
+    assert.equal(banner.textContent,saved);
+    assert(boot(false).banner.textContent.includes('preview-data.js 缺失'));
+  });
   const baseline=path.join(work,'baseline');fs.cpSync(src,baseline,{recursive:true});
   const vue=(script="const title='ok'",template='<div>{{title}}</div>',style='')=>`<script setup>${script}</script><template>${template}</template><style scoped lang="less">${style}</style>`;
   function fixture(source,extra={}){clean(src);fs.cpSync(baseline,src,{recursive:true});write('pages/TestPage/index.vue',source);for(const [rel,value]of Object.entries(extra))write(rel,value);}

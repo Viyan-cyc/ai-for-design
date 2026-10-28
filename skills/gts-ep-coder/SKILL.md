@@ -1,7 +1,8 @@
 ---
 name: gts-ep-coder
 description: 根据用户需求生成 Vue 3 + Element Plus 2.13.5 页面（.vue SFC），样式严格遵循 design-language 设计 token；输出离线可开的双击即看 HTML 预览与可拷入真实工程的 src/ 源码。做页面、改页面、看效果时使用。
-version: 0.2.4
+metadata:
+  version: 0.3.0-rc.1
 ---
 
 # gts-ep-coder
@@ -113,9 +114,19 @@ init 会生成完整骨架：`index.gts-ep.html` + `public/library/`（UMD 运�
 main.js、api 服务层示例、主题三件套、starter 页面）。
 **默认不含任何切换 UI**（国际化 / 主题切换均为按需能力，见下方判据）。
 
+### ②.5 选择设计路径与可选资产
+
+按用户意图选择，不把任意参考页改造成工作台。已有代码只做局部修改时跳过未涉及的设计资料。
+
+- **自然语言新页面**：编码前确定主要任务、主次区域与密度（不用另交规划文档）。只读最相关的一个场景：[查询](references/design/scenes/query.md)、[详情/表单](references/design/scenes/detail-form.md)、[工作台](references/design/scenes/workbench.md)、[看板](references/design/scenes/dashboard.md)、[AI 对话](references/design/scenes/conversation.md)、[展示页面](references/design/scenes/presentation.md)。容器/文字/状态搭配不确定时再查 [视觉配方](references/design/visual-recipes.md) 的对应条目；不默认全文读取。
+- **HTML/截图还原**：读 [参考还原](references/design/reference-reconstruction.md)，先保留布局和视觉角色，再映射 token。局部修改只读相关检查条目。未经要求不增添筛选框、统计卡片或数据。
+- **复用骨架/输入器**：用户指定，或需求明确具有顶部导航＋可收展主导航＋多工作区页签，才查 [资产索引](references/assets/index.md)。对话输入可单独复用；独立查询/表单/展示页不因此加载骨架。先运行索引中的 check，再复制所选资产。不遍历实现和完整示例。
+
+交付前按 [视觉验收](references/design/visual-review.md) 检查实际效果；用户已确认的相同版本不重复要求确认。浏览器工具不可用或被策略阻止时不绕过，记录未测项；静态构建不能作为视觉通过的依据。
+
 ### ③ 写代码 —— 主战场
 
-**只写 `src/` 下**：页面放 `src/pages/{Page}/index.vue`（一页一目录，子组件/样式放同目录），
+**运行源码只写 `src/` 下**（可选资产脚本另在工程根写 `.gts-assets.json` 安装记录）：页面放 `src/pages/{Page}/index.vue`（一页一目录，子组件/样式放同目录），
 `App.vue` 修改挂载与需求明确的装配。主题 css（`src/assets/themes/`）与 `index.gts-ep.html` 是交付件骨架，
 不改不删；换肤按 `src/assets/themes/README.md` 协议追加。
 
@@ -186,7 +197,7 @@ main.js、api 服务层示例、主题三件套、starter 页面）。
 - 编码规则见 `vendor/vue-skill/references/code-rules.md` 第十二节（容器流式、ElRow/ElCol
   响应式栅格、宽度纪律、@media 口径、表格自适应）；断点与窗口适配口径见
   `references/design-language.md` §3.3。
-- 布局按上述响应式口径编写；完成规则自查且构建通过后交付预览链接，不要求agent打开浏览器或执行多视口测试；未运行不宣称视觉验收。
+- 布局按上述响应式口径编写；完成规则自查且构建通过后交付预览链接，新页面和视觉结构变更在工具允许时打开产物检查；检查范围见 references/design/visual-review.md。不得要求每次微调重复全套测试；未运行不宣称视觉验收。
 
 ### ③.5 `fetch-icons.mjs` —— 图标检索替换（有新增或变化的图标时）
 
@@ -326,6 +337,7 @@ build的编译/token错误在重试额度内修复，达到上限或提前停止
 - 间距/圆角/字号/投影等同样用 token：`var(--space-size-16)`、`var(--radius-size-normal)`、
   `var(--shadow-1)`。
 - 组件状态（悬停/聚焦/禁用/加载）由 Element Plus + 桥接层自动获得，页面不重绘状态色。
+- 标准按钮、输入和表格继续使用 EP；已评审的复合资产可用语义化原生按钮、select、textarea 实现固定交互。这是资产内部的受控例外，不允许普通页面借此整体替换组件库或覆盖 EP 内部样式。
 - **自适应纪律**：布局容器禁写死总宽（内容流式，控件固有定宽配 `max-width: 100%` 兜底）；
   字体禁用 vw/vh 视口缩放；多卡片用响应式栅格（细则见 code-rules 第十二节）。
   build 会对 `zoom` 与 font-size vw/vh 出 WARN。
@@ -364,5 +376,7 @@ build的编译/token错误在重试额度内修复，达到上限或提前停止
   无缺口）；浅色／深色成对维护，改 token 先改 design-language 再重跑 gen-tokens，不手写深色值
 
 ## 维护回归（仅修改skill时）
+
+维护候选资产或设计流程时，另外执行 `node scripts/verify-foundation.mjs`；普通页面不执行维护测试。
 
 共享环境更新后，维护者执行 `node scripts/verify-build.mjs` 和 `node scripts/verify-fetch-icons.mjs`。普通页面不执行它们。当前离线源码支持JavaScript、Vue SFC、CSS/Less和字面量动态import；不把TS/JSX、CSS modules或非字面量动态路径默认为可用。本地CSS依赖优先在JS中显式import；build会将已验证样式及资源路径编入离线映射，标准src保持原样。

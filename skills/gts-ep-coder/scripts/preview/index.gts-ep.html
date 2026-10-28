@@ -67,7 +67,16 @@
                 bootError.textContent = "预览加载失败：" + msg;
                 bootError.style.display = "block";
             }
-            window.addEventListener("error", function (e) { showBootError(e.message || "资源加载失败"); });
+            // Browser resize-delivery notifications are not boot failures. Keep the
+            // native console event visible; do not cancel events or patch ResizeObserver.
+            window.addEventListener("error", function (e) {
+                var resizeDeliveryNotice = !e.error && (
+                    e.message === "ResizeObserver loop completed with undelivered notifications." ||
+                    e.message === "ResizeObserver loop limit exceeded"
+                );
+                if (resizeDeliveryNotice) return;
+                showBootError(e.message || "资源加载失败");
+            });
             window.addEventListener("unhandledrejection", function(e){showBootError((e.reason && e.reason.message) || String(e.reason));});
 
             if (!window.__UX_PROTO_SRC__) {
