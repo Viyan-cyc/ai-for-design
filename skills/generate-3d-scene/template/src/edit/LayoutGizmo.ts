@@ -54,6 +54,7 @@ export class LayoutGizmo {
   ) {
     const { camera, canvas, scene } = handle.internals;
     this.controls = new TransformControls(camera, canvas);
+    this.controls.addEventListener('change', handle.internals.renderLoop.invalidate);
     scene.add(this.controls.getHelper());
 
     // 透视/正交切换时相机实例被替换，TransformControls 需换绑

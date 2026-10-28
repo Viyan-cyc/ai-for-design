@@ -30,7 +30,7 @@ export class LightHelperService {
           update.call(helper);
         }
       });
-    });
+    }, false);
   }
 
   /** 辅助线开关（关 = 全部隐藏；开 = 恢复 focus 选择的显示态） */
@@ -45,6 +45,7 @@ export class LightHelperService {
 
   /** 按 enabled + activeId 计算显示态（唯一出口，开关与 focus 都走这里） */
   private applyVisibility(): void {
+    this.handle.internals.renderLoop.invalidate();
     this.helpers.forEach((helper, id) => {
       helper.visible = this.enabled && (this.activeId === null || id === this.activeId);
     });

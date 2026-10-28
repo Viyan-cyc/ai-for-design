@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from 'vue';
 import type { Bridge } from './Bridge';
+import type { FrameStats } from '@/scene-core';
 
 const props = defineProps<{ bridge: Bridge }>();
 const objects = ref(0);
 const selected = ref(0);
 const lights = ref(0);
-const frame = ref<{ fps: number; calls: number; triangles: number } | null>(null);
+const frame = ref<FrameStats | null>(null);
 const { sceneEngine, lightEngine, renderLoop } = props.bridge.handle.internals;
 const refreshCounts = (): void => {
   const ids = new Set(sceneEngine.getAllIds());
@@ -16,28 +17,16 @@ const refreshCounts = (): void => {
 };
 const unsubscribe = props.bridge.onState(refreshCounts);
 let timer: ReturnType<typeof setInterval> | undefined;
-let lastFrameAt = 0;
-let startedAt = 0;
-const unsubscribeFrame = renderLoop.onAfterFrame(() => {
-  lastFrameAt = performance.now();
-});
-const refresh = (): void => {
-  refreshCounts();
-  const now = performance.now();
-  // A full sampling window avoids displaying startup FPS as steady-state performance.
-  frame.value = document.hidden || now - startedAt < 1000 || !lastFrameAt || now - lastFrameAt > 1500
-    ? null
-    : renderLoop.getStats();
-};
+const refresh = (): void => { refreshCounts(); frame.value = renderLoop.getStats(); };
 const format = (value: number | undefined): string => value === undefined ? '—' : value.toLocaleString('zh-CN');
 onMounted(() => {
-  startedAt = performance.now();
+  refresh();
   timer = setInterval(refresh, 500);
 });
 onBeforeUnmount(() => {
   clearInterval(timer);
   unsubscribe();
-  unsubscribeFrame();
+
 });
 </script>
 
@@ -52,12 +41,14 @@ onBeforeUnmount(() => {
     <p>对象按场景节点计数，包含隐藏节点，不含模型内部子网格和编辑辅助线。</p>
     <h3>实时性能</h3>
     <dl>
-      <div><dt>帧率（FPS）</dt><dd>{{ format(frame?.fps) }}</dd></div>
-      <div><dt>绘制调用（Draw Calls）</dt><dd>{{ format(frame?.calls) }}</dd></div>
-      <div><dt>绘制三角形</dt><dd>{{ format(frame?.triangles) }}</dd></div>
+      <div><dt>帧率（FPS）</dt><dd>{{ !frame || frame.paused ? '已暂停' : frame.idle ? '空闲' : frame.sampling ? '采样中' : format(frame.fps) }}</dd></div>
+      <div><dt>绘制次数（Draw Calls）</dt><dd>{{ format(frame?.calls) }}</dd></div>
+      <div><dt>绘制三角面</dt><dd>{{ format(frame?.triangles) }}</dd></div>
     </dl>
-    <p>每半秒刷新。帧率取最近一秒；绘制调用和三角形为当前帧统计，包含编辑辅助元素，不代表全部模型的资源总量。</p>
-    <p v-if="!frame">等待渲染采样，或页面已暂停渲染。</p>
+    <p v-if="frame?.idle && !frame.paused">按需渲染 · 静止时不绘制，交互和内容变化会自动恢复。</p>
+    <p v-if="frame && !frame.paused">帧率上限：{{ frame.maxFps || '不限制' }}{{ frame.maxFps ? ' FPS' : '' }}</p>
+    <p>每半秒刷新。帧率统计最近一秒实际绘制的帧；绘制次数和三角面取最近一次完整场景绘制，包含阴影和编辑辅助元素。空闲不代表性能不足。</p>
+
   </section>
 </template>
 

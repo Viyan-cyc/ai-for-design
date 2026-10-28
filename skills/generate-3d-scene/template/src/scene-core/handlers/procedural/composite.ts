@@ -26,7 +26,7 @@ export function createComposite() {
   let finished = false;
   const check = (name: string) => {
     if (finished) throw new Error('Composite already finished');
-    if (!/^[a-z][a-z0-9_]*$/.test(name)) throw new Error(`Invalid slot name: ${name}`);
+    if (!/^[A-Za-z_][A-Za-z0-9_-]*$/.test(name)) throw new Error(`Invalid slot name: ${name}; use letters, digits, underscores or hyphens, starting with a letter or underscore (e.g. shellDeep). Slashes are reserved for slot paths`);
   };
   const attach = (name: string, geometry: THREE.BufferGeometry, material: THREE.Material) => {
     const mesh = new THREE.Mesh(geometry, material);
@@ -56,7 +56,7 @@ export function createComposite() {
     batch(name: string, geometry: THREE.BufferGeometry, material: THREE.Material, transform: PartTransform = {}) {
       check(name);
       let batch = batches.get(name);
-      if (batch && batch.material !== material) throw new Error(`Batch ${name} must use the same material instance`);
+      if (batch && batch.material !== material) throw new Error(`Batch ${name} must use the same material instance; create batchSlot("${name}", material) once outside the loop and use slot.add(geometry, transform). Equal material parameters do not mean the same instance; use a different slot name for a different material`);
       if (!batch) {
         if (names.has(name)) throw new Error(`Duplicate slot: ${name}`);
         names.add(name);

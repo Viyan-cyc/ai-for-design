@@ -1,32 +1,31 @@
 <script setup>
-import { reactive,ref } from 'vue'
-import { SweetButton,SweetDialog,SweetForm,SweetFormItem,SweetInput,SweetTable,SweetTableColumn } from '@hw-seq/sweet-ui-base'
-import { createRecord } from '../../api/records.js'
-const visible=ref(false),saving=ref(false),formRef=ref(),records=ref([]),feedback=ref('')
-const form=reactive({name:''}),rules={name:[{required:true,message:'请输入资源名称',trigger:'blur'}]}
-function openCreate(){form.name='';feedback.value='';visible.value=true}
-async function submit(){
-  if(saving.value||!formRef.value)return
-  try{await formRef.value.validate()}catch{return}
-  saving.value=true
-  try{records.value=[...records.value,await createRecord({...form})];visible.value=false;feedback.value='创建成功'}
-  catch(e){feedback.value='创建失败：'+e.message}
-  finally{saving.value=false}
+import { ref, onMounted } from 'vue'
+import { SweetButton, SweetTable, SweetTableColumn, SweetAlert } from '@hw-seq/sweet-ui-base'
+import EditorDialog from './components/EditorDialog.vue'
+import { getRecords } from '../../api/records.js'
+const rows = ref([])
+const selected = ref(null)
+const visible = ref(false)
+const error = ref('')
+async function load() {
+  error.value = ''
+  try { rows.value = await getRecords() } catch (e) { error.value = e.message || '加载失败' }
 }
+function edit(row) { selected.value = { ...row }; visible.value = true }
+onMounted(load)
 </script>
 <template>
-  <main class="page-root">
-    <header><h1>资源管理</h1><SweetButton type="primary" @click="openCreate"><i class="sweetui-icon-add-l" aria-hidden="true"></i>新建资源</SweetButton></header>
-    <p role="status">{{ feedback }}</p>
-    <SweetTable :data="records" empty-text="暂无资源，请新建"><SweetTableColumn prop="name" label="名称" min-width="180" /></SweetTable>
-    <SweetDialog v-model="visible" title="新建资源" width="min(520px, 92vw)" :close-on-click-modal="false">
-      <SweetForm ref="formRef" :model="form" :rules="rules" label-position="top"><SweetFormItem label="资源名称" prop="name"><SweetInput v-model="form.name" placeholder="请输入资源名称" /></SweetFormItem></SweetForm>
-      <template #footer><SweetButton :disabled="saving" @click="visible=false">取消</SweetButton><SweetButton type="primary" :loading="saving" @click="submit">创建</SweetButton></template>
-    </SweetDialog>
+  <main class="page">
+    <h1>设备维护</h1>
+    <SweetAlert v-if="error" :title="error" type="error" />
+    <SweetButton v-if="error" @click="load">重试</SweetButton>
+    <SweetTable :data="rows">
+      <SweetTableColumn prop="name" label="名称" />
+      <SweetTableColumn label="操作"><template #default="{ row }"><SweetButton text @click="edit(row)">编辑</SweetButton></template></SweetTableColumn>
+    </SweetTable>
+    <EditorDialog v-model="visible" :record="selected" @saved="load" />
   </main>
 </template>
 <style scoped>
-.page-root{padding:var(--swt-space-size-24)}
-header{display:flex;flex-wrap:wrap;gap:var(--swt-space-size-16);align-items:center;justify-content:space-between}
-h1{margin:0;font-size:var(--swt-font-size-medium);color:var(--swt-color-text-primary)}
+.page { padding: var(--swt-space-size-24); }
 </style>

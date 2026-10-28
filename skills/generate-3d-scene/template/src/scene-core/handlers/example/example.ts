@@ -126,11 +126,14 @@ export const registerExampleHandler = (
     spinners.delete(id);
   });
 
-  // 每帧旋转（注册的实例才转）；unsub 三连在工厂 teardown 时回收（防孤儿帧回调）
-  const unsubFrame = onFrame((delta) => {
-    spinners.forEach((blades) => {
-      blades.rotation.y += delta * 1.2;
-    });
-  });
-  teardowns.push(unsubUpdated, unsubRemoved, unsubFrame);
+  // Subscribe only while actual animated instances exist; empty registrars must not prevent sleep.
+  let unsubFrame: (() => void) | null = null;
+  const syncAnimation = (): void => {
+    if (spinners.size && !unsubFrame) {
+      unsubFrame = onFrame(delta => spinners.forEach(blades => { blades.rotation.y += delta * 1.2; }));
+    } else if (!spinners.size && unsubFrame) { unsubFrame(); unsubFrame = null; }
+  };
+  const syncUpdated = sceneEngine.subscribeNodeEvent('updated', syncAnimation);
+  const syncRemoved = sceneEngine.subscribeNodeEvent('removed', syncAnimation);
+  teardowns.push(unsubUpdated, unsubRemoved, syncUpdated, syncRemoved, () => unsubFrame?.());
 };

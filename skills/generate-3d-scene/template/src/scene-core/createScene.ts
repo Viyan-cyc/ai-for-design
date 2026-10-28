@@ -16,6 +16,8 @@ import type {
   CardState, PickResult, SceneData, SceneNode, TreeSceneFragment, UpdateStats,
 } from './types';
 import { RESERVED_KEYS } from './types';
+import { invalidateResources } from './render-invalidation';
+import { normalizeRenderer } from './render-settings';
 import {
   SceneEngine, CameraEngine, LightEngine, ControlsEngine,
   RendererEngine, RaycastEngine, AssetEngine, RenderLoop, EnvironmentEngine,
@@ -182,7 +184,7 @@ export const createScene = async (
   const rendererEngine = new RendererEngine(canvas, data.renderer);
   const sceneEngine = new SceneEngine();
   const cameraEngine = new CameraEngine(data.camera, canvas.clientWidth / Math.max(canvas.clientHeight, 1));
-  const lightEngine = new LightEngine(sceneEngine.scene, data.lights);
+  const lightEngine = new LightEngine(sceneEngine.scene, data.lights, rendererEngine.getConfig().shadowMapSize);
   const controlsEngine = new ControlsEngine(cameraEngine.camera, canvas, data.controls);
   const environmentEngine = new EnvironmentEngine();
   const assetEngine = new AssetEngine();
@@ -203,7 +205,7 @@ export const createScene = async (
   void environmentEngine.apply(
     rendererEngine.renderer, sceneEngine.scene,
     data.scene.environment ? { intensity: data.scene.environment.intensity } : null,
-  );
+  ).then(invalidateResources);
 
   // 物体工厂注册（内建），先于建树。加载计数徽标：'asset' 内建工厂与业务 handler
   // 两路的异步 GLB 节点统一汇入（makeAssetNodeFactory 计数器口径=节点实例）
@@ -244,7 +246,10 @@ export const createScene = async (
     () => sceneEngine.scene,
     () => cameraEngine.camera,
   );
-  renderLoop.onFrame(() => cardSystem.updateProjection());
+  renderLoop.onFrame(() => cardSystem.updateProjection(), false);
+  for (const event of ['created', 'updated', 'removed'] as const) {
+    sceneEngine.subscribeNodeEvent(event, renderLoop.invalidate);
+  }
   // P1.2：首帧标记（diagnostics.firstFrame；一次性退订）
   let firstFrameMarked = false;
   const unmarkFirstFrame = renderLoop.onAfterFrame(() => {
@@ -357,6 +362,8 @@ export const createScene = async (
 
   const handle: SceneHandle = {
     update(frag: TreeSceneFragment): UpdateStats {
+      // Validate before mutating any scene state.
+      if (frag.renderer) normalizeRenderer({ ...rendererEngine.getConfig(), ...frag.renderer });
       // 保留区
       if (frag.scene) {
         data.scene = { ...data.scene, ...frag.scene };
@@ -365,11 +372,12 @@ export const createScene = async (
           void environmentEngine.apply(
             rendererEngine.renderer, sceneEngine.scene,
             data.scene.environment ? { intensity: data.scene.environment.intensity } : null,
-          );
+          ).then(invalidateResources);
         }
       }
       if (frag.lights) {
         data.lights = frag.lights;
+        if (frag.renderer?.shadowMapSize !== undefined) lightEngine.defaultShadowMapSize = frag.renderer.shadowMapSize;
         lightEngine.replaceAll(frag.lights);
       }
       if (frag.camera) {
@@ -401,20 +409,18 @@ export const createScene = async (
         controlsEngine.applyConfig(frag.controls);
       }
       if (frag.renderer) {
-        Object.assign(data.renderer, frag.renderer);
-        if (frag.renderer.toneMapping) {
-          rendererEngine.setToneMapping(frag.renderer.toneMapping);
-        }
-        if (frag.renderer.exposure !== undefined) {
-          rendererEngine.setExposure(frag.renderer.exposure);
-        }
-        if (frag.renderer.shadowMapEnabled !== undefined) {
-          rendererEngine.renderer.shadowMap.enabled = frag.renderer.shadowMapEnabled;
-        }
-        if (frag.renderer.shadowMap) {
-          rendererEngine.setShadowMapType(frag.renderer.shadowMap);
+        rendererEngine.applyConfig(frag.renderer);
+        data.renderer = rendererEngine.getConfig();
+        if (frag.renderer.maxFps !== undefined || frag.renderer.renderMode !== undefined) renderLoop.configurationChanged();
+        // Explicit global resolution changes apply to all shadow-capable lights.
+        if (frag.renderer.shadowMapSize !== undefined) {
+          lightEngine.defaultShadowMapSize = data.renderer.shadowMapSize!;
+          for (const light of (frag.lights ? [] : lightEngine.getConfigs())) {
+            lightEngine.mutate(light.id, { shadowMapSize: data.renderer.shadowMapSize });
+          }
         }
       }
+      renderLoop.invalidate();
       // 业务区（分组 upsert + remove 先行在 SceneEngine 内）
       const stats = sceneEngine.applyFragment(frag);
       if (extractGroups(frag).length > 0 || frag.remove?.length) {
@@ -442,7 +448,7 @@ export const createScene = async (
             const s = renderLoop.getStats();
             hud.textContent = `fps: ${s.fps}\ncalls: ${s.calls}\ntris: ${s.triangles}`;
           }
-        });
+        }, false);
       } else if (!enabled && hud) {
         hudUnsub?.();
         hud.remove();
@@ -457,6 +463,7 @@ export const createScene = async (
 
     refreshCards() {
       cardSystem.refresh();
+      renderLoop.invalidate();
     },
 
     frameObject(id: string): void {

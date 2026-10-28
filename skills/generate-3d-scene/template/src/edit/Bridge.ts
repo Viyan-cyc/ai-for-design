@@ -112,6 +112,7 @@ export class Bridge {
   private emit(): void {
     const state = this.getState();
     this.listeners.forEach((cb) => cb(state));
+    this.handle.internals.renderLoop.invalidate();
   }
 
   /** Selection/target changes terminate a continuous edit gesture. */

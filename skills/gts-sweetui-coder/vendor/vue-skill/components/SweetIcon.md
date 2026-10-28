@@ -1,25 +1,7 @@
 # SweetIcon
-
-状态：来自带回源码契约，尚未完成私有 UMD 运行验证。
-
-定位：`packages/components/icon/icon.vue`。
-
-具体使用示例优先看同名 `.vue` 文件；本页只在 API 不确定时读取。
-
-图标只从 `scripts/verify/whitelists/sweetui-icons.json` 选完整类名，不猜 `-l/-f` 变体。`iconClass` 是完整CSS类名，纯图标按钮需有可访问名称。线性/面性着色以真实CSS为准，不假设均支持currentColor。
-
-## Props
-
-| 名称 | 类型 | 默认/允许值 |
-|---|---|---|
-| `size` | number / string |  |
-| `color` | string |  |
-| `iconClass` | string |  |
-
-## events
-
-未列出；不代表不存在。
-
-## slots
-
-- default
+显式导入 SweetIcon，使用 iconClass（模板 icon-class）、size（数字或字符串）、color。
+~~~vue
+<SweetIcon icon-class="sweetui-icon-search-l" :size="16" />
+~~~
+完整类名从 scripts/verify/whitelists/sweetui-icons.json 选取；不拼后缀。hasForcedColor 表示该类带自己的色彩规则，无法直接据名称认定它会随文字色变化；需要控制颜色时按真实样式确认。
+动态图标用完整名称配置数组，不拼接字符串。空 contentCode 不直接判定废弃，部分图标通过其他 CSS 规则呈现。

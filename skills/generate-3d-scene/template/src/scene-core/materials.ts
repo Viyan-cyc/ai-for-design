@@ -1,3 +1,4 @@
+import { invalidateResources } from './render-invalidation';
 /**
  * scene-core/materials — 状态视觉注册表（v3：数据无材质，视觉全部在代码）
  *
@@ -407,6 +408,7 @@ const loadMaterialTexture = (url: string, colorSpace: THREE.ColorSpace, channel:
   let p = matTexCache.get(key);
   if (!p) {
     p = new THREE.TextureLoader().loadAsync(url).then((tex) => {
+      setTimeout(invalidateResources, 0);
       tex.colorSpace = colorSpace;
       tex.channel = channel;
       return tex;
@@ -544,6 +546,7 @@ export const loadTexture = async (url: string): Promise<THREE.Texture> => {
   let tex = texCache.get(url);
   if (!tex) {
     tex = await new THREE.TextureLoader().loadAsync(url);
+    setTimeout(invalidateResources, 0);
     tex.colorSpace = THREE.SRGBColorSpace;
     texCache.set(url, tex);
   }

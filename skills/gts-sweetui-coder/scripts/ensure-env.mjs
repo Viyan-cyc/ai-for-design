@@ -95,6 +95,7 @@ let compilerVersion
 try {
   compilerVersion = req("@vue/compiler-sfc/package.json").version
   req("@vue/compiler-sfc")
+  req("postcss")
 } catch (e) {
   fail(
     "COMPILER_LOAD_FAILED",

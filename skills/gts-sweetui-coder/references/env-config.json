@@ -2,6 +2,6 @@
   "manifestUrl": "https://octo.hdesign.huawei.com/design/fastui-env/manifest.json",
   "fallbackManifestUrl": "fallback-node-manifest.json",
   "fallbackNpmRegistry": "http://mirrors.tools.huawei.com/npm",
-  "envDirName": "GtsSweetui/ux-proto-env",
-  "envDirEnvVar": "GTS_SWEETUI_ENV_DIR"
+  "envDirName": "SweetUICoder/ux-proto-env",
+  "envDirEnvVar": "SWEETUI_UX_PROTO_ENV_DIR"
 }

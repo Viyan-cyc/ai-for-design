@@ -1,5 +1,4 @@
-# code-example —— SweetUI整页结构参考
-
-需要整页起点才搜索references/README.md。没有相近项就直接写，不遍历其他例子。只读命中示例的相关文件，结构和用法已清楚即停止。
-
-按索引复制页面、服务和mock到业务目录，保留原生API并按需求改数据。图表使用dt-ui实际API及源码共享的chart-tokens，不拼UMD全局名。此目录只读，页面验证按主SKILL完成，不强制打开浏览器。
+# 组合页面参考
+- 表单编辑、校验、提交与父页刷新：references/form-dialog/。将其中 api/ 合入项目 src/api/，index.vue 与 components/ 放入页面目录。
+- 重复卡片与分组链接：references/content-grid/。展示数组驱动和区域拆分，内容按真实需求替换。
+简单列表直接使用 init 骨架即可，不读取所有示例。示例已经过源码编译检查，私有组件运行效果需内网验收。

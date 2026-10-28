@@ -36,8 +36,6 @@
   "SweetCol",
   "SweetCollapse",
   "SweetCollapseItem",
-  "SweetCollection",
-  "SweetCollectionItem",
   "SweetColorPicker",
   "SweetColorPickerCustom",
   "SweetConfigProvider",
@@ -85,7 +83,6 @@
   "SweetNotification",
   "SweetOption",
   "SweetOptionGroup",
-  "SweetOverlay",
   "SweetPageHeader",
   "SweetPagination",
   "SweetPanel",
@@ -138,5 +135,13 @@
   "SweetValidate",
   "SweetVirtualTable",
   "SweetVirtualTableColumn",
-  "SweetVirtualTree"
+  "SweetVirtualTree",
+  "chartTheme",
+  "default",
+  "i18n",
+  "localeContextKey",
+  "setLocaleMessages",
+  "setSweetI18n",
+  "setTheme",
+  "useLocale"
 ]

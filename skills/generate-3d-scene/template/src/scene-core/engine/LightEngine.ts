@@ -82,6 +82,8 @@ const applyShadowParams = (light: THREE.Light, config: Partial<LightConfig>): vo
     // mapSize 变更需释放旧贴图，下一帧按新尺寸重建
     shadowLight.shadow.map?.dispose();
     shadowLight.shadow.map = null;
+    shadowLight.shadow.mapPass?.dispose();
+    shadowLight.shadow.mapPass = null;
   }
   if (config.shadowBias !== undefined) {
     shadowLight.shadow.bias = config.shadowBias;
@@ -116,12 +118,13 @@ export class LightEngine {
   /** id → 当前配置（serialize 回写用） */
   private configs = new Map<string, LightConfig>();
 
-  constructor(private scene: THREE.Scene, configs: LightConfig[]) {
+  constructor(private scene: THREE.Scene, configs: LightConfig[], public defaultShadowMapSize = 512) {
     configs.forEach((c) => this.addLight(c));
   }
 
   /** 新增/替换一盏灯（按 id） */
   addLight(config: LightConfig): void {
+    config = { ...config, shadowMapSize: config.shadowMapSize ?? this.defaultShadowMapSize };
     this.removeLight(config.id);
     const light = createLight(config);
     light.name = config.id;

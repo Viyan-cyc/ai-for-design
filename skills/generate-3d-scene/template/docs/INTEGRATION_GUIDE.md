@@ -47,7 +47,7 @@ src/
   "camera":   { "type": "PerspectiveCamera", "position": [8,6,10], "lookAt": [0,1,0], "fov": 50, "near": 0.1, "far": 2000 },
   "lights":   [ { "id": "DirectionalLight_001", "type": "DirectionalLight", "position": [6,10,4], "intensity": 2, "castShadow": true } ],
   "controls": { "type": "OrbitControls", "target": [0,1,0], "minDistance": 2, "maxDistance": 80 },
-  "renderer": { "toneMapping": "ACESFilmic", "exposure": 1, "shadowMap": "PCFSoft", "shadowMapEnabled": true },
+  "renderer": { "toneMapping": "ACESFilmic", "exposure": 1, "shadowMap": "PCF", "shadowMapEnabled": false },
 
   // ---- 业务区（其余任何 key 都是 type 分组；key 名 = 业务类型名）----
   "Box":   [ { "id": "ground", "position": [0,0,0], "rotation": [-1.5708,0,0], "scale": [40,40,1] } ],
@@ -266,3 +266,6 @@ if (hair) {
 **Q: 想改某个物体的颜色？** 不是改数据——`params` 不收视觉字段。单个状态视觉进 `materials.ts`；多个物体复用同一材质 → 编辑器材质库（转 `libraryMaterials`，见 §6.1）；编辑器临时调的进 `__visuals`（交付时转录，见 §6）。
 
 **Q: 人物模型巨大（scale=1 时一百多米高）？** mixamo 等骨骼资产以**厘米**为单位（骨骼位置 ×100），导入后世界尺寸放大百倍。修法：在该节点 `scale` 设 `0.01` 级归一化（validate-model 报告的 `高=…m` 警告即提示；如 person 高 179.275m → `scale: 0.0056` ≈ 1 人高）。资产本身不改——引擎不做隐式缩放（防误伤 1:1 单位的机械模型）。若 `scale` 已正确仍显示巨大：确认实例化走的是引擎内建通道（`makeAssetNodeFactory` / `AssetEngine.getInstance`）——`clone(true)` 直克隆骨骼资产会断 `skeleton` 引用（见 §6.3）。
+
+
+渲染设置统一保存在 renderer；默认 pixelRatio=1、shadowMapSize=512、maxFps=60、renderMode="demand"，antialias/logarithmicDepthBuffer=false。画质预设不改变限帧和渲染模式。动画通过 handle.internals.renderLoop.onFrame 注册并按 delta 秒推进；停止动画时退订。只做帧观察用 onFrame(cb,false) 或 onAfterFrame。直接操作 Three.js 对象、完成自定义异步加载后调用 renderLoop.invalidate()。不要创建另一套 RAF 循环或覆盖渲染器参数。

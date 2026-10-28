@@ -11,7 +11,8 @@ export function registerAssemblyHandler(engine: SceneEngine): void {
     create(node) {
       const builder = createComposite();
       const steel = new THREE.MeshStandardMaterial({ color: '#64798a', roughness: 0.65 });
-      // Same slot = intentionally edited as a whole. The builder attaches it automatically.
+      // Bind the material once OUTSIDE loops. Repeated new Material/clone calls are different instances.
+      // Same slot = intentionally edited as a whole; use a separate batchSlot for a different material.
       const frame = builder.batchSlot('frame', steel);
       for (const x of [-1, 1]) for (const z of [-0.5, 0.5]) {
         frame.add(new THREE.BoxGeometry(0.12, 2, 0.12), { position: [x, 1, z] });

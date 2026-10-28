@@ -1,41 +1,15 @@
-# SweetButton
+# 按钮 SweetButton
 
-状态：来自带回源码契约，尚未完成私有 UMD 运行验证。
+```vue
+<SweetButton type="primary">主要按钮</SweetButton>
+<SweetButton>次要按钮</SweetButton>
+<SweetButton text>文本按钮</SweetButton>
+<SweetButton type="danger">告警按钮</SweetButton>
+<SweetButton type="primary" loading>加载中</SweetButton>
+<SweetButton disabled>禁用</SweetButton>
+<SweetButton type="primary" circle aria-label="搜索">
+  <SweetIcon icon-class="sweetui-icon-search-l" />
+</SweetButton>
+```
 
-定位：`packages/components/button/src/button.ts`。
-
-具体使用示例优先看同名 `.vue` 文件；本页只在 API 不确定时读取。
-
-## Props
-
-| 名称 | 类型 | 默认/允许值 |
-|---|---|---|
-| `size` | string | ['large', 'default', 'small'] |
-| `disabled` | boolean | False |
-| `type` | string | ['default', 'primary', 'success', 'warning', 'info', 'danger', 'gray', 'brand', 'ghost', 'urgent', 'text', ''] |
-| `icon` | string / Component |  |
-| `nativeType` | string | ['button', 'submit', 'reset'] |
-| `loading` | boolean | False |
-| `loadingIcon` | string / Component | sweetui-icon-loading |
-| `plain` | boolean |  |
-| `text` | boolean | False |
-| `link` | boolean | False |
-| `bg` | boolean | False |
-| `autofocus` | boolean | False |
-| `round` | boolean |  |
-| `circle` | boolean | False |
-| `color` | string |  |
-| `dark` | boolean | False |
-| `autoInsertSpace` | boolean |  |
-| `tag` | string / Component | button |
-| `label` | string |  |
-| `gray` | boolean | False |
-| `selected` | boolean | False |
-
-## events
-
-- click
-
-## slots
-
-- default
+关键 props：`type`（primary/default/danger/warning/success）、`size`（large/default/small）、`loading`、`disabled`、`text`、`circle`、`icon`。

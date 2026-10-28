@@ -6,13 +6,23 @@
   },
   "scene": {
     "background": "#eef0f3",
-    "environment": { "intensity": 0.6 },
+    "environment": {
+      "intensity": 0.6
+    },
     "fog": null
   },
   "camera": {
     "type": "PerspectiveCamera",
-    "position": [8, 6, 10],
-    "lookAt": [0, 1, 0],
+    "position": [
+      8,
+      6,
+      10
+    ],
+    "lookAt": [
+      0,
+      1,
+      0
+    ],
     "fov": 50
   },
   "lights": [
@@ -21,9 +31,13 @@
       "type": "DirectionalLight",
       "color": "#ffffff",
       "intensity": 2.2,
-      "position": [6, 10, 4],
+      "position": [
+        6,
+        10,
+        4
+      ],
       "castShadow": true,
-      "shadowMapSize": 2048,
+      "shadowMapSize": 512,
       "shadowBias": -0.0005,
       "shadowCameraNear": 0.5,
       "shadowCameraFar": 200,
@@ -41,15 +55,24 @@
   ],
   "controls": {
     "type": "OrbitControls",
-    "target": [0, 1, 0],
+    "target": [
+      0,
+      1,
+      0
+    ],
     "minDistance": 2,
     "maxDistance": 80
   },
   "renderer": {
     "toneMapping": "ACESFilmic",
     "exposure": 1,
-    "shadowMap": "PCFSoft",
-    "shadowMapEnabled": true,
-    "maxPixelRatio": 2
+    "shadowMap": "PCF",
+    "shadowMapEnabled": false,
+    "pixelRatio": 1,
+    "shadowMapSize": 512,
+    "antialias": false,
+    "logarithmicDepthBuffer": false,
+    "maxFps": 60,
+    "renderMode": "demand"
   }
 }

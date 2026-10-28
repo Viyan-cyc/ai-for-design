@@ -72,7 +72,7 @@ update 仅在 params 改变时调用；transform 更新由引擎完成。返回 
 | 光源特有项 | Point/Spot: distance、decay；Spot: angle（弧度）、penumbra；Hemisphere: groundColor；RectArea: width、height |
 | 阴影 | castShadow、shadowMapSize、shadowBias；Directional: shadowCameraNear/Far/Left/Right/Top/Bottom（均为平铺字段） |
 | controls | type: OrbitControls、target、minDistance/maxDistance、minPolarAngle/maxPolarAngle、enablePan、autoRotate/autoRotateSpeed、enableDamping/dampingFactor、zoomSpeed |
-| renderer | toneMapping: NoToneMapping/Linear/Reinhard/Cineon/ACESFilmic/AgX/Neutral；exposure；shadowMap: Basic/PCF/PCFSoft/VSM；shadowMapEnabled；maxPixelRatio |
+| renderer | toneMapping: NoToneMapping/Linear/Reinhard/Cineon/ACESFilmic/AgX/Neutral；exposure；shadowMap: Basic/PCF/PCFSoft/VSM；shadowMapEnabled；pixelRatio（实际倍率）；shadowMapSize；maxFps（0 不限）；renderMode（demand/continuous）；antialias；logarithmicDepthBuffer |
 
 模板舞台是小场景起点：按实际业务范围设置相机、控制距离、光源位置及阴影覆盖，不能直接沿用固定范围。其他有效默认值可保留。纯几何需求不要求评估组件目录；确定需要某个现成组件时才查对应条目。正常生成不读 build.mjs/init.mjs 源码来猜接口。
 
@@ -81,8 +81,8 @@ update 仅在 params 改变时调用；transform 更新由引擎完成。返回 
 `three/examples/jsm/**` 与 `three/addons/**` 可导入。组合体优先使用现成的 `procedural/composite.ts`，不用另写 attach/合批管理：
 
 - `createComposite().mesh(name, geometry, material, transform?)`：自动挂载，保留独立材质/变换槽位。
-- 推荐 `const frame = builder.batchSlot(name, material)`，再调用 `frame.add(geometry, transform?)`；材质只绑定一次。完成后 `return builder.finish()`。空槽位不生成网格。旧 batch(name, geometry, material, transform?) 保留兼容，同名必须传同一材质实例。每次传新建 geometry，工具接管所有权；不要复用/再次 dispose 输入几何。
-- mesh/batch 的 name 使用稳定 snake_case；batch 内零件作为整体编辑。先确定用户需要的编辑粒度，不能把需要单独改材质的零件合并。
+- 推荐 `const frame = builder.batchSlot(name, material)`，再调用 `frame.add(geometry, transform?)`；材质只绑定一次。完成后 `return builder.finish()`。空槽位不生成网格。旧 batch(name, geometry, material, transform?) 保留兼容，同名必须传同一材质实例（参数相同的两次 new 或 clone 也不是同一实例）。不同材质必须使用不同批次名，不要靠删除校验、比较颜色或自动改名规避。每次传新建 geometry，工具接管所有权；不要复用/再次 dispose 输入几何。
+- mesh/batch 的 name 使用稳定名称（snake_case 或 camelCase 均可）；batch 内零件作为整体编辑。先确定用户需要的编辑粒度，不能把需要单独改材质的零件合并。
 - `labelTexture(text, options?)` 自动适配文字；`canvasTexture(width,height,paint)` 用于标线/网格。输出赋给普通材质 map，无外网字体或图片依赖；挂载后由引擎管理资源。
 - 完整可编译范式：复制 `scripts/scaffolds/composite-handler.ts` 到工程 handlers/composite-example.ts，登记 registerAssemblyHandler，数据分组为 assemblies。不使用标签时无需创建标签材质。
 
@@ -147,5 +147,15 @@ PowerShell 文本读写显式指定 UTF-8，优先宿主编辑工具；不因终
 
 
 ### 组合体命名与结束顺序
-同一 builder 内 mesh/batchSlot 名称唯一，格式为小写字母开头及小写字母、数字、下划线。循环中的独立零件用稳定业务索引或 neg_z/pos_z 等方向名，不直接插入坐标、负号或小数。整体编辑的重复零件在循环外创建一次 batchSlot，循环内 add。所有槽位（包括文字）添加完成后最后调用一次 finish，再 applyTransform 和 return。
-统一构建增加组合体源码检查：直接调用的字面量名称、明确数组循环中的固定名称/负号插值、直接语句 finish 后调用。它不是运行验证，不覆盖别名、跨函数、条件路径和所有动态表达式；不能据此声称全部 handler 已运行成功。
+同一 builder 内 mesh/batchSlot 名称唯一，格式为字母或下划线开头，后接大小写字母、数字、下划线或连字符；保持大小写与原名，不自动改名。斜线保留给槽位路径。循环中的独立零件用稳定业务索引或 neg_z/pos_z 等方向名，建议不用随布局变化的坐标作为标识；连字符合法，小数点不允许。整体编辑的重复零件在循环外创建一次 batchSlot，循环内 add。所有槽位（包括文字）添加完成后最后调用一次 finish，再 applyTransform 和 return。
+统一构建增加组合体源码检查：直接调用的字面量名称、明确数组循环中的固定名称、直接语句 finish 后调用，以及能证明的同批次不同 new 材质实例、明确多次循环中的内联 new 材质。它不是运行验证，不覆盖别名、跨函数、条件路径和所有动态表达式；不能据此声称全部 handler 已运行成功。
+
+
+### 渲染性能配置（run/edit 共用）
+
+- 新场景默认流畅：pixelRatio=1、shadowMapEnabled=false、shadowMap=PCF、shadowMapSize=512；maxFps=60、renderMode=demand、antialias=false、logarithmicDepthBuffer=false。
+- 画质档位只改 pixelRatio/阴影开关/算法/全部灯光阴影分辨率。均衡为 1.25/开启/PCF/512；精细为 1.5/开启/PCF/1024。独立的限帧、渲染模式、初始化参数不随档位变。手动偏离档位显示自定义；保存实际 renderer 与 lights 配置。
+- 不在业务代码中另建渲染循环、重设 devicePixelRatio、强制 MSAA/对数深度或默认 4096 阴影。renderer.pixelRatio 是实际倍率，不能再乘设备倍率；允许 0.5～2 小数。阴影分辨率提供 256/512/1024/2048/4096。灯光可单独覆盖，选择档位或全局分辨率会重新应用全部灯光。
+- 动画通过 renderLoop.onFrame 注册，delta 单位秒，退订后可休眠；只观察帧的辅助逻辑用 onFrame(cb, false) 或 onAfterFrame，不能让静态场景保持绘制。直接修改场景或自定义异步资源完成后调用 renderLoop.invalidate()。标准 handle.update、编辑、控制器、模型/贴图完成、resize 已接线。按需模式有活跃动画时仍连续绘制。
+- maxFps 支持 0～240 整数，0 表示不额外限帧；动画按经过时间推进。后台暂停并重置统计窗口。统计每 500ms 刷新，FPS 统计最近 1 秒实际场景帧，阴影等多通道不能重复算帧；空闲显示空闲而非低性能警告。
+- antialias 与 logarithmicDepthBuffer 是初始化参数。高级设置保存期望值并展示当前生效值/待生效状态；回写工程后重新打开更新后的场景才生效，不自动刷新丢失编辑。不把 CPU 提交耗时或帧间隔标成 GPU 耗时。

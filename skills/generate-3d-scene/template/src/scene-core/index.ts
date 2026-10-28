@@ -29,3 +29,6 @@ export { registerWorkerHandler } from './handlers/procedural/worker';
 export { registerRackHandler } from './handlers/procedural/rack';
 export { default as ExampleCard } from './cards/ExampleCard.vue';
 export type { Component } from 'vue';
+
+export { QUALITY_PRESETS, qualityPreset, SHADOW_SIZES, normalizeRenderer, type QualityPreset } from './render-settings';
+export type { FrameStats } from './engine/RenderLoop';

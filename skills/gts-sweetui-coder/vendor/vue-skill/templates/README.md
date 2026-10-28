@@ -1,12 +1,3 @@
-# 页面布局模板
-
-需要布局参考时才选一项，结构已明确就直接写，不通读。
-
-| 模板 | 用途 | 数据与服务 |
-| --- | --- | --- |
-| DashboardCards.vue | 指标卡片布局 | 由调用方提供metrics |
-| `vendor/code-example/references/form-dialog/index.vue` | 新建/编辑弹窗页（唯一示例） | `vendor/code-example/references/feedback-flow/records.js`复制到api/records.js |
-| LeftInfoWithRightCard.vue | 左辅助区与右卡片区 | 具名slot由业务填充 |
-| SearchInfoWithRightCard.vue | 顶部查询与左右内容区 | 具名slot由业务填充 |
-
-单页模板复制到src/pages/{PAGE}/index.vue，布局组件放同页components/。保留原生token和公开API，演示数据按需求补全。构建通过不代表真实私有运行验收通过。
+# 布局起点
+Page.vue 是 init 使用的单一列表骨架，包含真实服务查询、分页与失败状态。简单列表可以直接改造；门户、多区域管理页先划分局部组件再编写，不能把骨架当成所有页面的布局。
+需要表单弹窗组合时读 ../../code-example/references/form-dialog/；需要重复内容卡片时读 ../../code-example/references/content-grid/。不必同时读取所有示例。

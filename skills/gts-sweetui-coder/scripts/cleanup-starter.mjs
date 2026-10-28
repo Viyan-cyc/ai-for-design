@@ -1,127 +1,29 @@
 #!/usr/bin/env node
-// cleanup-starter.mjs
-// 交付卫生：移除 starter 预置的 api/demo.js + api/mock/demo-data.js。
-//
-// 安全规则（硬约束 0 的唯一例外，全部收进脚本）：
-//   - 只处理 <dir>/src/ 之下的两个既定文件，路径由 srcDir join 拼出，不接收其它路径输入；
-//   - 仅当文件内容仍匹配 starter 原样特征（全部签名命中）才删除；
-//   - 文件已被改造（函数名/数据已变）→ WARN 保留，绝不误删用户改过的文件；
-//   - 文件不存在 → 幂等 OK。
-//
-// Usage:
-//   node cleanup-starter.mjs --dir "<folder with src/>"
-//
-// Output (agent-parseable):
-//   RESULT: OK
-//   CLEANED: <n>, WARNED: <m>
-//   WARNED_LIST: <comma-separated relative paths, omitted if empty>
-//   RESULT: FAIL | <reason>
-//   HINT: <next step>
-
-import { existsSync, readFileSync, unlinkSync, readdirSync } from 'fs';
-import { join, resolve, dirname, relative } from 'path';
-import { fileURLToPath } from 'url';
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
-
-// --- CLI args ---
-const args = process.argv.slice(2);
-function getOpt(long, short) {
-  const idx = args.findIndex((a) => a === long || a === short);
-  if (idx === -1) return undefined;
-  const val = args[idx + 1];
-  if (val === undefined || val.startsWith('-')) return undefined;
-  return val;
-}
-
-const dir = getOpt('--dir', '-d');
-if (!dir) {
-  console.log('RESULT: FAIL | Usage: node cleanup-starter.mjs --dir "<folder with src/>"');
-  process.exit(1);
-}
-
-const root = resolve(dir);
-const srcDir = join(root, 'src');
-if (!existsSync(srcDir)) {
-  console.log(`RESULT: FAIL | src folder not found: ${srcDir}`);
-  console.log('HINT: 传入的是工程目录（含 index.html 与 src/），不是 src/ 本身');
-  process.exit(1);
-}
-
-// 每个文件的多条 starter 原样特征（全部命中才视为「未改造」）
-const TARGETS = [
-  {
-    rel: join('api', 'demo.js'),
-    signatures: [
-      "export async function getDeviceList({ keyword = '', page = 1, pageSize = 10 } = {})",
-      'demoDevices.filter((it) => it.name.includes(keyword))',
-    ],
-  },
-  {
-    rel: join('api', 'mock', 'demo-data.js'),
-    signatures: [
-      'export const demoDevices = [',
-      "'Ankara-Server-01'",
-    ],
-  },
-];
-
-const cleaned = [];
-const warned = [];
-const referenced = new Set();
-function scan(dir) {
-  for (const entry of readdirSync(dir, {withFileTypes:true})) {
-    if(entry.isSymbolicLink()||entry.name.startsWith('.'))continue;
-    const file=join(dir,entry.name);
-    if(entry.isDirectory())scan(file);
-    else if(/\.(vue|m?js)$/.test(entry.name)) {
-      const text=readFileSync(file,'utf8');
-      for(const m of text.matchAll(/(?:from\s*|import\s*)['"]([^'"]+)['"]/g))if(m[1].startsWith('.')) {
-        const imported=resolve(dirname(file),m[1]);referenced.add(imported);referenced.add(imported+'.js');
-      }
-    }
+// Remove only exact, unreferenced starter files. Any edited content is retained.
+import fs from 'node:fs';
+import path from 'node:path';
+import {scripts,walkFiles,compilerRequire,dependencies,resolveSource} from './source-tools.mjs';
+const args=process.argv.slice(2),i=args.findIndex(a=>a==='--dir'||a==='-d');
+try{
+  if(i<0||!args[i+1])throw Error('Usage: node cleanup-starter.mjs --dir "<project>"');
+  const root=path.resolve(args[i+1]),src=path.join(root,'src');if(!fs.existsSync(src))throw Error('src missing');
+  const files=walkFiles(src),keys=Object.fromEntries(files.map(f=>['/src/'+path.relative(src,f).split(path.sep).join('/'),f]));
+  const candidate=new Set(),warnings=new Set(),sfc=compilerRequire()('@vue/compiler-sfc');
+  const normal=s=>s.replace(/^\uFEFF/,'').replace(/\r\n/g,'\n');
+  for(const rel of ['api/demo.js','api/mock/demo-data.js']){
+    const key='/src/'+rel,file=path.join(src,rel);if(!fs.existsSync(file))continue;
+    if(fs.lstatSync(file).isSymbolicLink()||fs.realpathSync(file)!==path.resolve(file)){warnings.add(rel+': symbolic link retained');continue;}
+    if(normal(fs.readFileSync(file,'utf8'))===normal(fs.readFileSync(path.join(scripts,'preview/src',rel),'utf8')))candidate.add(key);else warnings.add(rel+': edited file retained');
   }
-}
-scan(srcDir);
-
-for (const target of TARGETS) {
-  const abs = join(srcDir, target.rel);
-  if (!existsSync(abs)) continue; // 幂等：不存在即无事可做
-  if (referenced.has(abs)) { warned.push(target.rel+' (still referenced; preserved)'); continue; }
-  let content;
-  try {
-    content = readFileSync(abs, 'utf8');
-  } catch (err) {
-    warned.push(target.rel);
-    continue;
+  const edges=[];let dynamic=false;
+  for(const file of files.filter(f=>/\.(vue|m?js)$/.test(f))){const key='/src/'+path.relative(src,file).split(path.sep).join('/');let source=fs.readFileSync(file,'utf8'),ast;
+    if(file.endsWith('.vue')){const p=sfc.parse(source,{filename:file});if(p.errors.length)throw Error('Cannot safely inspect '+key);const d=p.descriptor;source=[d.script?.content,d.scriptSetup?.content].filter(Boolean).join('\n');}
+    ast=sfc.babelParse(source,{sourceType:'module'}).program;
+    for(const dep of dependencies(ast)){if(typeof dep.spec!=='string'){dynamic=true;continue;}const target=resolveSource(dep.spec,key,keys);if(target)edges.push([key,target]);}
   }
-  const stillStarter = target.signatures.every((s) => content.includes(s));
-  if (stillStarter) {
-    try {
-      unlinkSync(abs);
-      cleaned.push(relative(root, abs));
-    } catch (err) {
-      warned.push(target.rel);
-    }
-  } else {
-    warned.push(target.rel);
-  }
-}
-
-if (cleaned.length === 0 && warned.length === 0) {
-  console.log('RESULT: OK');
-  console.log('CLEANED: 0, WARNED: 0');
-  console.log('NOTE: starter 文件本就不存在，无需清理');
-  process.exit(0);
-}
-
-console.log('RESULT: OK');
-console.log(`CLEANED: ${cleaned.length}, WARNED: ${warned.length}`);
-if (cleaned.length) {
-  console.log(`CLEANED_LIST: ${cleaned.join(', ')}`);
-}
-if (warned.length) {
-  console.log(`WARNED_LIST: ${warned.join(', ')}`);
-  console.log('NOTE: 上述文件内容已非 starter 原样（可能已被改造为真实模块），未删除，保留处理');
-}
-process.exit(0);
+  // Fixed point: a retained service keeps its imported mock too.
+  let changed=true;while(changed){changed=false;for(const [from,to]of edges)if(candidate.has(to)&&!candidate.has(from)){candidate.delete(to);warnings.add(to+': still referenced by '+from);changed=true;}}
+  if(dynamic){for(const name of candidate)warnings.add(name+': nonliteral dynamic import prevents safe cleanup');candidate.clear();}
+  for(const key of candidate){const file=keys[key];if(!file||!file.startsWith(src+path.sep))throw Error('Cleanup target escapes src');fs.unlinkSync(file);}
+  console.log('RESULT: OK\nCLEANED: '+candidate.size+', WARNED: '+warnings.size);for(const w of warnings)console.log('WARN: '+w);
+}catch(e){console.log('RESULT: FAIL | '+e.message);process.exitCode=1;}

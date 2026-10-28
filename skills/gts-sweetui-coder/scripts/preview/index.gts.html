@@ -1,65 +1,97 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-theme="uDesign2.2-light">
+<html lang="zh-CN">
 <head>
-  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-  <link rel="icon" href="data:,"><title>GTS SweetUI Preview</title>
-  <script src="./public/library/vue.global.prod.js"></script>
-  <script src="./public/library/dayjs.min.js"></script>
-  <script src="./public/library/vue3-sfc-loader.js"></script>
-  <script src="./public/library/runtime.config.js"></script>
-  <style>
-    html,body,#app{min-height:100%;margin:0}
-    body{font-family:var(--swt-font-family-zh);background:var(--swt-color-bg-secondary);color:var(--swt-color-text-primary)}
-    #ux-boot-error{display:none;white-space:pre-wrap;margin:24px;padding:16px;border:1px solid #b00;color:#900;background:#fff0f0}
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SweetUI 页面预览</title>
+<script>window.process = window.process || { env: { NODE_ENV: 'production' } };</script>
+<script src="./public/library/vue.global.prod.js"></script>
+<script src="./public/library/xss.js"></script>
+<script>window.xss = window.xss || window.filterXSS;</script>
+<script src="./public/library/lodash.min.js"></script>
+<script>window._$1 = window._;</script>
+<script src="./public/library/dayjs.min.js"></script>
+<script src="./public/library/sweet-ui-base.umd.cjs"></script>
+<script src="./public/library/vue3-sfc-loader.js"></script>
+<link rel="stylesheet" href="./public/library/sweet-ui-base.css">
+<style>#ux-boot-error { display:none; white-space:pre-wrap; padding:24px; }</style>
 </head>
-<body>
-  <div id="app"></div><pre id="ux-boot-error" role="alert"></pre>
-  <script src="./preview-data.js"></script>
-  <script src="./preview-build.js"></script>
-  <script>
-  (function () {
-    var errorBox=document.getElementById('ux-boot-error');
-    function showError(error) { errorBox.textContent='预览加载失败：'+((error&&error.message)||error);errorBox.style.display='block'; }
-    window.addEventListener('error',function(e){showError(e.error||e.message||('资源未加载：'+(e.target&&e.target.src)));},true);
-    window.addEventListener('unhandledrejection',function(e){showError(e.reason);});
-    var SRC=window.__UX_PROTO_SRC__,config=window.GTS_SWEETUI_RUNTIME;
-    if(!SRC){showError('缺少preview-data.js，请运行build');return;}
-    if(!config||!config.ready){showError('SWEETUI_RUNTIME_PENDING：内网维护者需先补齐SweetUI UMD、样式、字体及模块映射；不是可运行交付。');return;}
-    if(window.__GTS_BUILD_OK__!==true||JSON.stringify(SRC)!==JSON.stringify(window.__GTS_BUILT_SOURCE__)){showError('当前预览未通过build或源码映射已改变，请重新build。');return;}
-    function addStyle(text){var el=document.createElement('style');el.textContent=text;document.head.appendChild(el);}
-    var required=new Set(window.__GTS_REQUIRED_MODULES__||['@hw-seq/sweet-ui-base']);
-    function used(entry){return !entry.for||entry.for.some(function(name){return required.has(name);});}
-    function local(file){if(typeof file!=='string'||!file.startsWith('./public/library/')||file.includes('..')||file.includes('\\'))throw new Error('运行时路径必须位于./public/library/: '+file);return file;}
-    function loadScript(entry){return new Promise(function(resolve,reject){var el=document.createElement('script');el.src=local(entry.file);el.onload=resolve;el.onerror=function(){reject(new Error('UMD加载失败：'+entry.file));};document.head.appendChild(el);});}
-    function loadStyle(entry){return new Promise(function(resolve,reject){var el=document.createElement('link');el.rel='stylesheet';el.href=local(entry.file);el.onload=resolve;el.onerror=function(){reject(new Error('样式加载失败：'+entry.file));};document.head.appendChild(el);});}
-    window.process=window.process||{};window.process.env=window.process.env||{};
-    if(!window.process.env.NODE_ENV)window.process.env.NODE_ENV='production';
-    if(!window.process.version)window.process.version='';window.process.browser=true;
-    var loadedScripts=Promise.resolve();
-    config.scripts.filter(used).forEach(function(entry){loadedScripts=loadedScripts.then(function(){return loadScript(entry);});});
-    var assets=['.png','.jpg','.jpeg','.gif','.svg','.webp','.ico','.bmp'];
-    Promise.all([loadedScripts,Promise.all(config.styles.filter(used).map(loadStyle))]).then(function(){
-      var modules=Object.assign(Object.create(null),{vue:Vue,dayjs:dayjs},config.modules());
-      required.forEach(function(name){if(!Object.hasOwn(modules,name))throw new Error('离线运行时未映射模块 '+name+'；请补真实UMD映射，不要改业务import绕过。');});
-      var options={
-        moduleCache:modules,
-        getFile:function(path){var clean=String(path).split('?')[0].split('#')[0],type=clean.slice(clean.lastIndexOf('.'));if(assets.includes(type))return Promise.resolve({getContentData:function(){return Promise.resolve('');},type:type});var content=SRC[clean];if(content===undefined)return Promise.reject(new Error('源码映射中缺少 '+clean+'，修改源码后请重新build'));return Promise.resolve({getContentData:function(){return Promise.resolve(content.replace(/^\uFEFF/,''));},type:type==='.js'?'.mjs':type});},
-        handleModule:function(type,getContentData,path){
-          if(type==='.css')return Promise.resolve(getContentData()).then(addStyle).then(function(){return {};});
-          if(type==='.json')return Promise.resolve(getContentData()).then(function(text){return {default:JSON.parse(text.replace(/^\uFEFF/,'')),__esModule:true};});
-          if(assets.includes(type))return Promise.resolve('.'+String(path).split('?')[0]);
-          return undefined;
-        },addStyle:addStyle,log:function(type){if(type==='error')showError(Array.prototype.slice.call(arguments,1).join(' '));}
-      };
-      var themePaths=Object.keys(SRC).filter(function(p){return p.startsWith('/src/assets/themes/')&&/\.css$/.test(p);}).sort();
-      themePaths.forEach(function(p){addStyle(SRC[p]);});
-      return window['vue3-sfc-loader'].loadModule('/src/native-adapter.js',options).then(function(adapter){
-        var app=Vue.createApp({components:{UxRoot:Vue.defineAsyncComponent(function(){return window['vue3-sfc-loader'].loadModule('/src/App.vue',options);})},template:'<UxRoot />'});
-        app.config.errorHandler=function(error){showError(error);console.error(error);};
-        return Promise.resolve(adapter.installNative(app)).then(function(){app.mount('#app');});
-      });
-    }).catch(showError);
-  })();
-  </script>
-</body></html>
+<body theme="uDesign2.2-light">
+<div id="app"></div><pre id="ux-boot-error"></pre>
+<script src="./preview-data.js"></script>
+<script>
+(function () {
+    var bootError = document.getElementById('ux-boot-error');
+    function showBootError(msg) { bootError.textContent = '预览加载失败：' + msg; bootError.style.display = 'block'; }
+    window.addEventListener('error', function(e) { showBootError(e.message || '资源加载失败'); });
+    window.addEventListener('unhandledrejection', function(e) { showBootError(String(e.reason)); });
+    var SRC = window.__UX_PROTO_SRC__, SweetUI = window['sweet-ui-base'];
+    if (!SRC || !SweetUI || !window['vue3-sfc-loader']) { showBootError('缺少源码映射或运行库，请补齐资源后 build'); return; }
+    var ASSET_EXT = ['.png','.jpg','.jpeg','.gif','.svg','.webp','.ico','.bmp','.avif','.woff','.woff2','.ttf','.eot','.otf'];
+    function addStyle(text) { var style = document.createElement('style'); style.textContent = text; document.head.appendChild(style); }
+            var options = {
+                moduleCache: Object.assign(Object.create(null), {
+                    vue: Vue, dayjs: dayjs,
+                    "@hw-seq/sweet-ui-base": Object.assign({}, SweetUI, {default: SweetUI.default || SweetUI}),
+                    "@hw-seq/sweet-ui-base/dist/sweet-ui-base.css": {}
+                }),
+                getFile: function (path) {
+                    var clean = String(path).split("?")[0].split("#")[0];
+                    if (ASSET_EXT.some(function (ext) { return clean.endsWith(ext); })) {
+                        var assetExt = clean.slice(clean.lastIndexOf("."));
+                        return Promise.resolve({ getContentData: function () { return ""; }, type: assetExt });
+                    }
+                    clean = window.__UX_RESOLVE_SOURCE__(clean, "/src/App.vue", SRC) || clean;
+                    var content = SRC[clean];
+                    if (content === undefined) {
+                        return Promise.reject(new Error("源码映射中找不到 " + clean + " — 检查文件与import路径；源码修改后重跑build"));
+                    }
+                    // 剥 BOM：Windows 编辑器常写入 EF BB BF，会毒化 CSS 首条选择器 / JSON.parse
+                    if (content.charCodeAt(0) === 0xfeff) content = content.slice(1);
+                    // 类型取自真实扩展名；.js 按 .mjs 处理 —— sfc-loader 只对 .mjs 走 ESM 解析，
+                    // 而 Vite 语义中 src/ 下 .js 本就是 ESM，此处映射使预览与真实工程一致
+                    var type = clean.slice(clean.lastIndexOf("."));
+                    if (type === ".js") type = ".mjs";
+                    // 契约要求 getContentData 返回 Promise（部分调用链直接 .then）
+                    return Promise.resolve({ getContentData: function () { return Promise.resolve(content); }, type: type });
+                },
+                handleModule: function (type, getContentData, path) {
+                    if (type === ".css") {
+                        return Promise.resolve(getContentData()).then(addStyle).then(function () { return {}; });
+                    }
+                    if (type === ".json") {
+                        // ESM 语义：default import 拿到解析后的对象（剥 BOM —— Windows 编辑器常带）
+                        return Promise.resolve(getContentData()).then(function (text) {
+                            var parsed = JSON.parse(String(text).replace(/^﻿/, ""));
+                            return { default: parsed, __esModule: true };
+                        });
+                    }
+                    if (ASSET_EXT.indexOf(type) !== -1) {
+                        // 返回相对预览根的 URL（真实工程中 import 资源同样得到 URL，语义一致）
+                        return Promise.resolve("." + String(path).split("?")[0]);
+                    }
+                    // 注意：必须返回 undefined（不是 null）才会走 loader 对 .vue/.js 的默认编译处理
+                    return undefined;
+                },
+                addStyle: function (styleStr) { addStyle(styleStr); },
+                log: function (type) {
+                    if (type === "error") {
+                        var args = Array.prototype.slice.call(arguments, 1);
+                        showBootError(args.map(String).join(" "));
+                        console.error.apply(console, args);
+                    }
+                },
+            };
+
+
+    var loader = window['vue3-sfc-loader'];
+    Promise.all([loader.loadModule('/src/App.vue', options), loader.loadModule('/src/runtime.js', options)])
+      .then(async function(modules) {
+        var app = Vue.createApp(modules[0].default || modules[0]);
+        await modules[1].installRuntime(app);
+        app.mount('#app');
+      }).catch(function(error) { showBootError(error.message || String(error)); });
+})();
+</script>
+</body>
+</html>

@@ -37,7 +37,7 @@
         4
       ],
       "castShadow": true,
-      "shadowMapSize": 2048,
+      "shadowMapSize": 512,
       "shadowBias": -0.0005,
       "shadowCameraNear": 0.5,
       "shadowCameraFar": 200,
@@ -66,9 +66,14 @@
   "renderer": {
     "toneMapping": "ACESFilmic",
     "exposure": 1,
-    "shadowMap": "PCFSoft",
-    "shadowMapEnabled": true,
-    "maxPixelRatio": 2
+    "shadowMap": "PCF",
+    "shadowMapEnabled": false,
+    "pixelRatio": 1,
+    "shadowMapSize": 512,
+    "antialias": false,
+    "logarithmicDepthBuffer": false,
+    "maxFps": 60,
+    "renderMode": "demand"
   },
   "Box": [
     {

@@ -1,44 +1,4 @@
-# SweetForm
-
-状态：来自带回源码契约，尚未完成私有 UMD 运行验证。
-
-定位：`packages/components/form/form.ts`。
-
-具体使用示例优先看同名 `.vue` 文件；本页只在 API 不确定时读取。
-
-## Props
-
-| 名称 | 类型 | 默认/允许值 |
-|---|---|---|
-| `size` | string | ['large', 'default', 'small'] |
-| `disabled` | boolean | False |
-| `model` | object |  |
-| `rules` | object |  |
-| `labelPosition` | string | ['left', 'right', 'top'] |
-| `requireAsteriskPosition` | string | ['left', 'right'] |
-| `labelWidth` | string / number |  |
-| `labelSuffix` | string |  |
-| `inline` | boolean | False |
-| `inlineMessage` | boolean | False |
-| `statusIcon` | boolean | False |
-| `showMessage` | boolean | True |
-| `validateOnRuleChange` | boolean | True |
-| `hideRequiredAsterisk` | boolean | False |
-| `scrollToError` | boolean | False |
-| `scrollIntoViewOptions` | object / boolean | True |
-
-## events
-
-- validate
-
-## slots
-
-- default
-
-## exposed_methods
-
-- validate
-- validateField
-- resetFields
-- clearValidate
-- scrollToField
+# SweetForm / SweetFormItem
+显式导入 SweetForm、SweetFormItem。SweetForm 使用 :model、:rules、ref；SweetFormItem 使用 label、prop，prop 对应 model 中的字段。
+提交先 await formRef.value.validate()，验证通过才调用服务；校验拒绝与服务失败分开处理，不把校验不通过提示为网络错误。可用方法：validate、validateField、resetFields、clearValidate、scrollToField、getField。
+resetFields 恢复挂载时值，编辑不同记录时显式同步 model，必要时 nextTick 后 clearValidate。不要假定校验接口在预览中不可用；内网验收使用真实组件 ref 检查。

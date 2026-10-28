@@ -150,8 +150,15 @@ export interface RendererConfig {
   shadowMap: 'Basic' | 'PCF' | 'PCFSoft' | 'VSM';
   shadowMapEnabled: boolean;
 
-  /** 输出像素比上限（性能保护，默认 2） */
+  /** 旧工程兼容字段；新工程使用实际 pixelRatio。 */
   maxPixelRatio?: number;
+  pixelRatio?: number;
+  shadowMapSize?: number;
+  antialias?: boolean;
+  logarithmicDepthBuffer?: boolean;
+  /** 0 = 不额外限制（仍受浏览器刷新率限制）。 */
+  maxFps?: number;
+  renderMode?: 'demand' | 'continuous';
 }
 
 // ══════════════════════════════════════════════════════════════

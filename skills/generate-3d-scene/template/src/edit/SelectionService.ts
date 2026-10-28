@@ -49,7 +49,7 @@ export class SelectionService {
         this.refreshSkinnedBounds(helper.userData.target as THREE.Object3D | undefined);
         helper.update();
       });
-    });
+    }, false);
   }
 
   private onPointerDown = (ev: PointerEvent): void => {

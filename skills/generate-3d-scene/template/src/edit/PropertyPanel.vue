@@ -29,6 +29,7 @@ import { RESERVED_KEYS } from '@/scene-core/types';
 import type { LightHelperService } from './LightHelperService';
 import type { MaterialLibService } from './MaterialLibService';
 import MaterialSection from './MaterialSection.vue';
+import RenderSettings from './RenderSettings.vue';
 import MaterialPalette from './MaterialPalette.vue';
 import EditMaterialModal from './EditMaterialModal.vue';
 import { SCENE_PRESETS, applyScenePreset } from './ScenePresets';
@@ -424,6 +425,9 @@ const lightDraft = ref({
   positionX: 5,
   positionY: 10,
   positionZ: 5,
+  targetX: 0,
+  targetY: 0,
+  targetZ: 0,
   groundColor: '#444444',
   distance: 0,
   decay: 2,
@@ -432,7 +436,7 @@ const lightDraft = ref({
   width: 2,
   height: 2,
   castShadow: false,
-  shadowMapSize: 2048,
+  shadowMapSize: 512,
   shadowBias: -0.0005,
   shadowCameraNear: 0.5,
   shadowCameraFar: 500,
@@ -456,6 +460,9 @@ const loadLight = (): void => {
     positionX: l.position?.[0] ?? 0,
     positionY: l.position?.[1] ?? 0,
     positionZ: l.position?.[2] ?? 0,
+    targetX: l.target?.[0] ?? 0,
+    targetY: l.target?.[1] ?? 0,
+    targetZ: l.target?.[2] ?? 0,
     groundColor: l.groundColor ?? '#444444',
     distance: l.distance ?? 0,
     decay: l.decay ?? 2,
@@ -464,7 +471,7 @@ const loadLight = (): void => {
     width: l.width ?? 2,
     height: l.height ?? 2,
     castShadow: l.castShadow ?? false,
-    shadowMapSize: l.shadowMapSize ?? 2048,
+    shadowMapSize: l.shadowMapSize ?? 512,
     shadowBias: l.shadowBias ?? -0.0005,
     shadowCameraNear: l.shadowCameraNear ?? 0.5,
     shadowCameraFar: l.shadowCameraFar ?? 500,
@@ -513,6 +520,7 @@ const buildLightConfig = (id: string): LightConfig => {
     base.height = d.height;
   }
   if (type === 'DirectionalLight' || type === 'SpotLight') {
+    base.target = [d.targetX, d.targetY, d.targetZ];
     base.castShadow = d.castShadow;
     if (d.castShadow) {
       base.shadowMapSize = Math.round(d.shadowMapSize);
@@ -536,7 +544,7 @@ const applyLight = (): void => {
     return;
   }
   const d = lightDraft.value;
-  if (![d.intensity, d.positionX, d.positionY, d.positionZ, d.distance, d.decay, d.angle, d.penumbra, d.width, d.height, d.shadowMapSize, d.shadowBias, d.shadowCameraNear, d.shadowCameraFar, d.shadowCameraLeft, d.shadowCameraRight, d.shadowCameraTop, d.shadowCameraBottom]
+  if (![d.targetX, d.targetY, d.targetZ, d.intensity, d.positionX, d.positionY, d.positionZ, d.distance, d.decay, d.angle, d.penumbra, d.width, d.height, d.shadowMapSize, d.shadowBias, d.shadowCameraNear, d.shadowCameraFar, d.shadowCameraLeft, d.shadowCameraRight, d.shadowCameraTop, d.shadowCameraBottom]
     .every((v) => Number.isFinite(v))) {
     return;
   }
@@ -645,41 +653,6 @@ const applyControls = (): void => {
         maxPolarAngle: d.maxPolarAngle,
         zoomSpeed: d.zoomSpeed,
       } as ControlsConfig,
-    });
-  });
-};
-
-// ---- 渲染器 ----
-const renDraft = ref({
-  toneMapping: 'ACESFilmic' as SceneData['renderer']['toneMapping'],
-  exposure: 1,
-  shadowMapEnabled: true,
-  shadowMap: 'PCFSoft' as SceneData['renderer']['shadowMap'],
-});
-watch(() => snap.value?.renderer, (r) => {
-  if (r) {
-    renDraft.value = {
-      toneMapping: r.toneMapping,
-      exposure: r.exposure,
-      shadowMapEnabled: r.shadowMapEnabled,
-      shadowMap: r.shadowMap,
-    };
-  }
-}, { immediate: true });
-
-const applyRenderer = (): void => {
-  const d = renDraft.value;
-  if (!Number.isFinite(d.exposure)) {
-    return;
-  }
-  props.bridge.commitLive('渲染器', () => {
-    props.bridge.handle.update({
-      renderer: {
-        toneMapping: d.toneMapping,
-        exposure: d.exposure,
-        shadowMapEnabled: d.shadowMapEnabled,
-        shadowMap: d.shadowMap,
-      },
     });
   });
 };
@@ -1192,8 +1165,9 @@ const modalPos = computed(() => defaultDockPos(editSlot.value, PANEL_W));
 
     <!-- ═══ 场景页（全局配置） ═══ -->
     <template v-else>
+      <RenderSettings :bridge="bridge" />
       <section class="ed-sec">
-        <div class="ed-sec__t">场景预设</div>
+        <div class="ed-sec__t">场景风格</div>
         <p class="ed-label">替换灯光、背景与曝光，保留模型材质；可撤销。</p>
         <div style="display: flex; flex-wrap: wrap; gap: 5px">
           <button v-for="preset in SCENE_PRESETS" :key="preset.id" class="ed-btn" @click="applyScenePreset(props.bridge, preset.id)">{{ preset.label }}</button>
@@ -1202,7 +1176,7 @@ const modalPos = computed(() => defaultDockPos(editSlot.value, PANEL_W));
       <!-- 场景环境 -->
       <div class="ed-sec">
         <div class="ed-sec__t">
-          场景
+          环境
         </div>
         <div class="ed-row">
           <span class="ed-label">背景</span>
@@ -1272,6 +1246,297 @@ const modalPos = computed(() => defaultDockPos(editSlot.value, PANEL_W));
             >
           </div>
         </template>
+      </div>
+
+      <!-- 灯光 -->
+      <div ref="lightSection" class="ed-sec">
+        <div class="ed-sec__t">
+          灯光
+          <select
+            class="pp__mini"
+            title="添加灯光"
+            @change="addLightFromSelect"
+          >
+            <option value="">
+              + 添加…
+            </option>
+            <option
+              v-for="t in LIGHT_TYPES"
+              :key="t"
+              :value="t"
+            >
+              {{ t }}
+            </option>
+          </select>
+        </div>
+        <div class="ed-row">
+          <select
+            v-model="activeLightId"
+            class="pp__grow"
+          >
+            <option
+              v-for="l in lights"
+              :key="l.id"
+              :value="l.id"
+            >
+              {{ l.id }}
+            </option>
+          </select>
+          <button
+            class="ed-btn ed-btn--danger"
+            :disabled="!activeLightId"
+            @click="removeLight"
+          >
+            删除
+          </button>
+        </div>
+        <template v-if="activeLight">
+          <div class="ed-row">
+            <span class="ed-label">类型</span>
+            <span class="pp__type">{{ activeLight.type }}</span>
+          </div>
+          <div class="ed-row">
+            <span class="ed-label">强度</span>
+            <input
+              v-model.number="lightDraft.intensity"
+              class="pp__range"
+              type="range"
+              min="0"
+              max="20"
+              step="0.1"
+              @input="applyLight"
+            >
+            <input
+              v-model.number="lightDraft.intensity"
+              class="pp__num"
+              type="number"
+              min="0"
+              step="0.1"
+              @input="applyLight"
+            >
+          </div>
+          <div class="ed-row">
+            <span class="ed-label">颜色</span>
+            <input
+              v-model="lightDraft.color"
+              type="color"
+              @input="applyLight"
+            >
+          </div>
+          <template v-if="activeLight.type !== 'AmbientLight'">
+            <div class="ed-row">
+              <span class="ed-label pp__ax">位置</span>
+              <div class="pp__row3">
+                <input
+                  v-model.number="lightDraft.positionX"
+                  type="number"
+                  step="0.5"
+                  @input="applyLight"
+                >
+                <input
+                  v-model.number="lightDraft.positionY"
+                  type="number"
+                  step="0.5"
+                  @input="applyLight"
+                >
+                <input
+                  v-model.number="lightDraft.positionZ"
+                  type="number"
+                  step="0.5"
+                  @input="applyLight"
+                >
+              </div>
+            </div>
+          </template>
+          <div v-if="activeLight.type === 'DirectionalLight' || activeLight.type === 'SpotLight'" class="ed-row">
+            <span class="ed-label" title="灯光照向的世界坐标位置（米）">照向位置</span>
+            <div class="pp__row3">
+              <input v-model.number="lightDraft.targetX" aria-label="照向位置 X" title="X（米）" type="number" step="0.5" @input="applyLight">
+              <input v-model.number="lightDraft.targetY" aria-label="照向位置 Y" title="Y（米）" type="number" step="0.5" @input="applyLight">
+              <input v-model.number="lightDraft.targetZ" aria-label="照向位置 Z" title="Z（米）" type="number" step="0.5" @input="applyLight">
+            </div>
+          </div>
+          <div
+            v-if="activeLight.type === 'HemisphereLight'"
+            class="ed-row"
+          >
+            <span class="ed-label">地面色</span>
+            <input
+              v-model="lightDraft.groundColor"
+              type="color"
+              @input="applyLight"
+            >
+          </div>
+          <template v-if="activeLight.type === 'PointLight' || activeLight.type === 'SpotLight'">
+            <div class="ed-row">
+              <span class="ed-label">衰减距</span>
+              <input
+                v-model.number="lightDraft.distance"
+                class="pp__num"
+                type="number"
+                min="0"
+                step="1"
+                @input="applyLight"
+              >
+            </div>
+            <div class="ed-row">
+              <span class="ed-label">衰减度</span>
+              <input
+                v-model.number="lightDraft.decay"
+                class="pp__num"
+                type="number"
+                min="0"
+                step="0.1"
+                @input="applyLight"
+              >
+            </div>
+          </template>
+          <template v-if="activeLight.type === 'SpotLight'">
+            <div class="ed-row">
+              <span class="ed-label">锥角</span>
+              <input
+                v-model.number="lightDraft.angle"
+                class="pp__num"
+                type="number"
+                min="0"
+                :max="Math.PI / 2"
+                step="0.01"
+                @input="applyLight"
+              >
+            </div>
+            <div class="ed-row">
+              <span class="ed-label">柔边</span>
+              <input
+                v-model.number="lightDraft.penumbra"
+                class="pp__range"
+                type="range"
+                min="0"
+                max="1"
+                step="0.01"
+                @input="applyLight"
+              >
+              <input
+                v-model.number="lightDraft.penumbra"
+                class="pp__num"
+                type="number"
+                min="0"
+                max="1"
+                step="0.01"
+                @input="applyLight"
+              >
+            </div>
+          </template>
+          <template v-if="activeLight.type === 'RectAreaLight'">
+            <div class="ed-row">
+              <span class="ed-label">宽</span>
+              <input
+                v-model.number="lightDraft.width"
+                class="pp__num"
+                type="number"
+                min="0.1"
+                step="0.1"
+                @input="applyLight"
+              >
+            </div>
+            <div class="ed-row">
+              <span class="ed-label">高</span>
+              <input
+                v-model.number="lightDraft.height"
+                class="pp__num"
+                type="number"
+                min="0.1"
+                step="0.1"
+                @input="applyLight"
+              >
+            </div>
+          </template>
+          <template v-if="activeLight.type === 'DirectionalLight' || activeLight.type === 'SpotLight'">
+            <label class="ed-row pp__check">
+              <input
+                v-model="lightDraft.castShadow"
+                type="checkbox"
+                @change="applyLight"
+              >投射阴影
+            </label>
+            <template v-if="lightDraft.castShadow">
+              <div class="ed-row">
+                <span class="ed-label">阴影贴图</span>
+                <select v-model.number="lightDraft.shadowMapSize" @change="applyLight">
+                  <option v-for="size in [256, 512, 1024, 2048, 4096]" :key="size" :value="size">{{ size }}</option>
+                </select>
+              </div>
+              <div class="ed-row">
+                <span class="ed-label">阴影偏移</span>
+                <input
+                  v-model.number="lightDraft.shadowBias"
+                  class="pp__num"
+                  type="number"
+                  step="0.0001"
+                  @input="applyLight"
+                >
+              </div>
+              <template v-if="activeLight.type === 'DirectionalLight'">
+                <div class="ed-row">
+                  <span class="ed-label">近/远</span>
+                  <input
+                    v-model.number="lightDraft.shadowCameraNear"
+                    class="pp__num"
+                    type="number"
+                    step="0.5"
+                    @input="applyLight"
+                  >
+                  <input
+                    v-model.number="lightDraft.shadowCameraFar"
+                    class="pp__num"
+                    type="number"
+                    step="10"
+                    @input="applyLight"
+                  >
+                </div>
+                <div class="ed-row">
+                  <span class="ed-label pp__ax">视锥</span>
+                  <div class="pp__row3">
+                    <input
+                      v-model.number="lightDraft.shadowCameraLeft"
+                      type="number"
+                      step="1"
+                      @input="applyLight"
+                    >
+                    <input
+                      v-model.number="lightDraft.shadowCameraRight"
+                      type="number"
+                      step="1"
+                      @input="applyLight"
+                    >
+                  </div>
+                </div>
+                <div class="ed-row">
+                  <span class="ed-label pp__ax">上下</span>
+                  <div class="pp__row3">
+                    <input
+                      v-model.number="lightDraft.shadowCameraTop"
+                      type="number"
+                      step="1"
+                      @input="applyLight"
+                    >
+                    <input
+                      v-model.number="lightDraft.shadowCameraBottom"
+                      type="number"
+                      step="1"
+                      @input="applyLight"
+                    >
+                  </div>
+                </div>
+              </template>
+            </template>
+          </template>
+        </template>
+        <div
+          v-else
+          class="pp__empty"
+        >
+          无灯光（右上角 + 添加）
+        </div>
       </div>
 
       <!-- 相机 -->
@@ -1386,294 +1651,6 @@ const modalPos = computed(() => defaultDockPos(editSlot.value, PANEL_W));
         </div>
       </div>
 
-      <!-- 灯光 -->
-      <div ref="lightSection" class="ed-sec">
-        <div class="ed-sec__t">
-          灯光
-          <select
-            class="pp__mini"
-            title="添加灯光"
-            @change="addLightFromSelect"
-          >
-            <option value="">
-              + 添加…
-            </option>
-            <option
-              v-for="t in LIGHT_TYPES"
-              :key="t"
-              :value="t"
-            >
-              {{ t }}
-            </option>
-          </select>
-        </div>
-        <div class="ed-row">
-          <select
-            v-model="activeLightId"
-            class="pp__grow"
-          >
-            <option
-              v-for="l in lights"
-              :key="l.id"
-              :value="l.id"
-            >
-              {{ l.id }}
-            </option>
-          </select>
-          <button
-            class="ed-btn ed-btn--danger"
-            :disabled="!activeLightId"
-            @click="removeLight"
-          >
-            删除
-          </button>
-        </div>
-        <template v-if="activeLight">
-          <div class="ed-row">
-            <span class="ed-label">类型</span>
-            <span class="pp__type">{{ activeLight.type }}</span>
-          </div>
-          <div class="ed-row">
-            <span class="ed-label">强度</span>
-            <input
-              v-model.number="lightDraft.intensity"
-              class="pp__range"
-              type="range"
-              min="0"
-              max="20"
-              step="0.1"
-              @input="applyLight"
-            >
-            <input
-              v-model.number="lightDraft.intensity"
-              class="pp__num"
-              type="number"
-              min="0"
-              step="0.1"
-              @input="applyLight"
-            >
-          </div>
-          <div class="ed-row">
-            <span class="ed-label">颜色</span>
-            <input
-              v-model="lightDraft.color"
-              type="color"
-              @input="applyLight"
-            >
-          </div>
-          <template v-if="activeLight.type !== 'AmbientLight'">
-            <div class="ed-row">
-              <span class="ed-label pp__ax">位置</span>
-              <div class="pp__row3">
-                <input
-                  v-model.number="lightDraft.positionX"
-                  type="number"
-                  step="0.5"
-                  @input="applyLight"
-                >
-                <input
-                  v-model.number="lightDraft.positionY"
-                  type="number"
-                  step="0.5"
-                  @input="applyLight"
-                >
-                <input
-                  v-model.number="lightDraft.positionZ"
-                  type="number"
-                  step="0.5"
-                  @input="applyLight"
-                >
-              </div>
-            </div>
-          </template>
-          <div
-            v-if="activeLight.type === 'HemisphereLight'"
-            class="ed-row"
-          >
-            <span class="ed-label">地面色</span>
-            <input
-              v-model="lightDraft.groundColor"
-              type="color"
-              @input="applyLight"
-            >
-          </div>
-          <template v-if="activeLight.type === 'PointLight' || activeLight.type === 'SpotLight'">
-            <div class="ed-row">
-              <span class="ed-label">衰减距</span>
-              <input
-                v-model.number="lightDraft.distance"
-                class="pp__num"
-                type="number"
-                min="0"
-                step="1"
-                @input="applyLight"
-              >
-            </div>
-            <div class="ed-row">
-              <span class="ed-label">衰减度</span>
-              <input
-                v-model.number="lightDraft.decay"
-                class="pp__num"
-                type="number"
-                min="0"
-                step="0.1"
-                @input="applyLight"
-              >
-            </div>
-          </template>
-          <template v-if="activeLight.type === 'SpotLight'">
-            <div class="ed-row">
-              <span class="ed-label">锥角</span>
-              <input
-                v-model.number="lightDraft.angle"
-                class="pp__num"
-                type="number"
-                min="0"
-                :max="Math.PI / 2"
-                step="0.01"
-                @input="applyLight"
-              >
-            </div>
-            <div class="ed-row">
-              <span class="ed-label">柔边</span>
-              <input
-                v-model.number="lightDraft.penumbra"
-                class="pp__range"
-                type="range"
-                min="0"
-                max="1"
-                step="0.01"
-                @input="applyLight"
-              >
-              <input
-                v-model.number="lightDraft.penumbra"
-                class="pp__num"
-                type="number"
-                min="0"
-                max="1"
-                step="0.01"
-                @input="applyLight"
-              >
-            </div>
-          </template>
-          <template v-if="activeLight.type === 'RectAreaLight'">
-            <div class="ed-row">
-              <span class="ed-label">宽</span>
-              <input
-                v-model.number="lightDraft.width"
-                class="pp__num"
-                type="number"
-                min="0.1"
-                step="0.1"
-                @input="applyLight"
-              >
-            </div>
-            <div class="ed-row">
-              <span class="ed-label">高</span>
-              <input
-                v-model.number="lightDraft.height"
-                class="pp__num"
-                type="number"
-                min="0.1"
-                step="0.1"
-                @input="applyLight"
-              >
-            </div>
-          </template>
-          <template v-if="activeLight.type === 'DirectionalLight' || activeLight.type === 'SpotLight'">
-            <label class="ed-row pp__check">
-              <input
-                v-model="lightDraft.castShadow"
-                type="checkbox"
-                @change="applyLight"
-              >投射阴影
-            </label>
-            <template v-if="lightDraft.castShadow">
-              <div class="ed-row">
-                <span class="ed-label">阴影贴图</span>
-                <input
-                  v-model.number="lightDraft.shadowMapSize"
-                  class="pp__num"
-                  type="number"
-                  min="256"
-                  step="256"
-                  @input="applyLight"
-                >
-              </div>
-              <div class="ed-row">
-                <span class="ed-label">阴影偏移</span>
-                <input
-                  v-model.number="lightDraft.shadowBias"
-                  class="pp__num"
-                  type="number"
-                  step="0.0001"
-                  @input="applyLight"
-                >
-              </div>
-              <template v-if="activeLight.type === 'DirectionalLight'">
-                <div class="ed-row">
-                  <span class="ed-label">近/远</span>
-                  <input
-                    v-model.number="lightDraft.shadowCameraNear"
-                    class="pp__num"
-                    type="number"
-                    step="0.5"
-                    @input="applyLight"
-                  >
-                  <input
-                    v-model.number="lightDraft.shadowCameraFar"
-                    class="pp__num"
-                    type="number"
-                    step="10"
-                    @input="applyLight"
-                  >
-                </div>
-                <div class="ed-row">
-                  <span class="ed-label pp__ax">视锥</span>
-                  <div class="pp__row3">
-                    <input
-                      v-model.number="lightDraft.shadowCameraLeft"
-                      type="number"
-                      step="1"
-                      @input="applyLight"
-                    >
-                    <input
-                      v-model.number="lightDraft.shadowCameraRight"
-                      type="number"
-                      step="1"
-                      @input="applyLight"
-                    >
-                  </div>
-                </div>
-                <div class="ed-row">
-                  <span class="ed-label pp__ax">上下</span>
-                  <div class="pp__row3">
-                    <input
-                      v-model.number="lightDraft.shadowCameraTop"
-                      type="number"
-                      step="1"
-                      @input="applyLight"
-                    >
-                    <input
-                      v-model.number="lightDraft.shadowCameraBottom"
-                      type="number"
-                      step="1"
-                      @input="applyLight"
-                    >
-                  </div>
-                </div>
-              </template>
-            </template>
-          </template>
-        </template>
-        <div
-          v-else
-          class="pp__empty"
-        >
-          无灯光（右上角 + 添加）
-        </div>
-      </div>
-
       <!-- 控制器 -->
       <div class="ed-sec">
         <div class="ed-sec__t">
@@ -1777,88 +1754,6 @@ const modalPos = computed(() => defaultDockPos(editSlot.value, PANEL_W));
         </div>
       </div>
 
-      <!-- 渲染器 -->
-      <div class="ed-sec">
-        <div class="ed-sec__t">
-          渲染器
-        </div>
-        <div class="ed-row">
-          <span class="ed-label">色调映射</span>
-          <select
-            v-model="renDraft.toneMapping"
-            @change="applyRenderer"
-          >
-            <option value="NoToneMapping">
-              NoToneMapping
-            </option>
-            <option value="Linear">
-              Linear
-            </option>
-            <option value="Reinhard">
-              Reinhard
-            </option>
-            <option value="Cineon">
-              Cineon
-            </option>
-            <option value="ACESFilmic">
-              ACESFilmic
-            </option>
-            <option value="AgX">
-              AgX
-            </option>
-            <option value="Neutral">
-              Neutral
-            </option>
-          </select>
-        </div>
-        <div class="ed-row">
-          <span class="ed-label">曝光</span>
-          <input
-            v-model.number="renDraft.exposure"
-            class="pp__range"
-            type="range"
-            min="0.1"
-            max="3"
-            step="0.05"
-            @input="applyRenderer"
-          >
-          <input
-            v-model.number="renDraft.exposure"
-            class="pp__num"
-            type="number"
-            min="0.01"
-            step="0.05"
-            @input="applyRenderer"
-          >
-        </div>
-        <label class="ed-row pp__check">
-          <input
-            v-model="renDraft.shadowMapEnabled"
-            type="checkbox"
-            @change="applyRenderer"
-          >阴影贴图
-        </label>
-        <div class="ed-row">
-          <span class="ed-label">阴影类型</span>
-          <select
-            v-model="renDraft.shadowMap"
-            @change="applyRenderer"
-          >
-            <option value="Basic">
-              Basic
-            </option>
-            <option value="PCF">
-              PCF
-            </option>
-            <option value="PCFSoft">
-              PCFSoft
-            </option>
-            <option value="VSM">
-              VSM
-            </option>
-          </select>
-        </div>
-      </div>
 
       <!-- 灯光辅助线（调试开关） -->
       <div class="ed-sec">

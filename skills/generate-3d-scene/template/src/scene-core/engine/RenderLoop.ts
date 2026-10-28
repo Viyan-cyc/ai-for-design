@@ -1,45 +1,32 @@
-/**
- * RenderLoop — 渲染循环（每帧渲染 + resize 监听 + 帧统计）
- *
- * 帧统计（fps/calls/triangles）供 Debug HUD 与 perf-fps.mjs 门禁读取。
- */
-import * as THREE from 'three';
+import type * as THREE from 'three';
 import type { RendererEngine } from './RendererEngine';
 import type { ControlsEngine } from './ControlsEngine';
+import { onResourcesChanged } from '../render-invalidation';
 
-/** 每帧回调（卡片屏幕投影、自定义动画等注册在这里） */
 export type FrameCallback = (delta: number, elapsed: number) => void;
-
-/** 帧统计快照 */
 export interface FrameStats {
-  fps: number;
-  calls: number;
-  triangles: number;
-
-  /** 运行秒数 */
-  elapsed: number;
+  fps: number; calls: number; triangles: number; elapsed: number;
+  idle: boolean; paused: boolean; sampling: boolean; maxFps: number;
 }
 
+/** One scheduler for both run/edit. Only successful scene draws count as frames. */
 export class RenderLoop {
-  private clock = new THREE.Clock();
-
-  private callbacks: FrameCallback[] = [];
-
+  private callbacks: Array<{ cb: FrameCallback; continuous: boolean }> = [];
   private afterFrameCallbacks: FrameCallback[] = [];
-
-  private running = false;
-
-  private rafId = 0;
-
-  private resizeObserver: ResizeObserver;
-
   private resizeCbs: Array<(width: number, height: number) => void> = [];
-
+  private running = false;
+  private rafId = 0;
+  private inTick = false;
+  private dirty = true;
+  private lastTime = 0;
+  private deadline = 0;
+  private elapsed = 0;
+  private sampleStart = performance.now();
   private frameTimes: number[] = [];
-
-  private lastStats: FrameStats = {
-    fps: 0, calls: 0, triangles: 0, elapsed: 0,
-  };
+  private calls = 0;
+  private triangles = 0;
+  private resizeObserver: ResizeObserver;
+  private unsubscribeResources: () => void;
 
   constructor(
     private rendererEngine: RendererEngine,
@@ -49,94 +36,100 @@ export class RenderLoop {
   ) {
     this.resizeObserver = new ResizeObserver(() => {
       const size = this.rendererEngine.applySize();
-      this.resizeCbs.forEach((cb) => cb(size.width, size.height));
+      this.resizeCbs.forEach(cb => cb(size.width, size.height));
+      this.invalidate();
     });
     const canvas = this.rendererEngine.renderer.domElement;
-    if (canvas.parentElement) {
-      this.resizeObserver.observe(canvas.parentElement);
-    }
+    if (canvas.parentElement) this.resizeObserver.observe(canvas.parentElement);
+    this.controlsEngine.controls.addEventListener('change', this.invalidate);
+    document.addEventListener('visibilitychange', this.visibilityChanged);
+    this.unsubscribeResources = onResourcesChanged(this.invalidate);
   }
 
-  /** 注册每帧回调（返回反注册函数） */
-  onFrame(cb: FrameCallback): () => void {
-    this.callbacks.push(cb);
-    return () => {
-      this.callbacks = this.callbacks.filter((c) => c !== cb);
-    };
+  /** Animation callbacks keep rendering while registered. Observers pass continuous=false. */
+  onFrame(cb: FrameCallback, continuous = true): () => void {
+    const entry = { cb, continuous };
+    this.callbacks.push(entry);
+    this.invalidate();
+    return () => { this.callbacks = this.callbacks.filter(item => item !== entry); };
   }
-
-  /** 成功渲染后的回调；渲染抛错时不触发。 */
   onAfterFrame(cb: FrameCallback): () => void {
     this.afterFrameCallbacks.push(cb);
-    return () => {
-      this.afterFrameCallbacks = this.afterFrameCallbacks.filter((c) => c !== cb);
-    };
+    return () => { this.afterFrameCallbacks = this.afterFrameCallbacks.filter(item => item !== cb); };
   }
-
-  /** 注册 resize 回调（相机 aspect / CSS2D 层同步用；返回反注册函数） */
   onResize(cb: (width: number, height: number) => void): () => void {
     this.resizeCbs.push(cb);
-    return () => {
-      this.resizeCbs = this.resizeCbs.filter((c) => c !== cb);
-    };
+    return () => { this.resizeCbs = this.resizeCbs.filter(item => item !== cb); };
   }
-
-  start(): void {
-    if (this.running) {
-      return;
-    }
-    this.running = true;
-    const tick = (): void => {
-      if (!this.running) {
-        return;
-      }
-      this.rafId = requestAnimationFrame(tick);
-      const delta = this.clock.getDelta();
-      const elapsed = this.clock.elapsedTime;
-      this.controlsEngine.update(delta);
-      for (const cb of this.callbacks) {
-        cb(delta, elapsed);
-      }
-      this.rendererEngine.render(this.getScene(), this.getCamera());
-      this.recordFrame();
-      for (const cb of this.afterFrameCallbacks) {
-        cb(delta, elapsed);
-      }
-    };
-    this.rafId = requestAnimationFrame(tick);
+  private continuous(): boolean {
+    return this.rendererEngine.getConfig().renderMode === 'continuous'
+      || this.controlsEngine.controls.autoRotate || this.callbacks.some(item => item.continuous);
   }
-
-  stop(): void {
-    this.running = false;
-    cancelAnimationFrame(this.rafId);
-  }
-
-  private recordFrame(): void {
+  invalidate = (): void => {
+    this.dirty = true;
+    if (!this.running || this.inTick || this.rafId || document.hidden) return;
+    // Resuming an idle scene must not advance an animation by the entire idle duration.
     const now = performance.now();
-    this.frameTimes.push(now);
-    // 只保留 1 秒窗口
-    while (this.frameTimes.length > 0 && now - (this.frameTimes[0] as number) > 1000) {
-      this.frameTimes.shift();
+    if (now - this.lastTime > 1000) { this.frameTimes = []; this.sampleStart = now; }
+    this.lastTime = now;
+    this.rafId = requestAnimationFrame(this.tick);
+  };
+  private visibilityChanged = (): void => {
+    cancelAnimationFrame(this.rafId); this.rafId = 0;
+    this.frameTimes = []; this.sampleStart = performance.now(); this.deadline = 0;
+    if (!document.hidden) this.invalidate();
+  };
+  private tick = (now: number): void => {
+    this.rafId = 0;
+    if (!this.running || document.hidden) return;
+    const limit = this.rendererEngine.getConfig().maxFps ?? 60;
+    const interval = limit > 0 ? 1000 / limit : 0;
+    if (interval && now + 0.5 < this.deadline) {
+      this.rafId = requestAnimationFrame(this.tick); return;
     }
-    const info = this.rendererEngine.renderer.info;
-    this.lastStats = {
-      fps: this.frameTimes.length,
-      calls: info.render.calls,
-      triangles: info.render.triangles,
-      elapsed: this.clock.elapsedTime,
-    };
+    const delta = Math.max(0, (now - this.lastTime) / 1000);
+    this.lastTime = now; this.elapsed += delta;
+    this.deadline = interval ? (this.deadline > 0 && now - this.deadline < interval
+      ? this.deadline + interval : now + interval) : now;
+    this.dirty = false; this.inTick = true;
+    try {
+      this.controlsEngine.update(delta);
+      for (const { cb } of [...this.callbacks]) cb(delta, this.elapsed);
+      const renderer = this.rendererEngine.renderer;
+      renderer.info.autoReset = false;
+      renderer.info.reset();
+      this.rendererEngine.render(this.getScene(), this.getCamera());
+      this.frameTimes.push(now);
+      this.calls = renderer.info.render.calls;
+      this.triangles = renderer.info.render.triangles;
+      this.trim(now);
+      for (const cb of [...this.afterFrameCallbacks]) cb(delta, this.elapsed);
+    } finally { this.inTick = false; }
+    if (this.running && (this.dirty || this.continuous())) this.rafId = requestAnimationFrame(this.tick);
+  };
+  configurationChanged(): void {
+    this.deadline = 0; this.frameTimes = []; this.sampleStart = performance.now();
+    this.invalidate();
   }
-
-  /** 读取当前帧统计（Debug HUD / perf 门禁采样） */
+  start(): void {
+    if (this.running) return;
+    this.running = true; this.sampleStart = performance.now(); this.invalidate();
+  }
+  stop(): void { this.running = false; cancelAnimationFrame(this.rafId); this.rafId = 0; }
+  private trim(now: number): void {
+    while (this.frameTimes.length && now - this.frameTimes[0]! >= 1000) this.frameTimes.shift();
+  }
   getStats(): FrameStats {
-    return { ...this.lastStats };
+    const now = performance.now(); this.trim(now);
+    return { fps: this.frameTimes.length, calls: this.calls, triangles: this.triangles,
+      elapsed: this.elapsed, paused: document.hidden || !this.running,
+      idle: !this.rafId && !this.inTick && !this.continuous(),
+      sampling: now - this.sampleStart < 1000, maxFps: this.rendererEngine.getConfig().maxFps ?? 60 };
   }
-
   dispose(): void {
-    this.stop();
-    this.resizeObserver.disconnect();
-    this.resizeCbs = [];
-    this.callbacks = [];
-    this.afterFrameCallbacks = [];
+    this.stop(); this.resizeObserver.disconnect(); this.unsubscribeResources();
+    this.controlsEngine.controls.removeEventListener('change', this.invalidate);
+    document.removeEventListener('visibilitychange', this.visibilityChanged);
+    this.resizeCbs = []; this.callbacks = []; this.afterFrameCallbacks = [];
   }
 }
