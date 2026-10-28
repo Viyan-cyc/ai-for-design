@@ -6,7 +6,7 @@
 
 - `node scripts/ensure-env.mjs`：每个会话检查一次；失败执行 HINT 的 setup 命令。
 - 没有 Node：Windows 用 `powershell -ExecutionPolicy Bypass -File "<skill>/scripts/install/install.ps1"`；macOS 用 `bash "<skill>/scripts/install/install.sh"`。下载和 npm 源策略与 EP 相同。
-- 依赖安装在外部环境；`GTS3D_ENV_DIR` 可指定位置。不要在 skill/template 中执行 npm install。
+- 依赖安装在外部环境；`SCENE3D_ENV_DIR` 可指定位置。不要在 skill/template 中执行 npm install。
 - `node scripts/init.mjs <工程> --profile empty --assets referenced --deps shared --defer-build`。
 - 空工程默认不登记示例业务。先创建工程，再写自定义 handler、scene-profile 和 scene-data；不要把尚未注册的自定义分组通过 init 的 --scene 提前传入。
 - 自定义依赖/组件工程使用独立依赖；不要在连接共享 node_modules 的工程执行 npm install。需要独立依赖时初始化使用 --deps copy 或 --deps install。

@@ -12,7 +12,7 @@ import { assetMetadata, runtimeCompatibility } from '../../skills/generate-3d-sc
 import { searchAssets, loadIndex } from '../../skills/generate-3d-scene/scripts/search-assets.mjs';
 
 const skill = resolve(dirname(fileURLToPath(import.meta.url)), '../../skills/generate-3d-scene');
-const temp = mkdtempSync(join(tmpdir(), 'gts3d-generation-'));
+const temp = mkdtempSync(join(tmpdir(), 'scene3d-generation-'));
 const env = checkEnvironment();
 const json = (path) => JSON.parse(readFileSync(path, 'utf8'));
 const save = (path, value) => writeFileSync(path, JSON.stringify(value, null, 2), 'utf8');

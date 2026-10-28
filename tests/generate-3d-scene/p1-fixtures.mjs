@@ -2758,7 +2758,7 @@ if (!process.argv.includes('--node-only')) {
         res.writeHead(404); res.end('missing'); return;
       }
       res.setHeader('Content-Type', 'text/html');
-      res.end('<script>console.error("boot-console");window.__gts3d={};throw Error("boot-sync")</script>'
+      res.end('<script>console.error("boot-console");window.__scene3d={};throw Error("boot-sync")</script>'
         + '<script>Promise.reject(Error("boot-rejection"));fetch("/missing.glb")</script>');
     });
     await new Promise((r) => server.listen(0, '127.0.0.1', r));
@@ -2802,21 +2802,21 @@ if (!process.argv.includes('--node-only')) {
       const page = await session.newPage({ url });
       try {
         assert.equal((await verifyPage(page, { mode: 'run', expect })).verdict, 'PASS');
-        await page.evaluate('window.__gts3d.internals.camera.position.set(1e6,1e6,1e6);window.__gts3d.internals.camera.lookAt(2e6,2e6,2e6)');
+        await page.evaluate('window.__scene3d.internals.camera.position.set(1e6,1e6,1e6);window.__scene3d.internals.camera.lookAt(2e6,2e6,2e6)');
         // Stop controls from restoring the camera while examining its deliberately bad position.
-        await page.evaluate('window.__gts3d.internals.renderLoop.stop();window.__gts3d.internals.camera.position.set(1e6,1e6,1e6);window.__gts3d.internals.camera.lookAt(2e6,2e6,2e6)');
+        await page.evaluate('window.__scene3d.internals.renderLoop.stop();window.__scene3d.internals.camera.position.set(1e6,1e6,1e6);window.__scene3d.internals.camera.lookAt(2e6,2e6,2e6)');
         let report = await verifyPage(page, { mode: 'run', expect });
         assert.equal(report.checks.find((c) => c.id === 'subject').status, 'FAIL');
         assert.equal(report.checks.find((c) => c.id === 'render').status, 'FAIL');
-        await page.evaluate('for(const id of window.__gts3d.internals.sceneEngine.getAllIds()){window.__gts3d.internals.sceneEngine.getObject(id).visible=false;}');
+        await page.evaluate('for(const id of window.__scene3d.internals.sceneEngine.getAllIds()){window.__scene3d.internals.sceneEngine.getObject(id).visible=false;}');
         report = await verifyPage(page, { mode: 'run', expect: { hash: 'negative', idByGroup: { wrong: Object.values(expect.idByGroup).flat() } } });
         assert.equal(report.checks.find((c) => c.id === 'groups').status, 'FAIL');
         assert.equal(report.checks.find((c) => c.id === 'subject').status, 'FAIL');
-        await page.evaluate('window.__gts3d.update({asset:[{id:"__p1_missing",params:{assetId:"__p1_missing.glb"}}]})');
+        await page.evaluate('window.__scene3d.update({asset:[{id:"__p1_missing",params:{assetId:"__p1_missing.glb"}}]})');
         report = await verifyPage(page, { mode: 'run', expect });
         assert.equal(report.checks.find((c) => c.id === 'ready').status, 'FAIL');
         // Vite may return its HTML fallback with HTTP 200: loader failure is still a hard FAIL.
-        const failures = await page.evaluate('window.__gts3d.getDiagnostics().failedAssets');
+        const failures = await page.evaluate('window.__scene3d.getDiagnostics().failedAssets');
         assert.ok(failures.some((failure) => failure.nodeId === '__p1_missing'));
       } finally {
         await page.close();

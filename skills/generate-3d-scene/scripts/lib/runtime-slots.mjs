@@ -67,7 +67,7 @@ const installTranspileHooks = () => {
         return { format: 'module', shortCircuit: true, source: 'export default { name: "SfcStub" };' };
       }
       const root = activeRoot;
-      const ts = globalThis.__gts3dTs;
+      const ts = globalThis.__scene3dTs;
       if (root && ts && url.endsWith('.ts') && url.startsWith(pathToFileURL(join(root, 'src')).href)) {
         return {
           format: 'module',
@@ -92,14 +92,14 @@ const installTranspileHooks = () => {
 export const buildRuntimeSlotKeys = async (projectRoot, sceneData) => {
   installTranspileHooks();
   activeRoot = projectRoot;
-  globalThis.__gts3dWarn = globalThis.__gts3dWarn ?? globalThis.console?.warn?.bind(globalThis.console);
+  globalThis.__scene3dWarn = globalThis.__scene3dWarn ?? globalThis.console?.warn?.bind(globalThis.console);
   try {
-    if (!globalThis.__gts3dTs) {
+    if (!globalThis.__scene3dTs) {
       const tsPath = join(projectRoot, 'node_modules', 'typescript', 'lib', 'typescript.js');
       if (!existsSync(tsPath)) {
         throw new Error(`工程缺 node_modules/typescript（槽位真值清单需要 TS 转译）：${tsPath}`);
       }
-      globalThis.__gts3dTs = (await import(pathToFileURL(tsPath).href)).default;
+      globalThis.__scene3dTs = (await import(pathToFileURL(tsPath).href)).default;
     }
     const { SceneEngine } = await import(pathToFileURL(join(projectRoot, 'src', 'scene-core', 'engine', 'SceneEngine.ts')).href);
     const { registerBuiltinFactories } = await import(pathToFileURL(join(projectRoot, 'src', 'scene-core', 'handlers', 'registry.ts')).href);
@@ -193,8 +193,8 @@ const installBrowserPolyfills = (projectRoot) => {
   // fetch 拉资源——file:// 不支持，拦截转读本地文件。URI 解析与浏览器一致：
   // new URL(uri, base) 语义（百分号解码由 URL/fileURLToPath 承担——'data%20mesh.bin'
   // → 'data mesh.bin'）；读失败以 404 Response 拒绝（loader 走 onError 保留失败原因）
-  if (!globalThis.__gts3dFileFetchPatched) {
-    globalThis.__gts3dFileFetchPatched = true;
+  if (!globalThis.__scene3dFileFetchPatched) {
+    globalThis.__scene3dFileFetchPatched = true;
     const origFetch = globalThis.fetch?.bind(globalThis);
     globalThis.fetch = (input, init) => {
       const href = typeof input === 'string' ? input : input?.url ?? String(input);
@@ -281,8 +281,8 @@ const loadModelSlotKeys = async (projectRoot, assetId, loader, buildSlotKeysFrom
     });
     return buildSlotKeysFromScene(gltf.scene);
   } catch (err) {
-    if (process.env.GTS3D_STRIP_DEBUG && globalThis.__gts3dWarn) {
-      globalThis.__gts3dWarn(`[runtime-slots] 模型加载失败（${assetId}/${modelRel}）：${err?.message ?? err}`);
+    if (process.env.SCENE3D_STRIP_DEBUG && globalThis.__scene3dWarn) {
+      globalThis.__scene3dWarn(`[runtime-slots] 模型加载失败（${assetId}/${modelRel}）：${err?.message ?? err}`);
     }
     return null; // 加载失败 → 校验器报「无法验证」（fail-closed）
   }

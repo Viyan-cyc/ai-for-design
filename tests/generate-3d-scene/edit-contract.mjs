@@ -80,7 +80,7 @@ const main = async () => {
     const deadline = Date.now() + 10000;
     let mounted = false;
     do {
-      mounted = await evaluate("!!window.__gts3d && !!window.__gts3dEdit");
+      mounted = await evaluate("!!window.__scene3d && !!window.__scene3dEdit");
       if (mounted) {
         break;
       }
@@ -92,7 +92,7 @@ const main = async () => {
       return;
     }
     const result = await evaluate(
-      `(${verifyEditRoundTrip.toString()})(window.__gts3d)`,
+      `(${verifyEditRoundTrip.toString()})(window.__scene3d)`,
     );
     console.log(
       `EDIT-CONTRACT PASS: ${JSON.stringify(result)}; serialize/clear/reload verified`,

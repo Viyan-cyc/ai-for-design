@@ -3,5 +3,5 @@
   "fallbackManifestUrl": "fallback-node-manifest.json",
   "fallbackNpmRegistry": "http://mirrors.tools.huawei.com/npm",
   "envDirName": "EpCoder/3d-scene-env",
-  "envDirEnvVar": "GTS3D_ENV_DIR"
+  "envDirEnvVar": "SCENE3D_ENV_DIR"
 }

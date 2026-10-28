@@ -67,7 +67,7 @@ let checkpoint = performance.now();
 const timed = (name) => { const now = performance.now(); timings[name] = Math.round(now - checkpoint); checkpoint = now; };
 try {
   fd = openSync(lock, 'wx');
-  if (existsSync(out) && !existsSync(resolve(out, '.gts3d-offline'))) {
+  if (existsSync(out) && !existsSync(resolve(out, '.scene3d-offline'))) {
     throw new Error('offline 目录不属于离线构建，请选择其他工程或手动保留该目录后再构建');
   }
   checkpoint = performance.now();
@@ -118,7 +118,7 @@ try {
     define: { 'process.env.NODE_ENV': JSON.stringify('production') },
     build: {
       outDir: stage, emptyOutDir: true, assetsInlineLimit: Number.MAX_SAFE_INTEGER,
-      lib: { entry: resolve(root, 'src/offline-entry.ts'), name: 'Gts3d', formats: ['iife'], fileName: () => 'scene.js' },
+      lib: { entry: resolve(root, 'src/offline-entry.ts'), name: 'Scene3d', formats: ['iife'], fileName: () => 'scene.js' },
       rollupOptions: { output: { inlineDynamicImports: true } },
     },
   });
@@ -134,14 +134,14 @@ try {
   }
   // CSS may have added resources; bind the final closure to the saved-file identity.
   data.sourceId = hash(data.sourceId + JSON.stringify(resources));
-  writeFileSync(resolve(stage, 'scene-data.js'), `window.__gts3dOffline=${JSON.stringify(data).replace(/</g, '\\u003c')};\n`);
+  writeFileSync(resolve(stage, 'scene-data.js'), `window.__scene3dOffline=${JSON.stringify(data).replace(/</g, '\\u003c')};\n`);
   const styles = walk(stage).filter((file) => extname(file) === '.css').map((file) => `<link rel="stylesheet" href="./${relative(stage, file).replaceAll('\\', '/')}">`).join('\n');
   const html = readFileSync(resolve(root, 'index.html'), 'utf8')
     .replace('</head>', `${styles}\n</head>`)
     .replace(/<script\s+type="module"\s+src="\/src\/entry\.ts"><\/script>/, '<script src="./scene-data.js"></script><script src="./scene.js"></script>');
   if (html.includes('type="module"') || !html.includes('./scene-data.js')) throw new Error('index.html 入口形态不支持离线打包');
   writeFileSync(resolve(stage, 'index.3d.html'), html);
-  writeFileSync(resolve(stage, '.gts3d-offline'), '1\n');
+  writeFileSync(resolve(stage, '.scene3d-offline'), '1\n');
   if (existsSync(out)) {
     backup = resolve(root, `.offline-backup-${randomUUID()}`);
     renameSync(out, backup);

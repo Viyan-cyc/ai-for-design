@@ -11,9 +11,11 @@
  * v3：快照 = serialize() 原样（SceneData v3 五用途一格式，undo 快照零转换）；
  *     重建 = 喂整份数据给 handle.update()（幂等 upsert）；卡片级联删除由引擎 removeObject 负责。
  */
-import * as THREE from 'three';
+import type * as THREE from 'three';
 import type { SceneHandle } from '@/scene-core/createScene';
-import type { CardSpec, SceneData, SceneNode, TreeSceneFragment } from '@/scene-core/types';
+import type {
+  CardSpec, SceneData, SceneNode, TreeSceneFragment,
+} from '@/scene-core/types';
 import { RESERVED_KEYS } from '@/scene-core/types';
 
 /** 编辑器快照（撤销栈元素：全量 serialize，v3 零转换） */
@@ -37,6 +39,8 @@ export interface EditorState {
   /** 吸附开关 */
   snapping: boolean;
 
+  transformSpace: 'world' | 'local';
+
   /** Gizmo 模式 */
   gizmoMode: 'translate' | 'rotate' | 'scale';
 }
@@ -58,6 +62,13 @@ export class Bridge {
   private copySeq = 0;
 
   snapping = false;
+
+  transformSpace: EditorState['transformSpace'] = 'world';
+
+  toggleTransformSpace(): void {
+    this.transformSpace = this.transformSpace === 'world' ? 'local' : 'world';
+    this.emit();
+  }
 
   gizmoMode: EditorState['gizmoMode'] = 'translate';
 
@@ -93,6 +104,7 @@ export class Bridge {
       undoDepth: this.undoStack.length,
       redoDepth: this.redoStack.length,
       snapping: this.snapping,
+      transformSpace: this.transformSpace,
       gizmoMode: this.gizmoMode,
     };
   }
@@ -102,10 +114,39 @@ export class Bridge {
     this.listeners.forEach((cb) => cb(state));
   }
 
+  /** Selection/target changes terminate a continuous edit gesture. */
+  endLiveEdit(): void {
+    this.lastLiveLabel = null;
+  }
+
+  isLocked(id: string): boolean {
+    const se = this.handle.internals.sceneEngine;
+    const visited = new Set<string>();
+    let current: string | null = id;
+    while (current && !visited.has(current)) {
+      visited.add(current);
+      if (se.getVisual(current)?.locked === true) {
+        return true;
+      }
+      current = se.getNode(current)?.parentId ?? null;
+    }
+    return false;
+  }
+
+  nextObjectId(prefix: string): string {
+    const used = new Set(this.handle.internals.sceneEngine.getAllIds());
+    let index = 1;
+    while (used.has(`${prefix }_${ String(index).padStart(3, '0')}`)) {
+      index += 1;
+    }
+    return `${prefix }_${ String(index).padStart(3, '0')}`;
+  }
+
   // ---- 选中 ----
 
   /** 点选（无修饰键=重置为单选；Shift=切换累计；基准=最后选中的；再点已选中者保持选中——取消走点空白/ESC） */
   select(id: string, additive: boolean): void {
+    this.endLiveEdit();
     this.slot = null;
     if (!additive) {
       if (this.selection.length === 1 && this.selection[0] === id) {
@@ -123,6 +164,7 @@ export class Bridge {
 
   /** 选中子网格槽位（树点 mesh 行；选中父物体 + 记录槽位——属性面板据此显示该 mesh 信息） */
   selectSlot(nodeId: string, slotKey: string): void {
+    this.endLiveEdit();
     this.selection = [nodeId];
     this.slot = { nodeId, slotKey };
     this.emit();
@@ -130,6 +172,7 @@ export class Bridge {
 
   /** 清子网格槽位态（点空白/ESC；物体选中保留） */
   clearSelectedSlot(): void {
+    this.endLiveEdit();
     if (this.slot) {
       this.slot = null;
       this.emit();
@@ -143,6 +186,7 @@ export class Bridge {
 
   /** 点空白/ESC 清空 */
   clearSelection(): void {
+    this.endLiveEdit();
     this.selection = [];
     this.slot = null;
     this.emit();
@@ -242,6 +286,9 @@ export class Bridge {
       }
     }
     this.selection = this.selection.filter((id) => alive.has(id));
+    if (this.slot && !alive.has(this.slot.nodeId)) {
+      this.slot = null;
+    }
 
     const se = this.handle.internals.sceneEngine;
     const current = new Set(se.getAllIds());
@@ -255,9 +302,11 @@ export class Bridge {
     // upsert 差量（P3-R4 + P3-RR2）：快照是完整状态——**引擎当前有值而快照缺省**
     // 的字段必须显式恢复默认（否则撤销"新增 transform/params"残留）；**两侧均缺省**
     // 的字段不带（undefined→强转默认会让 paramsEqual 判变、未变 legacy 节点被重建）。
-    const { remove: _drop, __visuals: _vis, __materialLib: _lib, ...reserved } = data;
+    const {
+      remove: _drop, __visuals: _vis, __materialLib: _lib, ...reserved
+    } = data;
     void _drop; void _vis; void _lib;
-    const frag: TreeSceneFragment = { ...reserved } as TreeSceneFragment;
+    const frag: TreeSceneFragment = { ...reserved };
     for (const [type, nodes] of groups) {
       frag[type] = nodes.map((n) => {
         const node = n as SceneNode;
@@ -313,7 +362,7 @@ export class Bridge {
    */
   removeObjects(ids: string[]): void {
     const se = this.handle.internals.sceneEngine;
-    const del = ids.filter((id) => se.getVisual(id)?.locked !== true);
+    const del = ids.filter((id) => !this.isLocked(id));
     if (del.length === 0) {
       return;
     }
@@ -342,9 +391,7 @@ export class Bridge {
     const basePos = node.position ?? [0, 0, 0];
     const vis = se.getVisual(anchorId);
     this.commit('复制', () => {
-      const frag: TreeSceneFragment = {
-        [type]: [{ ...node, id: newId, position: [basePos[0] + 1, basePos[1], basePos[2]] }],
-      };
+      const frag: TreeSceneFragment = { [type]: [{ ...node, id: newId, position: [basePos[0] + 1, basePos[1], basePos[2]] }] };
       this.handle.update(frag);
       if (vis) {
         const { locked: _drop, ...visCopy } = vis;

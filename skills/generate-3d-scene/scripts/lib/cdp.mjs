@@ -209,7 +209,7 @@ const connect = async (url, timeoutMs, Socket) => {
 export const openBrowserSession = async (options = {}, adapters = {}) => {
   const {
     url, port = 9270, gpu = false, deadlineMs = 5000, rpcTimeoutMs = 40000,
-    windowSize = '1280,800', userDataDir = `${process.env.TEMP }/gts-cdp-${ port }-${ Date.now()}`,
+    windowSize = '1280,800', userDataDir = `${process.env.TEMP }/scene3d-cdp-${ port }-${ Date.now()}`,
     onEvents = [],
   } = options;
   const fetcher = adapters.fetch ?? fetch;

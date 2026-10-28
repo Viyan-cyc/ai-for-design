@@ -55,8 +55,20 @@ const boot = async (): Promise<void> => {
     lightHelpers.sync();
   });
 
+  let editing = true;
+  let previousHelpers = true;
+  const setEditing = (value: boolean): void => {
+    editing = value;
+    bridge.endLiveEdit();
+    bridge.clearSelection();
+    selection.enabled = value;
+    if (!value) { previousHelpers = lightHelpers.isEnabled(); }
+    lightHelpers.setEnabled(value ? previousHelpers : false);
+  };
+
   // 全局快捷键：F 聚焦 / Del 删除 / Ctrl+D 复制 / Ctrl+Z|Shift 撤销重做 / Ctrl+S 保存
   window.addEventListener('keydown', (ev: KeyboardEvent) => {
+    if (!editing) { return; }
     const target = ev.target as HTMLElement;
     if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') {
       return;
@@ -110,17 +122,18 @@ const boot = async (): Promise<void> => {
     lightHelpers,
     materialLib,
     viewportEl: viewport,
+    onEditingChange: setEditing,
   });
   app.mount(root);
 
   // dev-only：编辑器调试口（冒烟脚本/控制台直接读引擎态 + 编辑服务）
-  if (import.meta.env.DEV || (window.__gts3dOffline && new URLSearchParams(window.location.search).get('debug') === '1')) {
+  if (import.meta.env.DEV || (window.__scene3dOffline && new URLSearchParams(window.location.search).get('debug') === '1')) {
     const dbg = window as unknown as Record<string, unknown>;
-    dbg.__gts3d = handle;
-    dbg.__gts3dEdit = { bridge, materialLib, save, selection, gizmo, lightHelpers };
+    dbg.__scene3d = handle;
+    dbg.__scene3dEdit = { bridge, materialLib, save, selection, gizmo, lightHelpers };
   }
 };
 
-if (!window.__gts3dOffline || new URLSearchParams(window.location.search).get('edit') === '1') {
+if (!window.__scene3dOffline || new URLSearchParams(window.location.search).get('edit') === '1') {
   void boot();
 }

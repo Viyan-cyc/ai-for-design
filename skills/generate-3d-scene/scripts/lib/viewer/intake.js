@@ -43,8 +43,8 @@ const DERIVED_LABEL = { ok: '通过', pending: '待确认', overbudget: '性能�
 export function makeResolver(runtime, asset, entryUrlValue) {
   return url => {
     if(url === entryUrlValue || /^(data:|blob:)/.test(url))return url;
-    const u=new URL(url, 'https://gts3d.invalid/');
-    if(u.origin!=='https://gts3d.invalid' || u.search || u.hash)return null;
+    const u=new URL(url, 'https://scene3d.invalid/');
+    if(u.origin!=='https://scene3d.invalid' || u.search || u.hash)return null;
     let path;try{path=decodeURIComponent(u.pathname.slice(1));}catch{return null;}
     return asset.files?.[path] ?? runtime?.[url] ?? null;
   };
@@ -64,7 +64,7 @@ function buildLoader(three, addons, runtime, asset, entryUrlValue) {
   });
   const loader = new addons.GLTFLoader(manager);
   const encoded = asset.entry.split('/').map(encodeURIComponent).join('/');
-  loader.setResourcePath('https://gts3d.invalid/' + encoded.slice(0,encoded.lastIndexOf('/')+1));
+  loader.setResourcePath('https://scene3d.invalid/' + encoded.slice(0,encoded.lastIndexOf('/')+1));
   const draco = new addons.DRACOLoader(manager);
   draco.setDecoderPath({ js: runtime['draco/draco_wasm_wrapper.js'], wasm: runtime['draco/draco_decoder.wasm'] });
   loader.setDRACOLoader(draco);

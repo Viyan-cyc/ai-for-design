@@ -111,7 +111,7 @@ const toSlug = (s) => s
   .trim().toLowerCase()
   .replace(/[^a-z0-9]+/g, '-')
   .replace(/^-+|-+$/g, '')
-  .slice(0, 60) || 'gts-3d-scene';
+  .slice(0, 60) || '3d-scene';
 
 /**
  * 初始化工程。
@@ -230,7 +230,7 @@ export const initProject = (target, opts = {}) => {
 
   /* ④ 资产注入（manifests 真相源：真实 modelPath + glTF 依赖闭包 + 状态贴图）
      assetsRoot 测试缝：gates 用假资产库验证目录闭包，生产恒为 SKILL_ROOT */
-  const assetsRoot = opts.assetsRoot ?? process.env.GTS3D_LEGACY_ASSET_ROOT ?? SKILL_ROOT;
+  const assetsRoot = opts.assetsRoot ?? process.env.SCENE3D_LEGACY_ASSET_ROOT ?? SKILL_ROOT;
   const catalog = buildAssetCatalog(assetsRoot);
   const selector = opts.assets ?? 'referenced';
   let wanted;
@@ -418,7 +418,7 @@ const USAGE = `用法: node init.mjs <target-dir> [选项]
   --deps skip              只做结构门禁
   --defer-build            安装依赖后暂不编译，待场景完成后统一离线构建
   --deps copy              从共享环境复制独立 node_modules（兼容选项）并跑 npm run build
-  --deps install           npm install（--registry 或环境变量 GTS3D_REGISTRY）并跑 npm run build
+  --deps install           npm install（--registry 或环境变量 SCENE3D_REGISTRY）并跑 npm run build
   --validate preview       场景 schema 校验档位（默认 preview；standard 同级严格；off 跳过）
   --force                  目标目录非空时覆盖
   --json / --quiet`;

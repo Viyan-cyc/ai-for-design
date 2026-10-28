@@ -9,15 +9,17 @@
  *   __visuals 视觉层（replaceVisual 清理互斥字段）；名称输入隐藏（无标题材质无库名）
  * 浮动面板（FloatingPanel 外壳，无遮罩可拖拽，可与材质素材并排）。仅呈现层。
  */
-import { computed, ref, watch } from 'vue';
-import * as THREE from 'three';
+import {
+  computed, onBeforeUnmount, ref, watch,
+} from 'vue';
 import type { MaterialSpec, MaterialType, MaterialLibEntry } from '@/scene-core/types';
-import { migrateMaterialSpec, readMaterialSpec } from '@/scene-core';
+import { migrateMaterialSpec } from '@/scene-core';
 import type { MaterialLibService } from './MaterialLibService';
-import { visualToSpec, specToInline, keepNonMaterial } from './MaterialLibService';
+import { specToInline, keepNonMaterial } from './MaterialLibService';
 import type { Bridge } from './Bridge';
 import MaterialParams from './MaterialParams.vue';
 import FloatingPanel from './FloatingPanel.vue';
+import { type TexturePreviews, materialSwatch } from './material-preview';
 
 const props = defineProps<{
   bridge: Bridge;
@@ -47,6 +49,7 @@ const TYPE_LABELS: Record<MaterialType, string> = {
 
 const spec = ref<MaterialSpec>({ type: 'MeshStandardMaterial' });
 const name = ref('');
+const unavailable = ref(false);
 
 const isLibMode = computed(() => props.matId !== null);
 const panelTitle = computed(() => {
@@ -57,7 +60,12 @@ const panelTitle = computed(() => {
   return last ? `编辑材质 · ${last}` : '编辑材质';
 });
 
+const textures = ref<TexturePreviews>({});
 const refresh = (): void => {
+  textures.value = props.materialLib.texturePreview(props.anchorId, props.slotKey, props.matId);
+  unavailable.value = props.matId
+    ? !props.materialLib.getEntry(props.matId)
+    : !props.anchorId || !props.bridge.handle.internals.sceneEngine.getObject(props.anchorId);
   if (props.matId) {
     const e: MaterialLibEntry | null = props.materialLib.getEntry(props.matId);
     if (e) {
@@ -68,59 +76,61 @@ const refresh = (): void => {
   }
   // inline / 槽位模式：读视觉层（槽位读 slots[slotKey]）
   const id = props.anchorId;
-  if (!id) {
+  if (!id || props.bridge.isLocked(id)) {
     return;
   }
-  const se = props.bridge.handle.internals.sceneEngine;
-  const v = props.slotKey ? (se.getVisual(id)?.slots?.[props.slotKey] ?? null) : se.getVisual(id);
-  const inlineSpec = visualToSpec(v ?? {});
-  const hasInlineFields = Object.keys(inlineSpec).some((k) => k !== 'type');
-  if (v?.materialType || hasInlineFields) {
-    spec.value = inlineSpec;
-  } else {
-    // 无 override：读目标 mesh 活材质真值（GLB/图元/代码组合模型统一口径；
-    // 贴图槽不溯源——GLB 内嵌贴图无 URL，贴图编辑走素材库上传）
-    const obj = se.getObject(id);
-    const lastName = props.slotKey?.split('/').pop();
-    let target: THREE.Mesh | null = null;
-    obj?.traverse((c) => {
-      const mesh = c as THREE.Mesh;
-      if (!target && mesh.isMesh && (props.slotKey ? c.name === lastName : true)) {
-        target = mesh;
-      }
-    });
-    spec.value = target ? readMaterialSpec(target) : { type: 'MeshStandardMaterial' };
-  }
+  spec.value = props.materialLib.effectiveSpec(id, props.slotKey);
 };
 refresh();
-props.bridge.onState(refresh);
+const textureTimer = window.setInterval(() => {
+  textures.value = props.materialLib.texturePreview(props.anchorId, props.slotKey, props.matId);
+}, 500);
+onBeforeUnmount(() => window.clearInterval(textureTimer));
+onBeforeUnmount(props.bridge.onState(refresh));
+onBeforeUnmount(props.bridge.handle.internals.sceneEngine.subscribeNodeEvent('updated', (id) => {
+  if (id === props.anchorId) {
+    refresh();
+  }
+}));
 watch(() => props.matId, refresh);
 watch(() => props.anchorId, refresh);
 watch(() => props.slotKey, refresh);
 
 const matType = computed<MaterialType>(() => spec.value.type ?? 'MeshStandardMaterial');
-const referencing = computed<string[]>(() => (props.matId
-  ? props.materialLib.referencingNodes(props.matId)
-  : []));
-
-/** 预览球（CSS 近似：色块 + 高光渐变 + 透明度） */
-const previewStyle = computed(() => {
-  const s = spec.value as unknown as Record<string, unknown>;
-  const color = typeof s.color === 'string' ? s.color : '#c8ccd2';
-  const rough = typeof s.roughness === 'number' ? s.roughness : 0.8;
-  const metal = typeof s.metalness === 'number' ? s.metalness : 0;
-  const transmission = typeof s.transmission === 'number' ? s.transmission : 0;
-  const hi = Math.max(0.12, 0.62 - rough * 0.5 - metal * 0.18);
-  return {
-    background: `radial-gradient(circle at 32% 28%, rgba(255,255,255,${hi.toFixed(2)}), ${color} 62%)`,
-    opacity: String(transmission > 0 ? 0.85 : 1),
-  };
+const referencing = computed<string[]>(() => {
+  void spec.value;
+  return props.matId ? props.materialLib.referencingNodes(props.matId) : [];
 });
+
+const previewStyle = computed(() => materialSwatch(spec.value, textures.value));
+const sharedId = computed(() => {
+  void spec.value;
+  if (!props.anchorId) {
+    return null;
+  }
+  const visual = props.bridge.handle.internals.sceneEngine.getVisual(props.anchorId);
+  return (props.slotKey ? visual?.slots?.[props.slotKey] : visual)?.libraryRef ?? null;
+});
+const editShared = ref(false);
+watch([() => props.anchorId, () => props.slotKey, () => props.matId], () => {
+  editShared.value = false;
+  props.bridge.endLiveEdit();
+});
+const makeIndependent = (): void => {
+  if (props.anchorId) {
+    props.materialLib.disconnect(props.anchorId, props.slotKey);
+  }
+  editShared.value = false;
+};
 
 /** 库模式：改库条目（热更全部引用者）；槽位模式：写 slots[slotKey]（merge 语义，其余槽位不动）；inline：写物体视觉层 */
 const apply = (): void => {
+  if (unavailable.value) {
+    return;
+  }
   if (props.matId) {
     props.materialLib.updateEntry(props.matId, { ...spec.value }, '编辑材质球');
+    refresh();
     return;
   }
   const id = props.anchorId;
@@ -128,23 +138,27 @@ const apply = (): void => {
     return;
   }
   const s = { ...spec.value };
+  if (editShared.value && sharedId.value) {
+    props.materialLib.updateEntry(sharedId.value, s, '编辑共享材质');
+    refresh();
+    return;
+  }
   if (props.slotKey) {
     props.bridge.commitLive('槽位材质', () => {
       // applyVisual 单物体合并语义——update({__visuals}) 是整表替换（会清其他物体的视觉层）
-      props.bridge.handle.internals.sceneEngine.applyVisual(id, {
-        slots: { [props.slotKey!]: specToInline(s) },
-      });
+      props.materialLib.writeSlot(id, props.slotKey!, specToInline(s));
     });
     return;
   }
   props.bridge.commitLive('材质', () => {
     const cur = props.bridge.handle.internals.sceneEngine.getVisual(id);
-    props.bridge.handle.internals.sceneEngine.replaceVisual(id, {
-      ...keepNonMaterial(cur), ...specToInline(s),
-    });
+    props.bridge.handle.internals.sceneEngine.replaceVisual(id, { ...keepNonMaterial(cur), ...specToInline(s), slots: cur?.slots });
   });
 };
 const onParamChange = (key: string, value: unknown): void => {
+  if (unavailable.value) {
+    return;
+  }
   (spec.value as unknown as Record<string, unknown>)[key] = value;
   apply();
 };
@@ -179,6 +193,15 @@ const selectReferencers = (): void => {
     @close="emit('close')"
   >
     <div class="emod__body">
+      <p v-if="unavailable" role="status">材质或编辑对象已删除，可撤销恢复或关闭此面板。</p>
+      <fieldset :disabled="unavailable || (!props.matId && !!props.anchorId && props.bridge.isLocked(props.anchorId))" class="emod__fields">
+      <p class="ed-label">{{ isLibMode ? '共享材质：修改会同步所有引用对象和部件。' : '编辑目标：' + (props.anchorId ?? '') + (props.slotKey ? ' / ' + props.slotKey : '（整个模型）') }}</p>
+      <div v-if="!isLibMode && sharedId" class="emod__scope">
+        <p>当前使用共享材质，{{ props.materialLib.referencingNodes(sharedId).length }} 个对象引用。默认仅修改当前目标。</p>
+        <label><input v-model="editShared" type="checkbox">修改共享材质（同步全部引用）</label>
+        <button class="ed-btn" @click="makeIndependent">复制为独立材质</button>
+      </div>
+      <p class="ed-label">预览显示基础色与颜色贴图，不模拟场景光照。</p>
       <input
         v-if="isLibMode"
         v-model="name"
@@ -220,14 +243,21 @@ const selectReferencers = (): void => {
       </div>
 
       <MaterialParams
+        :key="JSON.stringify([props.matId, props.anchorId, props.slotKey, unavailable, editShared])"
+        :target-key="JSON.stringify([props.matId, props.anchorId, props.slotKey, unavailable, editShared])"
         :spec="spec"
+        :textures="textures"
         @change="onParamChange"
       />
+      </fieldset>
     </div>
   </FloatingPanel>
 </template>
 
 <style scoped>
+.emod__fields { border: 0; margin: 0; padding: 0; min-width: 0; }
+.emod__scope { font-size: 11px; line-height: 1.7; margin-bottom: 10px; }
+.emod__scope label { display: block; margin-bottom: 6px; }
 .emod__body {
   flex: 1;
   min-height: 0;

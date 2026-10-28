@@ -39,7 +39,7 @@ assert.deepEqual(fs.readFileSync(resolve(dir,'package.json')),before);for(const 
 const badSecond=manifest(dir);badSecond.entries[1].result.image='invalid';assert.throws(()=>importReview(dir,badSecond));assert.deepEqual(fs.readFileSync(resolve(dir,'package.json')),before);
 console.log('PASS failed batch/commit preserves prior package and referenced pictures');
 const resolver=makeResolver({}, {files:{'red/base.png':'RED','blue/base.png':'BLUE','中文/a b.bin':'BIN'}},'blob:null/entry');
-assert.equal(resolver('https://gts3d.invalid/red/base.png'),'RED');assert.equal(resolver('https://gts3d.invalid/blue/base.png'),'BLUE');assert.equal(resolver('https://gts3d.invalid/%E4%B8%AD%E6%96%87/a%20b.bin'),'BIN');assert.equal(resolver('https://outside/base.png'),null);
+assert.equal(resolver('https://scene3d.invalid/red/base.png'),'RED');assert.equal(resolver('https://scene3d.invalid/blue/base.png'),'BLUE');assert.equal(resolver('https://scene3d.invalid/%E4%B8%AD%E6%96%87/a%20b.bin'),'BIN');assert.equal(resolver('https://outside/base.png'),null);
 console.log('PASS exact nested/encoded dependency resolution, no basename guessing');
 // Real browser download to disk; early editing under deliberately delayed model fetch.
 // Force short deadlines only inside this test browser; late loads cannot start rendering.

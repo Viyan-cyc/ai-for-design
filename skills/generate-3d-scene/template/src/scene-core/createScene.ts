@@ -100,7 +100,7 @@ const createLoadBadge = (canvas: HTMLCanvasElement): {
   dispose: () => void;
 } => {
   const badge = document.createElement('div');
-  badge.className = 'gts3d-load-badge';
+  badge.className = 'scene3d-load-badge';
   badge.style.cssText = [
     'position:absolute', 'right:12px', 'bottom:12px', 'z-index:10',
     'font:12px/1.6 monospace', 'color:#fff', 'background:rgba(0,0,0,.55)',

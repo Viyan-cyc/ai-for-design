@@ -108,6 +108,8 @@ const rewriteEntry = (code, errors) => {
 /* ── App.vue：去掉编辑态链接 ──────────────────────────────────────────────── */
 
 const rewriteApp = (code) => code
+  .replace(/^import SceneEditLauncher from .*;\r?\n/gm, '')
+  .replace(/\s*<SceneEditLauncher[^>]*\/>/g, '')
   .replace(/\s*<a\s+href="\/\?edit=1"[^>]*>[^<]*<\/a>/g, '')
   // 兜底：任何残留的 edit=1 链接
   .replace(/\s*<a\s+href="[^"]*\?edit=1[^"]*"[^>]*>[^<]*<\/a>/g, '');
@@ -331,7 +333,7 @@ export const stripEdit = async (srcProject, outDir, opts = {}) => {
         runtimeSlotKeys = await buildRuntimeSlotKeys(src, snapshot);
       } catch (err) {
         runtimeSlotKeys = null; // 校验器对 slots 报「无法验证：无运行时清单」
-        if (process.env.GTS3D_STRIP_DEBUG) {
+        if (process.env.SCENE3D_STRIP_DEBUG) {
           console.warn(`[strip-edit] 运行时槽位清单构建失败：${err.message}`);
         }
       }

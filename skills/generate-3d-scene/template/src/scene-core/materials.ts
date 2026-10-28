@@ -144,20 +144,6 @@ export const applyVisualOverride = (
       root.scale.set(o.scale[0] ?? 1, o.scale[1] ?? 1, o.scale[2] ?? 1);
     }
   };
-  // 槽位层：子网格按 key 单独应用（物体级字段作默认态先应用，槽命中覆盖）
-  if (o.slots && scope === 'full') {
-    for (const [slotKey, slotOverride] of Object.entries(o.slots)) {
-      if (slotOverride === null || slotOverride === undefined) {
-        continue;
-      }
-      const target = findBySlotKey(root, slotKey);
-      if (!target) {
-        console.warn(`[materials] 槽位未命中（模型重导出改名？已忽略）: ${slotKey}`);
-        continue;
-      }
-      applyVisualOverride(target, slotOverride, 'full');
-    }
-  }
   applyTransform();
   if (scope === 'switches') {
     root.traverse(applyShadow);
@@ -178,6 +164,21 @@ export const applyVisualOverride = (
     const patched = base.map((b) => applyInlineMaterial(b, spec));
     mesh.material = Array.isArray(mesh.material) || patched.length > 1 ? patched : patched[0]!;
   });
+  // 槽位层：子网格按 key 单独应用（物体级字段作默认态先应用，槽命中覆盖）
+  if (o.slots && scope === 'full') {
+    for (const [slotKey, slotOverride] of Object.entries(o.slots)) {
+      if (slotOverride === null || slotOverride === undefined) {
+        continue;
+      }
+      const target = findBySlotKey(root, slotKey);
+      if (!target) {
+        console.warn(`[materials] 槽位未命中（模型重导出改名？已忽略）: ${slotKey}`);
+        continue;
+      }
+      applyVisualOverride(target, slotOverride, 'full');
+    }
+  }
+
 };
 
 /**
@@ -316,12 +317,8 @@ const COLOR_KEYS = new Set(['color', 'emissive', 'attenuationColor', 'specularCo
 const VEC2_KEYS = new Set(['normalScale', 'clearcoatNormalScale', 'iridescenceThicknessRange']);
 
 const SIDE_MAP = { FrontSide: THREE.FrontSide, BackSide: THREE.BackSide, DoubleSide: THREE.DoubleSide } as const;
-const COMBINE_MAP = {
-  MultiplyOperation: THREE.MultiplyOperation, MixOperation: THREE.MixOperation, AddOperation: THREE.AddOperation,
-} as const;
-const NORMAL_MAP_TYPE_MAP = {
-  TangentSpaceNormalMap: THREE.TangentSpaceNormalMap, ObjectSpaceNormalMap: THREE.ObjectSpaceNormalMap,
-} as const;
+const COMBINE_MAP = { MultiplyOperation: THREE.MultiplyOperation, MixOperation: THREE.MixOperation, AddOperation: THREE.AddOperation } as const;
+const NORMAL_MAP_TYPE_MAP = { TangentSpaceNormalMap: THREE.TangentSpaceNormalMap, ObjectSpaceNormalMap: THREE.ObjectSpaceNormalMap } as const;
 
 /** 类型切换字段白名单（迁移用）：COMMON 三类型共有；Standard 集含 Physical（继承关系） */
 const COMMON_FIELDS = [
@@ -392,9 +389,7 @@ export const applyMaterialScalars = (mat: THREE.Material, spec: MaterialSpec): v
 };
 
 /** 新建材质实例（唯一实例化入口；贴图槽由 applyMaterialTextures 异步赋值） */
-export const createMaterialFromSpec = (
-  spec: MaterialSpec,
-): THREE.MeshLambertMaterial | THREE.MeshStandardMaterial | THREE.MeshPhysicalMaterial => {
+export const createMaterialFromSpec = (spec: MaterialSpec): THREE.MeshLambertMaterial | THREE.MeshStandardMaterial | THREE.MeshPhysicalMaterial => {
   const type = spec.type ?? 'MeshStandardMaterial';
   const mat = type === 'MeshLambertMaterial' ? new THREE.MeshLambertMaterial()
     : type === 'MeshPhysicalMaterial' ? new THREE.MeshPhysicalMaterial()

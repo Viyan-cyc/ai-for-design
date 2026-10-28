@@ -65,7 +65,7 @@ const run = (script, args, expectZero = true) => {
 };
 
 const FIXTURE_LIB = seedLibrary(join(ROOT, 'external-library'));
-process.env.GTS3D_LEGACY_ASSET_ROOT = FIXTURE_LIB;
+process.env.SCENE3D_LEGACY_ASSET_ROOT = FIXTURE_LIB;
 const F = (n) => join(ROOT, n);
 const firstFail = (out) => out.split('\n').find((l) => l.includes('✗')) ?? '';
 

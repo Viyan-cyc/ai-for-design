@@ -25,21 +25,21 @@ const main = async () => {
     const { evaluate } = session;
     let mounted = false;
     for (let i = 0; i < 30; i += 1) {
-      mounted = await evaluate("!!window.__gts3d && !!window.__gts3dEdit");
+      mounted = await evaluate("!!window.__scene3d && !!window.__scene3dEdit");
       if (mounted) {
         break;
       }
       await sleep(500);
     }
     if (!mounted) {
-      throw new Error("__gts3dEdit 未挂载");
+      throw new Error("__scene3dEdit 未挂载");
     }
-    await evaluate("window.__gts3d.whenReady({timeoutMs:20000})").catch(() => {});
+    await evaluate("window.__scene3d.whenReady({timeoutMs:20000})").catch(() => {});
 
     // ① V12 多实例隔离 + 蒙皮尺度
     const isolation = await evaluate(`(async () => {
       const THREE = await import('/node_modules/three/build/three.module.js');
-      const h = window.__gts3d;
+      const h = window.__scene3d;
       const se = h.internals.sceneEngine;
       const before = {};
       for (const id of ['example_01', 'car_01']) {
@@ -59,7 +59,7 @@ const main = async () => {
     console.log("isolation-before:", JSON.stringify(isolation));
 
     const afterEdit = await evaluate(`(() => {
-      const h = window.__gts3d;
+      const h = window.__scene3d;
       const se = h.internals.sceneEngine;
       // car_01 打内联改色（扁平字段——UI 生产链路形态）
       se.applyVisual('car_01', { materialType: 'MeshStandardMaterial', color: '#8b1d1d', roughness: 0.4 });
@@ -80,7 +80,7 @@ const main = async () => {
 
     // ② V04 浏览器级失败注入：assetId 缺失节点 → failed
     const failureInject = await evaluate(`(async () => {
-      const h = window.__gts3d;
+      const h = window.__scene3d;
       const se = h.internals.sceneEngine;
       h.update({ examples: [{ id: 'p6_missing_asset', position: [3, 0.5, 3], params: { assetId: 'p6_no_such_asset' } }] });
       const d = await h.whenReady({ timeoutMs: 10000 }).then(x => ({ ok: true, d: x })).catch(e => ({ ok: false, m: String(e?.message ?? e) }));
@@ -96,7 +96,7 @@ const main = async () => {
 
     // ③ V14 前半：100 轮增删稳定性
     const stability = await evaluate(`(async () => {
-      const h = window.__gts3d;
+      const h = window.__scene3d;
       let last = null;
       for (let i = 0; i < 100; i += 1) {
         h.update({ Box: [{ id: 'p6_stress_box', position: [i * 0.01, 0.5, 0], scale: 1 + (i % 7) * 0.1 }] });

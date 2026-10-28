@@ -34,7 +34,7 @@ function getArg(name) {
   return hit ? hit.slice(name.length + 3) : undefined
 }
 const envDirArg = getArg("env-dir")
-const registryArg = getArg("registry") || process.env.GTS3D_REGISTRY
+const registryArg = getArg("registry") || process.env.SCENE3D_REGISTRY
 
 // ---------- env config ----------
 function readEnvConfig() {

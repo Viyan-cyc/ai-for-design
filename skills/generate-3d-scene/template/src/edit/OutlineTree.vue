@@ -364,7 +364,7 @@ const toggleSlotVisible = (nodeId: string, slotKey: string): void => {
 /** 树点子网格：选中父物体 + 记录槽位态（属性面板显示该 mesh 信息）；window 事件留给 MaterialSection 聚焦滚动 */
 const onSelectSlot = (nodeId: string, slotKey: string): void => {
   props.bridge.selectSlot(nodeId, slotKey);
-  window.dispatchEvent(new CustomEvent('gts3d-select-slot', { detail: { nodeId, slotKey } }));
+  window.dispatchEvent(new CustomEvent('scene3d-select-slot', { detail: { nodeId, slotKey } }));
 };
 
 /** mesh 行选中态：bridge.selectedSlot 匹配该槽位 */

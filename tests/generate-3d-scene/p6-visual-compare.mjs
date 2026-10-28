@@ -11,7 +11,7 @@
  *   ③ 数据断言（编辑侧）：节点树/视觉生效态（car_01 红/car_02 隐藏/tree_02 绿）；
  *   ④ 真实加载/渲染终态（P6-R2 终版——截图稳定仅为辅助防早截，不作完成证明）：
  *      - 编辑态：whenReady({timeoutMs}) **tracker 真值终态**（pending=0 且无失败）；
- *      - 运行包（prod 剔除 __gts3d，无 tracker 可读）：badge text 的 loaded/total
+ *      - 运行包（prod 剔除 __scene3d，无 tracker 可读）：badge text 的 loaded/total
  *        **数值解析**为主判据——badge text 是 tracker 计数的 DOM 投影（"3/4 loaded"
  *        即 tracker 真值 loaded=3/total=4），loaded==total 才是「资产全部完成」的
  *        可证明形态；叠加 CDP 层 pageErrors 零 + netMisses 零非 favicon 失败 +
@@ -113,7 +113,7 @@ const awaitProdSettled = async (page, { timeoutMs = 90000, stableSamples = 3, sa
   let badgeComplete = false;
   for (;;) {
     lastBadge = await page.evaluate(`(() => {
-      const badge = document.querySelector('.gts3d-load-badge');
+      const badge = document.querySelector('.scene3d-load-badge');
       const canvas = document.getElementById('scene-canvas');
       return {
         badgeExists: !!badge,
@@ -169,23 +169,23 @@ const shotEdit = async (session, url) => {
     const { evaluate, rpc } = page;
     let mounted = false;
     for (let i = 0; i < 30; i += 1) {
-      mounted = await evaluate("!!window.__gts3d");
+      mounted = await evaluate("!!window.__scene3d");
       if (mounted) {
         break;
       }
       await sleep(500);
     }
     if (!mounted) {
-      throw new Error(`__gts3d 未挂载（编辑态）: ${url}`);
+      throw new Error(`__scene3d 未挂载（编辑态）: ${url}`);
     }
     const ready = await evaluate(
-      'window.__gts3d.whenReady({timeoutMs:20000}).then(d=>({ok:true,pending:d.pending,failed:d.failedAssets})).catch(e=>({ok:false,m:String(e?.message??e)}))',
+      'window.__scene3d.whenReady({timeoutMs:20000}).then(d=>({ok:true,pending:d.pending,failed:d.failedAssets})).catch(e=>({ok:false,m:String(e?.message??e)}))',
     );
     if (!ready.ok || ready.pending > 0 || (ready.failed?.length ?? 0) > 0) {
       throw new Error(`编辑态未就绪: ${JSON.stringify(ready)}`);
     }
     const state = await evaluate(`(() => {
-      const h = window.__gts3d;
+      const h = window.__scene3d;
       const se = h.internals.sceneEngine;
       const cam = h.internals.camera;
       const out = {
@@ -312,7 +312,7 @@ const negStuck = async (session, url) => {
     const { evaluate } = page;
     let mounted = false;
     for (let i = 0; i < 30; i += 1) {
-      mounted = await evaluate("!!window.__gts3d");
+      mounted = await evaluate("!!window.__scene3d");
       if (mounted) {
         break;
       }
@@ -325,7 +325,7 @@ const negStuck = async (session, url) => {
     // 等画面进入稳定期（其余节点渲染完成，pending 的 GLB 永不回来）
     await sleep(8000);
     const state = await evaluate(`(() => {
-      const h = window.__gts3d;
+      const h = window.__scene3d;
       const d = h.getDiagnostics();
       return { pending: d.pending, succeeded: d.succeeded, failed: d.failedAssets.length, nodeCount: h.internals.sceneEngine.getAllIds().length };
     })()`);

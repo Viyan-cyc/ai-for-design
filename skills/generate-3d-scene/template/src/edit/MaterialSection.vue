@@ -4,15 +4,20 @@
  * edit/MaterialSection — 属性面板「材质」分区（Spline 心智模型，M2 列表化）
  *
  * 选**模型节点**：去重材质列表（Spline 语义：3 部件 3 种材质 = 3 行）+「全部换成…」；
- * 选**子网格**（树内点选/视口拾取，经 gts3d-select-slot 事件）：只显示它的 1 条。
+ * 选**子网格**（树内点选/视口拾取，经 scene3d-select-slot 事件）：只显示它的 1 条。
  * 每行：缩略图 + 名称 + hover 复制/⊞；点行 = 开编辑材质面板（槽位或物体级）。
  * 仅呈现层——数据契约（slots 槽位层）/ MaterialLibService API 零改动。
  */
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import {
+  computed, nextTick, onBeforeUnmount, onMounted, ref, watch,
+} from 'vue';
 import type { MaterialSpec } from '@/scene-core/types';
 import type { MeshSpecEntry } from '@/scene-core/types';
-import { type MaterialLibService, visualToSpec, seedMaterialType } from './MaterialLibService';
+import { type MaterialLibService } from './MaterialLibService';
 import type { Bridge } from './Bridge';
+import { materialSwatch } from './material-preview';
+import { showEditorMessage } from './message';
+const revision = ref(0);
 
 const props = defineProps<{ bridge: Bridge; materialLib: MaterialLibService; anchorId: string | null }>();
 const emit = defineEmits<{
@@ -31,6 +36,7 @@ const refCount = ref(1);
 const focusSlot = ref<string | null>(null);
 
 const refresh = (): void => {
+  revision.value += 1;
   const id = props.anchorId;
   if (!id) {
     matRef.value = null;
@@ -48,14 +54,7 @@ const refresh = (): void => {
     refCount.value = props.materialLib.referencingNodes(matRef.value).length;
     return;
   }
-  const inlineSpec = visualToSpec(v ?? {});
-  const hasInlineFields = Object.keys(inlineSpec).some((k) => k !== 'type');
-  if (v?.materialType || hasInlineFields) {
-    matSpec.value = inlineSpec;
-  } else {
-    const obj = props.bridge.handle.internals.sceneEngine.getObject(id);
-    matSpec.value = { type: seedMaterialType(obj) };
-  }
+  matSpec.value = props.materialLib.effectiveSpec(id);
   entryName.value = '无标题材质';
   refCount.value = 1;
 };
@@ -63,15 +62,19 @@ watch(() => props.anchorId, () => {
   focusSlot.value = null;
   refresh();
 }, { immediate: true });
-props.bridge.onState(refresh);
+onBeforeUnmount(props.bridge.onState(refresh));
+onBeforeUnmount(props.bridge.handle.internals.sceneEngine.subscribeNodeEvent('updated', (id) => {
+  if (id === props.anchorId) { refresh(); }
+}));
 
 const isLinked = computed(() => matRef.value !== null);
 const displayName = computed(() => (isLinked.value ? entryName.value : '无标题材质'));
 
 // ---- 子网格清单（模型节点） ----
-const subMeshes = computed<MeshSpecEntry[]>(() => (props.anchorId
-  ? props.bridge.handle.internals.sceneEngine.listSubMeshes(props.anchorId)
-  : []));
+const subMeshes = computed<MeshSpecEntry[]>(() => {
+  void revision.value;
+  return props.anchorId ? props.bridge.handle.internals.sceneEngine.listSubMeshes(props.anchorId) : [];
+});
 
 /** 聚焦的单槽条目（树点子网格/视口拾取；非聚焦为 null） */
 const focusedSlot = computed<MeshSpecEntry | null>(() => {
@@ -102,32 +105,16 @@ const slotTitle = (slotKey: string): string => {
   return '无标题材质';
 };
 
-/** 槽位缩略图（CSS 近似；颜色取槽位 override 或中性灰） */
 const slotSwatchStyle = (slotKey: string): Record<string, string> => {
-  const id = props.anchorId;
-  const slot = id ? props.bridge.handle.internals.sceneEngine.getVisual(id)?.slots?.[slotKey] : null;
-  const s = (slot ?? {}) as Record<string, unknown>;
-  const color = typeof s.color === 'string' ? s.color : '#c8ccd2';
-  const rough = typeof s.roughness === 'number' ? s.roughness : 0.8;
-  const hi = Math.max(0.12, 0.62 - rough * 0.5);
-  return {
-    background: `radial-gradient(circle at 32% 28%, rgba(255,255,255,${hi.toFixed(2)}), ${color} 62%)`,
-  };
+  void revision.value;
+  return materialSwatch(props.anchorId ? props.materialLib.effectiveSpec(props.anchorId, slotKey) : { type: 'MeshStandardMaterial' }, props.materialLib.texturePreview(props.anchorId, slotKey));
 };
-
-/** 物体级条目缩略图 */
 const swatchStyle = computed(() => {
-  const spec = matSpec.value as Record<string, unknown>;
-  const color = typeof spec.color === 'string' ? spec.color : '#c8ccd2';
-  const rough = typeof spec.roughness === 'number' ? spec.roughness : 0.8;
-  const metal = typeof spec.metalness === 'number' ? spec.metalness : 0;
-  const transmission = typeof spec.transmission === 'number' ? spec.transmission : 0;
-  const hi = Math.max(0.12, 0.62 - rough * 0.5 - metal * 0.18);
-  return {
-    background: `radial-gradient(circle at 32% 28%, rgba(255,255,255,${hi.toFixed(2)}), ${color} 62%)`,
-    opacity: String(transmission > 0 ? 0.85 : 1),
-  };
+  void revision.value;
+  return materialSwatch(matSpec.value, props.materialLib.texturePreview(props.anchorId));
 });
+const textureTimer = window.setInterval(() => { revision.value += 1; }, 500);
+onBeforeUnmount(() => window.clearInterval(textureTimer));
 
 // ---- 条目交互 ----
 /** 点物体级条目 → 编辑面板（inline/lib 双模式） */
@@ -182,7 +169,11 @@ const commitRename = (): void => {
   if (matRef.value) {
     props.materialLib.renameEntry(matRef.value, name);
   } else {
-    props.materialLib.saveAs(id, name);
+    try {
+      props.materialLib.saveAs(id, name);
+    } catch (error) {
+      showEditorMessage(error instanceof Error ? error.message : String(error));
+    }
   }
   refresh();
 };
@@ -210,10 +201,10 @@ const onSlotEvent = (ev: Event): void => {
   });
 };
 onMounted(() => {
-  window.addEventListener('gts3d-select-slot', onSlotEvent);
+  window.addEventListener('scene3d-select-slot', onSlotEvent);
 });
 onBeforeUnmount(() => {
-  window.removeEventListener('gts3d-select-slot', onSlotEvent);
+  window.removeEventListener('scene3d-select-slot', onSlotEvent);
 });
 </script>
 

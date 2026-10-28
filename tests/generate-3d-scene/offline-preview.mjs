@@ -22,19 +22,19 @@ try {
     const page = await session.newPage({
       onEvents: [async (p) => {
         await p.rpc('Network.setBlockedURLs', { urls: ['http://*', 'https://*'] });
-        await p.rpc('Page.addScriptToEvaluateOnNewDocument', { source: `const firstFramePoll=setInterval(()=>{if(window.__gts3d?.getDiagnostics().firstFrame){window.__firstFrameMs=performance.now();clearInterval(firstFramePoll)}},5);` });
+        await p.rpc('Page.addScriptToEvaluateOnNewDocument', { source: `const firstFramePoll=setInterval(()=>{if(window.__scene3d?.getDiagnostics().firstFrame){window.__firstFrameMs=performance.now();clearInterval(firstFramePoll)}},5);` });
       }],
       url: `${base}?debug=1${mode}`,
     });
     try {
-      await wait(page, '!!window.__gts3d');
-      const ready = await page.evaluate('window.__gts3d.whenReady({timeoutMs:25000})');
+      await wait(page, '!!window.__scene3d');
+      const ready = await page.evaluate('window.__scene3d.whenReady({timeoutMs:25000})');
       assert.equal(ready.failed, 0);
       assert.equal(ready.firstFrame, true);
       assert.equal(await page.evaluate('document.querySelectorAll("canvas#scene-canvas").length'), 1, 'only one mode boots');
       if (mode && !saved) {
         saved = await page.evaluate(`(async () => {
-          const {bridge,save}=window.__gts3dEdit;
+          const {bridge,save}=window.__scene3dEdit;
           const se=bridge.handle.internals.sceneEngine;
           const id=se.getAllIds().find(id=>se.getNode(id));
           const snapshot=bridge.handle.serialize();
@@ -53,9 +53,9 @@ try {
           const data=JSON.parse(await download.text);
           return {id,data,type,position};
         })()`);
-        assert.equal(saved.data.format, 'gts3d-scene');
+        assert.equal(saved.data.format, 'scene3d-scene');
         assert.equal(Object.keys(saved.data.textures).length, 1);
-        await page.evaluate(`window.__gts3dEdit.bridge.select(${JSON.stringify(saved.id)},false)`);
+        await page.evaluate(`window.__scene3dEdit.bridge.select(${JSON.stringify(saved.id)},false)`);
         await wait(page, '!!document.querySelector(".ms__entry")');
         await page.evaluate('document.querySelector(".ms__entry").click()');
         await wait(page, '[...document.querySelectorAll(".pp__grp-t")].some(b=>b.textContent.includes("贴图"))');
@@ -74,11 +74,11 @@ try {
           };
           try{document.querySelector('.pp__tex button').click()}finally{HTMLInputElement.prototype.click=click}
         })()`);
-        await wait(page, 'JSON.stringify(window.__gts3d.serialize()).includes(window.__testImage)');
-        saved.data = await page.evaluate('window.__gts3dEdit.save.encode()');
+        await wait(page, 'JSON.stringify(window.__scene3d.serialize()).includes(window.__testImage)');
+        saved.data = await page.evaluate('window.__scene3dEdit.save.encode()');
       } else if (mode && saved) {
         const restored = await page.evaluate(`(() => {
-          const {bridge,save}=window.__gts3dEdit;
+          const {bridge,save}=window.__scene3dEdit;
           save.importText(${JSON.stringify(JSON.stringify(saved.data))});
           const scene=bridge.handle.serialize();
           const v=scene.__visuals[${JSON.stringify(saved.id)}];

@@ -2,7 +2,7 @@
  * smoke-structural.mjs — 结构化冒烟（仅维护或明确请求诊断时运行）
  *
  * 断言（全部数值型，无需看图）：
- *   ① 场景图 JSON：__gts3d 挂载 / 分组数与各组物体数（读 scene-data.json 期望值）
+ *   ① 场景图 JSON：__scene3d 挂载 / 分组数与各组物体数（读 scene-data.json 期望值）
  *      / 相机存在 / GLB 资产加载完成计数（徽标 N=M 收敛）
  *   ② canvas 像素统计：renderLoop.getStats().fps > 0（swiftshader 下 drawImage
  *      拿不到 WebGL 前缓冲，像素法不可靠——以渲染循环活性为准，smoke-r S1 同口径）
@@ -74,25 +74,25 @@ const main = async () => {
     await session.rpc('Log.enable');
     const { evaluate } = session;
 
-    // 4. 等场景初始化（__gts3d 挂载轮询）
+    // 4. 等场景初始化（__scene3d 挂载轮询）
     let mounted = false;
     for (let i = 0; i < 10; i += 1) {
-      mounted = await evaluate('!!window.__gts3d');
+      mounted = await evaluate('!!window.__scene3d');
       if (mounted) {
         break;
       }
       await sleep(700);
     }
     if (!mounted) {
-      console.log('STRUCT FAIL: __gts3d 未挂载');
+      console.log('STRUCT FAIL: __scene3d 未挂载');
       process.exitCode = 1;
       return;
     }
     // P5.1：GLB 收敛改 whenReady 终态驱动（新模板）；旧模板回退徽标轮询
     //   ——固定 sleep(2500) 在快加载场景白等、慢加载场景不够，两头都不是正确口径
-    const hasReady = await evaluate('typeof window.__gts3d?.whenReady === "function"');
+    const hasReady = await evaluate('typeof window.__scene3d?.whenReady === "function"');
     if (hasReady) {
-      const ready = await evaluate('window.__gts3d.whenReady({timeoutMs:15000})'
+      const ready = await evaluate('window.__scene3d.whenReady({timeoutMs:15000})'
         + '.then(d=>({ok:true,pending:d.pending,failed:d.failedAssets.length})).catch(e=>({ok:false,message:String(e?.message??e)}))');
       if (!ready.ok || ready.pending > 0 || ready.failed > 0) {
         console.log(`STRUCT FAIL: 加载未收敛（${ready.message ?? `pending=${ready.pending} failed=${ready.failed}`}）`);
@@ -103,7 +103,7 @@ const main = async () => {
 
     // ① 场景图 JSON 断言
     const graph = await evaluate(`(() => {
-      const h = window.__gts3d;
+      const h = window.__scene3d;
       const se = h.internals.sceneEngine;
       const ids = se.getAllIds();
       const groups = {};
@@ -122,7 +122,7 @@ const main = async () => {
     let badgeDone = false;
     for (let i = 0; i < 15; i += 1) {
       badgeDone = await evaluate(`(() => {
-        const badge = document.querySelector('.gts3d-load-badge');
+        const badge = document.querySelector('.scene3d-load-badge');
         return !badge || badge.style.display === 'none';
       })()`);
       if (badgeDone) {
@@ -133,7 +133,7 @@ const main = async () => {
     const glbLoaded = { badgeDone };
 
     // ② 渲染循环活性（fps > 0 即在真实渲染）
-    const stats = await evaluate('window.__gts3d.internals.renderLoop.getStats()');
+    const stats = await evaluate('window.__scene3d.internals.renderLoop.getStats()');
 
     // 7. ③ 零 rejection 断言（全监听窗口内）
     const noRejection = pageErrors.length === 0;

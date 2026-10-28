@@ -242,7 +242,7 @@ export const validateManifest = (obj) => {
 /** zip 或目录 → staging 目录（返回 staging 路径，调用方负责清理）。 */
 const stagePackage = (input) => {
   const st = statSync(input);
-  const staging = mkdtemp(`gts3d-import-`);
+  const staging = mkdtemp(`scene3d-import-`);
   if (st.isDirectory()) {
     copyTree(input, staging);
     return staging;

@@ -1,3 +1,4 @@
+import { texturePreviews, type TexturePreviews } from './material-preview';
 /**
  * edit/MaterialLibService — 材质库服务
  *
@@ -11,28 +12,41 @@
  * 共享实例重挂：订阅 bridge 变更，每次 commit/undo/redo 后 syncAll（幂等零成本）。
  * 材质实例化统一走 core 的 createMaterialFromSpec（本服务不 import core 内部文件——铁律 2）。
  */
-import * as THREE from 'three';
-import type { SceneHandle, MaterialLibEntry, MaterialSpec, VisualOverride } from '@/scene-core';
-import { createMaterialFromSpec, applyMaterialScalars, applyMaterialTextures, NON_MATERIAL_VISUAL_KEYS, findBySlotKey } from '@/scene-core';
+import type * as THREE from 'three';
+import type {
+  SceneHandle, MaterialLibEntry, MaterialSpec, VisualOverride,
+} from '@/scene-core';
+import {
+  createMaterialFromSpec, applyMaterialScalars, applyMaterialTextures, NON_MATERIAL_VISUAL_KEYS, findBySlotKey, readMaterialSpec,
+} from '@/scene-core';
 import type { Bridge } from './Bridge';
+import { showEditorMessage } from './message';
 
 /** 内置种子材质（key 即 mat_id，转录时键名直接用） */
 const SEED_MATERIALS: Record<string, MaterialLibEntry> = {
   glass: {
     name: '玻璃',
-    spec: { type: 'MeshPhysicalMaterial', transmission: 1, ior: 1.5, roughness: 0.05, thickness: 0.5 },
+    spec: {
+      type: 'MeshPhysicalMaterial', transmission: 1, ior: 1.5, roughness: 0.05, thickness: 0.5,
+    },
   },
   carpaint: {
     name: '车漆',
-    spec: { type: 'MeshPhysicalMaterial', clearcoat: 1, clearcoatRoughness: 0.1, metalness: 0.7, roughness: 0.35 },
+    spec: {
+      type: 'MeshPhysicalMaterial', clearcoat: 1, clearcoatRoughness: 0.1, metalness: 0.7, roughness: 0.35,
+    },
   },
   brushed_metal: {
     name: '拉丝金属',
-    spec: { type: 'MeshPhysicalMaterial', metalness: 1, roughness: 0.35, anisotropy: 1 },
+    spec: {
+      type: 'MeshPhysicalMaterial', metalness: 1, roughness: 0.35, anisotropy: 1,
+    },
   },
   velvet: {
     name: '绒布',
-    spec: { type: 'MeshPhysicalMaterial', sheen: 1, sheenRoughness: 0.5, roughness: 1, metalness: 0 },
+    spec: {
+      type: 'MeshPhysicalMaterial', sheen: 1, sheenRoughness: 0.5, roughness: 1, metalness: 0,
+    },
   },
 };
 
@@ -132,7 +146,53 @@ export class MaterialLibService {
   /** 引用某库条目的物体 id 列表 */
   referencingNodes(matId: string): string[] {
     const se = this.handle.internals.sceneEngine;
-    return se.getAllIds().filter((id) => se.getVisual(id)?.libraryRef === matId);
+    return se.getAllIds().filter((id) => {
+      const visual = se.getVisual(id);
+      return visual?.libraryRef === matId
+        || Object.values(visual?.slots ?? {}).some((slot) => slot.libraryRef === matId);
+    });
+  }
+
+  texturePreview(nodeId?: string | null, slotKey?: string | null, matId?: string | null): TexturePreviews {
+    if (matId) { return texturePreviews(this.getInstance(matId)); }
+    const root = nodeId ? this.handle.internals.sceneEngine.getObject(nodeId) : null;
+    const target = root && slotKey ? findBySlotKey(root, slotKey) : root;
+    let material: THREE.Material | null = null;
+    target?.traverse((child) => {
+      if (material || !(child as THREE.Mesh).isMesh) { return; }
+      const value = (child as THREE.Mesh).material;
+      material = Array.isArray(value) ? value[0] ?? null : value;
+    });
+    return texturePreviews(material);
+  }
+
+  /** Read the actual target, retaining serialized texture references when present. */
+  effectiveSpec(nodeId: string, slotKey?: string | null): MaterialSpec {
+    const se = this.handle.internals.sceneEngine;
+    const root = se.getObject(nodeId);
+    const visual = se.getVisual(nodeId);
+    const override = slotKey ? visual?.slots?.[slotKey] : visual;
+    const ref = override?.libraryRef ?? (slotKey ? visual?.libraryRef : undefined);
+    const stored = ref ? this.getEntry(ref)?.spec : undefined;
+    let mesh: THREE.Mesh | null = null;
+    const target = root && slotKey ? findBySlotKey(root, slotKey) : root;
+    target?.traverse((child) => {
+      if (!mesh && (child as THREE.Mesh).isMesh) {
+        mesh = child as THREE.Mesh;
+      }
+    });
+    const live = mesh ? readMaterialSpec(mesh) : { type: 'MeshStandardMaterial' as const };
+    return { ...stored, ...visualToSpec(override ?? {}), ...live };
+  }
+
+  /** Replace a slot, clearing mutually exclusive library/inline fields. */
+  writeSlot(nodeId: string, slotKey: string, value: VisualOverride): void {
+    const se = this.handle.internals.sceneEngine;
+    const visual = se.getVisual(nodeId) ?? {};
+    const old = visual.slots?.[slotKey] ?? {};
+    const nonMaterial = Object.fromEntries(Object.entries(old)
+      .filter(([key]) => NON_MATERIAL_VISUAL_KEYS.has(key) && key !== 'libraryRef' && key !== 'materialType'));
+    se.replaceVisual(nodeId, { ...visual, slots: { ...visual.slots, [slotKey]: { ...nonMaterial, ...value } } });
   }
 
   // ---- 种子 ----
@@ -145,6 +205,14 @@ export class MaterialLibService {
     }
     this.handle.update({ __materialLib: { ...SEED_MATERIALS } });
     this.syncAll();
+  }
+
+  private blocked(ids: string[]): boolean {
+    const locked = ids.some((id) => this.bridge.isLocked(id));
+    if (locked) {
+      showEditorMessage('目标或共享材质引用对象已锁定，请先解锁。');
+    }
+    return locked;
   }
 
   // ---- 库 CRUD（全部经 bridge.commit，undo 可恢复） ----
@@ -160,7 +228,10 @@ export class MaterialLibService {
   }
 
   updateEntry(id: string, spec: MaterialSpec, label = '材质库'): void {
-    this.bridge.commitLive(label, () => {
+    if (this.blocked(this.referencingNodes(id))) {
+      return;
+    }
+    this.bridge.commitLive(`${label }:${ id}`, () => {
       const lib = { ...this.handle.internals.sceneEngine.getAllMaterialLib() };
       const entry = lib[id];
       if (!entry) {
@@ -185,6 +256,9 @@ export class MaterialLibService {
 
   /** 删除条目；引用者自动断开为 inline（保留外观） */
   removeEntry(id: string): void {
+    if (this.blocked(this.referencingNodes(id))) {
+      return;
+    }
     const entry = this.getEntry(id);
     if (!entry) {
       return;
@@ -198,7 +272,18 @@ export class MaterialLibService {
       // 令 D4 跳过材质处理、内联字段失效）
       for (const nid of refs) {
         const cur = this.handle.internals.sceneEngine.getVisual(nid);
-        this.handle.internals.sceneEngine.replaceVisual(nid, { ...keepNonMaterial(cur), ...specToInline(entry.spec) });
+        const slots = { ...cur?.slots };
+        for (const [key, slot] of Object.entries(slots)) {
+          if (slot.libraryRef === id) {
+            const { libraryRef: omitted, ...rest } = slot;
+            void omitted;
+            slots[key] = { ...rest, ...specToInline(entry.spec) };
+          }
+        }
+        const next = cur?.libraryRef === id
+          ? { ...keepNonMaterial(cur), ...specToInline(entry.spec), slots }
+          : { ...cur, slots };
+        this.handle.internals.sceneEngine.replaceVisual(nid, next);
       }
     });
   }
@@ -206,6 +291,9 @@ export class MaterialLibService {
   // ---- 链接 / 断开 / 另存为 / 槽位 ----
 
   link(nodeId: string, matId: string): void {
+    if (this.blocked([nodeId])) {
+      return;
+    }
     if (!this.getEntry(matId)) {
       return;
     }
@@ -217,14 +305,15 @@ export class MaterialLibService {
 
   /** 槽位级链接：把子网格槽位指向库条目（物体级与其它槽位不动；共享实例语义同物体级） */
   applySlotLink(nodeId: string, slotKey: string, matId: string): void {
+    if (this.blocked([nodeId])) {
+      return;
+    }
     if (!this.getEntry(matId)) {
       return;
     }
     this.bridge.commit('槽位链接材质', () => {
       // applyVisual 单物体合并语义——update({__visuals}) 是整表替换（会清其他物体的视觉层）
-      this.handle.internals.sceneEngine.applyVisual(nodeId, {
-        slots: { [slotKey]: { libraryRef: matId } },
-      });
+      this.writeSlot(nodeId, slotKey, { libraryRef: matId });
     });
   }
 
@@ -233,23 +322,61 @@ export class MaterialLibService {
     return this.handle.internals.sceneEngine.getVisual(nodeId)?.slots?.[slotKey] ?? null;
   }
 
-  disconnect(nodeId: string): void {
-    const ref = this.handle.internals.sceneEngine.getVisual(nodeId)?.libraryRef;
+  disconnect(nodeId: string, slotKey?: string | null): void {
+    if (this.blocked([nodeId])) {
+      return;
+    }
+    const visual = this.handle.internals.sceneEngine.getVisual(nodeId);
+    const ref = slotKey ? visual?.slots?.[slotKey]?.libraryRef : visual?.libraryRef;
     if (!ref) {
       return;
     }
     const spec = this.getEntry(ref)?.spec ?? this.linkedSpec(nodeId);
     this.bridge.commit('断开链接', () => {
       const cur = this.handle.internals.sceneEngine.getVisual(nodeId);
-      this.handle.internals.sceneEngine.replaceVisual(nodeId, { ...keepNonMaterial(cur), ...specToInline(spec) });
+      if (slotKey) {
+        this.writeSlot(nodeId, slotKey, specToInline(spec));
+      } else {
+        this.handle.internals.sceneEngine.replaceVisual(nodeId, { ...keepNonMaterial(cur), ...specToInline(spec), slots: cur?.slots });
+      }
     });
   }
 
-  saveAs(nodeId: string, name: string): string {
-    const v = this.handle.internals.sceneEngine.getVisual(nodeId) ?? {};
-    const spec = v.libraryRef ? (this.getEntry(v.libraryRef)?.spec ?? visualToSpec(v)) : visualToSpec(v);
-    const id = this.createEntry(name, { ...spec });
-    this.link(nodeId, id);
+  saveAs(nodeId: string, name: string, slotKey?: string | null): string {
+    if (this.bridge.isLocked(nodeId)) {
+      throw new Error('目标已锁定，请先解锁。');
+    }
+    const spec = this.effectiveSpec(nodeId, slotKey);
+    const root = this.handle.internals.sceneEngine.getObject(nodeId);
+    const target = root && slotKey ? findBySlotKey(root, slotKey) : root;
+    let unsupportedTexture = false;
+    target?.traverse((child) => {
+      const mesh = child as THREE.Mesh;
+      if (!mesh.isMesh) {
+        return;
+      }
+      for (const material of Array.isArray(mesh.material) ? mesh.material : [mesh.material]) {
+        for (const [key, value] of Object.entries(material)) {
+          if (value && (value as THREE.Texture).isTexture
+            && typeof (spec as unknown as Record<string, unknown>)[key] !== 'string') {
+            unsupportedTexture = true;
+          }
+        }
+      }
+    });
+    if (unsupportedTexture) {
+      throw new Error('当前材质包含未登记的模型内嵌贴图，暂不能完整另存到库；可直接编辑当前材质。');
+    }
+    const id = this.nextId();
+    this.bridge.commit('另存材质', () => {
+      const se = this.handle.internals.sceneEngine;
+      this.handle.update({ __materialLib: { ...se.getAllMaterialLib(), [id]: { name, spec } } });
+      if (slotKey) {
+        this.writeSlot(nodeId, slotKey, { libraryRef: id });
+      } else {
+        se.replaceVisual(nodeId, { ...keepNonMaterial(se.getVisual(nodeId)), libraryRef: id });
+      }
+    });
     return id;
   }
 
@@ -270,7 +397,14 @@ export class MaterialLibService {
         const inst = this.instances.get(vis.libraryRef);
         const obj = se.getObject(id);
         if (inst && obj) {
-          this.assignMaterial(obj, inst);
+          const excluded = new Set<THREE.Object3D>();
+          for (const [key, slot] of Object.entries(vis.slots ?? {})) {
+            if (slot.libraryRef || slot.materialType || Object.keys(visualToSpec(slot)).length > 1) {
+              const target = findBySlotKey(obj, key);
+              target?.traverse((child) => excluded.add(child));
+            }
+          }
+          this.assignMaterial(obj, inst, excluded);
         }
       }
       // 槽位级引用：该子网格单独挂共享实例
@@ -318,10 +452,10 @@ export class MaterialLibService {
     return `mat_${String(max + 1).padStart(3, '0')}`;
   }
 
-  private assignMaterial(obj: THREE.Object3D, mat: THREE.Material): void {
+  private assignMaterial(obj: THREE.Object3D, mat: THREE.Material, excluded = new Set<THREE.Object3D>()): void {
     obj.traverse((child) => {
       const mesh = child as THREE.Mesh;
-      if (mesh.isMesh && mesh.material !== mat) {
+      if (mesh.isMesh && !excluded.has(mesh) && mesh.material !== mat) {
         mesh.material = mat;
       }
     });

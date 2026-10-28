@@ -99,7 +99,7 @@ export const expectFingerprint = (expect) =>
     .digest("hex");
 
 export const waitReady = async (evaluate, timeoutMs = 15000) => {
-  if (!(await evaluate('typeof window.__gts3d?.whenReady === "function"'))) {
+  if (!(await evaluate('typeof window.__scene3d?.whenReady === "function"'))) {
     return {
       status: "SKIP",
       detail:
@@ -107,7 +107,7 @@ export const waitReady = async (evaluate, timeoutMs = 15000) => {
     };
   }
   const result = await evaluate(
-    `window.__gts3d.whenReady({timeoutMs:${timeoutMs}})` +
+    `window.__scene3d.whenReady({timeoutMs:${timeoutMs}})` +
       ".then(d=>({ok:true,d})).catch(e=>({ok:false,message:String(e?.message??e)}))",
   );
   return result.ok &&
@@ -149,7 +149,7 @@ export const verifyPage = async (
   let mounted = false;
   do {
     mounted = await evaluate(
-      `!!window.__gts3d${mode === "edit" ? " && !!window.__gts3dEdit" : ""}`,
+      `!!window.__scene3d${mode === "edit" ? " && !!window.__scene3dEdit" : ""}`,
     );
     if (mounted) {
       break;
@@ -165,7 +165,7 @@ export const verifyPage = async (
     const ready = await waitReady(evaluate, readyTimeoutMs);
     pushCheck("ready", ready.status, ready.detail);
     const graph = await evaluate(
-      "(()=>{const s=window.__gts3d.internals.sceneEngine; const groups={};" +
+      "(()=>{const s=window.__scene3d.internals.sceneEngine; const groups={};" +
         "for(const id of s.getAllIds()){(groups[s.getNodeType(id)]??=[]).push(id);}return groups;})()",
     );
     const groups = compareGroups(expect.idByGroup, graph);
@@ -174,24 +174,24 @@ export const verifyPage = async (
       groups.ok ? "PASS" : "FAIL",
       JSON.stringify(groups.mismatches),
     );
-    const camera = await evaluate("!!window.__gts3d.internals.camera");
+    const camera = await evaluate("!!window.__scene3d.internals.camera");
     pushCheck("camera", camera ? "PASS" : "FAIL", String(camera));
     const canvas = await evaluate(`(${inspectCanvas.toString()})()`);
     pushCheck("canvas", canvas.ok ? "PASS" : "FAIL", JSON.stringify(canvas));
     const subject = await evaluate(
-      `(${inspectSubject.toString()})(window.__gts3d,${intersectsFrustumBox.toString()})`,
+      `(${inspectSubject.toString()})(window.__scene3d,${intersectsFrustumBox.toString()})`,
     );
     pushCheck("subject", subject.ok ? "PASS" : "FAIL", JSON.stringify(subject));
     // Require a fresh successful frame, not stale nonzero statistics from a stopped loop.
     const renderDeadline = Date.now() + 1500;
     const before = await evaluate(
-      "window.__gts3d.internals.renderLoop.getStats()",
+      "window.__scene3d.internals.renderLoop.getStats()",
     );
     let stats;
     let active = false;
     do {
       await sleep(50);
-      stats = await evaluate("window.__gts3d.internals.renderLoop.getStats()");
+      stats = await evaluate("window.__scene3d.internals.renderLoop.getStats()");
       active =
         stats.fps > 0 && stats.calls > 0 && stats.elapsed > before.elapsed;
       if (active) {
@@ -201,7 +201,7 @@ export const verifyPage = async (
     pushCheck("render", active ? "PASS" : "FAIL", JSON.stringify(stats));
   }
   const diagErrors = mounted
-    ? await evaluate("window.__gts3d.getDiagnostics?.().pageErrors ?? []")
+    ? await evaluate("window.__scene3d.getDiagnostics?.().pageErrors ?? []")
     : [];
   const errors = [...new Set([...page.pageErrors, ...diagErrors])];
   pushCheck("errors", errors.length ? "FAIL" : "PASS", errors);

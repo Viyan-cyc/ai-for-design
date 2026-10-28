@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { TexturePreviews } from './material-preview';
 import { showEditorMessage } from './message';
 
 /**
@@ -8,10 +9,12 @@ import { showEditorMessage } from './message';
  * 只读 spec 显示，输入经 change(key, value) 回抛；父级负责持久化
  * （内联 → 写 __visuals 视觉层；库引用 → 改库条目热更）。
  */
-import { computed, ref } from 'vue';
+import {
+  computed, onBeforeUnmount, ref, watch,
+} from 'vue';
 import type { MaterialSpec, MaterialType } from '@/scene-core/types';
 
-const props = defineProps<{ spec: MaterialSpec }>();
+const props = defineProps<{ spec: MaterialSpec; targetKey: string; textures?: TexturePreviews }>();
 const emit = defineEmits<{ (e: 'change', key: string, value: unknown): void }>();
 
 interface ParamD {
@@ -23,92 +26,183 @@ interface GroupD { key: string; label: string; defaultOpen: boolean; params: Par
 
 /** 参数默认值（仅用于面板显示缺省，写入只落显式值） */
 const MAT_DEFAULTS: Record<string, unknown> = {
-  color: '#ffffff', opacity: 1, transparent: false, alphaTest: 0, side: 'FrontSide',
-  flatShading: false, wireframe: false, fog: true, vertexColors: false,
-  emissive: '#000000', emissiveIntensity: 1,
-  normalScale: [1, 1], normalMapType: 'TangentSpaceNormalMap', bumpScale: 1,
-  displacementScale: 1, displacementBias: 0, aoMapIntensity: 1, lightMapIntensity: 1, envMapIntensity: 1,
-  combine: 'MultiplyOperation', reflectivity: 1, refractionRatio: 0.98,
-  roughness: 1, metalness: 0,
-  clearcoat: 0, clearcoatRoughness: 0, clearcoatNormalScale: [1, 1],
-  transmission: 0, thickness: 0, attenuationColor: '#ffffff', attenuationDistance: null, dispersion: 0,
-  specularIntensity: 1, specularColor: '#ffffff',
-  sheen: 0, sheenColor: '#000000', sheenRoughness: 1,
-  iridescence: 0, iridescenceIOR: 1.3, iridescenceThicknessRange: [100, 400],
-  anisotropy: 0, anisotropyRotation: 0,
+  color: '#ffffff',
+  opacity: 1,
+  transparent: false,
+  alphaTest: 0,
+  side: 'FrontSide',
+  flatShading: false,
+  wireframe: false,
+  fog: true,
+  vertexColors: false,
+  emissive: '#000000',
+  emissiveIntensity: 1,
+  normalScale: [1, 1],
+  normalMapType: 'TangentSpaceNormalMap',
+  bumpScale: 1,
+  displacementScale: 1,
+  displacementBias: 0,
+  aoMapIntensity: 1,
+  lightMapIntensity: 1,
+  envMapIntensity: 1,
+  combine: 'MultiplyOperation',
+  reflectivity: 1,
+  refractionRatio: 0.98,
+  roughness: 1,
+  metalness: 0,
+  clearcoat: 0,
+  clearcoatRoughness: 0,
+  clearcoatNormalScale: [1, 1],
+  transmission: 0,
+  thickness: 0,
+  attenuationColor: '#ffffff',
+  attenuationDistance: null,
+  dispersion: 0,
+  specularIntensity: 1,
+  specularColor: '#ffffff',
+  sheen: 0,
+  sheenColor: '#000000',
+  sheenRoughness: 1,
+  iridescence: 0,
+  iridescenceIOR: 1.3,
+  iridescenceThicknessRange: [100, 400],
+  anisotropy: 0,
+  anisotropyRotation: 0,
   ior: 1.5,
 };
 
 const BASIC_PARAMS: ParamD[] = [
   { key: 'color', label: '颜色', kind: 'color' },
-  { key: 'opacity', label: '不透明', kind: 'range', min: 0, max: 1, step: 0.01 },
-  { key: 'transparent', label: '透明', kind: 'check' },
-  { key: 'alphaTest', label: 'alphaTest', kind: 'number', min: 0, max: 1, step: 0.01 },
+  {
+    key: 'opacity', label: '不透明度', kind: 'range', min: 0, max: 1, step: 0.01,
+  },
+  { key: 'transparent', label: '启用透明混合', kind: 'check' },
+  {
+    key: 'alphaTest', label: '透明裁剪阈值', kind: 'number', min: 0, max: 1, step: 0.01,
+  },
   { key: 'emissive', label: '自发光', kind: 'color' },
-  { key: 'emissiveIntensity', label: '自发光强度', kind: 'number', min: 0, step: 0.1 },
-  { key: 'side', label: '面渲染', kind: 'select', options: ['FrontSide', 'BackSide', 'DoubleSide'] },
+  {
+    key: 'emissiveIntensity', label: '自发光强度', kind: 'number', min: 0, step: 0.1,
+  },
+  {
+    key: 'side', label: '面渲染', kind: 'select', options: ['FrontSide', 'BackSide', 'DoubleSide'],
+  },
   { key: 'flatShading', label: '平直着色', kind: 'check' },
   { key: 'wireframe', label: '线框', kind: 'check' },
-  { key: 'fog', label: 'fog', kind: 'check' },
-  { key: 'vertexColors', label: 'vertexColors', kind: 'check' },
+  { key: 'fog', label: '受雾影响', kind: 'check' },
+  { key: 'vertexColors', label: '顶点颜色', kind: 'check' },
 ];
 const STANDARD_PARAMS: ParamD[] = [
-  { key: 'roughness', label: '粗糙度', kind: 'range', min: 0, max: 1, step: 0.01 },
-  { key: 'metalness', label: '金属度', kind: 'range', min: 0, max: 1, step: 0.01 },
+  {
+    key: 'roughness', label: '粗糙度', kind: 'range', min: 0, max: 1, step: 0.01,
+  },
+  {
+    key: 'metalness', label: '金属度', kind: 'range', min: 0, max: 1, step: 0.01,
+  },
 ];
 const LAMBERT_PARAMS: ParamD[] = [
-  { key: 'reflectivity', label: 'reflectivity', kind: 'range', min: 0, max: 1, step: 0.01 },
-  { key: 'refractionRatio', label: 'refractionRatio', kind: 'number', min: 0, max: 1, step: 0.01 },
-  { key: 'combine', label: 'combine', kind: 'select', options: ['MultiplyOperation', 'MixOperation', 'AddOperation'] },
+  {
+    key: 'reflectivity', label: '反射强度', kind: 'range', min: 0, max: 1, step: 0.01,
+  },
+  {
+    key: 'refractionRatio', label: '折射比例', kind: 'number', min: 0, max: 1, step: 0.01,
+  },
+  {
+    key: 'combine', label: '环境混合方式', kind: 'select', options: ['MultiplyOperation', 'MixOperation', 'AddOperation'],
+  },
 ];
 const PHYSICAL_GROUPS: GroupD[] = [
   {
-    key: 'clearcoat', label: '清漆', defaultOpen: false,
+    key: 'clearcoat',
+    label: '清漆',
+    defaultOpen: false,
     params: [
-      { key: 'clearcoat', label: 'clearcoat', kind: 'range', min: 0, max: 1, step: 0.01 },
-      { key: 'clearcoatRoughness', label: 'clearcoatRoughness', kind: 'range', min: 0, max: 1, step: 0.01 },
-      { key: 'clearcoatNormalScale', label: 'clearcoatNormalScale', kind: 'vec2', step: 0.1 },
+      {
+        key: 'clearcoat', label: '清漆强度', kind: 'range', min: 0, max: 1, step: 0.01,
+      },
+      {
+        key: 'clearcoatRoughness', label: '清漆粗糙度', kind: 'range', min: 0, max: 1, step: 0.01,
+      },
+      {
+        key: 'clearcoatNormalScale', label: '清漆法线强度', kind: 'vec2', step: 0.1,
+      },
     ],
   },
   {
-    key: 'transmission', label: '透射', defaultOpen: false,
+    key: 'transmission',
+    label: '透射',
+    defaultOpen: false,
     params: [
-      { key: 'transmission', label: 'transmission', kind: 'range', min: 0, max: 1, step: 0.01 },
-      { key: 'thickness', label: 'thickness', kind: 'number', step: 0.1 },
-      { key: 'ior', label: 'ior', kind: 'number', min: 1, max: 2.333, step: 0.01 },
-      { key: 'attenuationColor', label: 'attenuationColor', kind: 'color' },
-      { key: 'attenuationDistance', label: 'attenuationDistance', kind: 'number', step: 0.1 },
-      { key: 'dispersion', label: 'dispersion', kind: 'number', min: 0, step: 0.1 },
+      {
+        key: 'transmission', label: '透射强度', kind: 'range', min: 0, max: 1, step: 0.01,
+      },
+      {
+        key: 'thickness', label: '厚度', kind: 'number', step: 0.1,
+      },
+      {
+        key: 'ior', label: '折射率', kind: 'number', min: 1, max: 2.333, step: 0.01,
+      },
+      { key: 'attenuationColor', label: '吸收颜色', kind: 'color' },
+      {
+        key: 'attenuationDistance', label: '衰减距离', kind: 'number', step: 0.1,
+      },
+      {
+        key: 'dispersion', label: '色散', kind: 'number', min: 0, step: 0.1,
+      },
     ],
   },
   {
-    key: 'specular', label: '镜面', defaultOpen: false,
+    key: 'specular',
+    label: '镜面',
+    defaultOpen: false,
     params: [
-      { key: 'specularIntensity', label: 'specularIntensity', kind: 'range', min: 0, max: 1, step: 0.01 },
-      { key: 'specularColor', label: 'specularColor', kind: 'color' },
+      {
+        key: 'specularIntensity', label: '镜面强度', kind: 'range', min: 0, max: 1, step: 0.01,
+      },
+      { key: 'specularColor', label: '镜面颜色', kind: 'color' },
     ],
   },
   {
-    key: 'sheen', label: '织物', defaultOpen: false,
+    key: 'sheen',
+    label: '织物',
+    defaultOpen: false,
     params: [
-      { key: 'sheen', label: 'sheen', kind: 'range', min: 0, max: 1, step: 0.01 },
-      { key: 'sheenColor', label: 'sheenColor', kind: 'color' },
-      { key: 'sheenRoughness', label: 'sheenRoughness', kind: 'range', min: 0, max: 1, step: 0.01 },
+      {
+        key: 'sheen', label: '织物光泽', kind: 'range', min: 0, max: 1, step: 0.01,
+      },
+      { key: 'sheenColor', label: '光泽颜色', kind: 'color' },
+      {
+        key: 'sheenRoughness', label: '光泽粗糙度', kind: 'range', min: 0, max: 1, step: 0.01,
+      },
     ],
   },
   {
-    key: 'iridescence', label: '虹彩', defaultOpen: false,
+    key: 'iridescence',
+    label: '虹彩',
+    defaultOpen: false,
     params: [
-      { key: 'iridescence', label: 'iridescence', kind: 'range', min: 0, max: 1, step: 0.01 },
-      { key: 'iridescenceIOR', label: 'iridescenceIOR', kind: 'number', min: 1, max: 2.333, step: 0.01 },
-      { key: 'iridescenceThicknessRange', label: 'iridescenceThicknessRange', kind: 'vec2', step: 1 },
+      {
+        key: 'iridescence', label: '虹彩强度', kind: 'range', min: 0, max: 1, step: 0.01,
+      },
+      {
+        key: 'iridescenceIOR', label: '虹彩折射率', kind: 'number', min: 1, max: 2.333, step: 0.01,
+      },
+      {
+        key: 'iridescenceThicknessRange', label: '虹彩厚度范围', kind: 'vec2', step: 1,
+      },
     ],
   },
   {
-    key: 'anisotropy', label: '各向异性', defaultOpen: false,
+    key: 'anisotropy',
+    label: '各向异性',
+    defaultOpen: false,
     params: [
-      { key: 'anisotropy', label: 'anisotropy', kind: 'range', min: 0, max: 1, step: 0.01 },
-      { key: 'anisotropyRotation', label: 'anisotropyRotation', kind: 'number', step: 0.01 },
+      {
+        key: 'anisotropy', label: '各向异性强度', kind: 'range', min: 0, max: 1, step: 0.01,
+      },
+      {
+        key: 'anisotropyRotation', label: '各向异性旋转', kind: 'number', step: 0.01,
+      },
     ],
   },
 ];
@@ -117,11 +211,14 @@ const rawSpec = computed<Record<string, unknown>>(() => props.spec as unknown as
 const matType = computed<MaterialType>(() => props.spec.type ?? 'MeshStandardMaterial');
 
 const matGroups = computed<GroupD[]>(() => {
-  const groups: GroupD[] = [{ key: 'basic', label: '基础', defaultOpen: true, params: BASIC_PARAMS }];
+  const common = BASIC_PARAMS.filter(p => ['color', 'opacity', 'transparent'].includes(p.key));
+  if (matType.value !== 'MeshLambertMaterial') { common.push(...STANDARD_PARAMS); }
+  const groups: GroupD[] = [
+    { key: 'common', label: '常用外观', defaultOpen: true, params: common },
+    { key: 'advanced', label: '高级表面设置', defaultOpen: false, params: BASIC_PARAMS.filter(p => !['color', 'opacity', 'transparent'].includes(p.key)) },
+  ];
   if (matType.value === 'MeshLambertMaterial') {
-    groups.push({ key: 'lambert', label: 'Lambert', defaultOpen: true, params: LAMBERT_PARAMS });
-  } else {
-    groups.push({ key: 'standard', label: 'Standard', defaultOpen: true, params: STANDARD_PARAMS });
+    groups.push({ key: 'lambert', label: '反射与折射', defaultOpen: false, params: LAMBERT_PARAMS });
   }
   if (matType.value === 'MeshPhysicalMaterial') {
     groups.push(...PHYSICAL_GROUPS);
@@ -130,10 +227,10 @@ const matGroups = computed<GroupD[]>(() => {
 });
 
 const COMMON_TEXTURES: Array<{ key: string; label: string }> = [
-  { key: 'map', label: 'map' }, { key: 'emissiveMap', label: 'emissiveMap' },
-  { key: 'normalMap', label: 'normalMap' }, { key: 'bumpMap', label: 'bumpMap' },
-  { key: 'displacementMap', label: 'displacementMap' }, { key: 'alphaMap', label: 'alphaMap' },
-  { key: 'aoMap', label: 'aoMap' }, { key: 'lightMap', label: 'lightMap' }, { key: 'envMap', label: 'envMap' },
+  { key: 'map', label: '颜色贴图' }, { key: 'emissiveMap', label: '自发光贴图' },
+  { key: 'normalMap', label: '法线贴图' }, { key: 'bumpMap', label: '凹凸贴图' },
+  { key: 'displacementMap', label: '置换贴图' }, { key: 'alphaMap', label: '透明贴图' },
+  { key: 'aoMap', label: '环境遮蔽贴图' }, { key: 'lightMap', label: '光照贴图' }, { key: 'envMap', label: '环境贴图' },
 ];
 const textureSlots = computed<Array<{ key: string; label: string }>>(() => {
   const t = matType.value;
@@ -141,7 +238,7 @@ const textureSlots = computed<Array<{ key: string; label: string }>>(() => {
   if (t === 'MeshLambertMaterial') {
     extra.push({ key: 'specularMap', label: 'specularMap' });
   } else {
-    extra.push({ key: 'roughnessMap', label: 'roughnessMap' }, { key: 'metalnessMap', label: 'metalnessMap' });
+    extra.push({ key: 'roughnessMap', label: '粗糙度贴图' }, { key: 'metalnessMap', label: '金属度贴图' });
   }
   if (t === 'MeshPhysicalMaterial') {
     extra.push(
@@ -205,6 +302,15 @@ const evVec2 = (key: string, index: 0 | 1, ev: Event): void => setVec2(key, inde
 
 // ---- 贴图槽（上传走 dev middleware） ----
 const uploading = ref<string | null>(null);
+let alive = true;
+let generation = 0;
+const requests = new Map<string, number>();
+watch(() => props.targetKey, () => {
+  generation += 1; requests.clear(); uploading.value = null;
+}, { flush: 'sync' });
+onBeforeUnmount(() => {
+  alive = false; generation += 1;
+});
 
 const texUrl = (key: string): string => {
   const v = rawSpec.value[key];
@@ -212,17 +318,20 @@ const texUrl = (key: string): string => {
 };
 const texName = (key: string): string => {
   const u = texUrl(key);
-  return u ? (u.split('/').pop() ?? u) : '未设置';
+  if (props.textures?.[key]) { return props.textures[key].label; }
+  return u ? (u.startsWith('data:') || u.startsWith('blob:') ? '已设置图片' : (u.split('/').pop() ?? u)) : '未设置';
 };
 const hasSecondUv = (key: string): boolean => key === 'aoMap' || key === 'lightMap';
 
 const pickTexture = (key: string): void => {
+  const target = props.targetKey;
+  const epoch = generation;
   const input = document.createElement('input');
   input.type = 'file';
   input.accept = '.png,.jpg,.jpeg,.webp,.avif,image/*';
   input.onchange = () => {
     const file = input.files?.[0];
-    if (file) {
+    if (file && alive && epoch === generation && target === props.targetKey) {
       void uploadTexture(key, file);
     }
   };
@@ -231,8 +340,13 @@ const pickTexture = (key: string): void => {
 
 const uploadTexture = async (key: string, file: File): Promise<void> => {
   uploading.value = key;
+  const target = props.targetKey;
+  const epoch = generation;
+  const request = (requests.get(key) ?? 0) + 1;
+  requests.set(key, request);
+  const current = (): boolean => alive && epoch === generation && target === props.targetKey && requests.get(key) === request;
   try {
-    if (window.__gts3dOffline) {
+    if (window.__scene3dOffline) {
       if (!/\.(png|jpe?g|webp|avif)$/i.test(file.name)) {
         throw new Error('请选择 PNG、JPEG、WebP 或 AVIF 图片');
       }
@@ -242,10 +356,12 @@ const uploadTexture = async (key: string, file: File): Promise<void> => {
         reader.onerror = () => reject(reader.error ?? new Error('读取贴图失败'));
         reader.readAsDataURL(file);
       });
-      emit('change', key, url);
+      if (current()) {
+        emit('change', key, url);
+      }
       return;
     }
-    const res = await fetch('/__gts3d/upload-texture', {
+    const res = await fetch('/__scene3d/upload-texture', {
       method: 'POST',
       // 非 ASCII 文件名（中文）必须 encode——Headers 只接受 Latin-1，裸发会 throw
       headers: { 'x-filename': encodeURIComponent(file.name) },
@@ -256,17 +372,27 @@ const uploadTexture = async (key: string, file: File): Promise<void> => {
     }
     const data = (await res.json()) as { url?: string };
     if (data.url) {
-      emit('change', key, data.url);
+      if (current()) {
+        emit('change', key, data.url);
+      }
     }
   } catch (err) {
     console.warn('[MaterialParams] 贴图上传失败', err);
     showEditorMessage(`贴图应用失败：${err instanceof Error ? err.message : String(err)}`);
   } finally {
-    uploading.value = null;
+    if (current()) {
+      uploading.value = null;
+    }
   }
 };
 
-const clearTexture = (key: string): void => emit('change', key, null);
+const clearTexture = (key: string): void => {
+  requests.set(key, (requests.get(key) ?? 0) + 1);
+  if (uploading.value === key) {
+    uploading.value = null;
+  }
+  emit('change', key, null);
+};
 </script>
 
 <template>
@@ -284,6 +410,9 @@ const clearTexture = (key: string): void => emit('change', key, null);
         <span class="pp__grp-chev">{{ isGroupOpen(g.key, g.defaultOpen) ? '▾' : '▸' }}</span>{{ g.label }}
       </button>
       <template v-if="isGroupOpen(g.key, g.defaultOpen)">
+        <p v-if="g.key === 'common'" class="ed-label">不透明度越低越透明，需启用透明混合。</p>
+        <p v-if="g.key === 'advanced'" class="ed-label">透明裁剪会丢弃透明度低于阈值的像素。</p>
+        <p v-if="g.key === 'transmission'" class="ed-label">透射模拟玻璃透光，与透明混合不同。</p>
         <div
           v-for="p in g.params"
           :key="p.key"
@@ -399,7 +528,7 @@ const clearTexture = (key: string): void => emit('change', key, null);
             {{ uploading === s.key ? '上传中…' : '选择' }}
           </button>
           <button
-            v-if="texUrl(s.key)"
+            v-if="texUrl(s.key) || textures?.[s.key]"
             class="ed-btn pp__mini"
             @click="clearTexture(s.key)"
           >

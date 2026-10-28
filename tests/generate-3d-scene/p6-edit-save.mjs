@@ -19,19 +19,19 @@ const main = async () => {
     // 等挂载
     let mounted = false;
     for (let i = 0; i < 20; i += 1) {
-      mounted = await evaluate("!!window.__gts3dEdit");
+      mounted = await evaluate("!!window.__scene3dEdit");
       if (mounted) {
         break;
       }
       await sleep(500);
     }
     if (!mounted) {
-      console.log("P6-EDIT FAIL: __gts3dEdit 未挂载");
+      console.log("P6-EDIT FAIL: __scene3dEdit 未挂载");
       process.exitCode = 1;
       return;
     }
     const ready = await evaluate(
-      'window.__gts3d.whenReady({timeoutMs:15000}).then(d=>({ok:true,pending:d.pending})).catch(e=>({ok:false,m:String(e?.message??e)}))',
+      'window.__scene3d.whenReady({timeoutMs:15000}).then(d=>({ok:true,pending:d.pending})).catch(e=>({ok:false,m:String(e?.message??e)}))',
     );
     if (!ready.ok || ready.pending > 0) {
       console.log(`P6-EDIT FAIL: 场景未就绪 ${JSON.stringify(ready)}`);
@@ -41,8 +41,8 @@ const main = async () => {
 
     // ① 编辑器服务真实操作：选中 tree_01 → 属性面板式改色（经 Bridge patchVisual/材质库）
     const r = await evaluate(`(() => {
-      const { bridge, materialLib } = window.__gts3dEdit;
-      const h = window.__gts3d;
+      const { bridge, materialLib } = window.__scene3dEdit;
+      const h = window.__scene3d;
       const se = h.internals.sceneEngine;
       const out = {};
 

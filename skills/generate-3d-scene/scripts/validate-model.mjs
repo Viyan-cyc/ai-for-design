@@ -18,7 +18,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, resolve, isAbsolute, join } from 'node:path';
 import { pathToFileURL, fileURLToPath } from 'node:url';
 import * as nodeModule from 'node:module';
-globalThis.__gts3d_node_module = nodeModule;
+globalThis.__scene3d_node_module = nodeModule;
 
 /* ── 规格阈值（默认值 + 分级门禁裁决）──────────────────────────
  *
@@ -630,7 +630,7 @@ const installNodeShims = () => {
         if (!blob) {
           throw new Error(`worker URL 无 blob 映射: ${url}`);
         }
-        const file = join(tmpdir(), `gts3d-draco-${Date.now()}-${seq++}.cjs`);
+        const file = join(tmpdir(), `scene3d-draco-${Date.now()}-${seq++}.cjs`);
         writeFileSync(file, `${ADAPTER}\n${blob._body}`);
         tmpFiles.push(file);
         this._worker = new NodeWorker(file);

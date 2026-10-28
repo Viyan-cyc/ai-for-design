@@ -57,7 +57,7 @@ if [ -n "$FB_CFG" ]; then
   esac
 fi
 ENV_DIR_NAME="$(read_cfg envDirName)"
-[ -z "$ENV_DIR" ] && ENV_DIR="${GTS3D_ENV_DIR:-$HOME/Library/Application Support/$ENV_DIR_NAME}"
+[ -z "$ENV_DIR" ] && ENV_DIR="${SCENE3D_ENV_DIR:-$HOME/Library/Application Support/$ENV_DIR_NAME}"
 NODE_DIR="$ENV_DIR/node"
 NODE_BIN="$NODE_DIR/bin/node"
 LOG="$ENV_DIR/install.log"

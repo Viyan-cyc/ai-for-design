@@ -2,7 +2,7 @@
  * perf-fps.mjs — 运行期性能观测（三层分类口径）
  *
  * 三层断言：
- *   坏 = 唯一硬 FAIL：报错/白屏/无法渲染/场景图不符/加载失败（smoke-structural 管，本脚本管 __gts3d 挂载）
+ *   坏 = 唯一硬 FAIL：报错/白屏/无法渲染/场景图不符/加载失败（smoke-structural 管，本脚本管 __scene3d 挂载）
  *   重 = WARN：calls/triangles/programs 超预算——预算数值机器相关 + 需求相关（60 块岩石=合法 3M 三角形），
  *        不阻塞交付；LLM 必须在验证报告回应（优化或说明理由）
  *   卡 = WARN：fps 观测值（真机 GPU 模式采样），用户反馈「卡」→ LLM 参考基线修复 → 复测对比
@@ -106,22 +106,22 @@ const main = async () => {
     const mountDeadline = Date.now() + 10000;
     let mounted = false;
     do {
-      mounted = await evaluate('!!window.__gts3d');
+      mounted = await evaluate('!!window.__scene3d');
       if (mounted) {
         break;
       }
       await sleep(100);
     } while (Date.now() < mountDeadline);
     if (!mounted) {
-      console.log('PERF FAIL: __gts3d 未挂载');
+      console.log('PERF FAIL: __scene3d 未挂载');
       process.exitCode = 1;
       return;
     }
 
     // P5.1：whenReady 终态驱动（新模板）；旧模板回退轻量轮询——不再固定 sleep(3000)
-    const hasReady = await evaluate('typeof window.__gts3d?.whenReady === "function"');
+    const hasReady = await evaluate('typeof window.__scene3d?.whenReady === "function"');
     if (hasReady) {
-      const ready = await evaluate('window.__gts3d.whenReady({timeoutMs:15000})'
+      const ready = await evaluate('window.__scene3d.whenReady({timeoutMs:15000})'
         + '.then(d=>({ok:true,pending:d.pending})).catch(e=>({ok:false,message:String(e?.message??e)}))');
       if (!ready.ok) {
         console.log(`PERF FAIL: 场景未就绪（${ready.message}）`);
@@ -137,7 +137,7 @@ const main = async () => {
     let budget = null;
     for (let i = 0; i < 5; i += 1) {
       const s = await evaluate(`(() => {
-        const h = window.__gts3d;
+        const h = window.__scene3d;
         const stats = h.internals.renderLoop.getStats();
         let materials = 0;
         const seen = new Set();
@@ -179,16 +179,16 @@ const main = async () => {
     if (GPU_MODE) {
       // 注入记录器（自隔离：采样窗口后自清除，不污染页面）
       await evaluate(`(() => {
-        window.__gts3dPerf = { stamps: [], raf: 0 };
+        window.__scene3dPerf = { stamps: [], raf: 0 };
         const tick = (t) => {
-          window.__gts3dPerf.stamps.push(t);
-          if (window.__gts3dPerf.raf) { window.__gts3dPerf.raf = requestAnimationFrame(tick); }
+          window.__scene3dPerf.stamps.push(t);
+          if (window.__scene3dPerf.raf) { window.__scene3dPerf.raf = requestAnimationFrame(tick); }
         };
-        window.__gts3dPerf.raf = requestAnimationFrame(tick);
+        window.__scene3dPerf.raf = requestAnimationFrame(tick);
       })()`);
       await sleep(DURATION * 1000);
-      const stamps = await evaluate('window.__gts3dPerf.stamps');
-      await evaluate('cancelAnimationFrame(window.__gts3dPerf.raf); delete window.__gts3dPerf');
+      const stamps = await evaluate('window.__scene3dPerf.stamps');
+      await evaluate('cancelAnimationFrame(window.__scene3dPerf.raf); delete window.__scene3dPerf');
       frameTimesMs = frameTimesFrom(stamps ?? []);
       samples.push(...frameTimesMs);
       const sorted = [...frameTimesMs].sort((a, b) => a - b);

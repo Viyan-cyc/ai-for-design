@@ -9,6 +9,7 @@
  * 调用方（PropertyPanel/LLM）经 bridge.commit 应用——操作天然进撤销栈。
  */
 import * as THREE from 'three';
+import { showEditorMessage } from './message';
 import type { Bridge } from './Bridge';
 import type { TreeSceneFragment } from '@/scene-core/types';
 
@@ -22,12 +23,41 @@ export interface PositionPatch {
   position: [number, number, number];
 }
 
+/** Convert a world-axis displacement through the current parent transform. */
+const offsetInWorld = (obj: THREE.Object3D, axis: number, delta: number): THREE.Vector3 => {
+  const position = obj.getWorldPosition(new THREE.Vector3());
+  position.setComponent(axis, position.getComponent(axis) + delta);
+  return obj.parent ? obj.parent.worldToLocal(position) : position;
+};
+
+// Moving an ancestor also moves selected descendants; require independent targets.
+const hasNestedSelection = (bridge: Bridge): boolean => {
+  const ids = new Set(bridge.selectedIds);
+  const engine = bridge.handle.internals.sceneEngine;
+  for (const id of ids) {
+    let parent = engine.getNode(id)?.parentId;
+    const visited = new Set<string>();
+    while (parent && !visited.has(parent)) {
+      if (ids.has(parent)) {
+        showEditorMessage('请仅选择同一层级的独立对象，不要同时选择父对象及其子对象。');
+        return true;
+      }
+      visited.add(parent);
+      parent = engine.getNode(parent)?.parentId;
+    }
+  }
+  return false;
+};
+
 /** 计算对齐 patch（基准物体不动，其余向基准看齐） */
 export const computeAlign = (
   bridge: Bridge,
   axis: AlignAxis,
   mode: AlignMode,
 ): PositionPatch[] => {
+  if (hasNestedSelection(bridge)) {
+    return [];
+  }
   const ids = bridge.selectedIds;
   const anchorId = bridge.anchorId;
   if (!anchorId || ids.length < 2) {
@@ -42,7 +72,7 @@ export const computeAlign = (
 
   // 基准参照值
   const anchorValue = mode === 'origin'
-    ? anchorObj.position.getComponent(ai)
+    ? anchorObj.getWorldPosition(new THREE.Vector3()).getComponent(ai)
     : mode === 'center'
       ? anchorBox.getCenter(new THREE.Vector3()).getComponent(ai)
       : mode === 'min'
@@ -51,7 +81,7 @@ export const computeAlign = (
 
   const patches: PositionPatch[] = [];
   for (const id of ids) {
-    if (id === anchorId) {
+    if (id === anchorId || bridge.isLocked(id)) {
       continue;
     }
     const obj = bridge.handle.internals.sceneEngine.getObject(id);
@@ -61,14 +91,13 @@ export const computeAlign = (
     }
     // 当前物体同模式参照值
     const currentValue = mode === 'origin'
-      ? obj.position.getComponent(ai)
+      ? obj.getWorldPosition(new THREE.Vector3()).getComponent(ai)
       : mode === 'center'
         ? box.getCenter(new THREE.Vector3()).getComponent(ai)
         : mode === 'min'
           ? box.min.getComponent(ai)
           : box.max.getComponent(ai);
-    const pos = obj.position.clone();
-    pos.setComponent(ai, pos.getComponent(ai) + (anchorValue - currentValue));
+    const pos = offsetInWorld(obj, ai, anchorValue - currentValue);
     patches.push({ id, position: [pos.x, pos.y, pos.z] });
   }
   return patches;
@@ -106,10 +135,9 @@ export const computeDistribute = (
   const step = (items[items.length - 1]!.center - first) / (items.length - 1);
   return items.slice(1, -1).map((item, i) => {
     const target = first + step * (i + 1);
-    const pos = item.obj.position.clone();
-    pos.setComponent(ai, pos.getComponent(ai) + (target - item.center));
-    return { id: item.id, position: [pos.x, pos.y, pos.z] };
-  });
+    const pos = offsetInWorld(item.obj, ai, target - item.center);
+    return { id: item.id, position: [pos.x, pos.y, pos.z] as [number, number, number] };
+  }).filter((patch) => !bridge.isLocked(patch.id));
 };
 
 /** 应用 patch（bridge.commit 内调用；label 进撤销栈）。v3：按所属分组聚合 position 片段 */
@@ -121,12 +149,15 @@ export const applyPatches = (bridge: Bridge, patches: PositionPatch[]): void => 
   const byType = new Map<string, PositionPatch[]>();
   for (const p of patches) {
     const type = sceneEngine.getNodeType(p.id);
-    if (!type) {
+    if (!type || bridge.isLocked(p.id)) {
       continue;
     }
     const list = byType.get(type) ?? [];
     list.push(p);
     byType.set(type, list);
+  }
+  if (byType.size === 0) {
+    return;
   }
   bridge.commit('对齐/分布', () => {
     const frag: TreeSceneFragment = {};

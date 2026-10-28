@@ -8,7 +8,9 @@
  * 经 Teleport 挂到 `.edit-scope` 顶层——避开右侧属性面板 backdrop-filter 的
  * containing-block / overflow 裁剪，同时继承 --ed-* 设计令牌。
  */
-import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
+import {
+  nextTick, onBeforeUnmount, onMounted, ref,
+} from 'vue';
 
 const props = defineProps<{ title: string; x: number; y: number; width?: number }>();
 const emit = defineEmits<{ (e: 'close'): void }>();
@@ -38,17 +40,27 @@ let offX = 0;
 let offY = 0;
 
 const onMove = (ev: PointerEvent): void => {
-  pos.value = { x: ev.clientX - offX, y: ev.clientY - offY };
+  pos.value = {
+    x: Math.max(0, Math.min(window.innerWidth - Math.min(width, window.innerWidth), ev.clientX - offX)),
+    y: Math.max(0, Math.min(window.innerHeight - 40, ev.clientY - offY)),
+  };
 };
 const onUp = (): void => {
   window.removeEventListener('pointermove', onMove);
   window.removeEventListener('pointerup', onUp);
+  window.removeEventListener('pointercancel', onUp);
+  void clamp();
 };
 const onDown = (ev: PointerEvent): void => {
+  if (ev.button !== 0) {
+    return;
+  }
+  ev.preventDefault();
   offX = ev.clientX - pos.value.x;
   offY = ev.clientY - pos.value.y;
   window.addEventListener('pointermove', onMove);
   window.addEventListener('pointerup', onUp);
+  window.addEventListener('pointercancel', onUp);
 };
 
 const onResize = (): void => {
@@ -100,6 +112,7 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   max-height: 78vh;
+  max-width: 100vw;
   background: var(--ed-panel);
   border: 1px solid var(--ed-border);
   border-radius: var(--ed-radius);

@@ -15,19 +15,19 @@ const main = async () => {
     const { evaluate } = session;
     let mounted = false;
     for (let i = 0; i < 20; i += 1) {
-      mounted = await evaluate("!!window.__gts3dEdit");
+      mounted = await evaluate("!!window.__scene3dEdit");
       if (mounted) {
         break;
       }
       await sleep(500);
     }
     if (!mounted) {
-      console.log("P6-RELOAD FAIL: __gts3dEdit 未挂载");
+      console.log("P6-RELOAD FAIL: __scene3dEdit 未挂载");
       process.exitCode = 1;
       return;
     }
     const ready = await evaluate(
-      'window.__gts3d.whenReady({timeoutMs:15000}).then(d=>({ok:true,pending:d.pending})).catch(e=>({ok:false,m:String(e?.message??e)}))',
+      'window.__scene3d.whenReady({timeoutMs:15000}).then(d=>({ok:true,pending:d.pending})).catch(e=>({ok:false,m:String(e?.message??e)}))',
     );
     if (!ready.ok || ready.pending > 0) {
       console.log(`P6-RELOAD FAIL: 场景未就绪 ${JSON.stringify(ready)}`);
@@ -36,8 +36,8 @@ const main = async () => {
     }
 
     const r = await evaluate(`(() => {
-      const { bridge, materialLib } = window.__gts3dEdit;
-      const h = window.__gts3d;
+      const { bridge, materialLib } = window.__scene3dEdit;
+      const h = window.__scene3d;
       const se = h.internals.sceneEngine;
       const out = {};
       // ① tree_01 移动后位置（期望 -5.5, 0, -4）

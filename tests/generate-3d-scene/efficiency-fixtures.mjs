@@ -55,7 +55,7 @@ assert.throws(()=>expandLayout([{type:'blocks',idPrefix:'x',node:{scale:0}}]),/s
 assert.throws(()=>expandLayout([{type:'blocks',idPrefix:'x',placements:[{}]}]),/stable key/);
 assert.throws(()=>expandLayout([{type:'blocks',idPrefix:'x',placements:[{key:'a'},{key:'a'}]}]),/Duplicate/);
 console.log('PASS composite attachment/merge/disposal and placement/variant regressions');
-const project=mkdtempSync(join(tmpdir(),'gts3d-efficiency-')),env=checkEnvironment();
+const project=mkdtempSync(join(tmpdir(),'scene3d-efficiency-')),env=checkEnvironment();
 assert.equal(initProject(project,{deferBuild:true}).ok,true);
 cpSync(join(skill,'scripts/scaffolds/composite-handler.ts'),join(project,'src/scene-core/handlers/composite-example.ts'));
 cpSync(join(skill,'scripts/scaffolds/layout-recipe.json'),join(project,'src/layout-recipe.json'));

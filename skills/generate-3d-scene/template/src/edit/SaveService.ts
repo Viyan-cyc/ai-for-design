@@ -1,18 +1,37 @@
+import { sceneChanges, copyChanges } from './scene-changes';
 /**
- * edit/SaveService — 保存（serialize → 下载 scene-data.json）
+ * edit/SaveService — 写回工程 scene-data.json
  *
- * LLM 调参模式下也可以直接读下载产物回写工程文件；人用编辑器时点保存/ Ctrl+S。
+ * 开发模式使用同源写入端点；离线模式复制带冲突检查信息的修改，交给 LLM 回写。
  */
+import { ref } from 'vue';
 import type { SceneHandle } from '@/scene-core/createScene';
-import { offlineData, offlineResource, RESERVED_KEYS, type SceneData } from '@/scene-core';
+import {
+  offlineData, offlineResource, RESERVED_KEYS, type SceneData,
+} from '@/scene-core';
 import type { Bridge } from './Bridge';
 import { showEditorMessage } from './message';
 
 export class SaveService {
+  readonly saving = ref(false);
+  readonly status = ref('无修改');
+
+  readonly dirty = ref(false);
+  private savedSnapshot = '';
+  private unsubscribe?: () => void;
   constructor(
     private handle: SceneHandle,
     private bridge?: Bridge,
-  ) {}
+  ) {
+    this.savedSnapshot = JSON.stringify(handle.serialize());
+    this.unsubscribe = bridge?.onState(() => {
+      this.dirty.value = JSON.stringify(handle.serialize()) !== this.savedSnapshot;
+    });
+  }
+
+  dispose(): void {
+    this.unsubscribe?.();
+  }
 
   /** Save uploads once per data URI, never persist temporary blob URLs. */
   encode(): unknown {
@@ -23,27 +42,27 @@ export class SaveService {
     }
     const textures: Record<string, string> = {};
     const ids = new Map<string, string>();
-    const scene = JSON.parse(
-      JSON.stringify(data, (_key, value: unknown) => {
-        if (typeof value !== 'string') {
-          return value;
-        }
-        if (value.startsWith('blob:')) {
-          throw new Error('场景含临时资源，请重新选择贴图后保存');
-        }
-        if (!value.startsWith('data:image/')) {
-          return value;
-        }
-        let id = ids.get(value);
-        if (!id) {
-          id = `saved-texture:${ids.size}`;
-          ids.set(value, id);
-          textures[id] = value;
-        }
-        return id;
-      }),
-    ) as SceneData;
-    return { format: 'gts3d-scene', version: 1, sourceId: offline.sourceId, scene, textures };
+    const scene = JSON.parse(JSON.stringify(data, (_key, value: unknown) => {
+      if (typeof value !== 'string') {
+        return value;
+      }
+      if (value.startsWith('blob:')) {
+        throw new Error('场景含临时资源，请重新选择贴图后保存');
+      }
+      if (!value.startsWith('data:image/')) {
+        return value;
+      }
+      let id = ids.get(value);
+      if (!id) {
+        id = `saved-texture:${ids.size}`;
+        ids.set(value, id);
+        textures[id] = value;
+      }
+      return id;
+    })) as SceneData;
+    return {
+      format: 'scene3d-scene', version: 1, sourceId: offline.sourceId, scene, textures,
+    };
   }
 
   importText(text: string): void {
@@ -56,7 +75,7 @@ export class SaveService {
     }
     const envelope = parsed as Record<string, unknown>;
     let value: unknown = parsed;
-    if (envelope.format === 'gts3d-scene') {
+    if (envelope.format === 'scene3d-scene') {
       if (envelope.version !== 1 || envelope.sourceId !== offlineData()?.sourceId) {
         throw new Error('保存文件版本或来源不匹配，请打开保存时使用的预览');
       }
@@ -112,9 +131,7 @@ export class SaveService {
       if (
         offlineData() &&
         typeof item === 'string' &&
-        (/^(?:map|lightMap|envMap|sheenColorMap|sheenRoughnessMap|iridescenceMap|iridescenceThicknessMap|anisotropyMap|normalMap|roughnessMap|metalnessMap|aoMap|emissiveMap|alphaMap|bumpMap|displacementMap|clearcoatMap|clearcoatNormalMap|clearcoatRoughnessMap|transmissionMap|thicknessMap|specularMap|specularColorMap|specularIntensityMap|url|texture)$/i.test(
-          key,
-        ) ||
+        (/^(?:map|lightMap|envMap|sheenColorMap|sheenRoughnessMap|iridescenceMap|iridescenceThicknessMap|anisotropyMap|normalMap|roughnessMap|metalnessMap|aoMap|emissiveMap|alphaMap|bumpMap|displacementMap|clearcoatMap|clearcoatNormalMap|clearcoatRoughnessMap|transmissionMap|thicknessMap|specularMap|specularColorMap|specularIntensityMap|url|texture)$/i.test(key) ||
           /^\/?assets\//.test(item))
       ) {
         offlineResource(item);
@@ -125,6 +142,8 @@ export class SaveService {
       return item;
     });
     this.bridge.restoreSnapshot(scene);
+    this.dirty.value = JSON.stringify(this.handle.serialize()) !== this.savedSnapshot;
+    showEditorMessage('场景已导入，可撤销恢复导入前状态。');
   }
 
   chooseImport(): void {
@@ -143,16 +162,44 @@ export class SaveService {
     input.click();
   }
 
-  /** 序列化并触发浏览器下载 */
-  save(downloadName = 'scene-data.json'): void {
-    const data = this.encode();
-    const json = JSON.stringify(data, null, 2);
-    const blob = new Blob([json], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = offlineData() ? 'scene.3d.json' : downloadName;
-    a.click();
-    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+  /** Persist a captured snapshot; edits made during I/O remain dirty. */
+  async save(): Promise<void> {
+    if (this.saving.value) { return; }
+    if (JSON.stringify(this.handle.serialize()) === this.savedSnapshot) { return; }
+    this.saving.value = true;
+    try {
+      this.bridge?.endLiveEdit();
+      const snapshot = JSON.stringify(this.handle.serialize());
+      if (snapshot.includes('blob:')) { throw new Error('场景含临时资源，请重新选择贴图后保存'); }
+      const json = JSON.stringify(JSON.parse(snapshot), null, 2) + '\n';
+      if (import.meta.env.DEV) {
+        const response = await fetch('/__scene3d/save-scene', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: json,
+        });
+        if (!response.ok) { throw new Error(`写入工程失败 (${response.status})`); }
+      } else {
+        const changes = sceneChanges(JSON.parse(this.savedSnapshot), JSON.parse(snapshot));
+        if (!changes.length) { showEditorMessage('没有需要复制的修改。'); return; }
+        const payload = {
+          format: 'scene3d-changes', version: 1, sourceId: offlineData()?.sourceId,
+          changes,
+        };
+        const text = '请将以下场景修改应用到对应工程 public/scene-data.json。先逐项核对 before；不匹配时不要覆盖已有修改。path 是路径数组；缺少 after 表示删除，数组整体替换。保留其他数据，完成后重新构建离线页面。图片 data URI 为资源内容，请保留或落盘后更新引用。\n\n' + JSON.stringify(payload, null, 2);
+        const copied = await copyChanges(text);
+        this.status.value = copied ? '已复制，待写回源码' : '待手动复制';
+        showEditorMessage(copied ? '修改已复制，请粘贴到对话；源码尚未更新。' : '请在弹窗中手动复制修改。');
+        return;
+      }
+      this.savedSnapshot = snapshot;
+      this.dirty.value = JSON.stringify(this.handle.serialize()) !== snapshot;
+      this.status.value = '已保存到源码';
+      showEditorMessage('已写入 public/scene-data.json。离线页面需重新构建才会包含此次修改。');
+    } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') { return; }
+      this.status.value = '保存失败';
+      showEditorMessage(`保存失败：${error instanceof Error ? error.message : String(error)}`);
+    } finally {
+      this.saving.value = false;
+    }
   }
 }

@@ -8,11 +8,15 @@
  * （no-alert 规则禁用 window.confirm）。浮动面板（FloatingPanel 外壳，无遮罩可拖拽）。
  * 仅呈现层——数据契约 / MaterialLibService API 零改动。
  */
-import { computed, ref } from 'vue';
+import {
+  computed, onBeforeUnmount, ref, watch,
+} from 'vue';
 import type { MaterialSpec } from '@/scene-core/types';
 import type { MaterialLibService } from './MaterialLibService';
 import type { Bridge } from './Bridge';
 import FloatingPanel from './FloatingPanel.vue';
+import { materialSwatch } from './material-preview';
+import { showEditorMessage } from './message';
 
 const props = defineProps<{ bridge: Bridge; materialLib: MaterialLibService; anchorId: string | null; x: number; y: number; slotKey?: string | null }>();
 const emit = defineEmits<{ (e: 'close'): void; (e: 'edit', id: string): void }>();
@@ -24,7 +28,7 @@ const refresh = (): void => {
   entries.value = props.materialLib.listEntries();
 };
 refresh();
-props.bridge.onState(refresh);
+onBeforeUnmount(props.bridge.onState(refresh));
 
 const query = ref('');
 const filtered = computed<Entry[]>(() => {
@@ -42,22 +46,29 @@ const builtinEntries = computed<Entry[]>(() => filtered.value.filter((e) => !isU
 
 const refCount = (id: string): number => props.materialLib.referencingNodes(id).length;
 
-/** 缩略图（CSS 近似：色块 + 高光渐变 + 透明度） */
-const swatchStyle = (spec: MaterialSpec): Record<string, string> => {
-  const s = spec as unknown as Record<string, unknown>;
-  const color = typeof s.color === 'string' ? s.color : '#c8ccd2';
-  const rough = typeof s.roughness === 'number' ? s.roughness : 0.8;
-  const metal = typeof s.metalness === 'number' ? s.metalness : 0;
-  const transmission = typeof s.transmission === 'number' ? s.transmission : 0;
-  const hi = Math.max(0.12, 0.62 - rough * 0.5 - metal * 0.18);
-  return {
-    background: `radial-gradient(circle at 32% 28%, rgba(255,255,255,${hi.toFixed(2)}), ${color} 62%)`,
-    opacity: String(transmission > 0 ? 0.85 : 1),
-  };
-};
+const swatchStyle = materialSwatch;
+const feedback = ref('');
+const targetLabel = computed(() => props.anchorId
+  ? props.slotKey ? `${props.anchorId } / ${ props.slotKey}` : `${props.anchorId }（整个模型）`
+  : '未选择对象');
+const activeId = computed(() => {
+  void entries.value;
+  if (!props.anchorId) {
+    return null;
+  }
+  const visual = props.bridge.handle.internals.sceneEngine.getVisual(props.anchorId);
+  return (props.slotKey ? visual?.slots?.[props.slotKey] : visual)?.libraryRef ?? null;
+});
+watch([() => props.anchorId, () => props.slotKey], () => {
+  feedback.value = '';
+});
 
-/** 点击条目 = 应用到选中物体（link；slotKey 给定 = 应用到该子网格槽位），随即关闭面板看结果 */
+/** 点击条目应用到当前目标并保持打开，便于连续比较 */
 const applyToObject = (id: string): void => {
+  if (props.anchorId && props.bridge.isLocked(props.anchorId)) {
+    feedback.value = '目标已锁定，请先在模型树解锁。';
+    return;
+  }
   if (props.anchorId) {
     if (props.slotKey) {
       props.materialLib.applySlotLink(props.anchorId, props.slotKey, id);
@@ -65,15 +76,18 @@ const applyToObject = (id: string): void => {
       props.materialLib.link(props.anchorId, id);
     }
   }
-  emit('close');
+  feedback.value = props.anchorId ? '已应用，可继续选择其他材质比较；支持撤销。' : '请先选择对象。';
 };
 
 const createNew = (): void => {
-  const id = props.materialLib.createEntry('新材质', { type: 'MeshStandardMaterial' });
-  if (props.anchorId) {
-    props.materialLib.link(props.anchorId, id);
+  try {
+    const id = props.anchorId
+      ? props.materialLib.saveAs(props.anchorId, '新材质', props.slotKey)
+      : props.materialLib.createEntry('新材质', { type: 'MeshStandardMaterial' });
+    emit('edit', id);
+  } catch (error) {
+    showEditorMessage(error instanceof Error ? error.message : String(error));
   }
-  emit('edit', id);
 };
 
 // 删除（引用中需行内二次确认；无引用直接删）
@@ -101,6 +115,8 @@ const confirmDelete = (id: string): void => {
     :y="props.y"
     @close="emit('close')"
   >
+    <p class="mpal__scope">应用到：{{ targetLabel }}</p>
+    <p v-if="feedback" class="mpal__scope" role="status">{{ feedback }}</p>
     <div class="mpal__tools">
       <button
         class="ed-btn"
@@ -125,13 +141,18 @@ const confirmDelete = (id: string): void => {
           v-for="e in myEntries"
           :key="e.id"
           class="mpal__row"
+          :class="{ 'mpal__row--active': activeId === e.id }"
+          role="button"
+          tabindex="0"
+          @keydown.enter.self="applyToObject(e.id)"
+          @keydown.space.prevent.self="applyToObject(e.id)"
           @click="applyToObject(e.id)"
         >
           <span
             class="mpal__sw"
             :style="swatchStyle(e.spec)"
           />
-          <span class="mpal__name">{{ e.name }}</span>
+          <span class="mpal__name">{{ e.name }}{{ activeId === e.id ? ' · 当前' : '' }}</span>
           <template v-if="pendingDelete === e.id">
             <span class="mpal__confirm">{{ refCount(e.id) }} 个物体将保留外观转为独立副本</span>
             <button
@@ -175,13 +196,18 @@ const confirmDelete = (id: string): void => {
           v-for="e in builtinEntries"
           :key="e.id"
           class="mpal__row"
+          :class="{ 'mpal__row--active': activeId === e.id }"
+          role="button"
+          tabindex="0"
+          @keydown.enter.self="applyToObject(e.id)"
+          @keydown.space.prevent.self="applyToObject(e.id)"
           @click="applyToObject(e.id)"
         >
           <span
             class="mpal__sw"
             :style="swatchStyle(e.spec)"
           />
-          <span class="mpal__name">{{ e.name }}</span>
+          <span class="mpal__name">{{ e.name }}{{ activeId === e.id ? ' · 当前' : '' }}</span>
         </div>
       </template>
 
@@ -196,6 +222,8 @@ const confirmDelete = (id: string): void => {
 </template>
 
 <style scoped>
+.mpal__scope { margin: 0; padding: 4px 12px 8px; font-size: 11px; color: var(--ed-dim); overflow-wrap: anywhere; }
+.mpal__row--active { outline: 1px solid var(--ed-accent); outline-offset: -1px; }
 .mpal__tools {
   display: flex;
   gap: 6px;

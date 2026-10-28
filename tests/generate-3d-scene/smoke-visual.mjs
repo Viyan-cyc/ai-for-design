@@ -61,21 +61,21 @@ const main = async () => {
     // 等场景 + GLB 加载收敛
     let mounted = false;
     for (let i = 0; i < 10; i += 1) {
-      mounted = await evaluate('!!window.__gts3d');
+      mounted = await evaluate('!!window.__scene3d');
       if (mounted) {
         break;
       }
       await sleep(700);
     }
     if (!mounted) {
-      console.log('VISUAL FAIL: __gts3d 未挂载');
+      console.log('VISUAL FAIL: __scene3d 未挂载');
       process.exitCode = 1;
       return;
     }
     // P5.1：GLB 收敛改 whenReady 终态驱动（新模板）；旧模板回退轻量等待
-    const hasReady = await evaluate('typeof window.__gts3d?.whenReady === "function"');
+    const hasReady = await evaluate('typeof window.__scene3d?.whenReady === "function"');
     if (hasReady) {
-      const ready = await evaluate('window.__gts3d.whenReady({timeoutMs:15000})'
+      const ready = await evaluate('window.__scene3d.whenReady({timeoutMs:15000})'
         + '.then(d=>({ok:true,pending:d.pending})).catch(e=>({ok:false,message:String(e?.message??e)}))');
       if (!ready.ok || ready.pending > 0) {
         console.log(`VISUAL FAIL: 加载未收敛（${ready.message ?? `pending=${ready.pending}`}）`);
@@ -91,18 +91,18 @@ const main = async () => {
 
     // ② 主视角：聚焦首个 GLB 资产节点（判据：listSubMeshes 有清单 = GLB/组合模型；图元无子网格清单）
     const focusId = await evaluate(`(() => {
-      const se = window.__gts3d.internals.sceneEngine;
+      const se = window.__scene3d.internals.sceneEngine;
       const ids = se.getAllIds();
       const glb = ids.find((id) => se.listSubMeshes(id).length > 0);
       return glb ?? ids[0];
     })()`);
-    await evaluate(`window.__gts3d.frameObject(${JSON.stringify(focusId)})`);
+    await evaluate(`window.__scene3d.frameObject(${JSON.stringify(focusId)})`);
     await sleep(800);
     await shot('2-main');
 
     // ③ 特写：相机推近
     await evaluate(`(() => {
-      const cam = window.__gts3d.internals.camera;
+      const cam = window.__scene3d.internals.camera;
       cam.position.multiplyScalar(0.4);
     })()`);
     await sleep(800);
@@ -111,7 +111,7 @@ const main = async () => {
     // ④ 线框：全材质 wireframe 开 → 截图 → 还原
     await evaluate(`(() => {
       const mats = new Set();
-      window.__gts3d.internals.scene.traverse((c) => {
+      window.__scene3d.internals.scene.traverse((c) => {
         if (c.material) { (Array.isArray(c.material) ? c.material : [c.material]).forEach((m) => mats.add(m)); }
       });
       for (const m of mats) { m.wireframe = true; }

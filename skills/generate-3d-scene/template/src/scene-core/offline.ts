@@ -13,11 +13,11 @@ export interface OfflineData {
 
 declare global {
   interface Window {
-    __gts3dOffline?: OfflineData;
+    __scene3dOffline?: OfflineData;
   }
 }
 
-export const offlineData = (): OfflineData | undefined => typeof window === 'undefined' ? undefined : window.__gts3dOffline;
+export const offlineData = (): OfflineData | undefined => typeof window === 'undefined' ? undefined : window.__scene3dOffline;
 
 // Package resources are shared by instances and undo snapshots for the page lifetime.
 const resourceUrls = new Map<string, string>();

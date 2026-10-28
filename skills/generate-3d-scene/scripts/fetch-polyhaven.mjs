@@ -181,7 +181,7 @@ const FETCH_TIMEOUT_MS = 60_000;
 
 const fetchBuffer = async (url) => {
   const res = await fetch(url, {
-    headers: { 'User-Agent': 'gts3d-fetch/1.0' },
+    headers: { 'User-Agent': 'scene3d-fetch/1.0' },
     signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
   });
   if (!res.ok) {
@@ -192,7 +192,7 @@ const fetchBuffer = async (url) => {
 
 const fetchJson = async (url) => {
   const res = await fetch(url, {
-    headers: { 'User-Agent': 'gts3d-fetch/1.0' },
+    headers: { 'User-Agent': 'scene3d-fetch/1.0' },
     signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
   });
   if (!res.ok) {

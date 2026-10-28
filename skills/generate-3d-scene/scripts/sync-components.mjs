@@ -41,7 +41,7 @@ const fail = (msg) => {
 };
 
 // ── 定位源仓（3d-components 与 ep-coder 同级或在任意 cwd） ──────────────────
-// 优先级：--src 参数 > 环境变量 A3D_SRC > 相对约定（gts/test 下 octo/test/3d-components）
+// 优先级：--src 参数 > 环境变量 A3D_SRC > 相对约定（按仓库相对位置查找 3d-components）
 function findSourceRepo() {
   const argIdx = process.argv.indexOf('--src');
   if (argIdx !== -1 && process.argv[argIdx + 1]) return resolve(process.argv[argIdx + 1]);

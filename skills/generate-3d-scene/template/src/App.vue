@@ -6,6 +6,7 @@
  * 二开者改这里：加侧栏/图表/按钮，经 props.handle 驱动场景。
  * 3D canvas 与 CSS2D 卡片层由 scene-core 管理，本组件只提供容器。
  */
+import SceneEditLauncher from './SceneEditLauncher.vue';
 import type { SceneHandle } from '@/scene-core';
 
 defineProps<{ handle: SceneHandle }>();
@@ -13,10 +14,7 @@ defineProps<{ handle: SceneHandle }>();
 
 <template>
   <div class="app-root">
-    <div class="app-root__hint">
-      3D 场景预览
-      <a href="?edit=1" style="color: #3d7eff; margin-left: 8px">编辑场景</a>
-    </div>
+    <SceneEditLauncher href="?edit=1" />
   </div>
 </template>
 
@@ -27,15 +25,5 @@ defineProps<{ handle: SceneHandle }>();
   pointer-events: none;
 }
 
-.app-root__hint {
-  position: absolute;
-  right: 12px;
-  bottom: 12px;
-  padding: 6px 10px;
-  border-radius: 6px;
-  background: rgba(255, 255, 255, 0.9);
-  color: #6b7280;
-  font-size: 12px;
-  pointer-events: auto;
-}
+
 </style>

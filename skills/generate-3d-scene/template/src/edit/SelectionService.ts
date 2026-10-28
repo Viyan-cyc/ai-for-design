@@ -15,6 +15,7 @@ const SELECT_COLOR = 0x00a2ff;
 const ANCHOR_COLOR = 0xffb020;
 
 export class SelectionService {
+  enabled = true;
   private scene: THREE.Scene;
 
   /** id → 包围盒 helper */
@@ -29,7 +30,7 @@ export class SelectionService {
 
   /** 锁定物体跳过视口拾取（__visuals.locked；树中仍可选中看属性，Spline 同款） */
   private isUnlocked = (id: string): boolean =>
-    this.handle.internals.sceneEngine.getVisual(id)?.locked !== true;
+    !this.bridge.isLocked(id);
 
   constructor(
     private handle: SceneHandle,
@@ -59,6 +60,7 @@ export class SelectionService {
   };
 
   private onClick = (ev: MouseEvent): void => {
+    if (!this.enabled) { return; }
     // 位移超阈值 = Gizmo 拖拽/轨道旋转的收尾 click，不改选区（Spline 同款行为）
     const moved = Math.hypot(ev.clientX - this.downX, ev.clientY - this.downY);
     if (moved > 3) {
@@ -74,6 +76,7 @@ export class SelectionService {
   };
 
   private onKeydown = (ev: KeyboardEvent): void => {
+    if (!this.enabled) { return; }
     if (ev.key === 'Escape') {
       this.bridge.clearSelection();
       this.syncHighlights();

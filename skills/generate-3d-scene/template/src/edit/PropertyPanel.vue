@@ -12,23 +12,32 @@
  * 所有改动经 bridge.commitLive 即时应用；滑条 = range + number 双绑定。
  * v3：物体遍历用 handle.serialize() 的分组字典（type=分组 key）。
  */
-import { computed, ref, watch } from 'vue';
+import {
+  computed, nextTick, ref, watch,
+} from 'vue';
 import * as THREE from 'three';
 import type { Bridge } from './Bridge';
 import {
   applyPatches, computeAlign, computeDistribute,
   type AlignAxis, type AlignMode,
 } from './AlignmentService';
-import type { ControlsConfig, LightConfig, SceneData, SceneNode } from '@/scene-core/types';
+import type {
+  ControlsConfig, LightConfig, SceneData, SceneNode,
+} from '@/scene-core/types';
+import { findBySlotKey } from '@/scene-core';
 import { RESERVED_KEYS } from '@/scene-core/types';
 import type { LightHelperService } from './LightHelperService';
 import type { MaterialLibService } from './MaterialLibService';
 import MaterialSection from './MaterialSection.vue';
 import MaterialPalette from './MaterialPalette.vue';
 import EditMaterialModal from './EditMaterialModal.vue';
+import { SCENE_PRESETS, applyScenePreset } from './ScenePresets';
 import { defaultDockPos } from './FloatingDock';
 
 const props = defineProps<{ bridge: Bridge; lightHelpers: LightHelperService; materialLib: MaterialLibService }>();
+
+const emit = defineEmits<{ 'light-selected': [id: string | null] }>();
+const lightSection = ref<HTMLElement | null>(null);
 
 const state = ref(props.bridge.getState());
 props.bridge.onState((s) => {
@@ -39,6 +48,11 @@ const anchorId = computed<string | null>(() => {
   const sel = state.value.selection;
   const last = sel[sel.length - 1];
   return sel.length > 0 && last !== undefined ? last : null;
+});
+const targetLocked = computed(() => {
+  void state.value;
+  const id = anchorId.value;
+  return id !== null && props.bridge.isLocked(id);
 });
 const selectionCount = computed(() => state.value.selection.length);
 
@@ -56,7 +70,7 @@ const slotTitle = computed(() => {
   if (!s) {
     return '';
   }
-  return `${s.slotKey.split('/').pop()} · 模型内部（相对 ${s.nodeId}，只读）`;
+  return `${s.slotKey.split('/').pop()} · 模型内部（相对父级的局部变换）`;
 });
 
 /** 蒙皮槽位：局部 transform 对蒙皮顶点数学无效（attached 模式矩阵抵消）——输入框置灰 */
@@ -69,10 +83,9 @@ const slotIsSkinned = computed<boolean>(() => {
   if (!obj) {
     return false;
   }
-  const lastName = s.slotKey.split('/').pop();
   let hit = false;
-  obj.traverse((c) => {
-    if (!hit && c.name === lastName && (c as THREE.SkinnedMesh).isSkinnedMesh) {
+  findBySlotKey(obj, s.slotKey)?.traverse((child) => {
+    if ((child as THREE.SkinnedMesh).isSkinnedMesh) {
       hit = true;
     }
   });
@@ -124,7 +137,13 @@ const slotTransform = () => {
   if (!s) {
     return null;
   }
-  return props.bridge.handle.internals.sceneEngine.getVisual(s.nodeId)?.slots?.[s.slotKey] ?? null;
+  const root = props.bridge.handle.internals.sceneEngine.getObject(s.nodeId);
+  const mesh = root ? findBySlotKey(root, s.slotKey) : null;
+  return mesh ? {
+    position: mesh.position.toArray(),
+    rotation: [mesh.rotation.x, mesh.rotation.y, mesh.rotation.z],
+    scale: mesh.scale.toArray(),
+  } : null;
 };
 
 const loadTransform = (_id: string | null): void => {
@@ -135,9 +154,15 @@ const loadTransform = (_id: string | null): void => {
     const r = st.rotation ?? [0, 0, 0];
     const sc = st.scale ?? [1, 1, 1];
     draft.value = {
-      px: p[0] ?? 0, py: p[1] ?? 0, pz: p[2] ?? 0,
-      rx: r[0] ?? 0, ry: r[1] ?? 0, rz: r[2] ?? 0,
-      sx: sc[0] ?? 1, sy: sc[1] ?? 1, sz: sc[2] ?? 1,
+      px: p[0] ?? 0,
+      py: p[1] ?? 0,
+      pz: p[2] ?? 0,
+      rx: r[0] ?? 0,
+      ry: r[1] ?? 0,
+      rz: r[2] ?? 0,
+      sx: sc[0] ?? 1,
+      sy: sc[1] ?? 1,
+      sz: sc[2] ?? 1,
     };
     return;
   }
@@ -170,7 +195,9 @@ props.bridge.onState(() => {
   if (st) {
     const p = st.position ?? [0, 0, 0];
     const d = draft.value;
-    if ((p[0] ?? 0) !== d.px || (p[1] ?? 0) !== d.py || (p[2] ?? 0) !== d.pz) {
+    if ((p[0] ?? 0) !== d.px || (p[1] ?? 0) !== d.py || (p[2] ?? 0) !== d.pz
+      || st.rotation[0] !== d.rx || st.rotation[1] !== d.ry || st.rotation[2] !== d.rz
+      || st.scale[0] !== d.sx || st.scale[1] !== d.sy || st.scale[2] !== d.sz) {
       loadTransform(anchorId.value);
     }
     return;
@@ -196,7 +223,7 @@ props.bridge.onState(() => {
 
 const applyTransform = (): void => {
   const id = anchorId.value;
-  if (!id) {
+  if (!id || props.bridge.isLocked(id)) {
     return;
   }
   const d = draft.value;
@@ -206,6 +233,9 @@ const applyTransform = (): void => {
   }
   const s = selectedSlot.value;
   if (s && s.nodeId === id) {
+    if (slotIsSkinned.value) {
+      return;
+    }
     // 槽位态：局部 transform 写 slots[key]（merge 通道，其余槽位/物体级不动）
     props.bridge.commitLive('子网格变换', () => {
       // applyVisual 单物体合并语义——update({__visuals}) 是整表替换（会清其他物体的视觉层）
@@ -454,6 +484,7 @@ watch(lights, () => {
 watch(activeLightId, () => {
   loadLight();
   props.lightHelpers.focus(activeLightId.value);
+  emit('light-selected', activeLightId.value);
 });
 
 /** 参数 → 该类型配置（apply 前按 activeLight.type 裁字段） */
@@ -695,6 +726,17 @@ const bboxText = computed(() => {
 
 // ---- Tab 页签：物体页（选中相关）/ 场景页（全局配置） ----
 const activeTab = ref<'object' | 'scene'>('scene');
+const selectLight = async (id: string): Promise<void> => {
+  if (!lights.value.some((light) => light.id === id)) {
+    return;
+  }
+  activeTab.value = 'scene';
+  activeLightId.value = id;
+  props.lightHelpers.focus(id);
+  await nextTick();
+  lightSection.value?.scrollIntoView({ block: 'nearest' });
+};
+defineExpose({ selectLight });
 
 /** 选中物体自动切物体页；选中清空自动回场景页（用户手动切页后不强制跳，直到选中态再次变化） */
 watch(selectionCount, (n) => {
@@ -751,6 +793,7 @@ const closeEdit = (): void => {
 // 非库模式（inline/槽位）编辑目标随选中——选中变了旧目标失效，面板自动关；
 // 库模式（⚙ 编辑材质球本身）与选中解耦，保持不关
 watch(anchorId, () => {
+  paletteSlotKey.value = null;
   if (editOpen.value && editMatId.value === null) {
     closeEdit();
   }
@@ -759,6 +802,13 @@ watch(anchorId, () => {
 // 槽位间切换（同物体，anchorId 不变）：编辑面板开着时跟随新槽位（内容更新不关闭）——
 // 树行/视口点选的 selectedSlot 变化没有其他入口会同步 editSlotKey
 watch(() => state.value.selectedSlot, (slot) => {
+  if (paletteOpen.value) {
+    paletteSlotKey.value = slot?.nodeId === anchorId.value ? slot.slotKey : null;
+  }
+  props.bridge.endLiveEdit();
+  if (!slot && editOpen.value && editMatId.value === null) {
+    editSlotKey.value = null;
+  }
   if (!editOpen.value || editMatId.value !== null || !slot) {
     return;
   }
@@ -815,7 +865,8 @@ const modalPos = computed(() => defaultDockPos(editSlot.value, PANEL_W));
       >
         未选中物体（点击视口或物体树）
       </div>
-      <template v-else>
+      <fieldset v-else :disabled="targetLocked" class="pp__editable">
+        <p v-if="targetLocked" class="ed-label">对象已锁定，请先在模型树解锁。</p>
         <!-- 变换 -->
         <div class="ed-sec">
           <div class="ed-sec__t">
@@ -1136,11 +1187,18 @@ const modalPos = computed(() => defaultDockPos(editSlot.value, PANEL_W));
             </button>
           </div>
         </div>
-      </template>
+      </fieldset>
     </template>
 
     <!-- ═══ 场景页（全局配置） ═══ -->
     <template v-else>
+      <section class="ed-sec">
+        <div class="ed-sec__t">场景预设</div>
+        <p class="ed-label">替换灯光、背景与曝光，保留模型材质；可撤销。</p>
+        <div style="display: flex; flex-wrap: wrap; gap: 5px">
+          <button v-for="preset in SCENE_PRESETS" :key="preset.id" class="ed-btn" @click="applyScenePreset(props.bridge, preset.id)">{{ preset.label }}</button>
+        </div>
+      </section>
       <!-- 场景环境 -->
       <div class="ed-sec">
         <div class="ed-sec__t">
@@ -1329,7 +1387,7 @@ const modalPos = computed(() => defaultDockPos(editSlot.value, PANEL_W));
       </div>
 
       <!-- 灯光 -->
-      <div class="ed-sec">
+      <div ref="lightSection" class="ed-sec">
         <div class="ed-sec__t">
           灯光
           <select
@@ -1844,6 +1902,7 @@ const modalPos = computed(() => defaultDockPos(editSlot.value, PANEL_W));
 </template>
 
 <style scoped>
+.pp__editable { margin: 0; padding: 0; border: 0; min-width: 0; }
 .pp {
   height: 100%;
   overflow-y: auto;

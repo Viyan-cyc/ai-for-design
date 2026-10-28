@@ -116,7 +116,7 @@ export class LayoutGizmo {
     }
     const anchorId = this.bridge.anchorId as string;
     // 锁定物体不挂手柄（Spline 同款：视口点选/Gizmo 跳过，树中仍可选中看属性）
-    if (this.bridge.handle.internals.sceneEngine.getVisual(anchorId)?.locked === true) {
+    if (this.bridge.isLocked(anchorId)) {
       this.slotTarget = null;
       this.detach();
       return;
@@ -153,6 +153,7 @@ export class LayoutGizmo {
 
   /** gizmo 模式与 bridge 状态同步（工具条/面板/快捷键三条入口统一经此生效） */
   syncMode(mode: Bridge['gizmoMode']): void {
+    this.controls.setSpace(this.bridge.transformSpace);
     if (this.controls.mode !== mode) {
       this.controls.setMode(mode);
     }

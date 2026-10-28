@@ -17,7 +17,7 @@ export function environment(override) {
   const compiler = join(dir, 'compiler');
   const portable = process.platform === 'win32' ? join(dir, 'node/node.exe') : join(dir, 'node/bin/node');
   return { dir, compiler, modules: join(compiler, 'node_modules'),
-    node: existsSync(portable) ? portable : process.execPath, registry: process.env.GTS3D_REGISTRY || cfg.fallbackNpmRegistry };
+    node: existsSync(portable) ? portable : process.execPath, registry: process.env.SCENE3D_REGISTRY || cfg.fallbackNpmRegistry };
 }
 export const dependencyPath = (...parts) => join(environment().modules, ...parts);
 export function checkEnvironment(override) {
@@ -46,7 +46,7 @@ export function checkEnvironment(override) {
   const declared = JSON.parse(readFileSync(join(skillRoot, 'template/package.json'), 'utf8')).dependencies.three;
   const installed = JSON.parse(readFileSync(join(env.modules, 'three/package.json'), 'utf8')).version;
   if (declared !== installed) fail('THREE_VERSION_MISMATCH', `Expected ${declared}, found ${installed}`);
-  return { ...env, registry: process.env.GTS3D_REGISTRY || lock.npmRegistry || env.registry, version, three: installed };
+  return { ...env, registry: process.env.SCENE3D_REGISTRY || lock.npmRegistry || env.registry, version, three: installed };
 }
 
 export function npmEntry(node) {

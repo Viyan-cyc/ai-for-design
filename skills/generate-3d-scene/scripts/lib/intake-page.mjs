@@ -113,7 +113,7 @@ export function generateIntakePage(pkgDir) {
     updateSummary: pkg.updateSummary ?? null,
     runtime: runtimes, assets,
   };
-  const dataJs = `window.__gts3dIntake=${JSON.stringify(data).replace(/</g, '\\u003c')};\n`;
+  const dataJs = `window.__scene3dIntake=${JSON.stringify(data).replace(/</g, '\\u003c')};\n`;
   const html = `<!doctype html>
 <html lang="zh">
 <head>
@@ -170,7 +170,7 @@ body[data-step="2"] #rows,body[data-step="2"] #toolbar,body[data-step="2"] #page
  * imports are rewritten to absolute data: URLs before import (deep, one pass per module).
  * Addon modules (GLTFLoader etc.) import from 'three', which arrives as an import map. */
 try {
-  const runtime = window.__gts3dIntake.runtime;
+  const runtime = window.__scene3dIntake.runtime;
   // Stand-in for module-relative new URL(..., import.meta.url): blob bases cannot resolve them,
   // and this page always supplies explicit decoder paths instead. Global so blob modules see it.
   globalThis.NEUTRALIZED_URL = () => ({ toString: () => '' });
@@ -231,7 +231,7 @@ try {
   const { DRACOLoader } = await import(await build('three/examples/jsm/loaders/DRACOLoader.js')).catch((error) => { throw new Error('DRACOLoader 加载失败：' + (error?.message ?? error)); });
   const { OrbitControls } = await import(await build('three/examples/jsm/controls/OrbitControls.js')).catch((error) => { throw new Error('OrbitControls 加载失败：' + (error?.message ?? error)); });
   const intake = await import(await build('viewer/intake.js')).catch((error) => { throw new Error('intake.js 加载失败：' + (error?.message ?? error)); });
-  await intake.start(window.__gts3dIntake, { three, runtime, addons: { GLTFLoader, DRACOLoader, OrbitControls } });
+  await intake.start(window.__scene3dIntake, { three, runtime, addons: { GLTFLoader, DRACOLoader, OrbitControls } });
 } catch (error) {
   window.__shimError = error;
   document.getElementById('banner').textContent = '页面初始化失败：' + (error?.message ?? error);

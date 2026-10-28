@@ -33,7 +33,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 const WAIT = `(n) => new Promise((res) => {
   let seen = 0;
-  const unsub = window.__gts3d.internals.renderLoop.onFrame(() => { seen += 1; });
+  const unsub = window.__scene3d.internals.renderLoop.onFrame(() => { seen += 1; });
   const t0 = Date.now();
   const tick = () => {
     if (seen >= n) { unsub(); res(true); }
@@ -47,7 +47,7 @@ const waitForFrames = (evaluate, n) => evaluate(`(${WAIT})(${n})`);
 
 const readMemory = (evaluate) =>
   evaluate(`(() => {
-    const r = window.__gts3d.internals.rendererEngine.renderer;
+    const r = window.__scene3d.internals.rendererEngine.renderer;
     return { geometries: r.info.memory.geometries, textures: r.info.memory.textures };
   })()`);
 
@@ -57,16 +57,16 @@ const main = async () => {
     const { evaluate } = session;
     let mounted = false;
     for (let i = 0; i < 40; i += 1) {
-      mounted = await evaluate("!!window.__gts3d && !!window.__gts3dEdit");
+      mounted = await evaluate("!!window.__scene3d && !!window.__scene3dEdit");
       if (mounted) {
         break;
       }
       await sleep(500);
     }
     if (!mounted) {
-      throw new Error("__gts3dEdit 未挂载");
+      throw new Error("__scene3dEdit 未挂载");
     }
-    await evaluate("window.__gts3d.whenReady({timeoutMs:30000})").catch(() => {});
+    await evaluate("window.__scene3d.whenReady({timeoutMs:30000})").catch(() => {});
 
     // ① 预热
     if (!(await waitForFrames(evaluate, 10))) {
@@ -80,12 +80,12 @@ const main = async () => {
     let arOk = true;
     for (let i = 0; i < 30; i += 1) {
       await evaluate(`(i) => {
-        window.__gts3d.update({ Box: [{ id: 'p6_v14_box', position: [i * 0.02, 0.5, 0], scale: 1 }] });
+        window.__scene3d.update({ Box: [{ id: 'p6_v14_box', position: [i * 0.02, 0.5, 0], scale: 1 }] });
         return true;
       }`, i);
       arOk = arOk && (await waitForFrames(evaluate, 1));
       await evaluate(`() => {
-        window.__gts3d.update({ remove: ['p6_v14_box'] });
+        window.__scene3d.update({ remove: ['p6_v14_box'] });
         return true;
       }`);
       arOk = arOk && (await waitForFrames(evaluate, 1));
@@ -93,7 +93,7 @@ const main = async () => {
         arSamples.push(await readMemory(evaluate));
       }
     }
-    const idsAfterAR = await evaluate("window.__gts3d.internals.sceneEngine.getAllIds().length");
+    const idsAfterAR = await evaluate("window.__scene3d.internals.sceneEngine.getAllIds().length");
     const arLast = arSamples[arSamples.length - 1];
     const addRemoveOk =
       arOk && idsAfterAR === 14 &&
@@ -105,9 +105,9 @@ const main = async () => {
     let rbOk = true;
     for (let i = 0; i < 10; i += 1) {
       await evaluate(`(h) => {
-        const se = window.__gts3d.internals.sceneEngine;
+        const se = window.__scene3d.internals.sceneEngine;
         const node = se.getNodesWithType('trees').find((n) => n.id === 'tree_01');
-        window.__gts3d.update({ trees: [{ ...node, params: { ...node.params, height: h } }] });
+        window.__scene3d.update({ trees: [{ ...node, params: { ...node.params, height: h } }] });
         return true;
       }`, 1.5 + i * 0.1);
       rbOk = rbOk && (await waitForFrames(evaluate, 2));
@@ -124,8 +124,8 @@ const main = async () => {
     let uOk = true;
     for (let i = 0; i < 10; i += 1) {
       await evaluate(`() => {
-        const h = window.__gts3d;
-        const b = window.__gts3dEdit.bridge;
+        const h = window.__scene3d;
+        const b = window.__scene3dEdit.bridge;
         b.commit('v14-测试', () => {
           const se = h.internals.sceneEngine;
           const node = se.getNodesWithType('Box').find((n) => n.id === 'ground');
@@ -134,11 +134,11 @@ const main = async () => {
         return true;
       }`);
       uOk = uOk && (await waitForFrames(evaluate, 1));
-      await evaluate("window.__gts3dEdit.bridge.undo()");
+      await evaluate("window.__scene3dEdit.bridge.undo()");
       uOk = uOk && (await waitForFrames(evaluate, 1));
       uSamples.push(await readMemory(evaluate));
     }
-    const undoDepth = await evaluate("window.__gts3dEdit.bridge.getState().undoDepth");
+    const undoDepth = await evaluate("window.__scene3dEdit.bridge.getState().undoDepth");
     const uLast = uSamples[uSamples.length - 1];
     const undoOk =
       uOk && undoDepth === 0 &&
@@ -147,10 +147,10 @@ const main = async () => {
 
     // ⑤ 共享资源保留（单 evaluate 内完成闭环比对——实例身份比较须同上下文）
     const shared = await evaluate(`(() => {
-      const h = window.__gts3d;
+      const h = window.__scene3d;
       const se = h.internals.sceneEngine;
-      const b = window.__gts3dEdit.bridge;
-      const lib = window.__gts3dEdit.materialLib;
+      const b = window.__scene3dEdit.bridge;
+      const lib = window.__scene3dEdit.materialLib;
       const matId = lib.createEntry('p6_v14_shared', { type: 'MeshStandardMaterial', color: '#3355aa', roughness: 0.5 });
       lib.link('tree_04', matId);
       lib.link('tree_05', matId);

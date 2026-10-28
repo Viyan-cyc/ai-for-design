@@ -12,6 +12,10 @@ import type { Bridge, EditorState } from './Bridge';
 
 const props = defineProps<{
   bridge: Bridge;
+  dirty: boolean;
+  saving: boolean;
+  status: string;
+  onExit: () => void;
   onSave: () => void;
   onImport: () => void;
 }>();
@@ -39,11 +43,8 @@ const closeAdd = (): void => {
   addOpen.value = false;
 };
 
-let counter = 0;
-
 const addPrimitive = (kind: string): void => {
-  counter += 1;
-  const id = `${kind}_${String(counter).padStart(3, '0')}`;
+  const id = props.bridge.nextObjectId(kind);
   // v3：图元种类 = 分组 key（type 即 key，节点无 type 字段）
   props.bridge.commit(`添加${kind}`, () => {
     props.bridge.handle.update({
@@ -55,6 +56,7 @@ const addPrimitive = (kind: string): void => {
       }],
     });
   });
+  props.bridge.select(id, false);
   closeAdd();
 };
 
@@ -65,6 +67,7 @@ const deleteSelected = (): void => {
 
 <template>
   <div class="toolbar">
+    <span class="toolbar__brand">场景编辑<span class="toolbar__status">{{ props.saving ? '正在保存…' : props.dirty ? '有未保存修改' : props.status }}</span></span>
     <!-- 添加（下拉收纳） -->
     <div class="toolbar__menu">
       <button
@@ -330,7 +333,7 @@ const deleteSelected = (): void => {
     <button
       :disabled="state.selection.length === 0"
       class="tb-btn"
-      title="复制 (Ctrl+D)"
+      title="复制基准对象（不含子节点，Ctrl+D）"
       @click="props.bridge.duplicateObject(props.bridge.anchorId ?? '')"
     >
       <svg
@@ -374,10 +377,12 @@ const deleteSelected = (): void => {
     </button>
     <span class="toolbar__sep" />
 
-    <button class="tb-btn" title="导入保存的场景文件" @click="props.onImport()">导入</button>
+    <div class="toolbar__file-actions" role="group" aria-label="文件操作">
+    <button class="tb-btn tb-btn--label tb-btn--secondary" title="导入保存的场景文件" @click="props.onImport()">导入</button>
     <button
-      class="tb-btn tb-btn--primary"
-      title="保存文件 (Ctrl+S)，再次打开后可导入恢复"
+      class="tb-btn tb-btn--primary tb-btn--label"
+      :disabled="props.saving || !props.dirty"
+      title="保存 (Ctrl+S)：开发模式写回源码，离线模式复制修改"
       @click="props.onSave()"
     >
       <svg
@@ -391,7 +396,11 @@ const deleteSelected = (): void => {
         stroke-width="1.1"
         stroke-linejoin="round"
       /></svg>
+      <span>保存</span>
     </button>
+    </div>
+    <span class="toolbar__sep toolbar__exit-sep" />
+    <button class="tb-btn tb-btn--label toolbar__exit" @click="props.onExit()" title="退出编辑，保留当前修改">退出编辑</button>
   </div>
 
   <!-- 点击外部关闭下拉（透明遮罩层） -->
@@ -403,11 +412,20 @@ const deleteSelected = (): void => {
 </template>
 
 <style scoped>
+.toolbar__file-actions { display: flex; align-items: center; gap: 10px; padding: 0 4px; }
+.tb-btn--secondary { background: var(--ed-input); color: var(--ed-text); }
+.toolbar__exit { color: var(--ed-dim); }
+.toolbar__exit-sep { margin: 0 8px; }
+.toolbar__brand { display: flex; flex-direction: column; font-size: 12px; font-weight: 600; padding: 0 14px 0 8px; white-space: nowrap; }
+.toolbar__status { font-size: 10px; font-weight: 400; color: var(--ed-dim); margin-top: 3px; }
+.tb-btn--label { width: auto !important; padding: 0 12px !important; gap: 6px; white-space: nowrap; }
+
+.toolbar__dirty { font-size: 11px; color: var(--ed-accent); padding: 0 5px; white-space: nowrap; }
 .toolbar {
   display: flex;
   align-items: center;
-  gap: 2px;
-  padding: 5px 6px;
+  gap: 4px;
+  padding: 8px 10px;
   background: var(--ed-panel);
   border: 1px solid var(--ed-border);
   border-radius: 12px;
@@ -478,8 +496,8 @@ const deleteSelected = (): void => {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 30px;
-  height: 30px;
+  width: 32px;
+  height: 32px;
   padding: 0;
   border: 0;
   border-radius: 8px;
@@ -513,6 +531,8 @@ const deleteSelected = (): void => {
   background: var(--ed-accent);
   color: #fff;
 }
+
+.tb-btn--primary:disabled { background: var(--ed-input); color: var(--ed-dim); opacity: .6; }
 
 .tb-btn--primary:hover:not(:disabled) {
   background: #5590ff;
