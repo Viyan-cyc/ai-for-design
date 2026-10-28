@@ -323,6 +323,6 @@ export default defineConfig([
     'eslint.config.mjs',
     'vite.config.ts',
     '*.json',
-    'public/assets/draco/**',
+    'public/scene3d/assets/draco/**',
   ]),
 ]);

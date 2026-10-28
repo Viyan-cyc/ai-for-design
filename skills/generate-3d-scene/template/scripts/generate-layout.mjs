@@ -9,7 +9,7 @@ try {
   const output = resolve(root, process.argv[3] ?? 'public/layout-groups.generated.json');
   const canonical = (p) => existsSync(p) ? realpathSync(p) : resolve(realpathSync(dirname(p)), p.split(/[\\/]/).at(-1));
   const identity = (p) => process.platform === 'win32' ? canonical(p).toLowerCase() : canonical(p);
-  if ([input, resolve(root, 'public/scene-data.json')].some((p) => identity(p) === identity(output))) throw new Error('Output must not overwrite the recipe or live scene-data.json');
+  if ([input, resolve(root, 'public/scene3d/scene-data.json')].some((p) => identity(p) === identity(output))) throw new Error('Output must not overwrite the recipe or live scene-data.json');
   const groups = expandLayout(JSON.parse(readFileSync(input, 'utf8').replace(/^\uFEFF/, '')));
   writeFileSync(output, `${JSON.stringify(groups, null, 2)}\n`, 'utf8');
   console.log(`RESULT: OK\nGROUPS_PATH: ${output}\nNODES: ${Object.values(groups).reduce((sum, nodes) => sum + nodes.length, 0)}`);

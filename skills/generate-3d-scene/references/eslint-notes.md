@@ -28,9 +28,9 @@
 
 ## 迁移注意（3d-templete → 本模板）
 
-1. 规则集整体继承，目录结构按新工程适配（`src/edit`、`src/scene-core` 两世界同一套规则）；
+1. 规则集整体继承，目录结构按新工程适配（`src/edit`、`src/scene3d/scene-core` 两世界同一套规则）；
 2. `no-restricted-syntax` 类自定义规则迁移时确认目标 AST 形态没变；
-3. Draco decoder（`public/assets/draco/`）已加 ignore——三方压缩解码器不进 lint。
+3. Draco decoder（`public/scene3d/assets/draco/`）已加 ignore——三方压缩解码器不进 lint。
 
 ## scripts/（skill 侧）说明
 

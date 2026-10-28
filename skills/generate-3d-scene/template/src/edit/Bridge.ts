@@ -12,11 +12,11 @@
  *     重建 = 喂整份数据给 handle.update()（幂等 upsert）；卡片级联删除由引擎 removeObject 负责。
  */
 import type * as THREE from 'three';
-import type { SceneHandle } from '@/scene-core/createScene';
+import type { SceneHandle } from '../scene3d/scene-core/createScene';
 import type {
   CardSpec, SceneData, SceneNode, TreeSceneFragment,
-} from '@/scene-core/types';
-import { RESERVED_KEYS } from '@/scene-core/types';
+} from '../scene3d/scene-core/types';
+import { RESERVED_KEYS } from '../scene3d/scene-core/types';
 
 /** 编辑器快照（撤销栈元素：全量 serialize，v3 零转换） */
 interface Snapshot {

@@ -11,7 +11,7 @@
 import * as THREE from 'three';
 import { showEditorMessage } from './message';
 import type { Bridge } from './Bridge';
-import type { TreeSceneFragment } from '@/scene-core/types';
+import type { TreeSceneFragment } from '../scene3d/scene-core/types';
 
 export type AlignAxis = 'x' | 'y' | 'z';
 export type AlignMode = 'origin' | 'center' | 'min' | 'max';

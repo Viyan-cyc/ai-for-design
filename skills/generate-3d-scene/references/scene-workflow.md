@@ -10,7 +10,7 @@
 
 运行 init.mjs 建工程，使用 --assets referenced --deps shared --defer-build，只注入引用资产并准备依赖，避免在写场景之前重复编译；缺依赖时按现有安装提示处理。根据 scene-data.json、scene-profile.ts、handlers、materials 和 cards 实现场景。保留 v3 数据契约、模型槽位及场景核心/编辑器隔离。新工程需继承 template/scripts/build-offline.mjs 和 offline-entry.ts。
 
-按 scene-design-examples/README.md 读取共享规范和命中的领域方案。布局、尺度、相机、光照和材质在首版设计时完成；不能用取消截图验收作为省略设计的理由。代码使用的资源保存在 public/assets 内，使用完整相对路径；动态组合的额外资源在 public/offline-resources.json 中显式列出。
+按 scene-design-examples/README.md 读取共享规范和命中的领域方案。布局、尺度、相机、光照和材质在首版设计时完成；不能用取消截图验收作为省略设计的理由。代码使用的资源保存在 public/scene3d/assets 内，使用完整相对路径；动态组合的额外资源在 public/scene3d/offline-resources.json 中显式列出。
 
 ## 3. 一次构建
 

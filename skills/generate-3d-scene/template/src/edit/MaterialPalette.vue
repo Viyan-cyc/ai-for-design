@@ -11,7 +11,7 @@
 import {
   computed, onBeforeUnmount, ref, watch,
 } from 'vue';
-import type { MaterialSpec } from '@/scene-core/types';
+import type { MaterialSpec } from '../scene3d/scene-core/types';
 import type { MaterialLibService } from './MaterialLibService';
 import type { Bridge } from './Bridge';
 import FloatingPanel from './FloatingPanel.vue';

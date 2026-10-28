@@ -6,11 +6,11 @@
 # 二进制/产物/依赖
 dist/
 node_modules/
-public/assets/
+public/scene3d/assets/
 vendor/
 
 # 生成物（appearance.ts 是确定性生成的审计产物，格式化会破坏"同输入同输出"对照）
-src/scene-core/generated/
+src/scene3d/scene/generated/
 
 # 锁文件与缓存（npm/验证工具管理，不重排）
 package-lock.json
@@ -33,19 +33,23 @@ eslint.config.mjs
 scripts/
 
 # 存量引擎/编辑器/示例源码（改动时逐文件收敛，收敛后从此清单删除）
-src/scene-core/engine/
-src/scene-core/edit/
-src/scene-core/cards/
-src/scene-core/handlers/
-src/scene-core/appearance-runtime.ts
-src/scene-core/asset-manifest.ts
-src/scene-core/diagnostics.ts
-src/scene-core/materials.ts
-src/scene-core/primitives.ts
-src/scene-core/resources.ts
-src/scene-core/types.ts
-src/scene-core/index.ts
-src/scene-core/createScene.ts
-src/scene-profile.ts
+src/scene3d/scene-core/engine/
+src/scene3d/scene-core/edit/
+src/scene3d/scene-core/cards/
+src/scene3d/scene-core/handlers/
+src/scene3d/scene-core/appearance-runtime.ts
+src/scene3d/scene-core/asset-manifest.ts
+src/scene3d/scene-core/diagnostics.ts
+src/scene3d/scene-core/materials.ts
+src/scene3d/scene-core/primitives.ts
+src/scene3d/scene-core/resources.ts
+src/scene3d/scene-core/types.ts
+src/scene3d/scene-core/index.ts
+src/scene3d/scene-core/createScene.ts
+src/scene3d/scene-profile.ts
 src/edit/
 index.html
+
+# 从旧 handler/cards 目录迁出的存量示例，沿用原豁免
+src/scene3d/scene/handlers/
+src/business/cards/ExampleCard.vue

@@ -1,5 +1,5 @@
 import type * as THREE from 'three';
-import type { MaterialSpec } from '@/scene-core';
+import type { MaterialSpec } from '../scene3d/scene-core/index';
 
 export interface TexturePreview { label: string; image?: string; }
 export type TexturePreviews = Record<string, TexturePreview>;

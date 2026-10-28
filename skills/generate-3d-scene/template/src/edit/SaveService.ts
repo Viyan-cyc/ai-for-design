@@ -5,10 +5,10 @@ import { sceneChanges, copyChanges } from './scene-changes';
  * 开发模式使用同源写入端点；离线模式复制带冲突检查信息的修改，交给 LLM 回写。
  */
 import { ref } from 'vue';
-import type { SceneHandle } from '@/scene-core/createScene';
+import type { SceneHandle } from '../scene3d/scene-core/createScene';
 import {
   offlineData, offlineResource, RESERVED_KEYS, type SceneData,
-} from '@/scene-core';
+} from '../scene3d/scene-core/index';
 import type { Bridge } from './Bridge';
 import { showEditorMessage } from './message';
 
@@ -132,7 +132,7 @@ export class SaveService {
         offlineData() &&
         typeof item === 'string' &&
         (/^(?:map|lightMap|envMap|sheenColorMap|sheenRoughnessMap|iridescenceMap|iridescenceThicknessMap|anisotropyMap|normalMap|roughnessMap|metalnessMap|aoMap|emissiveMap|alphaMap|bumpMap|displacementMap|clearcoatMap|clearcoatNormalMap|clearcoatRoughnessMap|transmissionMap|thicknessMap|specularMap|specularColorMap|specularIntensityMap|url|texture)$/i.test(key) ||
-          /^\/?assets\//.test(item))
+          /^\/?(?:scene3d\/)?assets\//.test(item))
       ) {
         offlineResource(item);
       }
@@ -184,7 +184,7 @@ export class SaveService {
           format: 'scene3d-changes', version: 1, sourceId: offlineData()?.sourceId,
           changes,
         };
-        const text = '请将以下场景修改应用到对应工程 public/scene-data.json。先逐项核对 before；不匹配时不要覆盖已有修改。path 是路径数组；缺少 after 表示删除，数组整体替换。保留其他数据，完成后重新构建离线页面。图片 data URI 为资源内容，请保留或落盘后更新引用。\n\n' + JSON.stringify(payload, null, 2);
+        const text = '请将以下场景修改应用到对应工程 public/scene3d/scene-data.json。先逐项核对 before；不匹配时不要覆盖已有修改。path 是路径数组；缺少 after 表示删除，数组整体替换。保留其他数据，完成后重新构建离线页面。图片 data URI 为资源内容，请保留或落盘后更新引用。\n\n' + JSON.stringify(payload, null, 2);
         const copied = await copyChanges(text);
         this.status.value = copied ? '已复制，待写回源码' : '待手动复制';
         showEditorMessage(copied ? '修改已复制，请粘贴到对话；源码尚未更新。' : '请在弹窗中手动复制修改。');
@@ -193,7 +193,7 @@ export class SaveService {
       this.savedSnapshot = snapshot;
       this.dirty.value = JSON.stringify(this.handle.serialize()) !== snapshot;
       this.status.value = '已保存到源码';
-      showEditorMessage('已写入 public/scene-data.json。离线页面需重新构建才会包含此次修改。');
+      showEditorMessage('已写入 public/scene3d/scene-data.json。离线页面需重新构建才会包含此次修改。');
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') { return; }
       this.status.value = '保存失败';

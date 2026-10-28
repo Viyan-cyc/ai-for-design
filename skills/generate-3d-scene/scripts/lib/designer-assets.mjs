@@ -246,7 +246,7 @@ export function selected(dir,ids) {
 }
 export function inject(dir,project,ids) {
  outsideSkill(project);
- const assets=selected(dir,ids), target=resolve(project,'public/assets'), manifestPath=resolve(target,'asset-manifest.json');
+ const assets=selected(dir,ids), target=resolve(project,'public/scene3d/assets'), manifestPath=resolve(target,'asset-manifest.json');
  const manifest=existsSync(manifestPath)?readJSON(manifestPath):{};
  for(const a of assets) {
   const key=`models/packages/${a.id}_${a.contentHash.slice(0,12)}`;

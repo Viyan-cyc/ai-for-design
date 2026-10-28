@@ -1,8 +1,7 @@
 /** Business assembly: add only the factories/cards used by this scene. */
-import type { SceneEngine } from './scene-core/engine/SceneEngine';
-import type { AssetEngine } from './scene-core/engine/AssetEngine';
-import type { RenderLoop } from './scene-core/engine/RenderLoop';
-import type { Component } from 'vue';
+import type { SceneEngine } from './scene-core';
+import type { AssetEngine } from './scene-core';
+import type { RenderLoop } from './scene-core';
 
 export interface BusinessRegistrarContext {
   sceneEngine: SceneEngine;
@@ -21,4 +20,3 @@ export const registerBusinessFactories = (ctx: BusinessRegistrarContext): void =
   const missing = BUSINESS_FACTORY_TYPES.filter((type) => !ctx.sceneEngine.hasFactory(type));
   if (missing.length) throw new Error(`Factories were not registered: ${missing.join(', ')}`);
 };
-export const cardComponents: Record<string, Component> = {};

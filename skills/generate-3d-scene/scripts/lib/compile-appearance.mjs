@@ -2,7 +2,7 @@
  * compile-appearance.mjs — 编辑视觉层 → 代码模块编译器（P4.1，F08/V17/V18）
  *
  * strip-edit 的前置步骤：把 scene-data.json 的 __visuals / __materialLib 编译成
- * `src/scene-core/generated/appearance.ts` 代码模块（纯数据常量），运行包装配期由
+ * `src/scene3d/scene/generated/appearance.ts` 代码模块（纯数据常量），运行包装配期由
  * appearance-runtime 应用——编辑结果自动保真，不再依赖 LLM 人工转录 Markdown。
  *
  * 契约（优化 Spec §4.2 compileAppearance）：
@@ -223,7 +223,7 @@ const generateModule = (exportedVisuals, exportedMaterialLib) => {
   lines.push(' * 重新导出运行包时本文件会被整文件覆盖——不要手改（改了下次 strip 丢失）。');
   lines.push(' * 审计：字段与 TRANSCRIPTION.md 的视觉表逐条对应。');
   lines.push(' */');
-  lines.push("import type { MaterialLibEntry, VisualOverride } from '../index';");
+  lines.push("import type { MaterialLibEntry, VisualOverride } from '../../scene-core/index';");
   lines.push('');
   lines.push('/** 节点视觉层（nodeId → override；来自 __visuals，locked 已剥离） */');
   lines.push('export const compiledVisuals: Record<string, VisualOverride> = ');

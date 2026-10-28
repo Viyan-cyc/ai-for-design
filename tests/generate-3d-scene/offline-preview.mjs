@@ -31,7 +31,7 @@ try {
       const ready = await page.evaluate('window.__scene3d.whenReady({timeoutMs:25000})');
       assert.equal(ready.failed, 0);
       assert.equal(ready.firstFrame, true);
-      assert.equal(await page.evaluate('document.querySelectorAll("canvas#scene-canvas").length'), 1, 'only one mode boots');
+      assert.equal(await page.evaluate('Array.from(document.querySelectorAll("canvas")).filter(canvas => canvas === window.__scene3d.internals.canvas && canvas.isConnected).length'), 1, 'only one mode boots');
       if (mode && !saved) {
         saved = await page.evaluate(`(async () => {
           const {bridge,save}=window.__scene3dEdit;
@@ -45,12 +45,14 @@ try {
           canvas.getContext('2d').fillRect(0,0,2,2);const image=canvas.toDataURL();
           bridge.commit('测试编辑',()=>{se.patchVisual(id,{color:'#12ab34',map:image});bridge.handle.update({[type]:[{...node,position}]});});
           bridge.undo();bridge.redo();
-          let download;
-          const click=HTMLAnchorElement.prototype.click;
-          HTMLAnchorElement.prototype.click=function(){download={name:this.download,text:fetch(this.href).then(r=>r.text())}};
-          try{save.save()}finally{HTMLAnchorElement.prototype.click=click}
-          if(download.name!=='scene.3d.json')throw new Error('wrong download name');
-          const data=JSON.parse(await download.text);
+          let copied;
+          const descriptor=Object.getOwnPropertyDescriptor(navigator,'clipboard');
+          Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async text=>{copied=text}}});
+          try{await save.save()}finally{if(descriptor)Object.defineProperty(navigator,'clipboard',descriptor);else delete navigator.clipboard}
+          if(!copied?.includes('scene3d-changes'))throw new Error('missing scene changes');
+          const payload=JSON.parse(copied.slice(copied.indexOf('{')));
+          if(!payload.changes.length)throw new Error('empty changes');
+          const data=save.encode();
           return {id,data,type,position};
         })()`);
         assert.equal(saved.data.format, 'scene3d-scene');

@@ -9,7 +9,7 @@
 
 适用：树、路障、集装箱、围栏、地面标线——图元可拼的物体。
 
-**范式**（`template/src/scene-core/handlers/procedural/tree.ts`，~60 行）：
+**范式**（`template/src/scene3d/scene/handlers/tree.ts`，~60 行）：
 - 三层锥形树冠（ConeGeometry 递减半径叠放）+ 树干（CylinderGeometry）；
 - 全部常量写在顶部（冠层数/高度比），改形态 = 改常量；
 - mesh 具名（`trunk` / `foliage_1..3`）。
@@ -18,7 +18,7 @@
 
 适用：主角级物体（车/人/机柜）——需要材质分件与子节点独立编辑的场合。
 
-**三个实证范式**（`handlers/procedural/`，全部过槽位级编辑全链路验证）：
+**三个实证范式**（`template/src/scene3d/scene/handlers/`，全部过槽位级编辑全链路验证）：
 
 | 范式 | 文件 | 核心手法 |
 |---|---|---|
@@ -42,7 +42,7 @@
 ## 写法纪律
 
 1. **handler 内建，不产 GLB**——过程化产物走 build.mjs 场景预算；只有当模型要入库复用时才导出实体 GLB 过 `validate-model --strict`；
-2. **typed definition 注册**（P3 起标准形态，参照 `procedural/tree.ts`）：`create` 建树 + `update` params 响应（结构参数返回 `'rebuild'`、原地参数返回 `'updated'`）+ `dispose` 可选——旧 function 形态仍兼容但 params 变化走重建兜底；
+2. **typed definition 注册**（P3 起标准形态，参照 `scene/handlers/tree.ts`）：`create` 建树 + `update` params 响应（结构参数返回 `'rebuild'`、原地参数返回 `'updated'`）+ `dispose` 可选——旧 function 形态仍兼容但 params 变化走重建兜底；
 3. 常量全部顶部集中（轮廓点表/比例表/颜色），body 一处；
 4. `handlerUtils.applyTransform(group, node)` 先行（读节点 transform）；
 5. `node.params` 读业务/结构字段（状态/层数），**渲染默认值写在代码**（`applyShadowDefaults` 模式）；

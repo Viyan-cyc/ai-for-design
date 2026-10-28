@@ -307,9 +307,9 @@ const main = () => {
   const src = resolve(srcArg);
   const pkg = resolve(pkgArg);
   const readJson = (p) => JSON.parse(readFileSync(p, "utf8"));
-  const srcDataPath = join(src, "public", "scene-data.json");
-  const pkgDataPath = join(pkg, "public", "scene-data.json");
-  const appPath = join(pkg, "src", "scene-core", "generated", "appearance.ts");
+  const srcDataPath = join(src, "public", 'scene3d', "scene-data.json");
+  const pkgDataPath = join(pkg, "public", 'scene3d', "scene-data.json");
+  const appPath = join(pkg, "src", 'scene3d', "scene-core", "generated", "appearance.ts");
   for (const p of [srcDataPath, pkgDataPath, appPath]) {
     if (!existsSync(p)) {
       console.error(`[fidelity] 输入缺失: ${p}`);

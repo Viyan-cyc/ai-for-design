@@ -75,36 +75,36 @@ try {
   timed('typecheck');
   if (checked.error) throw checked.error;
   if (checked.status !== 0) throw new Error('类型检查未通过');
-  const scene = JSON.parse(readFileSync(resolve(publicDir, 'scene-data.json'), 'utf8'));
-  const manifestFile = resolve(publicDir, 'assets/asset-manifest.json');
+  const scene = JSON.parse(readFileSync(resolve(publicDir, 'scene3d/scene-data.json'), 'utf8'));
+  const manifestFile = resolve(publicDir, 'scene3d/assets/asset-manifest.json');
   const allManifest = existsSync(manifestFile) ? JSON.parse(readFileSync(manifestFile, 'utf8')) : {};
   const manifest = Object.create(null);
   visit(scene, (obj) => {
     if (typeof obj.assetId === 'string') {
       const entry = allManifest[obj.assetId] ?? { model: `models/${obj.assetId}.glb`, format: 'glb' };
       manifest[obj.assetId] = entry;
-      collect(`assets/${entry.model.replace(/^assets\//, '')}`);
-      Object.values(entry.textures ?? {}).forEach((url) => collect(`assets/${url.replace(/^assets\//, '')}`));
+      collect(`scene3d/assets/${entry.model.replace(/^assets\//, '')}`);
+      Object.values(entry.textures ?? {}).forEach((url) => collect(`scene3d/assets/${url.replace(/^assets\//, '')}`));
     }
     for (const [key, value] of Object.entries(obj)) {
-      if (typeof value === 'string' && (/^(?:map|lightMap|envMap|sheenColorMap|sheenRoughnessMap|iridescenceMap|iridescenceThicknessMap|anisotropyMap|normalMap|roughnessMap|metalnessMap|aoMap|emissiveMap|alphaMap|bumpMap|displacementMap|clearcoatMap|clearcoatNormalMap|clearcoatRoughnessMap|transmissionMap|thicknessMap|specularMap|specularColorMap|specularIntensityMap|url|texture)$/i.test(key) || /^\/?assets\//.test(value))) collect(value);
+      if (typeof value === 'string' && (/^(?:map|lightMap|envMap|sheenColorMap|sheenRoughnessMap|iridescenceMap|iridescenceThicknessMap|anisotropyMap|normalMap|roughnessMap|metalnessMap|aoMap|emissiveMap|alphaMap|bumpMap|displacementMap|clearcoatMap|clearcoatNormalMap|clearcoatRoughnessMap|transmissionMap|thicknessMap|specularMap|specularColorMap|specularIntensityMap|url|texture)$/i.test(key) || /^\/?(?:scene3d\/)?assets\//.test(value))) collect(value);
     }
   });
   // Constant resources used by business handlers/materials, not the complete asset library.
   for (const file of walk(resolve(root, 'src'))) {
     if (!/\.(?:ts|vue|css)$/.test(file)) continue;
     const code = readFileSync(file, 'utf8');
-    for (const match of code.matchAll(/['"](\/?assets\/[^'"\r\n]+\.(?:png|jpe?g|webp|avif|glb|gltf|bin))['"]/gi)) collect(match[1]);
+    for (const match of code.matchAll(/['"](\/?(?:scene3d\/)?assets\/[^'"\r\n]+\.(?:png|jpe?g|webp|avif|glb|gltf|bin))['"]/gi)) collect(match[1]);
   }
-  const extraFile = resolve(publicDir, 'offline-resources.json');
+  const extraFile = resolve(publicDir, 'scene3d/offline-resources.json');
   if (existsSync(extraFile)) {
     const extra = JSON.parse(readFileSync(extraFile, 'utf8'));
     if (!Array.isArray(extra) || extra.some((url) => typeof url !== 'string')) throw new Error('offline-resources.json 必须是资源路径字符串数组');
     extra.forEach((url) => collect(url));
   }
   if (needsDraco) {
-    collect('assets/draco/draco_wasm_wrapper.js');
-    collect('assets/draco/draco_decoder.wasm');
+    collect('scene3d/assets/draco/draco_wasm_wrapper.js');
+    collect('scene3d/assets/draco/draco_decoder.wasm');
   }
   const data = { version: 1, scene, manifest, resources };
   data.sourceId = hash(JSON.stringify(data) + walk(resolve(root, 'src')).sort().map((file) => `${relative(root, file)}:${hash(readFileSync(file))}`).join('\n'));

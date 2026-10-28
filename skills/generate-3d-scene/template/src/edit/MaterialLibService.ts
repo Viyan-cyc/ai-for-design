@@ -15,10 +15,10 @@ import { texturePreviews, type TexturePreviews } from './material-preview';
 import type * as THREE from 'three';
 import type {
   SceneHandle, MaterialLibEntry, MaterialSpec, VisualOverride,
-} from '@/scene-core';
+} from '../scene3d/scene-core/index';
 import {
   createMaterialFromSpec, applyMaterialScalars, applyMaterialTextures, NON_MATERIAL_VISUAL_KEYS, findBySlotKey, readMaterialSpec,
-} from '@/scene-core';
+} from '../scene3d/scene-core/index';
 import type { Bridge } from './Bridge';
 import { showEditorMessage } from './message';
 

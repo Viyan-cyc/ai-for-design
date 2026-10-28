@@ -16,12 +16,12 @@ cpSync(template, fixture, { recursive: true, filter: (path) => !['node_modules',
 symlinkSync(dependencyPath(), resolve(fixture, 'node_modules'), 'junction');
 const json = (path) => JSON.parse(readFileSync(path, 'utf8'));
 const save = (path, data) => writeFileSync(path, JSON.stringify(data, null, 2));
-const scenePath = resolve(fixture, 'public/scene-data.json');
+const scenePath = resolve(fixture, 'public/scene3d/scene-data.json');
 const scene = json(scenePath);
-const manifestPath = resolve(fixture, 'public/assets/asset-manifest.json');
+const manifestPath = resolve(fixture, 'public/scene3d/assets/asset-manifest.json');
 const manifest = json(manifestPath);
 for (const [i, name] of ['嵌套 A', '嵌套 B'].entries()) {
-  const dir = resolve(fixture, 'public/assets/models', name);
+  const dir = resolve(fixture, 'public/scene3d/assets/models', name);
   mkdirSync(resolve(dir, 'mesh'), { recursive: true });
   mkdirSync(resolve(dir, 'images'), { recursive: true });
   const values = new Float32Array([0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1]);
@@ -54,7 +54,7 @@ assert.equal(browser.status, 0, browser.stdout + browser.stderr);
 console.log(browser.stdout.trim());
 const digest = () => createHash('sha256').update(readFileSync(html)).update(readFileSync(resolve(fixture, 'offline/scene-data.js'))).digest('hex');
 const previous = digest();
-const missing = resolve(fixture, 'public/assets/models/嵌套 A/mesh/geometry.bin');
+const missing = resolve(fixture, 'public/scene3d/assets/models/嵌套 A/mesh/geometry.bin');
 const bytes = readFileSync(missing); unlinkSync(missing);
 assert.notEqual(run(command, fixture).status, 0);
 assert.equal(digest(), previous);

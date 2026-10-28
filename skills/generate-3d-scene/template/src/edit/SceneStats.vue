@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from 'vue';
 import type { Bridge } from './Bridge';
-import type { FrameStats } from '@/scene-core';
+import type { FrameStats } from '../scene3d/scene-core/index';
 
 const props = defineProps<{ bridge: Bridge }>();
 const objects = ref(0);

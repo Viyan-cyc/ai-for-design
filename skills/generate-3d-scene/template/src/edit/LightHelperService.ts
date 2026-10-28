@@ -9,7 +9,7 @@
  */
 import * as THREE from 'three';
 import { RectAreaLightHelper } from 'three/examples/jsm/helpers/RectAreaLightHelper.js';
-import type { SceneHandle } from '@/scene-core/createScene';
+import type { SceneHandle } from '../scene3d/scene-core/createScene';
 
 export class LightHelperService {
   private helpers = new Map<string, THREE.Object3D>();

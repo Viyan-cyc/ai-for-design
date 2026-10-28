@@ -8,7 +8,7 @@ import { openBrowserSession, CdpEnvironmentError } from "../../skills/generate-3
 import { writeFileSync } from "node:fs";
 
 const URL = process.argv[2] ?? "http://localhost:5183/?edit=1";
-const OUT = process.argv[3] ?? "C:/Users/Tony/Documents/Codex/2026-10-13/zuo/work/p6/p6-demo/public/scene-data.json";
+const OUT = process.argv[3] ?? "C:/Users/Tony/Documents/Codex/2026-10-13/zuo/work/p6/p6-demo/public/scene3d/scene-data.json";
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 

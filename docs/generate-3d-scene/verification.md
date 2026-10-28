@@ -80,3 +80,10 @@
 - **断言时序预检**（写/改断言固定自查项）：此断言依赖什么时序、快照在哪一步拍、轮询判据的最早/最晚窗口；
 - **断言数值走引擎真值**（getStats/serialize/getVertexPosition），不走 DOM 文本（长链路 DOM 刷新抖动假 FAIL）；
 - 软渲染（swiftshader）下像素断言不可靠 → 渲染活性用 fps>0；fps 数值只在 `--gpu` 真机下有意义。
+
+
+## 渲染设置与按需调度维护验证
+
+从 skill 目录执行 `node ../../tests/generate-3d-scene/render-settings-fixtures.mjs`：覆盖预设推导、输入约束、实际30帧限帧、按时间动画、静态休眠/唤醒、切换上限、后台重置与卸载。
+
+执行 `generation-fixtures.mjs` 产生临时工程，再运行 `node ../../tests/generate-3d-scene/render-settings-browser.mjs "<临时工程>/offline/index.3d.html"`：验证真实 WebGL 编辑器的档位、小数像素比、独立运行策略、单灯覆盖与撤销、初始化参数待生效与保存。浏览器测试只用于维护，不进入普通生成流程，不判定审美。初始化参数需要保存回写后重新打开更新后的场景；测试不自动确认用户模型或覆盖用户工程。

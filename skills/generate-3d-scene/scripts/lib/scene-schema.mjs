@@ -256,7 +256,7 @@ export const extractBusinessFactoryTypes = (profileSource) => {
 
 /**
  * 构建工程用的完整工厂注册表（内建图元 + asset + 业务分组）。
- * @param {string} profileSource template/src/scene-profile.ts 源码文本
+ * @param {string} profileSource template/src/scene3d/scene-profile.ts 源码文本
  */
 export const factoryRegistryFromProfile = (profileSource) => registryFromFactories([
   ...['Box', 'Sphere', 'Cylinder', 'Plane', 'Cone', 'Torus', 'asset'],

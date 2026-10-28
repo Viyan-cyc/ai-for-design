@@ -8,7 +8,7 @@
  * 缓存 key 组成（P5-R1 修复后的完整输入）：
  *   - 检查名（check id，如 'verify:run' / 'build' / 'typecheck'）+ CHECK_VERSION
  *   - 影响域文件内容 hash：
- *       scene-data.json / asset-manifest.json / **public/assets 资产闭包整树**
+ *       scene-data.json / asset-manifest.json / **public/scene3d/assets 资产闭包整树**
  *       （模型 .glb/.gltf/.bin/贴图——改任一字节 key 即变）
  *       src/**（run 模式不含 src/edit；edit 模式含——run/edit 结论互不复用）
  *       index.html（入口模板）、vendor tgz、lock、package.json
@@ -37,7 +37,7 @@ export const CACHE_FILENAME = '.verification-cache.json';
 /**
  * 文件 → 影响域标签（changeSet 分层；返回 null = 未知影响 → 保守全失效）。
  * 域定义对齐 Spec §3.5 + P5-R1：
- *   'scene'   scene-data.json / asset-manifest.json / public/assets/**（资产闭包）
+ *   'scene'   scene-data.json / asset-manifest.json / public/scene3d/assets/**（资产闭包）
  *   'code'    src/** 非 edit（run 与 edit 共享的 core/handlers/cards）
  *   'edit'    src/edit/**（只影响 edit 模式结论）
  *   'deps'    package-lock / package.json / vendor tgz / node_modules 语义
@@ -46,7 +46,7 @@ export const CACHE_FILENAME = '.verification-cache.json';
 export const fileAffect = (file) => {
   const f = file.split(sep).join('/');
   if (f.endsWith('scene-data.json') || f.endsWith('asset-manifest.json')
-    || f.startsWith('public/assets/') || f === 'index.html') {
+    || f.startsWith('public/scene3d/assets/') || f === 'index.html') {
     return 'scene';
   }
   if (f.startsWith('src/edit/') || f.includes('/edit/')) {
@@ -207,10 +207,10 @@ export const computeCacheKey = (projectRoot, opts = {}) => {
 
   try {
     if (affects.includes('scene')) {
-      pushOrUnstable('sceneData', hashFile(join(projectRoot, 'public', 'scene-data.json')));
-      pushOrUnstable('assetManifest', hashFile(join(projectRoot, 'public', 'assets', 'asset-manifest.json')));
+      pushOrUnstable('sceneData', hashFile(join(projectRoot, 'public', 'scene3d', 'scene-data.json')));
+      pushOrUnstable('assetManifest', hashFile(join(projectRoot, 'public', 'scene3d', 'assets', 'asset-manifest.json')));
       // P5-R1：资产闭包整树（模型/bin/贴图改一个字节 key 即变）
-      pushOrUnstable('assetsClosure', hashTree(join(projectRoot, 'public', 'assets')));
+      pushOrUnstable('assetsClosure', hashTree(join(projectRoot, 'public', 'scene3d', 'assets')));
       // P5-R1：入口模板（index.html 改脚本引用/容器结构影响挂载检查）
       pushOrUnstable('indexHtml', hashFile(join(projectRoot, 'index.html')));
     }

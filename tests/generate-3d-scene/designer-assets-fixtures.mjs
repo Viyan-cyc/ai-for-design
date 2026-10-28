@@ -32,7 +32,7 @@ pkg=confirm(pkgDir,pkg.revision,{allowPartial:true,confirmFront:true,confirmScal
 const exported=resolve(temp,'library.zip');exportPackage(pkgDir,exported,{source_id:16});const exportedFiles=inputFiles(exported);const cfg=JSON.parse(exportedFiles.find(f=>f.name==='config.json').data);
 assert.equal(cfg.data.length,1);assert.equal(cfg.meta.source_id,16);assert(!('group_id' in cfg.meta));assert(exportedFiles.some(f=>f.name===cfg.data[0].file_path));assert.equal((await uploadAdapter(exported,{},{})).status,'not_configured');
 const project=resolve(temp,'project');const initialized=initProject(project,{deferBuild:true});assert(initialized.ok,JSON.stringify(initialized.errors));inject(pkgDir,project,[id]);
-const scenePath=resolve(project,'public/scene-data.json'),scene=JSON.parse(readFileSync(scenePath));scene.asset=[{id:'device_1',position:[0,0,0],params:{assetId:id}}];writeFileSync(scenePath,JSON.stringify(scene));
+const scenePath=resolve(project,'public/scene3d/scene-data.json'),scene=JSON.parse(readFileSync(scenePath));scene.asset=[{id:'device_1',position:[0,0,0],params:{assetId:id}}];writeFileSync(scenePath,JSON.stringify(scene));
 const run=(...args)=>spawnSync(process.execPath,args,{encoding:'utf8'});
 const build=run('scripts/build-offline.mjs',project);assert.equal(build.status,0,build.stdout+build.stderr);console.log('PASS uploaded package -> offline build');
 const preview=run('../../tests/generate-3d-scene/offline-preview.mjs',resolve(project,'offline/index.3d.html'));assert.equal(preview.status,0,preview.stdout+preview.stderr);console.log(preview.stdout);

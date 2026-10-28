@@ -10,8 +10,8 @@
  */
 import { computed, onMounted, ref } from 'vue';
 import type { Bridge } from './Bridge';
-import type { VisualOverride } from '@/scene-core';
-import { RESERVED_KEYS, type SceneNode, type MeshSpecEntry } from '@/scene-core/types';
+import type { VisualOverride } from '../scene3d/scene-core/index';
+import { RESERVED_KEYS, type SceneNode, type MeshSpecEntry } from '../scene3d/scene-core/types';
 
 const props = defineProps<{ bridge: Bridge }>();
 

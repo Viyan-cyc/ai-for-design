@@ -23,7 +23,7 @@ registerHooks({
  }
 });
 const THREE = await import('three');
-const {createComposite} = await import(pathToFileURL(join(skill,'template/src/scene-core/handlers/procedural/composite.ts')));
+const {createComposite} = await import(pathToFileURL(join(skill,'template/src/scene3d/scene-core/handlers/procedural/composite.ts')));
 const b = createComposite(), mat = new THREE.MeshStandardMaterial();
 let disposed = 0;
 for(const x of [-2,2]) { const g = new THREE.BoxGeometry(); g.addEventListener('dispose',()=>disposed++); b.batch('frame',g,mat,{position:[x,0,0]}); }
@@ -57,14 +57,14 @@ assert.throws(()=>expandLayout([{type:'blocks',idPrefix:'x',placements:[{key:'a'
 console.log('PASS composite attachment/merge/disposal and placement/variant regressions');
 const project=mkdtempSync(join(tmpdir(),'scene3d-efficiency-')),env=checkEnvironment();
 assert.equal(initProject(project,{deferBuild:true}).ok,true);
-cpSync(join(skill,'scripts/scaffolds/composite-handler.ts'),join(project,'src/scene-core/handlers/composite-example.ts'));
+cpSync(join(skill,'scripts/scaffolds/composite-handler.ts'),join(project,'src/scene3d/scene/handlers/composite-example.ts'));
 cpSync(join(skill,'scripts/scaffolds/layout-recipe.json'),join(project,'src/layout-recipe.json'));
-const profile=join(project,'src/scene-profile.ts');
-writeFileSync(profile,"import { registerAssemblyHandler } from './scene-core/handlers/composite-example';\n"+readFileSync(profile,'utf8').replace('=> void> = {};','=> void> = { assemblies: ({ sceneEngine }) => registerAssemblyHandler(sceneEngine) };'));
+const profile=join(project,'src/scene3d/scene-profile.ts');
+writeFileSync(profile,"import { registerAssemblyHandler } from './scene/handlers/composite-example';\n"+readFileSync(profile,'utf8').replace('=> void> = {};','=> void> = { assemblies: ({ sceneEngine }) => registerAssemblyHandler(sceneEngine) };'));
 const run=(args)=>spawnSync(env.node,args,{cwd:project,encoding:'utf8'});
 let result=run(['scripts/generate-layout.mjs']); assert.equal(result.status,0,result.stdout+result.stderr);
-const scene=join(project,'public/scene-data.json'), original=readFileSync(scene,'utf8');
-result=run(['scripts/generate-layout.mjs','src/layout-recipe.json','public/scene-data.json']); assert.notEqual(result.status,0); assert.equal(readFileSync(scene,'utf8'),original);
+const scene=join(project,'public/scene3d/scene-data.json'), original=readFileSync(scene,'utf8');
+result=run(['scripts/generate-layout.mjs','src/layout-recipe.json','public/scene3d/scene-data.json']); assert.notEqual(result.status,0); assert.equal(readFileSync(scene,'utf8'),original);
 cpSync(join(skill,'scripts/scaffolds/compose-scene.mjs'),join(project,'scripts/compose-scene.mjs'));
 const stagePath = join(project,'scenes/stage.json');
 writeFileSync(stagePath, original);

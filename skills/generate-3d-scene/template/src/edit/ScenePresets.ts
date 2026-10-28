@@ -1,4 +1,4 @@
-import type { TreeSceneFragment } from '@/scene-core/types';
+import type { TreeSceneFragment } from '../scene3d/scene-core/types';
 import type { Bridge } from './Bridge';
 
 export const SCENE_PRESETS = [

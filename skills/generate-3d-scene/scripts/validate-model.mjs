@@ -659,7 +659,7 @@ const requireNode = (id) => {
 /** three 解析路径：模板 node_modules（skill 脚本零依赖，three 是模板运行时依赖）。 */
 const gltfLoaderPath = () => dependencyPath('three', 'examples', 'jsm', 'loaders', 'GLTFLoader.js');
 const dracoLoaderPath = () => dependencyPath('three', 'examples', 'jsm', 'loaders', 'DRACOLoader.js');
-const dracoDecoderDir = () => join(SKILL_ROOT, 'template', 'public', 'assets', 'draco');
+const dracoDecoderDir = () => join(SKILL_ROOT, 'template', 'public', 'scene3d', 'assets', 'draco');
 const SKILL_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
 /** Draco decoder 的 data: URI 形态（Node fetch 不支持 file://；浏览器路径不受影响——本函数只在 Node 门禁用）。 */

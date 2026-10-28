@@ -12,8 +12,8 @@
 import {
   computed, onBeforeUnmount, ref, watch,
 } from 'vue';
-import type { MaterialSpec, MaterialType, MaterialLibEntry } from '@/scene-core/types';
-import { migrateMaterialSpec } from '@/scene-core';
+import type { MaterialSpec, MaterialType, MaterialLibEntry } from '../scene3d/scene-core/types';
+import { migrateMaterialSpec } from '../scene3d/scene-core/index';
 import type { MaterialLibService } from './MaterialLibService';
 import { specToInline, keepNonMaterial } from './MaterialLibService';
 import type { Bridge } from './Bridge';

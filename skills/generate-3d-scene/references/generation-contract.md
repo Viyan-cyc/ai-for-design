@@ -15,16 +15,16 @@
 
 ## 最少需要改哪些文件
 
-1. `public/scene-data.json`：保留舞台配置，填写业务分组数组。
-2. `src/scene-profile.ts`：工厂只在 BUSINESS_REGISTRARS 登记一次；卡片按需登记。
+1. `public/scene3d/scene-data.json`：保留舞台配置，填写业务分组数组。
+2. `src/scene3d/scene-profile.ts`：工厂只在 BUSINESS_REGISTRARS 登记一次；卡片在外部 `src/business/cards/index.ts` 登记，由应用传入。
 3. 新建 handler；材质默认值在代码中。内建 asset/图元足够时不新增 handler。
 
 通常不修改 scene-core/index.ts、handlers/index.ts、引擎、编辑器或构建脚本。业务 handler 在 scene-profile 直接导入，不需要新增 barrel 导出。
 
-可直接拷贝 `scripts/scaffolds/block-handler.ts` 到工程的 `src/scene-core/handlers/block.ts`，然后在 scene-profile 中导入并登记：
+可直接拷贝 `scripts/scaffolds/block-handler.ts` 到工程的 `src/scene3d/scene/handlers/block.ts`，然后在 scene-profile 中导入并登记：
 
 ```ts
-import { registerBlockHandler } from './scene-core/handlers/block';
+import { registerBlockHandler } from './scene/handlers/block';
 // BUSINESS_REGISTRARS 内：
 blocks: ({ sceneEngine }) => registerBlockHandler(sceneEngine),
 ```
@@ -109,7 +109,7 @@ variants:[{params,...}] 按 variantAxis:'x'|'y'|'z'|'index' 循环分配；默�
 
 复杂布局可保留工程内简短 JS 生成器，导入 `scripts/layout.mjs` 的 expandLayout；不要临时写几百行位置展开逻辑。共享尺寸可以放 `src/layout-recipe.json`，handler 构建时 import，生成器读取同一文件；不运行时 fetch public 文件，不重复抄常量。
 
-可复制 `scripts/scaffolds/layout-recipe.json` 到工程 `src/layout-recipe.json`，运行 `node scripts/generate-layout.mjs`，输出 public/layout-groups.generated.json。生成器与输入随源码交付；默认输出独立分组文件，并拒绝覆盖输入配方和 public/scene-data.json；不要将自定义输出指向编辑器保存文件。首次生成时合并分组，后续重新生成先明确要替换的节点范围，保留人工编辑。
+可复制 `scripts/scaffolds/layout-recipe.json` 到工程 `src/layout-recipe.json`，运行 `node scripts/generate-layout.mjs`，输出 public/layout-groups.generated.json。生成器与输入随源码交付；默认输出独立分组文件，并拒绝覆盖输入配方和 public/scene3d/scene-data.json；不要将自定义输出指向编辑器保存文件。首次生成时合并分组，后续重新生成先明确要替换的节点范围，保留人工编辑。
 
 ## 一次统一构建
 

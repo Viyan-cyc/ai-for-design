@@ -23,9 +23,9 @@ import {
 } from './AlignmentService';
 import type {
   ControlsConfig, LightConfig, SceneData, SceneNode,
-} from '@/scene-core/types';
-import { findBySlotKey } from '@/scene-core';
-import { RESERVED_KEYS } from '@/scene-core/types';
+} from '../scene3d/scene-core/types';
+import { findBySlotKey } from '../scene3d/scene-core/index';
+import { RESERVED_KEYS } from '../scene3d/scene-core/types';
 import type { LightHelperService } from './LightHelperService';
 import type { MaterialLibService } from './MaterialLibService';
 import MaterialSection from './MaterialSection.vue';

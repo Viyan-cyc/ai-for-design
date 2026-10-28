@@ -7,7 +7,7 @@
  * Exit: 0 PASS or explicitly INCONCLUSIVE, 1 correctness failure, 2 environment unavailable.
  *
  * P5.1 + P5-R1: complete-input content-hash cache.
- *   Cache key covers: scene-data / asset-manifest / **public/assets closure** (model
+ *   Cache key covers: scene-data / asset-manifest / **public/scene3d/assets closure** (model
  *   bytes, bins, textures) / index.html / src split core-vs-edit (run never reuses
  *   edit conclusions) / lock / vendor / config files / check version / mode / profile /
  *   viewport / **url / expect content hash / session fingerprint**. Unreadable inputs
@@ -820,7 +820,7 @@ export const verifyScene = async (options = {}) => {
   const expect =
     options.expect ??
     readExpect(
-      options.expectPath ?? join(project, "public", "scene-data.json"),
+      options.expectPath ?? join(project, "public", 'scene3d', "scene-data.json"),
     );
   const useCache = options.cache !== false;
 
@@ -1067,7 +1067,7 @@ export const verifyScene = async (options = {}) => {
     const r = await run(
       project,
       url,
-      options.expectPath ?? join(project, "public", "scene-data.json"),
+      options.expectPath ?? join(project, "public", 'scene3d', "scene-data.json"),
     );
     const failed = runTool("editRegression", r.status, r.detail);
     if (failed) {

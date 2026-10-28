@@ -8,7 +8,7 @@ try {
   const stagePath = resolve(root, 'scenes/stage.json');
   const recipePath = resolve(root, 'src/layout-recipe.json');
   const output = resolve(root, 'scenes/scene.generated.json');
-  const live = resolve(root, 'public/scene-data.json');
+  const live = resolve(root, 'public/scene3d/scene-data.json');
   if (existsSync(output)) {
     const canonical = (p) => process.platform === 'win32' ? realpathSync(p).toLowerCase() : realpathSync(p);
     if ([stagePath, recipePath, live].filter(existsSync).some(p => canonical(p) === canonical(output))) throw new Error('Candidate output aliases an input or live scene');

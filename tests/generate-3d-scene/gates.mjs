@@ -97,7 +97,7 @@ rmSync(join(F('stripped'), 'src', 'edit'), { recursive: true, force: true });
 {
   const d = F('fx-core-edit');
   copy(F('tpl'), d);
-  writeFileSync(join(d, 'src/scene-core/bad.ts'), 'import { Bridge } from "@/edit/Bridge";\nexport const x = Bridge;\n');
+  writeFileSync(join(d, 'src/scene3d/scene-core/bad.ts'), 'import { Bridge } from "@/edit/Bridge";\nexport const x = Bridge;\n');
   const r = run('build.mjs', [d], false);
   check('build: 铁律1 core→edit 阻断', r.ok && /铁律 1 破裂/.test(r.out), `status=${r.status} ${firstFail(r.out)}`);
 }
@@ -125,21 +125,21 @@ rmSync(join(F('stripped'), 'src', 'edit'), { recursive: true, force: true });
 {
   const d = F('fx-bare');
   copy(F('tpl'), d);
-  writeFileSync(join(d, 'src/scene-core/bad.ts'), 'import lodash from "lodash";\nexport const x = lodash;\n');
+  writeFileSync(join(d, 'src/scene3d/scene-core/bad.ts'), 'import lodash from "lodash";\nexport const x = lodash;\n');
   const r = run('build.mjs', [d], false);
   check('build: import 白名单阻断（lodash）', r.ok && /import 白名单违规/.test(r.out), `status=${r.status}`);
 }
 {
   const d = F('fx-bare-boundary');
   copy(F('tpl'), d);
-  writeFileSync(join(d, 'src/scene-core/bad.ts'), 'import router from "vue-router";\nimport stdlib from "three-stdlib";\nexport const x = [router, stdlib];\n');
+  writeFileSync(join(d, 'src/scene3d/scene-core/bad.ts'), 'import router from "vue-router";\nimport stdlib from "three-stdlib";\nexport const x = [router, stdlib];\n');
   const r = run('build.mjs', [d], false);
   check('build: 白名单边界（vue-router/three-stdlib 阻断）', r.ok && /vue-router/.test(r.out) && /three-stdlib/.test(r.out), `status=${r.status}`);
 }
 {
   const d = F('fx-bare-sub-ok');
   copy(F('tpl'), d);
-  writeFileSync(join(d, 'src/scene-core/ok.ts'), 'import { ref } from "vue";\nimport "three/examples/jsm/renderers/CSS2DRenderer.js";\nexport const x = ref;\n');
+  writeFileSync(join(d, 'src/scene3d/scene-core/ok.ts'), 'import { ref } from "vue";\nimport "three/examples/jsm/renderers/CSS2DRenderer.js";\nexport const x = ref;\n');
   const r = run('build.mjs', [d], true);
   check('build: 白名单子路径放行（vue / three/examples/jsm/）', r.ok, `status=${r.status}`);
 }
@@ -173,7 +173,7 @@ rmSync(join(F('stripped'), 'src', 'edit'), { recursive: true, force: true });
 {
   const d = F('fx-asset-missing');
   copy(F('tpl'), d);
-  const p = join(d, 'public/scene-data.json');
+  const p = join(d, 'public/scene3d/scene-data.json');
   const data = JSON.parse(readFileSync(p, 'utf8'));
   data.cars[0].params.assetId = 'nonexistent_model';
   writeFileSync(p, `${JSON.stringify(data, null, 2)}\n`);
@@ -185,7 +185,7 @@ rmSync(join(F('stripped'), 'src', 'edit'), { recursive: true, force: true });
 {
   const d = F('fx-budget');
   copy(F('tpl'), d);
-  const p = join(d, 'public/scene-data.json');
+  const p = join(d, 'public/scene3d/scene-data.json');
   const data = JSON.parse(readFileSync(p, 'utf8'));
   data.Box = [...data.Box, ...Array.from({ length: 401 }, (_, i) => ({ id: `pad_${i}`, position: [i, 0, 0] }))];
   writeFileSync(p, `${JSON.stringify(data, null, 2)}\n`);
@@ -198,7 +198,7 @@ rmSync(join(F('stripped'), 'src', 'edit'), { recursive: true, force: true });
 {
   const d = F('fx-budget-ok');
   copy(F('tpl'), d);
-  const p = join(d, 'public/scene-data.json');
+  const p = join(d, 'public/scene3d/scene-data.json');
   const data = JSON.parse(readFileSync(p, 'utf8'));
   data.Box = [...data.Box, ...Array.from({ length: 100 }, (_, i) => ({ id: `pad_${i}`, position: [i, 0, 0] }))];
   writeFileSync(p, `${JSON.stringify(data, null, 2)}\n`);
@@ -210,7 +210,7 @@ rmSync(join(F('stripped'), 'src', 'edit'), { recursive: true, force: true });
 {
   const d = F('fx-strip-violation');
   copy(F('stripped'), d);
-  const p = join(d, 'public/scene-data.json');
+  const p = join(d, 'public/scene3d/scene-data.json');
   const data = JSON.parse(readFileSync(p, 'utf8'));
   data.__visuals = { car_01: { color: '#ff0000' } };
   data.__materialLib = { glass: { name: 'glass', spec: { type: 'MeshPhysicalMaterial' } } };
@@ -223,7 +223,7 @@ rmSync(join(F('stripped'), 'src', 'edit'), { recursive: true, force: true });
   // 未来编辑器私有键（非两个已知键）同样拦截——双下划线族契约
   const d = F('fx-strip-future-key');
   copy(F('stripped'), d);
-  const p = join(d, 'public/scene-data.json');
+  const p = join(d, 'public/scene3d/scene-data.json');
   const data = JSON.parse(readFileSync(p, 'utf8'));
   data.__futureEditorKey = { anything: true };
   writeFileSync(p, `${JSON.stringify(data, null, 2)}\n`);
@@ -241,7 +241,7 @@ rmSync(join(F('stripped'), 'src', 'edit'), { recursive: true, force: true });
   const d = F('fx-p0-guard');
   copy(F('tpl'), d);
   const r = run('strip-edit.mjs', [d, '--out', d, '--force'], false);
-  const srcIntact = existsSync(join(d, 'src', 'edit', 'Bridge.ts')) && existsSync(join(d, 'public', 'scene-data.json'));
+  const srcIntact = existsSync(join(d, 'src', 'edit', 'Bridge.ts')) && existsSync(join(d, 'public', 'scene3d', 'scene-data.json'));
   check('strip-edit: --out==源 拒绝且源完好', r.ok && /不能是源工程或其父目录/.test(r.out) && srcIntact, `status=${r.status} srcIntact=${srcIntact}`);
   // --out 为源父目录同样拒绝
   const parent = F('fx-p0-guard-parent');
@@ -276,11 +276,11 @@ rmSync(join(F('stripped'), 'src', 'edit'), { recursive: true, force: true });
   const out = F('fx-p4-guard-out');
   const rOk = run('strip-edit.mjs', [d, '--out', out, '--force'], true);
   const marker = existsSync(join(out, 'src', 'main.ts'));
-  const pData = JSON.parse(readFileSync(join(d, 'public/scene-data.json'), 'utf8'));
+  const pData = JSON.parse(readFileSync(join(d, 'public/scene3d/scene-data.json'), 'utf8'));
   pData.__visuals = { ghost_404: { color: '#000000' } };
-  writeFileSync(join(d, 'public/scene-data.json'), JSON.stringify(pData, null, 2));
+  writeFileSync(join(d, 'public/scene3d/scene-data.json'), JSON.stringify(pData, null, 2));
   const rBad = run('strip-edit.mjs', [d, '--out', out, '--force'], false);
-  const outStillIntact = existsSync(join(out, 'src', 'main.ts')) && existsSync(join(out, 'public/scene-data.json'));
+  const outStillIntact = existsSync(join(out, 'src', 'main.ts')) && existsSync(join(out, 'public/scene3d/scene-data.json'));
   check(
     'strip-edit: 编译失败不毁旧产物（V19 原子发布）',
     rOk.ok && marker && rBad.ok && /ghost_404/.test(rBad.out) && outStillIntact,
@@ -290,7 +290,7 @@ rmSync(join(F('stripped'), 'src', 'edit'), { recursive: true, force: true });
 {
   const d = F('fx-transcribe');
   copy(F('tpl'), d);
-  const p = join(d, 'public/scene-data.json');
+  const p = join(d, 'public/scene3d/scene-data.json');
   const data = JSON.parse(readFileSync(p, 'utf8'));
   data.__visuals = {
     car_01: { color: '#ff8800', metalness: 0.9, libraryRef: 'carpaint' },
@@ -309,7 +309,7 @@ rmSync(join(F('stripped'), 'src', 'edit'), { recursive: true, force: true });
   const r = run('strip-edit.mjs', [d, '--out', out, '--force'], false);
   check(
     'strip-edit: 陈旧视觉条目硬 FAIL 且报具体路径（P4）',
-    r.ok && /__visuals\[\"ghost_99\"\]/.test(r.out) && !existsSync(join(out, 'public', 'scene-data.json')),
+    r.ok && /__visuals\[\"ghost_99\"\]/.test(r.out) && !existsSync(join(out, 'public', 'scene3d', 'scene-data.json')),
     `status=${r.status} ${firstFail(r.out)}`,
   );
   check(
@@ -322,7 +322,7 @@ rmSync(join(F('stripped'), 'src', 'edit'), { recursive: true, force: true });
   writeFileSync(p, `${JSON.stringify(data, null, 2)}\n`);
   const r2 = run('strip-edit.mjs', [d, '--out', out, '--force'], true);
   const md = existsSync(join(out, 'TRANSCRIPTION.md')) ? readFileSync(join(out, 'TRANSCRIPTION.md'), 'utf8') : '';
-  const cleaned = JSON.parse(readFileSync(join(out, 'public/scene-data.json'), 'utf8'));
+  const cleaned = JSON.parse(readFileSync(join(out, 'public/scene3d/scene-data.json'), 'utf8'));
   check('strip-edit: 转录清单生成 PASS（自动转换摘要模式）', r2.ok, `status=${r2.status} ${firstFail(r2.out)}`);
   check(
     'strip-edit: ① 视觉 override 逐字段成行',
@@ -342,8 +342,8 @@ rmSync(join(F('stripped'), 'src', 'edit'), { recursive: true, force: true });
       && Object.keys(cleaned).every((k) => !k.startsWith('__')));
 
   // P4.1：编译外观产物（代码模块）内容断言
-  const appearanceCode = existsSync(join(out, 'src/scene-core/generated/appearance.ts'))
-    ? readFileSync(join(out, 'src/scene-core/generated/appearance.ts'), 'utf8') : '';
+  const appearanceCode = existsSync(join(out, 'src/scene3d/scene/generated/appearance.ts'))
+    ? readFileSync(join(out, 'src/scene3d/scene/generated/appearance.ts'), 'utf8') : '';
   check(
     'strip-edit: generated/appearance.ts 编译条目（视觉 + 材质库 + locked 剥离）',
     appearanceCode.includes('"car_01"') && appearanceCode.includes('"#ff8800"')
@@ -370,11 +370,11 @@ rmSync(join(F('stripped'), 'src', 'edit'), { recursive: true, force: true });
   const out = F('init-ok');
   const r = run('init.mjs', [out, '--name', 'Factory Monitor', '--assets', 'referenced', '--deps', 'skip'], true);
   const pkg = existsSync(join(out, 'package.json')) ? JSON.parse(readFileSync(join(out, 'package.json'), 'utf8')) : {};
-  const refModels = existsSync(join(out, 'public/assets/models'))
-    ? readdirSync(join(out, 'public/assets/models'))
+  const refModels = existsSync(join(out, 'public/scene3d/assets/models'))
+    ? readdirSync(join(out, 'public/scene3d/assets/models'))
     : [];
-  const scene = existsSync(join(out, 'public/scene-data.json'))
-    ? JSON.parse(readFileSync(join(out, 'public/scene-data.json'), 'utf8'))
+  const scene = existsSync(join(out, 'public/scene3d/scene-data.json'))
+    ? JSON.parse(readFileSync(join(out, 'public/scene3d/scene-data.json'), 'utf8'))
     : {};
   const RESERVED = new Set(['version', 'meta', 'scene', 'camera', 'lights', 'controls', 'renderer', 'remove', '__visuals', '__materialLib']);
   const groupKeys = Object.keys(scene).filter((k) => Array.isArray(scene[k]) && !RESERVED.has(k) && !k.startsWith('__'));
@@ -393,7 +393,7 @@ rmSync(join(F('stripped'), 'src', 'edit'), { recursive: true, force: true });
 {
   const out = F('init-demo');
   const r = run('init.mjs', [out, '--name', 'demo-proj', '--profile', 'demo'], true);
-  const models = existsSync(join(out, 'public/assets/models')) ? readdirSync(join(out, 'public/assets/models')) : [];
+  const models = existsSync(join(out, 'public/scene3d/assets/models')) ? readdirSync(join(out, 'public/scene3d/assets/models')) : [];
   check(
     'init: --profile demo 注入 纯几何 demo 不注入业务模型',
     r.ok && models.length === 0,
@@ -404,7 +404,7 @@ rmSync(join(F('stripped'), 'src', 'edit'), { recursive: true, force: true });
   const out = F('init-withcomp');
   const r = run('init.mjs', [out, '--name', 'wcomp', '--with-components', '--assets', 'all'], true);
   const pkg = JSON.parse(readFileSync(join(out, 'package.json'), 'utf8'));
-  const models = readdirSync(join(out, 'public/assets/models'));
+  const models = readdirSync(join(out, 'public/scene3d/assets/models'));
   check(
     'init: --with-components 写 file: 依赖 + tgz 落 vendor',
     r.ok && /file:\.\/vendor\/.+\.tgz/.test(pkg.dependencies?.['@a3d/a3d-components'] ?? '') && existsSync(join(out, 'vendor')),
@@ -465,7 +465,7 @@ if (withBuild) {
 /* ── 场景 schema（P2.3/V08 + P2-R3/R4）：负例硬失败 + 正例干净 ─────────────── */
 {
   const { validateSceneData, factoryRegistryFromProfile } = await import('../../skills/generate-3d-scene/scripts/lib/scene-schema.mjs');
-  const reg = factoryRegistryFromProfile(readFileSync(join(TEMPLATE, 'src', 'scene-profile.ts'), 'utf8'));
+  const reg = factoryRegistryFromProfile(readFileSync(join(TEMPLATE, 'src', 'scene3d', 'scene-profile.ts'), 'utf8'));
   const base = { version: '1', meta: {}, scene: {}, camera: {}, lights: [], controls: {}, renderer: {} };
   const cases = [
     ['重复 ID', { ...base, cars: [{ id: 'a' }, { id: 'a' }] }, ['duplicate-id']],
@@ -486,7 +486,7 @@ if (withBuild) {
     check(`schema 负例：${name} 硬失败`, !r.ok && expectCodes.every((c) => codes.includes(c)),
       `codes=[${codes.join(',')}]`);
   }
-  const demo = JSON.parse(readFileSync(join(TEMPLATE, 'public', 'scene-data.json'), 'utf8'));
+  const demo = JSON.parse(readFileSync(join(TEMPLATE, 'public', 'scene3d', 'scene-data.json'), 'utf8'));
   const empty = JSON.parse(readFileSync(join(TEMPLATE, 'scenes', 'empty.json'), 'utf8'));
   const rDemo = validateSceneData(demo, reg);
   const rEmpty = validateSceneData(empty, reg);
@@ -503,9 +503,9 @@ if (withBuild) {
 {
   const d = F('fx-schema-bad');
   copy(F('tpl'), d);
-  const data = JSON.parse(readFileSync(join(d, 'public', 'scene-data.json'), 'utf8'));
+  const data = JSON.parse(readFileSync(join(d, 'public', 'scene3d', 'scene-data.json'), 'utf8'));
   data.cars.push({ ...data.cars[0] }); // 复制首节点 → 重复 ID
-  writeFileSync(join(d, 'public', 'scene-data.json'), JSON.stringify(data, null, 2));
+  writeFileSync(join(d, 'public', 'scene3d', 'scene-data.json'), JSON.stringify(data, null, 2));
   const r = run('build.mjs', [d], false);
   check('build: 场景 schema 违规（重复 ID）→ 门禁 FAIL', r.ok && /场景 schema 违规.*duplicate-id/.test(r.out), `status=${r.status} ${firstFail(r.out)}`);
 }
@@ -515,9 +515,9 @@ if (withBuild) {
   // 未注册分组（robots 不在 scene-profile 登记表）——旧实现仅预算告警假绿
   const d = F('fx-unknown-factory');
   copy(F('tpl'), d);
-  const data = JSON.parse(readFileSync(join(d, 'public', 'scene-data.json'), 'utf8'));
+  const data = JSON.parse(readFileSync(join(d, 'public', 'scene3d', 'scene-data.json'), 'utf8'));
   data.robots = [{ id: 'robot_01' }];
-  writeFileSync(join(d, 'public', 'scene-data.json'), JSON.stringify(data, null, 2));
+  writeFileSync(join(d, 'public', 'scene3d', 'scene-data.json'), JSON.stringify(data, null, 2));
   const r = run('build.mjs', [d], false);
   check('build: 未注册 factory 分组（robots）→ 硬 FAIL（P2-R3）',
     r.ok && /场景 schema 违规.*unknown-factory/.test(r.out) && !/\[build\/PASS\]/.test(r.out),
@@ -527,9 +527,9 @@ if (withBuild) {
   // 内建 asset 分组缺 params.assetId——旧实现建空 Group 无失败记录
   const d = F('fx-asset-noid');
   copy(F('tpl'), d);
-  const data = JSON.parse(readFileSync(join(d, 'public', 'scene-data.json'), 'utf8'));
+  const data = JSON.parse(readFileSync(join(d, 'public', 'scene3d', 'scene-data.json'), 'utf8'));
   data.asset = [{ id: 'bare_asset' }];
-  writeFileSync(join(d, 'public', 'scene-data.json'), JSON.stringify(data, null, 2));
+  writeFileSync(join(d, 'public', 'scene3d', 'scene-data.json'), JSON.stringify(data, null, 2));
   const r = run('build.mjs', [d], false);
   check('build: asset 分组缺 params.assetId → 硬 FAIL（P2-R4）',
     r.ok && /场景 schema 违规.*missing-asset-id/.test(r.out), `status=${r.status} ${firstFail(r.out)}`);
@@ -538,9 +538,9 @@ if (withBuild) {
   // 向量零分量缩放 [1,0,1]——旧实现 ok=true
   const d = F('fx-zero-vec');
   copy(F('tpl'), d);
-  const data = JSON.parse(readFileSync(join(d, 'public', 'scene-data.json'), 'utf8'));
+  const data = JSON.parse(readFileSync(join(d, 'public', 'scene3d', 'scene-data.json'), 'utf8'));
   data.Box[0] = { ...data.Box[0], scale: [1, 0, 1] };
-  writeFileSync(join(d, 'public', 'scene-data.json'), JSON.stringify(data, null, 2));
+  writeFileSync(join(d, 'public', 'scene3d', 'scene-data.json'), JSON.stringify(data, null, 2));
   const r = run('build.mjs', [d], false);
   check('build: 向量零分量 scale [1,0,1] → 硬 FAIL（P2-R4）',
     r.ok && /场景 schema 违规.*zero-scale/.test(r.out), `status=${r.status} ${firstFail(r.out)}`);
@@ -596,7 +596,7 @@ if (withBuild) {
   );
 
   // 端到端（P2-R1）：init（假资产库）→ 落 asset-manifest.json → build 按映射找文件
-  const sceneData = JSON.parse(readFileSync(join(TEMPLATE, 'public', 'scene-data.json'), 'utf8'));
+  const sceneData = JSON.parse(readFileSync(join(TEMPLATE, 'public', 'scene3d', 'scene-data.json'), 'utf8'));
   delete sceneData.trees; delete sceneData.cars; delete sceneData.examples;
   delete sceneData.codecars; delete sceneData.codeworkers; delete sceneData.coderacks;
   sceneData.asset = [{ id: 'mf_01', params: { assetId: 'multifile_gltf' } }];
@@ -605,7 +605,7 @@ if (withBuild) {
   const { initProject } = await import('../../skills/generate-3d-scene/scripts/init.mjs');
   const proj = F('fx-gltf-e2e');
   const rInit = initProject(proj, { name: 'gltf-e2e', scene: sceneFile, assetsRoot: fakeLib, force: true });
-  const projManifestPath = join(proj, 'public', 'assets', 'asset-manifest.json');
+  const projManifestPath = join(proj, 'public', 'scene3d', 'assets', 'asset-manifest.json');
   const projManifest = existsSync(projManifestPath) ? JSON.parse(readFileSync(projManifestPath, 'utf8')) : null;
   check(
     'init: glTF 资产落 asset-manifest.json（真实目录路径）',
@@ -620,7 +620,7 @@ if (withBuild) {
     `status=${rBuildOk.status} ${firstFail(rBuildOk.out)}`,
   );
   // 负例：抽掉 data.bin → build 闭包校验 FAIL
-  rmSync(join(proj, 'public', 'assets', 'models', 'multifile_gltf', 'data.bin'));
+  rmSync(join(proj, 'public', 'scene3d', 'assets', 'models', 'multifile_gltf', 'data.bin'));
   const rBuildBad = run('build.mjs', [proj], false);
   check(
     'build: glTF 声明 data.bin 但文件缺失 → 闭包校验 FAIL（P2-R1）',
@@ -637,7 +637,7 @@ if (withBuild) {
   // 负例：删掉 trees 注册条目（scene-data 仍用 trees 分组）→ build FAIL（旧实现 PASS）
   const neg = F('fx-rr1-unregistered');
   initProject(neg, { name: 'rr1-neg', profile: 'demo', force: true });
-  const negProfile = join(neg, 'src', 'scene-profile.ts');
+  const negProfile = join(neg, 'src', 'scene3d', 'scene-profile.ts');
   writeFileSync(negProfile, readFileSync(negProfile, 'utf8')
     .replace(/\r?\n\s*trees: \(\{ sceneEngine \}\) => registerTreeHandler\(sceneEngine\),/, ''));
   const rNeg = run('build.mjs', [neg], false);
@@ -650,7 +650,7 @@ if (withBuild) {
   // 正例：真实新增业务分组（登记条目 + 注册实现 + 数据）→ build PASS
   const pos = F('fx-rr1-newfactory');
   initProject(pos, { name: 'rr1-pos', profile: 'demo', force: true });
-  const posProfile = join(pos, 'src', 'scene-profile.ts');
+  const posProfile = join(pos, 'src', 'scene3d', 'scene-profile.ts');
   writeFileSync(posProfile, readFileSync(posProfile, 'utf8').replace(
     'coderacks: ({ sceneEngine }) => registerRackHandler(sceneEngine),',
     'coderacks: ({ sceneEngine }) => registerRackHandler(sceneEngine),\n'
@@ -658,9 +658,9 @@ if (withBuild) {
       + '    sceneEngine.registerFactory(\'crates\', (node) => ({ name: node.id }));\n'
       + '  },',
   ));
-  const posData = JSON.parse(readFileSync(join(pos, 'public', 'scene-data.json'), 'utf8'));
+  const posData = JSON.parse(readFileSync(join(pos, 'public', 'scene3d', 'scene-data.json'), 'utf8'));
   posData.crates = [{ id: 'crate_01' }];
-  writeFileSync(join(pos, 'public', 'scene-data.json'), JSON.stringify(posData, null, 2));
+  writeFileSync(join(pos, 'public', 'scene3d', 'scene-data.json'), JSON.stringify(posData, null, 2));
   const rPos = run('build.mjs', [pos], true);
   check(
     'P2-RR1: 新增业务分组（登记+注册实现+数据）→ build PASS',
@@ -669,7 +669,7 @@ if (withBuild) {
   );
 
   // 登记表提取器三态：真实 profile 全量 / 空对象合法 / 缺失抛错
-  const realTypes = extractBusinessFactoryTypes(readFileSync(join(TEMPLATE, 'src', 'scene-profile.ts'), 'utf8'));
+  const realTypes = extractBusinessFactoryTypes(readFileSync(join(TEMPLATE, 'src', 'scene3d', 'scene-profile.ts'), 'utf8'));
   check(
     'P2-RR1: 登记表提取 = 实际注册来源（全量 6 分组）',
     JSON.stringify(realTypes) === JSON.stringify(['examples', 'cars', 'trees', 'codecars', 'codeworkers', 'coderacks']),
@@ -725,12 +725,12 @@ if (withBuild) {
   const out = F('fx-rr2-builtin-only');
   initProject(out, { name: 'rr2-builtin', force: true });
   // 清空业务登记表（empty profile 场景只有 Box 地面等内建分组）
-  const profilePath = join(out, 'src', 'scene-profile.ts');
+  const profilePath = join(out, 'src', 'scene3d', 'scene-profile.ts');
   writeFileSync(profilePath, readFileSync(profilePath, 'utf8').replace(
     /export const BUSINESS_REGISTRARS[\s\S]*?\r?\n\};/,
     'export const BUSINESS_REGISTRARS: Record<string, (ctx: BusinessRegistrarContext) => void> = {\n};',
   ));
-  const data = JSON.parse(readFileSync(join(out, 'public', 'scene-data.json'), 'utf8'));
+  const data = JSON.parse(readFileSync(join(out, 'public', 'scene3d', 'scene-data.json'), 'utf8'));
   const RESERVED = new Set(['version', 'meta', 'scene', 'camera', 'lights', 'controls', 'renderer', 'remove']);
   const groupKeys = Object.keys(data).filter((k) => Array.isArray(data[k]) && !RESERVED.has(k) && !k.startsWith('__'));
   const r = run('build.mjs', [out], true);
@@ -777,7 +777,7 @@ if (withBuild) {
     package: 'rr3',
     entries: [{ id: 'encoded', name: '编码 URI fixture', file: 'model.gltf', format: 'gltf', modelPath: 'assets/models/encoded/model.gltf' }],
   }));
-  const scene = JSON.parse(readFileSync(join(TEMPLATE, 'public', 'scene-data.json'), 'utf8'));
+  const scene = JSON.parse(readFileSync(join(TEMPLATE, 'public', 'scene3d', 'scene-data.json'), 'utf8'));
   delete scene.trees; delete scene.cars; delete scene.examples;
   delete scene.codecars; delete scene.codeworkers; delete scene.coderacks;
   scene.asset = [{ id: 'enc_01', params: { assetId: 'encoded' } }];
@@ -793,7 +793,7 @@ if (withBuild) {
   );
   // 边界保留负例：URI 指向工程外（../ 越界）→ FAIL
   const evilGltf = { ...gltf, buffers: [{ uri: '..%2F..%2Fescape.bin', byteLength: 4 }] };
-  writeFileSync(join(proj, 'public', 'assets', 'models', 'encoded', 'model.gltf'), JSON.stringify(evilGltf));
+  writeFileSync(join(proj, 'public', 'scene3d', 'assets', 'models', 'encoded', 'model.gltf'), JSON.stringify(evilGltf));
   const rEscape = run('build.mjs', [proj], false);
   check(
     'P2-RR3: URI 解码后越出工程根（..%2F..%2F）→ 闭包边界 FAIL',

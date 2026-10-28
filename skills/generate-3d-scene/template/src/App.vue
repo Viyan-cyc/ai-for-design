@@ -7,7 +7,7 @@
  * 3D canvas 与 CSS2D 卡片层由 scene-core 管理，本组件只提供容器。
  */
 import SceneEditLauncher from './SceneEditLauncher.vue';
-import type { SceneHandle } from '@/scene-core';
+import type { SceneHandle } from './scene3d/scene-core/index';
 
 defineProps<{ handle: SceneHandle }>();
 </script>

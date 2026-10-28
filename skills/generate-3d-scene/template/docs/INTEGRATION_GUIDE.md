@@ -1,271 +1,169 @@
-# INTEGRATION_GUIDE — 二次开发指南
+# 场景二次开发指南
 
-> 本文档写给拿到母版工程做二次开发的工程师。你手里的代码 = 引擎层（scene-core，别改）+ 接入层（handlers / materials.ts / cards / scene-data.json，你的主战场）。
->
-> **v3 核心原则：数据只有业务属性，视觉全部在代码。** scene-data.json 不出现材质/贴图/颜色/阴影字段；look 由 `materials.ts` 与 handler 代码决定。
+## 启动
 
-## 0. 十分钟上手
+需要 Node.js 和 npm。在项目根目录执行：
 
-```bash
+```sh
 npm install
-npm run dev          # http://localhost:5183 — 二开态
-# 访问 http://localhost:5183/?edit=1 — 编辑态（布局调参工具，交付物里可不存在）
-npm run build        # vue-tsc 类型检查 + vite 打包
-npm run lint         # eslint
+npm run dev
+npm run build
+npm run preview
 ```
 
-场景内容**不在代码里，在 [public/scene-data.json](../public/scene-data.json)**：物体、灯光、相机、控制器、renderer、2D 卡片全部由这份数据驱动。改数据 = 改场景，刷新即见。
+内网使用组织配置的 npm 源。生成时可能使用共享依赖链接，下载的源码在另一台机器上需要重新 npm install。
+`npm run build` 执行 TypeScript 检查与 Vite 构建。完整工程还支持 `npm run build:offline`，生成 `offline/index.3d.html` 与配套资源；剥离编辑器的工程仅保留普通开发/构建入口。
 
-## 1. 目录地图
+## 修改位置
 
+| 要做什么 | 改哪里 |
+|---|---|
+| 改摆放、相机、灯光、画质 | public/scene3d/scene-data.json 或编辑器 |
+| 新增设备构造/状态行为 | src/scene3d/scene/handlers，并在 scene-profile.ts 登记 |
+| 改业务默认配色 | src/scene3d/scene/appearance.ts 或对应 handler 默认材质 |
+| 改设备信息卡片 | src/business/cards，通过外部 cards 参数注册 |
+| 对接后端字段/ID | src/business/data/types.ts、adapter.ts |
+| 订阅与请求 | src/business/data/connect.ts |
+| 页面 UI | src/App.vue |
+| 修改通用引擎功能 | src/scene3d/scene-core；普通业务无需修改 |
+
+main.ts 挂载 UI；boot-scene.ts 在包外装配数据和卡片；scene3d/scene-profile.ts 只注册 3D factory。不要建树后重新注册、重喂数据。
+模板中的 DTO 是最小示例（status/spin/speed），生成具体场景时应收敛到实际业务字段并实现 handler 响应。
+
+## 接入状态数据
+
+`bootScene()` 返回 handle、adapter、data、canvas。也可以用 `createDataAdapter(handle)` 创建独立适配器。
+以下例子在含 cars 分组且已注册示例状态 handler 的工程中手动调用，将 ID 替换为自己的节点 ID：
+
+```ts
+import { createDataAdapter } from './business/data/adapter';
+const adapter = createDataAdapter(handle, [
+  { businessId: '设备001', nodeId: 'car_01' },
+]);
+const result = adapter.apply([
+  { id: '设备001', status: 'alarm' },
+  { id: '不存在的设备', status: 'normal' },
+]);
+console.log(result.updated, result.unchanged, result.issues);
 ```
-src/
-├── scene-core/          # 【引擎层】只读参照，一般不改
-│   ├── createScene.ts   #   唯一入口 createScene(canvas, data, cardComponents)
-│   ├── types.ts         #   SceneData / SceneNode / TreeSceneFragment 等全部类型（v3 schema 的 TS 形态）
-│   ├── materials.ts     #   【视觉层】状态视觉注册表 + applyState（二开者的主战场之二）
-│   ├── primitives.ts    #   图元底座：Box/Sphere/Cylinder/Plane/Cone/Torus 工厂
-│   ├── engine/          #   八引擎：scene/camera/light/controls/renderer/raycast/asset/loop
-│   ├── handlers/        #   内建工厂（图元/asset）+ 业务 handler（example/ 是你的参照）
-│   └── cards/           #   2D 卡片系统（CSS2D 锚点）+ ExampleCard.vue
-├── edit/                # 【编辑态外壳】?edit=1 才加载；不想交付可整目录剔除
-├── App.vue              # ← 页面级 UI（侧栏/大屏），你的主战场之一
-└── main.ts              #   二开态入口：装配 handler + 卡片注册表
-```
 
-## 2. scene-data.json v3：key:Array 单一结构
+省略映射表时业务 ID 等于节点 ID；提供映射表后只接受已登记 ID。重复业务 ID 或多个业务 ID 指向同一节点会返回 duplicate-mapping。
 
-整份数据 = **保留区（舞台配置）+ 业务区（type 分组字典）**：
+- 合法 status：normal/alarm/maintenance；spin 是布尔值；speed 是非负有限数。
+- 省略字段和 undefined 保留旧值；当前 DTO 不接受 null。额外字段（包括 assetId/position）报 invalid-record。
+- 未知 ID 返回 unknown-id，不创建节点；未出现在批次中的节点不删除。
+- 同批按输入顺序处理；同值返回 unchanged；无效记录不应用，其他有效记录继续。
+- apply-failed 表示引擎应用出错，不承诺事务回滚，请检查该节点。
+- adapter.dispose() 或 handle.dispose() 后消息返回 disposed，不更新场景。
 
-```jsonc
-{
-  "version": "1",
-  "meta": { "name": "厂区监控", "description": "…" },
+**handle.update 与 adapter.apply 不同**：前者 params 整块替换，并支持显式增删/结构编辑；后者只合并白名单业务字段。adapter 校验后调用 patchNodeParams，由 3D 包浅合并最新参数，不会用初始缓存覆盖后来编辑的参数。
+例如只更新 status，原有 assetId、capacity 保留。getNodeData 不存在时返回 null；对返回副本的修改不会改变场景。
 
-  // ---- 保留区（固定 key，舞台配置）----
-  "scene":    { "background": "#0f151b", "environment": { "intensity": 0.6 }, "fog": null },
-  "camera":   { "type": "PerspectiveCamera", "position": [8,6,10], "lookAt": [0,1,0], "fov": 50, "near": 0.1, "far": 2000 },
-  "lights":   [ { "id": "DirectionalLight_001", "type": "DirectionalLight", "position": [6,10,4], "intensity": 2, "castShadow": true } ],
-  "controls": { "type": "OrbitControls", "target": [0,1,0], "minDistance": 2, "maxDistance": 80 },
-  "renderer": { "toneMapping": "ACESFilmic", "exposure": 1, "shadowMap": "PCF", "shadowMapEnabled": false },
+### 可替换的数据源入口
 
-  // ---- 业务区（其余任何 key 都是 type 分组；key 名 = 业务类型名）----
-  "Box":   [ { "id": "ground", "position": [0,0,0], "rotation": [-1.5708,0,0], "scale": [40,40,1] } ],
-  "cars":  [
-    { "id": "car_01",
-      "position": [10,0,3], "rotation": [0,0,0], "scale": 1,          // transform：引擎显式字段
-      "card": { "type": "example", "trigger": "always", "offset": [0,1,0] },  // 内联卡片（场景作者所有）
-      "params": { "assetId": "example", "status": "normal", "speed": 1.2 } }  // 业务属性（生产数据源）
-  ]
+默认 connectData 不联网。需要订阅时可替换为如下实现，URL 按实际服务配置：
+
+```ts
+import type { DataAdapter } from './types';
+export function connectData(adapter: DataAdapter): () => void {
+  const socket = new WebSocket('wss://your-service.example/devices');
+  let active = true;
+  socket.onmessage = event => {
+    if (!active) return;
+    try {
+      const records: unknown = JSON.parse(event.data);
+      if (!Array.isArray(records)) throw new Error('需要更新数组');
+      const result = adapter.apply(records);
+      if (result.issues.length) console.warn('数据更新问题', result.issues);
+    } catch (error) { console.warn('消息格式错误', error); }
+  };
+  return () => {
+    if (!active) return;
+    active = false;
+    socket.onmessage = null;
+    socket.close();
+  };
 }
 ```
 
-### 2.1 节点字段
+这只是接入示例，不会默认执行。实际协议的字段转换和状态枚举需在 adapter 中显式定义。不要把任意接口字段展开写进节点。
+boot 注册释放函数，handle.dispose() 自动调用；额外请求用 AbortController，订阅/定时器都在同一释放函数取消。
 
-| 字段 | 说明 |
-| --- | --- |
-| `id` | 场景内唯一，幂等键（snake_case） |
-| `parentId` | 组树（可选，父先建；可跨分组组树） |
-| `position/rotation/scale` | 变换（rotation 弧度；scale 数字=统一缩放或三轴数组） |
-| `card` | 内联 2D 卡片 `{ type, trigger: 'always'\|'click', offset }`；删节点 = 卡片级联消失 |
-| `params` | **业务属性**（生产数据源所有，整块替换）：assetId、status、speed…… |
+## 状态、外观与编辑
 
-**不存在的字段（刻意设计）**：`type`（= 所在分组 key）、材质/贴图/颜色（在 materials.ts）、castShadow/receiveShadow（默认值在代码，个体覆盖走编辑器视觉层，见 §6）。params 只放**业务字段**——后端推什么就放什么，three.js 渲染参数永远不进来。
+业务 handler 用 create/update/dispose。状态变化原地修改，几何/资产结构变化返回 rebuild；不得每条消息重新加载 GLB。
+GLB 使用公共 makeAssetNodeFactory；动画使用 onFrame 的 delta 和退订函数。按需渲染依靠引擎更新通知，不要为数据刷新开启永久渲染。
 
-### 2.2 内建分组（不写 handler 就能用）
+scene-data.json 包括业务/布局以及合法舞台设置；设备材质默认值在业务代码中。编辑外观在 __visuals、共享材质在 __materialLib。
+引擎在节点更新/重建后重放编辑视觉层；GLB 异步加载也走统一重放。编写业务 handler 应沿用该流程，不绕过或清空视觉覆盖。
+仅按需 strip-edit 导出时，外观编译至 src/scene3d/scene/generated/appearance.ts，去除编辑器；TRANSCRIPTION.md 是自动转换摘要。编译文件不要手改，改编辑源后重新导出。
 
-| 分组 key | 说明 |
-| --- | --- |
-| `Box` / `Sphere` / `Cylinder` / `Plane` / `Cone` / `Torus` | 图元（分组名即图元种类），默认灰材质 |
-| `asset` | 通用 GLB 加载，`params.assetId` 指定模型 |
+开发模式保存写入 public/scene3d/scene-data.json。离线页面的变更必须回传 Agent 写回并构建后才持久化；退出编辑只保留当前内存结果。
 
-## 3. 三类常见二开任务
+## 定位问题
 
-### 3.1 换模型 / 加物体
+| 现象 | 检查位置与处理 |
+|---|---|
+| 某类设备没有出现 | scene-profile 的分组与 JSON 分组是否一致，注册是否发生在建树前 |
+| 模型加载失败 | 资产清单、本地资源路径和诊断信息；通用 GLB factory |
+| Duplicate/Invalid slot | 对应 handler；槽位唯一且稳定，不含 /；允许大小写、数字、下划线和连字符，首位字母或下划线 |
+| Composite already finished | finish 放到所有槽位创建完成后 |
+| Batch must use same material instance | batchSlot 一次声明，循环 add；不能循环 new 材质进入同一批 |
+| 数据变化但画面没变 | 查看 apply 返回问题、DTO 映射和 handler.update 是否实现该字段 |
+| 状态更新丢模型参数 | 用 adapter 或先读取当前 params 合并；handle.update 本身不深合并 |
+| 编辑后外观丢失 | 保存是否真正写回，编译外观是否从 boot 应用，handler 是否绕过统一视觉层 |
+| 卡顿 | 编辑器画质与性能、统计；检查实例数、绘制次数、纹理和持续帧订阅 |
 
-1. GLB 放入 `public/assets/models/`；
-2. scene-data.json 加分组或往已有分组加节点：
+维护测试不随源码交付，也不作为每次生成的浏览器验收步骤。
 
-```json
-"pumps": [ { "id": "pump_01", "position": [3, 0, 2], "params": { "assetId": "pump_model" } } ]
-```
 
-3. 写 pump 分组的 handler（§3.2；若只是静态摆放，直接用 `asset` 分组：`{ "id": "pump_01", "params": { "assetId": "pump_model" } }`，零代码）。
+## 外置卡片与可替换包
 
-规格建议（`validate-model.mjs` 运行时会告警）：单模型 ≤2k 面（道具级）、≤64 节点、贴图 ≤1024²、底面中心 y=0、节点名 snake_case。
-
-**简模/组合体走代码，不造 GLB**：找不到合适模型需要降级简模时（树/路障/集装箱这类图元可拼的物体），写 handler 组合 three.js 图元几何——参照 [handlers/procedural/tree.ts](../src/scene-core/handlers/procedural/tree.ts)（三层锥形树冠+树干，~百面）。改形态 = 改代码常量，可 review 可 diff 可版本控制；**不要写脚本生成 GLB**——二进制不可 review、改一棵树要重跑脚本。GLB 管线留给真正的美术资产（贴图/绑定/动画）。
-
-### 3.2 写业务 handler（物体自带行为）
-
-参照 `scene-core/handlers/example/example.ts`：注册自定义分组 key 的工厂 + 读 `node.params`（业务字段）→ 返回 Object3D。在 `main.ts` / `handlers/index.ts` 启用。
+后端代码、Vue 卡片和样式放 src/business。整个场景包是 src/scene3d + public/scene3d；替换它们不会覆盖 src/business、App.vue 或外部 boot-scene.ts。
+不要把旧包文件混入新包：备份后整体替换。只有节点 ID、card.type 和 API 仍兼容时才能直接替换；新增或改名需同步业务映射。只升级引擎时替换兼容的 scene-core，不覆盖场景布局。
 
 ```ts
-sceneEngine.registerFactory('pumps', (node) => {
-  const group = new THREE.Group();
-  handlerUtils.applyTransform(group, node);
-  const assetId = node.params?.assetId;
-  if (typeof assetId === 'string') {
-    void assetEngine.getInstance(assetId, `assets/models/${assetId}.glb`)
-      .then((inst) => group.add(inst));
-  }
-  return group;
+import { createScene3D } from './scene3d';
+import DeviceCard from './business/cards/DeviceCard.vue';
+const scene = await createScene3D(container, {
+  cards: { deviceInfo: DeviceCard },
+  assetBaseUrl: './scene3d/',
 });
+scene.patchNodeParams('rack_01', { status: 'alarm' });
+// 卸载页面
+scene.dispose();
 ```
 
-**注册时序**：createScene 建树时按已注册工厂分发，未注册的分组 warn 跳过。入口模式（main.ts 已示范）：先 `createScene`，再 `registerXxxHandler`，然后把该分组数据重喂一次 `handle.update({ pumps: data.pumps })`（幂等 upsert 补建）。
+deviceInfo 是自定义名称，节点配置 `card: { type: 'deviceInfo', trigger: 'click' }` 使用它。id 和 params 自动作为 props；组件自己定义样式、按钮和输入框。修改同类型 props 不重建组件，删除模型、切换组件类型或销毁场景时会卸载组件。
 
-**mesh 必须命名（`.name`）**：handler 组合模型里每个 mesh 都要设名字（snake_case，如 `trunk`/`foliage_1`/`helmet_dome`）——编辑器的子网格材质编辑（槽位层）以**名称路径**为 key，无名 mesh 会退化成 `#N` 兄弟序兜底（可用但可读性差，且改名即失效）。具名后树行/属性面板/视口点选三处口径一致。无 override 时材质编辑面板读**活材质真值**（`readMaterialSpec`，scene-core 公共 API）作初始值——GLB / 图元 / 组合模型统一口径。
+需要继承现有 Vue 应用的全局组件、provide、Pinia/国际化插件时，在宿主组件中传入应用上下文：
 
-**params 里永远不写渲染参数**：阴影/显隐等默认值在 handler 代码里（`applyShadowDefaults` 模式）；个体差异由编辑态调好后转录进代码（§6）。
-
-### 3.3 状态视觉：materials.ts（数据无材质，视觉在代码）
-
-物体的"正常/告警/检修"等状态视觉不在数据里，在 [scene-core/materials.ts](../src/scene-core/materials.ts) 的 `stateMaterials` 注册表：
-
-```ts
-export const stateMaterials = {
-  cars: {
-    normal:      { mapUrl: 'assets/textures/example.jpg', metalness: 0.6, roughness: 0.4 },
-    alarm:       { mapUrl: 'assets/textures/example.jpg', emissive: '#401010', emissiveIntensity: 1.2 },
-    maintenance: { color: '#d8a921', metalness: 0.2, roughness: 0.7 },
-  },
-};
-```
-
-- 数据侧只推业务字段：`params.status`；handler 读到后查表 `stateMaterials[type][status]` 调 `applyState(instance, status, visual)`；
-- 视觉规格键：`mapUrl`（换贴图）/ `color / metalness / roughness / emissive / opacity / wireframe / flatShading / side`（材质参数）/ `model`（几何级变体，换 GLB 实例）；
-- **换颜色/加状态 = 改这一个文件**，数据与 handler 都不动；
-- 多状态资产的贴图集/变体走 AssetEngine `registerAssetStates`（manifest.states），`applyState` 的 `map`/`model` 键消费。
-- **材质工厂（编辑器与库共用）**：`materials.ts` 导出 `createMaterialFromSpec(spec)`（按 three.js 原生类型名实例化 Lambert/Standard/Physical，含贴图色彩空间三分桶）；编辑器的"材质库"（`__materialLib`）与内联调参都经它落到运行时。跨物体复用同名的材质走 §6.1 的 `libraryMaterials`。
-
-### 3.4 写 2D 卡片（数据面板/告警标牌）
-
-1. 仿 `scene-core/cards/ExampleCard.vue` 写纯展示组件（props 进、样式出，不管定位）；
-2. `main.ts` 的 `cardComponents` 注册表登记：`{ my_card: MyCard }`；
-3. scene-data.json 在**节点上**内联：`"card": { "type": "my_card", "trigger": "click" }`。
-
-定位、显隐、点击互斥全部由卡片系统托管；**卡片 props 自动注入节点 params + id**（生产数据直达卡片），组件不用关心来源。删节点 = 卡片级联消失，无孤儿卡片。
-
-## 4. 运行时操作场景（handle API）与生产数据接入
-
-`main.ts` 里拿到的 `handle` 即操作入口。更新片段与 scene-data.json **同构**（key:Array），零格式转换：
-
-```ts
-handle.update({ cars: [node] })            // 增/改（幂等 upsert：存在即原地更新）
-handle.update({ remove: ['car_03'] })      // 删（先于分组处理；含子树与卡片级联）
-handle.update({ lights: [...] })           // 整组换灯
-handle.update({ camera: { fov: 60 } })     // 相机/控制器/renderer/scene 同理
-handle.update({ scene: { background: '#111' } })
-handle.pick(x, y)                          // 射线拾取
-handle.frameObject(id)                     // F 聚焦
-handle.onCardState(cb)                     // 卡片状态订阅
-handle.setDebug(true)                      // fps/calls/tris HUD
-```
-
-**生产数据接入**（v3 的主卖点）：后端把业务对象序列化成同格式节点数组，直接喂 `handle.update()`：
-
-```ts
-// 轮询示例：HTTP 拉取车列表 → v3 片段
-const res = await fetch('/api/cars');
-const cars = await res.json();   // [{ id, position, params: { status, speed } }, ...]
-handle.update({ cars });
-
-// MQTT / WebSocket 示例：状态消息 → 单节点片段
-socket.on('car/status', (msg) => {
-  handle.update({ cars: [{ id: msg.id, position: msg.pos, params: { status: msg.status } }] });
+```vue
+<script setup lang="ts">
+import { ref, getCurrentInstance, onMounted, onBeforeUnmount } from 'vue';
+import { createScene3D, type SceneHandle } from './scene3d';
+import DeviceCard from './business/cards/DeviceCard.vue';
+const host = ref<HTMLElement>();
+const cardContext = getCurrentInstance()!.appContext;
+let scene: SceneHandle | undefined;
+let active = true;
+onMounted(async () => {
+  const loaded = await createScene3D(host.value!, {
+    cards: { deviceInfo: DeviceCard }, cardContext,
+  });
+  if (!active) { loaded.dispose(); return; }
+  scene = loaded;
 });
+onBeforeUnmount(() => { active = false; scene?.dispose(); });
+</script>
+<template><div ref="host" style="position:relative;width:100%;height:100%" /></template>
 ```
 
-语义可预测：**remove 先行 → 存在即 update / 不存在即 create → params 整块替换（不深合并）→ 不 diff**。后端推整份也行推增量也行，同一段代码。
+上层容器必须有实际高度。上下文必须来自已经安装业务插件的 Vue 应用；组件局部 provide 不会自动跨树继承，可通过业务卡片 wrapper 或 props 显式传入。
+3D 包保留 CSS2D 挂载机制，不保存具体卡片 Vue 文件。AppContext 和 cards 是运行时参数，不写入场景 JSON 或编辑保存数据。
 
-性能基线：场景总面数预算 ≤1M 三角，目标 ≥40fps（`setDebug(true)` 实测）。
-
-## 5. 双模式与编辑态
-
-- **二开态**（`main.ts`）：交付物运行入口，不含任何编辑器代码。
-- **编辑态**（`src/edit/`，`?edit=1`）：布局调参工具，产物就是 scene-data.json。物理隔离：`edit/` 只 import `scene-core`，反向禁止（build 铁律，机器保证）。
-- 若交付物不需要编辑器：删掉 `src/edit/` 目录 + index.html 里的分流 script 即可，其余零改动。
-
-## 6. 编辑器视觉层与交付转录（__visuals + __materialLib）
-
-编辑态里调的**材质参数/显隐/阴影开关**存进数据文档的 `__visuals` 字段（编辑器私有视觉层），**调好的可复用材质**存进 `__materialLib`（编辑器私有材质库）。两者都用于撤销/重做与"所见即所得"，都是**编辑器调参产物**，交付时由 strip-edit 处理：
-
-1. 从 scene-data.json 剥离 `__visuals` 与 `__materialLib`（数据层回归纯净：只有业务属性）；
-2. 生成转录清单——LLM/工程师把调参折叠进代码：
-   - `__visuals` 里的材质参数 → `materials.ts`（加进 `stateMaterials` 或调 `PRIMITIVE_DEFAULT_COLOR`）；
-   - `__visuals` 里的显隐/阴影开关 → handler 默认值代码；
-   - `__materialLib` 里**被引用的**材质 → `materials.ts` 新增 `libraryMaterials` 段（未被引用的种子材质不转录）；
-   - `__visuals[obj].libraryRef` 引用关系 → handler 里接线（`obj.material = libraryMaterials.<name>`）；
-3. 转录后两个私有区为空，数据与代码各归其位。
-
-> **内联材质是「补丁」不是「整替」**：`__visuals[obj]` 里的材质字段只覆盖你**显式调过**的参数，其余继承物体原材质——同类型调参在运行时是「克隆原材质 + 打补丁」，GLB 内嵌贴图、图元默认色都保留；只有**换类型**（Lambert↔Standard↔Physical）才重建，且兼容贴图槽（map/normalMap…）会带过去。转录时同理：把显式字段写进代码（handler 里 `material.xxx = …`），未动的字段继续吃物体原材质。
-
-### 6.1 材质库转录（libraryMaterials）
-
-编辑器的"材质库"给物体复用同一材质（同 mat_id 物体共享一个材质实例，改库即全部引用者实时变化）。交付转录格式：
-
-```ts
-// materials.ts —— 与 stateMaterials 并存不合并
-// stateMaterials 管"业务类型→状态→视觉"换装；libraryMaterials 管"名字→材质"跨物体复用（两个问题两个表）
-export const libraryMaterials = {
-  glass: { type: 'MeshPhysicalMaterial', transmission: 1, ior: 1.5, roughness: 0.05, thickness: 0.5 },
-  carpaint: { type: 'MeshPhysicalMaterial', clearcoat: 1, clearcoatRoughness: 0.1, metalness: 0.7, roughness: 0.35 },
-  // …（mat_id.name 转 snake_case 作键）
-} as const;
-```
-
-转录清单里的"引用表"（nodeId → mat_id）指导 handler 接线：
-
-```ts
-// handler 里（示例）
-const mat = libraryMaterials.glass;
-createMaterialFromSpec 免——直接复用：
-obj.traverse((o) => { if (o.isMesh) o.material = mat; });
-```
-
-> `libraryMaterials.<name>` 只是一个 `MaterialSpec` 字面量；运行时用 `createMaterialFromSpec(spec)` 实例化（见 `@/scene-core` 导出），或直接在 handler 里构造。共享实例语义由业务方决定（想复用一个实例就复用一个实例）。
-
-生产侧若确需运行时改视觉，走 `handle.update({ __visuals: { ... } })` 是**合法但 discouraged** 的通道（undo 依赖它）；正规通道仍是改 materials.ts。
-
-### 6.2 槽位覆盖转录（GLB 子网格，`__visuals[id].slots`）
-
-多材质 GLB（如 person：身体/头发/裤子各自带材质）在编辑器里可对**单个子网格**换材质/调参/隐藏——这些编辑存为槽位覆盖，交付时随 `__visuals` 一起剥离，转录清单的"①′ 槽位覆盖表"列出（nodeId / slot / 字段 / 值）。转录进 handler：
-
-```ts
-// 槽位 = GLB 内部 mesh 名称路径（如 'Ch23_Hair'）；getObjectByName 用末段名定位
-const hair = obj.getObjectByName('Ch23_Hair');
-if (hair) {
-  hair.material = createMaterialFromSpec({ type: 'MeshPhysicalMaterial', transmission: 1, roughness: 0.2 });
-  // 局部 transform 转录（编辑器拖 Gizmo 产生）：position/rotation/scale 同规则
-  hair.position.set(0.1, 0, 0);
-}
-```
-
-- 槽位 key 与 GLB 重导出绑定：模型改名后 key 失效（编辑器会 warn 并忽略）；转录以**当下清单为准**。
-- 运行时通道：`handle.update({ __visuals: { <id>: { slots: { '<key>': { color: '#fff' } } } } })`（合法但 discouraged，同 6.1 末段）。
-- 槽位引用材质库（槽位 libraryRef）：转录为 `mesh.material = libraryMaterials.<名>`（同 6.1 引用表，槽位表会标出）。
-- **槽位局部 transform（position/rotation/scale）只对静态 GLB 子网格有效**：SkinnedMesh（骨骼网格）的局部变换对蒙皮顶点**无效**（attached bind mode 下 mesh 矩阵在蒙皮链中被抵消，静止/动画皆然——three.js 数学必然）。编辑器已对蒙皮槽位禁用 Gizmo 并置灰 transform 输入（提示文案）；蒙皮子网格仍可换材质/隐藏/看属性。静态 GLB 的子网格局部 transform 正常可用。
-
-### 6.3 骨骼模型（SkinnedMesh）多实例与蒙皮感知
-
-带骨骼的 GLB（如 person）实例化走 `SkeletonUtils.clone`（引擎内建，`AssetEngine` 负责）——普通 `Object3D.clone(true)` 只复制 Bone 副本不重绑 `skeleton` 引用，蒙皮矩阵链会指向缓存根的旧骨骼（世界矩阵不含本实例缩放），顶点被放大 `1/scale` 倍（实测 0.0056 缩放的 person 渲染成 178 米巨人）。业务 handler 无需关心——经 `makeAssetNodeFactory` 拿到的实例已正确重绑。
-
-编辑器对蒙皮网格的查询/拾取/包围盒均为**蒙皮感知口径**（读蒙皮后顶点，非 bind-pose 几何）：选中框（BoxHelper）、属性面板包围盒、`frameObject` 聚焦、射线拾取均框/打**真实渲染形状**。注意蒙皮盒按需重算（选中态每帧），静止骨骼场景无额外开销。
-
-## 7. 常见问题
-
-**Q: 物体没出现？** console 找 `[SceneEngine] 未注册的物体类型`（分组 handler 没注册——注册后记得重喂该分组）或 `[registry] 资产加载失败`（路径/文件名不对）。
-
-**Q: 模型太暗？** 检查 `scene.environment`（IBL 强度）与 `lights[].intensity`；toneMapping 默认 ACESFilmic，偏灰可换 `Neutral`。
-
-**Q: 点击没反应？** 卡片 `trigger` 是否为 `click`（常显卡用 `always`）；物体是否在引擎里（物体树可见）。
-
-**Q: 帧率低？** `setDebug(true)` 看 tris（总面数）与 calls（draw call）。优先减面数、合并同种物体（>1000 同类用 InstancedMesh，写个 handler 即可）。
-
-**Q: 想改某个物体的颜色？** 不是改数据——`params` 不收视觉字段。单个状态视觉进 `materials.ts`；多个物体复用同一材质 → 编辑器材质库（转 `libraryMaterials`，见 §6.1）；编辑器临时调的进 `__visuals`（交付时转录，见 §6）。
-
-**Q: 人物模型巨大（scale=1 时一百多米高）？** mixamo 等骨骼资产以**厘米**为单位（骨骼位置 ×100），导入后世界尺寸放大百倍。修法：在该节点 `scale` 设 `0.01` 级归一化（validate-model 报告的 `高=…m` 警告即提示；如 person 高 179.275m → `scale: 0.0056` ≈ 1 人高）。资产本身不改——引擎不做隐式缩放（防误伤 1:1 单位的机械模型）。若 `scale` 已正确仍显示巨大：确认实例化走的是引擎内建通道（`makeAssetNodeFactory` / `AssetEngine.getInstance`）——`clone(true)` 直克隆骨骼资产会断 `skeleton` 引用（见 §6.3）。
+`patchNodeParams` 是通用浅合并接口，不负责后端枚举、范围或 ID 转换；这些校验在 business/data/adapter。默认无真实后端连接。为自定义场景新增字段时同步 handler 或卡片的响应。
 
 
-渲染设置统一保存在 renderer；默认 pixelRatio=1、shadowMapSize=512、maxFps=60、renderMode="demand"，antialias/logarithmicDepthBuffer=false。画质预设不改变限帧和渲染模式。动画通过 handle.internals.renderLoop.onFrame 注册并按 delta 秒推进；停止动画时退订。只做帧观察用 onFrame(cb,false) 或 onAfterFrame。直接操作 Three.js 对象、完成自定义异步加载后调用 renderLoop.invalidate()。不要创建另一套 RAF 循环或覆盖渲染器参数。
+批量数据使用 `handle.batchUpdates(() => { /* 同步调用 patchNodeParams/update */ })`。更新按顺序立即生效，卡片在最外层批次结束时同步一次；异常也会同步已成功的更新，不回滚，不跨 await。默认 business/data/adapter 已使用此机制并保留单条错误隔离。
+外部应用/业务代码可导入 package.json 的 dependencies、optionalDependencies 或 peerDependencies 中声明的运行依赖（包括作用域包子路径）；仍须在项目环境安装依赖。scene3d 与 edit 继续遵守受控依赖白名单，业务不得要求修改 skill 校验器。

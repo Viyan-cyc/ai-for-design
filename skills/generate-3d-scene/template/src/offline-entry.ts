@@ -1,4 +1,4 @@
-import { installOfflineResources, showSceneError } from './scene-core/offline';
+import { installOfflineResources, showSceneError } from './scene3d/scene-core/offline';
 
 installOfflineResources();
 window.addEventListener('error', (event) => showSceneError(event.error ?? event.message));

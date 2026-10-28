@@ -29,7 +29,7 @@ const URL_ARG = positionalArg(argv) ?? 'http://localhost:5199/';
 const PAGE = EDIT ? `${URL_ARG}?edit=1` : URL_ARG;
 const expectIdx = argv.indexOf('--expect');
 const EXPECT_PATH = expectIdx >= 0 ? argv[expectIdx + 1]
-  : join(SKILL_ROOT, 'template', 'public', 'scene-data.json');
+  : join(SKILL_ROOT, 'template', 'public', 'scene3d', 'scene-data.json');
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 

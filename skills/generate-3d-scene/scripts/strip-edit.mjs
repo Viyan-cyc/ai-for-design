@@ -8,7 +8,7 @@
  *   ① 校验源快照：__visuals/__materialLib 的陈旧引用、缺失库条目报具体路径
  *      （真实未支持 = FAIL，不删掉后 PASS）
  *   ② 在临时目录完成全部产出：复制剔除 edit 世界 + 私有区剥离 + 编译
- *      src/scene-core/generated/appearance.ts（运行包装配期由 appearance-runtime 应用）
+ *      src/scene3d/scene/generated/appearance.ts（运行包装配期由 appearance-runtime 应用）
  *   ③ TRANSCRIPTION.md 改自动转换摘要（保留三类表作人类审计对照，不再是人工转录指令）
  *   ④ 原子发布：临时目录过 checkProject --stripped 后才 rename 到 out；
  *      失败清理临时目录——源工程与已存在的旧产物分毫不动
@@ -140,11 +140,11 @@ export const buildTranscription = (visuals, materialLib, liveNodeIds, opts = {})
   lines.push('');
   if (opts.autoCompiled) {
     lines.push('> 本文件由 strip-edit.mjs 生成。编辑期视觉已**自动编译**进');
-    lines.push('> `src/scene-core/generated/appearance.ts`（运行包装配期由 appearance-runtime 应用），');
+    lines.push('> `src/scene3d/scene/generated/appearance.ts`（运行包装配期由 appearance-runtime 应用），');
     lines.push('> **无需人工转录**——下方三类表是编译产物的审计对照，逐字段核对即可。');
   } else {
     lines.push('> 本文件由 strip-edit.mjs（--legacy-transcription 模式）生成。视觉参数未自动编译，');
-    lines.push('> 需由 LLM 按下方指引转录进**代码**（materials.ts / handler 默认值）。');
+    lines.push('> 需由 LLM 按下方指引转录进**代码**（scene/appearance.ts / handler 默认值）。');
   }
   lines.push('');
 
@@ -283,13 +283,13 @@ export const stripEdit = async (srcProject, outDir, opts = {}) => {
   }
 
   // ② 源快照读取 + 引用一致性校验（P4.1 前置——编译 FAIL 在动任何文件之前）
-  const srcDataPath = join(src, 'public', 'scene-data.json');
+  const srcDataPath = join(src, 'public', 'scene3d', 'scene-data.json');
   let snapshot = null;
   if (existsSync(srcDataPath)) {
     try {
       snapshot = JSON.parse(readFileSync(srcDataPath, 'utf8'));
     } catch (err) {
-      return { ok: false, errors: [`public/scene-data.json 解析失败：${err.message}`], out };
+      return { ok: false, errors: [`public/scene3d/scene-data.json 解析失败：${err.message}`], out };
     }
   }
   const liveNodeIds = new Set();
@@ -389,7 +389,7 @@ export const stripEdit = async (srcProject, outDir, opts = {}) => {
     }
 
     // ② 私有区剥离 + ③ 自动转换摘要 + 编译外观落盘
-    const dataPath = join(staging, 'public', 'scene-data.json');
+    const dataPath = join(staging, 'public', 'scene3d', 'scene-data.json');
     let transcription = null;
     if (existsSync(dataPath)) {
       const data = snapshot;
@@ -409,9 +409,9 @@ export const stripEdit = async (srcProject, outDir, opts = {}) => {
       writeFileSync(join(staging, 'TRANSCRIPTION.md'), `${transcription.md}\n`);
     }
 
-    // ③ 编译外观 → src/scene-core/generated/appearance.ts（整文件覆盖母版占位）
+    // ③ 编译外观 → src/scene3d/scene/generated/appearance.ts（整文件覆盖母版占位）
     if (compilation) {
-      const generatedDir = join(staging, 'src', 'scene-core', 'generated');
+      const generatedDir = join(staging, 'src', 'scene3d', 'scene', 'generated');
       mkdirSync(generatedDir, { recursive: true });
       writeFileSync(join(generatedDir, 'appearance.ts'), compilation.code);
     }

@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import type { Bridge } from './Bridge';
-import type { RendererConfig } from '@/scene-core/types';
-import { QUALITY_PRESETS, qualityPreset, SHADOW_SIZES, normalizeRenderer, type QualityPreset } from '@/scene-core';
+import type { RendererConfig } from '../scene3d/scene-core/types';
+import { QUALITY_PRESETS, qualityPreset, SHADOW_SIZES, normalizeRenderer, type QualityPreset } from '../scene3d/scene-core/index';
 const props = defineProps<{ bridge: Bridge }>();
 const engine = props.bridge.handle.internals.rendererEngine;
 const config = ref(engine.getConfig());

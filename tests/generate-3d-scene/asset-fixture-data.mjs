@@ -16,10 +16,10 @@ export function seedLibrary(root) {
 export const pixelPNG=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR4nGP4DwQACfsD/fteaysAAAAASUVORK5CYII=','base64');
 
 export function seedProject(project) {
- const dir=join(project,'public/assets/models');mkdirSync(dir,{recursive:true});
+ const dir=join(project,'public/scene3d/assets/models');mkdirSync(dir,{recursive:true});
  writeFileSync(join(dir,'example.glb'),triangleGlb());writeFileSync(join(dir,'person.glb'),triangleGlb(true));
- const scenePath=join(project,'public/scene-data.json');const data=JSON.parse(readFileSync(scenePath,'utf8'));
+ const scenePath=join(project,'public/scene3d/scene-data.json');const data=JSON.parse(readFileSync(scenePath,'utf8'));
  data.examples=[{id:'example_01',params:{assetId:'example'}},{id:'person_01',params:{assetId:'person'}}];data.cars=[{id:'car_01',params:{assetId:'example'}},{id:'car_02',params:{assetId:'example'}}];
  writeFileSync(scenePath,JSON.stringify(data));
- writeFileSync(join(project,'public/assets/asset-manifest.json'),JSON.stringify({example:{model:'models/example.glb',format:'glb'},person:{model:'models/person.glb',format:'glb'}}));
+ writeFileSync(join(project,'public/scene3d/assets/asset-manifest.json'),JSON.stringify({example:{model:'models/example.glb',format:'glb'},person:{model:'models/person.glb',format:'glb'}}));
 }

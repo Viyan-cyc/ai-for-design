@@ -9,8 +9,8 @@
  */
 import type * as THREE from 'three';
 import { TransformControls } from 'three/examples/jsm/controls/TransformControls.js';
-import type { SceneHandle } from '@/scene-core/createScene';
-import { findBySlotKey } from '@/scene-core';
+import type { SceneHandle } from '../scene3d/scene-core/createScene';
+import { findBySlotKey } from '../scene3d/scene-core/index';
 import type { Bridge } from './Bridge';
 
 const SNAP = {

@@ -1539,7 +1539,7 @@ const main = async () => {
   } finally {
     proc.kill();
     // S13 上传产物清理（middleware 重名自动加后缀，不清理会逐次累积进母版/生成工程）
-    const texDir = join(dirname(fileURLToPath(import.meta.url)), '..', 'public', 'assets', 'textures');
+    const texDir = join(dirname(fileURLToPath(import.meta.url)), '..', 'public', 'scene3d', 'assets', 'textures');
     try {
       for (const f of readdirSync(texDir)) {
         if (/^(smoke.*|_{2,})(-\d+)?\.png$/.test(f)) {

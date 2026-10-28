@@ -9,10 +9,10 @@ import { checkCompositeSource } from './lib/composite-check.mjs';
  * 检查项：
  *   1. 结构完整性  必需的工程文件/目录齐备；three/vue 版本符合锁（0.185.1 / ^3）
  *   2. 铁律 1      scene-core/**（+ 二开态入口 main.ts/App.vue）不得 import edit/
- *   3. 铁律 2      edit/** 只经 core 公开入口触达（@/scene-core 等白名单），
- *                  禁 `@/scene-core/engine/**` 等深层 import（引擎实例经 handle.internals 访问）
- *   4. import 白名单  src/** 的裸模块导入只能来自 {vue, three, three/examples/jsm/*, @a3d/a3d-components}
- *   5. 资产引用     scene-data.json 里 params.assetId 指向的模型文件必须真实存在于 public/assets/models/
+ *   3. 铁律 2      edit/** 只经 core 公开入口触达（@/scene3d/scene-core 等白名单），
+ *                  禁 `@/scene3d/scene-core/engine/**` 等深层 import（引擎实例经 handle.internals 访问）
+ *   4. import 白名单  scene3d/edit 使用受控白名单；外部应用还可使用已声明运行依赖
+ *   5. 资产引用     scene-data.json 里 params.assetId 指向的模型文件必须真实存在于 public/scene3d/assets/models/
  *   6. 场景预算     draw call ≤400 / 三角面 ≤1M / 材质数 ≤32（读 scene-data + GLB/GLTF 解析 + 图元面数表）
  *   7. --stripped   附加断言二开交付物不残留 edit（铁律 3 复检：src/edit 不存在 / 无 edit 引用 / 无私有区）
  *
@@ -39,7 +39,7 @@ export const DEFAULT_BUDGET = {
 };
 
 /**
- * 图元面数表——由 template/src/scene-core/primitives.ts 的分段常量推导（SEGMENTS w=16,h=8）。
+ * 图元面数表——由 template/src/scene3d/scene-core/primitives.ts 的分段常量推导（SEGMENTS w=16,h=8）。
  * 改动 primitives.ts 分段常量时必须同步本表（构建期只看静态常量，不加载 three）。
  * 推导（three.js 几何索引公式）：
  *   Box(1,1,1)              6 面 × 2           = 12
@@ -64,14 +64,14 @@ export const PRIMITIVE_KINDS = new Set(Object.keys(PRIMITIVE_TRIANGLES));
 /**
  * 铁律 2 允许的 core 公开入口（edit/ 只能从这些入口触达 core）。
  * 说明：放宽为「公开入口白名单」——真正的铁律是**禁止深层 import 引擎内部文件**
- * （@/scene-core/engine/**），类型/createScene/handlers 是公开 API 面。
+ * （@/scene3d/scene-core/engine/**），类型/createScene/handlers 是公开 API 面。
  * 值为解析后路径（resolveSpec 产物），相对/别名写法归一后判定。
  */
 export const ALLOWED_CORE_ENTRIES = new Set([
-  'src/scene-core',
-  'src/scene-core/types',
-  'src/scene-core/createScene',
-  'src/scene-core/handlers',
+  'src/scene3d/scene-core', 'src/scene3d/scene-core/index',
+  'src/scene3d/scene-core/types',
+  'src/scene3d/scene-core/createScene',
+  'src/scene3d/scene-core/handlers',
 ]);
 
 /**
@@ -127,7 +127,7 @@ export const extractImports = (code) => {
 /**
  * 把 import 说明符解析为 src/ 下的工程内路径；裸模块（vue/three/…）返回 null。
  * 相对路径（./x、../x）以 fromFile 所在目录为基；`@/x` 映射 src/x。
- * 归一分隔符后输出 POSIX 风格（src/scene-core/…），供铁律判定。
+ * 归一分隔符后输出 POSIX 风格（src/scene3d/scene-core/…），供铁律判定。
  */
 export const resolveSpec = (spec, fromFile, srcDir) => {
   if (!spec.startsWith('.') && !spec.startsWith('@/') && !spec.startsWith('/')) {
@@ -221,7 +221,7 @@ export const checkProject = (dir, opts = {}) => {
   const budget = { ...DEFAULT_BUDGET, ...opts.budget };
 
   const srcDir = join(root, 'src');
-  const coreDir = join(srcDir, 'scene-core');
+  const coreDir = join(srcDir, 'scene3d', 'scene-core');
   const editDir = join(srcDir, 'edit');
   const srcFiles = walk(srcDir, ['.ts', '.vue']);
 
@@ -234,12 +234,14 @@ export const checkProject = (dir, opts = {}) => {
   const required = [
     'package.json', 'index.html', 'vite.config.ts', 'eslint.config.mjs',
     'tsconfig.json', 'tsconfig.app.json',
-    'src/main.ts', 'src/App.vue', 'src/entry.ts', 'src/boot-scene.ts', 'src/scene-profile.ts',
-    'src/scene-core/createScene.ts',
-    'src/scene-core/types.ts', 'src/scene-core/index.ts',
-    'src/scene-core/handlers/registry.ts', 'src/scene-core/cards/registry.ts',
-    'src/scene-core/generated/appearance.ts',
-    'public/scene-data.json', 'docs/INTEGRATION_GUIDE.md',
+    'src/main.ts', 'src/App.vue', 'src/entry.ts', 'src/boot-scene.ts', 'src/scene3d/scene-profile.ts',
+    'src/scene3d/scene-core/createScene.ts',
+    'src/scene3d/scene-core/types.ts', 'src/scene3d/scene-core/index.ts',
+    'src/scene3d/scene-core/handlers/registry.ts', 'src/scene3d/scene-core/cards/registry.ts',
+    'src/scene3d/scene/generated/appearance.ts', 'src/scene3d/scene/appearance.ts',
+    'src/scene3d/index.ts', 'src/scene3d/create-scene.ts', 'src/business/cards/index.ts',
+    'src/business/data/types.ts', 'src/business/data/adapter.ts', 'src/business/data/connect.ts',
+    'public/scene3d/scene-data.json', 'docs/INTEGRATION_GUIDE.md',
   ];
   const missing = required.filter((p) => !existsSync(join(root, p)));
   if (missing.length) {
@@ -247,10 +249,12 @@ export const checkProject = (dir, opts = {}) => {
   }
 
   /* 2. 依赖版本锁 */
+  const declaredDependencies = new Set();
   let versions = { three: null, vue: null, ok: false };
   try {
     const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
     const dep = pkg.dependencies ?? {};
+    Object.keys({ ...pkg.dependencies, ...pkg.optionalDependencies, ...pkg.peerDependencies }).forEach(name => declaredDependencies.add(name));
     versions = {
       three: dep.three ?? null,
       vue: dep.vue ?? null,
@@ -274,14 +278,25 @@ export const checkProject = (dir, opts = {}) => {
   for (const file of coreScopeFiles) {
     for (const { spec, line } of extractImports(readFileSync(file, 'utf8'))) {
       const resolved = resolveSpec(spec, file, srcDir);
-      if (resolved !== null && (resolved === 'src/edit' || resolved.startsWith('src/edit/'))) {
+      const coreToBusiness = file.startsWith(coreDir + sep) && resolved !== null
+        && ['src/scene3d/scene', 'src/business', 'src/scene3d/scene-profile', 'src/boot-scene'].some(prefix => resolved === prefix || resolved.startsWith(prefix + '/'));
+      if (coreToBusiness || (resolved !== null && (resolved === 'src/edit' || resolved.startsWith('src/edit/')))) {
         coreNoEdit.ok = false;
         coreNoEdit.violations.push(`${relative(root, file)}:${line} → ${spec}`);
       }
     }
   }
   if (!coreNoEdit.ok) {
-    errors.push(`铁律 1 破裂（core 不得 import edit/）：\n    ${coreNoEdit.violations.join('\n    ')}`);
+    errors.push(`铁律 1 破裂（core 不得依赖业务/data/edit）：\n    ${coreNoEdit.violations.join('\n    ')}`);
+  }
+
+  for (const file of srcFiles.filter(f => f.startsWith(join(srcDir, 'scene3d') + sep))) {
+    for (const { spec, line } of extractImports(readFileSync(file, 'utf8'))) {
+      const target = resolveSpec(spec, file, srcDir);
+      if (target !== null && target !== 'src/scene3d' && !target.startsWith('src/scene3d/')) {
+        errors.push(`3D 包禁止反向依赖应用：${relative(root, file)}:${line} → ${spec}`);
+      }
+    }
   }
 
   /* 4. 铁律 2：edit/ 只经 core 公开入口（禁深层 import 引擎内部；相对路径同样按解析后判） */
@@ -290,7 +305,7 @@ export const checkProject = (dir, opts = {}) => {
     for (const file of srcFiles.filter((f) => f.startsWith(editDir + sep))) {
       for (const { spec, line } of extractImports(readFileSync(file, 'utf8'))) {
         const resolved = resolveSpec(spec, file, srcDir);
-        if (resolved === 'src/scene-core' || resolved?.startsWith('src/scene-core/')) {
+        if (resolved === 'src/scene3d/scene-core' || resolved?.startsWith('src/scene3d/scene-core/')) {
           if (!ALLOWED_CORE_ENTRIES.has(resolved)) {
             editEntry.ok = false;
             editEntry.violations.push(`${relative(root, file)}:${line} → ${spec}（禁深层 import，引擎实例走 handle.internals）`);
@@ -303,7 +318,7 @@ export const checkProject = (dir, opts = {}) => {
     }
   }
 
-  /* 5. import 白名单：src/** 裸模块导入 */
+  /* 5. 引擎/编辑器受控白名单；外部应用可使用已声明的运行依赖。 */
   for (const file of srcFiles) errors.push(...checkCompositeSource(readFileSync(file, "utf8"), relative(root,file)));
   const imports = { ok: true, violations: [] };
   for (const file of srcFiles) {
@@ -312,14 +327,17 @@ export const checkProject = (dir, opts = {}) => {
       if (isRelative) {
         continue;
       }
-      if (!matchesBareWhitelist(spec)) {
+      const packageName = spec.startsWith('@') ? spec.split('/').slice(0, 2).join('/') : spec.split('/')[0];
+      const applicationFile = !file.startsWith(join(srcDir, 'scene3d') + sep)
+        && !file.startsWith(editDir + sep);
+      if (!matchesBareWhitelist(spec) && !(applicationFile && declaredDependencies.has(packageName))) {
         imports.ok = false;
         imports.violations.push(`${relative(root, file)}:${line} → ${spec}`);
       }
     }
   }
   if (!imports.ok) {
-    errors.push(`import 白名单违规（非内网白名单裸模块）：\n    ${imports.violations.join('\n    ')}`);
+    errors.push(`import 白名单违规（受控目录不允许或应用依赖未声明）：\n    ${imports.violations.join('\n    ')}`);
   }
 
   /* 6. 场景数据 + 资产引用 + 预算估算 */
@@ -329,20 +347,20 @@ export const checkProject = (dir, opts = {}) => {
     estimates: [],
   };
   let schemaReport = null;
-  const dataPath = join(root, 'public', 'scene-data.json');
+  const dataPath = join(root, 'public', 'scene3d', 'scene-data.json');
   if (existsSync(dataPath)) {
     let data;
     try {
       data = JSON.parse(readFileSync(dataPath, 'utf8'));
     } catch (err) {
-      errors.push(`public/scene-data.json 解析失败：${err.message}`);
+      errors.push(`public/scene3d/scene-data.json 解析失败：${err.message}`);
     }
     if (data) {
       // 6a. 场景 schema（P2.3/V08 + P2-R3）：确定性结构错误硬失败。
-      //     工厂注册表从工程自身 src/scene-profile.ts 提取（单一来源）：
+      //     工厂注册表从工程自身 src/scene3d/scene-profile.ts 提取（单一来源）：
       //     未注册分组的节点引擎建树会静默跳过——在构建期就硬失败。
       let factoryRegistry = null;
-      const profilePath = join(srcDir, 'scene-profile.ts');
+      const profilePath = join(srcDir, 'scene3d', 'scene-profile.ts');
       if (existsSync(profilePath)) {
         try {
           factoryRegistry = factoryRegistryFromProfile(readFileSync(profilePath, 'utf8'));
@@ -356,23 +374,23 @@ export const checkProject = (dir, opts = {}) => {
       }
       const materialKeys = new Set();
       const modelCache = new Map();
-      const modelsDir = join(root, 'public', 'assets', 'models');
+      const modelsDir = join(root, 'public', 'scene3d', 'assets', 'models');
       // 资产映射（P2-R1）：init 落的 asset-manifest.json 是路径真相源；
       // 旧工程无此文件 → 回退 models/<id>.glb|gltf 猜测（兼容不自动升级）
-      const assetManifestPath = join(root, 'public', 'assets', 'asset-manifest.json');
+      const assetManifestPath = join(root, 'public', 'scene3d', 'assets', 'asset-manifest.json');
       let assetManifest = null;
       if (existsSync(assetManifestPath)) {
         try {
           assetManifest = JSON.parse(readFileSync(assetManifestPath, 'utf8'));
         } catch (err) {
-          errors.push(`public/assets/asset-manifest.json 解析失败：${err.message}`);
+          errors.push(`public/scene3d/assets/asset-manifest.json 解析失败：${err.message}`);
         }
       }
       /** id → 模型文件绝对路径（manifest 优先，legacy 兜底） */
       const resolveModelFile = (assetId) => {
         const entry = assetManifest?.[assetId];
         if (entry?.model) {
-          const p = join(root, 'public', 'assets', entry.model);
+          const p = join(root, 'public', 'scene3d', 'assets', entry.model);
           return existsSync(p) ? p : null;
         }
         return ['glb', 'gltf'].map((e) => join(modelsDir, `${assetId}.${e}`)).find((p) => existsSync(p)) ?? null;
@@ -484,7 +502,7 @@ export const checkProject = (dir, opts = {}) => {
       budgetReport.materials = materialKeys.size + libCount;
 
       if (budgetReport.assets.missing.length) {
-        errors.push(`scene-data 引用的资产缺文件（public/assets/models/）：${budgetReport.assets.missing.join(', ')}`);
+        errors.push(`scene-data 引用的资产缺文件（public/scene3d/assets/models/）：${budgetReport.assets.missing.join(', ')}`);
       }
       if (budgetReport.calls > budget.maxCalls) {
         budgetReport.over.push(`draw call ${budgetReport.calls} > ${budget.maxCalls}`);
@@ -553,16 +571,16 @@ export const checkProject = (dir, opts = {}) => {
       } catch { /* JSON 错已在上方报过 */ }
     }
     // 编译外观模块（P4.1/V18）：必须存在且可审计（双常量导出 + 无 edit import）
-    const appearancePath = join(srcDir, 'scene-core', 'generated', 'appearance.ts');
+    const appearancePath = join(srcDir, 'scene3d', 'scene', 'generated', 'appearance.ts');
     if (existsSync(appearancePath)) {
       const code = readFileSync(appearancePath, 'utf8');
       if (!/export const compiledVisuals/.test(code) || !/export const compiledMaterialLib/.test(code)) {
         stripped.ok = false;
-        stripped.violations.push('src/scene-core/generated/appearance.ts 缺 compiledVisuals/compiledMaterialLib 导出（可审计性）');
+        stripped.violations.push('src/scene3d/scene/generated/appearance.ts 缺 compiledVisuals/compiledMaterialLib 导出（可审计性）');
       }
     } else {
       stripped.ok = false;
-      stripped.violations.push('缺 src/scene-core/generated/appearance.ts（strip-edit 产物或母版占位）');
+      stripped.violations.push('缺 src/scene3d/scene/generated/appearance.ts（strip-edit 产物或母版占位）');
     }
     if (!stripped.ok) {
       errors.push(`铁律 3 破裂（二开交付物残留 edit）：\n    ${stripped.violations.join('\n    ')}`);

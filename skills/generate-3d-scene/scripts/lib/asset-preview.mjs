@@ -37,7 +37,7 @@ export async function previewPackage(dir,{port,timeoutMs=20000,retryFailed=false
     let file;
     if(path.startsWith('/viewer/'))file=safePath(viewerRoot,path.slice(8));
     else if(path.startsWith('/three/'))file=safePath(dependencyPath('three'),path.slice(7));
-    else if(path.startsWith('/draco/'))file=safePath(resolve(skill,'template/public/assets/draco'),path.slice(7));
+    else if(path.startsWith('/draco/'))file=safePath(resolve(skill,'template/public/scene3d/assets/draco'),path.slice(7));
     else if(path.startsWith('/files/'))file=safePath(root,path.slice(7));
     else throw new Error('Unknown path');
     data=readFileSync(file);mime=({'.js':'text/javascript','.wasm':'application/wasm','.png':'image/png','.jpg':'image/jpeg','.gltf':'model/gltf+json'})[extname(file)]??mime;

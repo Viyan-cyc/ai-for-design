@@ -2,7 +2,7 @@
  * main.ts — 二开态入口（交付物运行入口）
  *
  * 二开者从这里起步：数据驱动的场景渲染 + 2D 卡片。
- * 业务 factory 与卡片注册在 scene-profile.ts（run/edit 共用）；编辑态走
+ * 3D factory 注册在 scene3d/scene-profile.ts，卡片在 business/cards（run/edit 共用）；编辑态走
  * edit/edit-main.ts（entry.ts 的 ?edit=1 分流），与本文件互不影响。
  */
 import { createApp } from 'vue';

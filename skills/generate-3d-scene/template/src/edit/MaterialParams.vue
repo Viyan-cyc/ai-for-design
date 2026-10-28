@@ -12,7 +12,7 @@ import { showEditorMessage } from './message';
 import {
   computed, onBeforeUnmount, ref, watch,
 } from 'vue';
-import type { MaterialSpec, MaterialType } from '@/scene-core/types';
+import type { MaterialSpec, MaterialType } from '../scene3d/scene-core/types';
 
 const props = defineProps<{ spec: MaterialSpec; targetKey: string; textures?: TexturePreviews }>();
 const emit = defineEmits<{ (e: 'change', key: string, value: unknown): void }>();

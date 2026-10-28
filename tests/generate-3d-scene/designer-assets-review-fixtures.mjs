@@ -24,7 +24,7 @@ const c=await prepare('different-texture',{texture:image});
 assert.notEqual(a.pkg.assets[0].id,b.pkg.assets[0].id);assert.notEqual(a.pkg.assets[0].id,c.pkg.assets[0].id);
 const project=resolve(root,'project');mkdirSync(project);
 for(const p of [a,b,c]){confirm(p.out,p.pkg.revision,{confirmFront:true,confirmScale:true});inject(p.out,project);}
-const manifest=()=>readFileSync(resolve(project,'public/assets/asset-manifest.json'),'utf8');const before=manifest();inject(a.out,project);assert.equal(manifest(),before);assert.equal(Object.keys(JSON.parse(before)).length,3);
+const manifest=()=>readFileSync(resolve(project,'public/scene3d/assets/asset-manifest.json'),'utf8');const before=manifest();inject(a.out,project);assert.equal(manifest(),before);assert.equal(Object.keys(JSON.parse(before)).length,3);
 const duplicate=await prepare('duplicate');assert.equal(duplicate.pkg.assets[0].id,a.pkg.assets[0].id);
 console.log('PASS dependency-aware IDs, bin/texture variants and idempotent injection');
 const mixed=await prepare('mixed',{extra:{'truck.fbx':'unsupported'}});const unsupported=mixed.pkg.assets.find(a=>a.entry==='truck.fbx');assert.equal(unsupported.technicalStatus,'invalid');assert(mixed.pkg.unassociatedFiles.includes('notes.txt'));assert(!mixed.pkg.assets.some(a=>a.entry==='notes.txt'));

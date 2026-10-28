@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { dependencyPath } from '../../skills/generate-3d-scene/scripts/lib/environment.mjs';
 const ts = createRequire(import.meta.url)(dependencyPath('typescript'));
-const root = new URL('../../skills/generate-3d-scene/template/src/scene-core/', import.meta.url);
+const root = new URL('../../skills/generate-3d-scene/template/src/scene3d/scene-core/', import.meta.url);
 async function load(file, rewrite = s => s) {
   const source = rewrite(readFileSync(new URL(file, root), 'utf8'));
   const js = ts.transpileModule(source, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext } }).outputText;

@@ -42,13 +42,13 @@ const copyFilter = (src) => !EXCLUDE.has(basename(src)) && !basename(src).starts
   && !/^smoke.*\.png$/.test(basename(src)); // 冒烟上传产物不进生成工程
 
 /**
- * 清理母版残留的 demo 模型：最终场景未引用的 public/assets/models/<id>.glb|gltf 删除。
+ * 清理母版残留的 demo 模型：最终场景未引用的 public/scene3d/assets/models/<id>.glb|gltf 删除。
  * 母版自带 demo 资产是为母版自身冒烟；生成工程按最终场景保留闭包（F09：空工程不带 Demo）。
  * draco/（解码器）与 textures 顶层贴图（materials 状态视觉常驻）不属模型闭包，保留。
  */
 const pruneUnreferencedModels = (out, data) => {
   const referenced = new Set(referencedAssetIds(data));
-  const modelsDir = join(out, 'public', 'assets', 'models');
+  const modelsDir = join(out, 'public', 'scene3d', 'assets', 'models');
   if (!existsSync(modelsDir)) {
     return { removed: [], kept: [] };
   }
@@ -147,21 +147,19 @@ export const initProject = (target, opts = {}) => {
   cpSync(TEMPLATE_DIR, out, { recursive: true, filter: copyFilter });
 
   if (!opts.scene && (opts.profile ?? 'empty') === 'empty') {
-    cpSync(join(SKILL_ROOT, 'scripts/scaffolds/empty-profile.ts'), join(out, 'src/scene-profile.ts'));
-    const materialsPath = join(out, 'src/scene-core/materials.ts');
+    cpSync(join(SKILL_ROOT, 'scripts/scaffolds/empty-profile.ts'), join(out, 'src/scene3d/scene-profile.ts'));
+    writeFileSync(join(out, 'src/business/cards/index.ts'), "import type { Component } from 'vue';\nexport const cards: Record<string, Component> = {};\n");
+    const materialsPath = join(out, 'src/scene3d/scene/appearance.ts');
     const materials = readFileSync(materialsPath, 'utf8');
     const begin = materials.indexOf('export const stateMaterials:');
     const end = materials.indexOf('\n};', begin);
     if (begin < 0 || end < 0) throw new Error('Template stateMaterials shape changed');
     writeFileSync(materialsPath, materials.slice(0, begin) + 'export const stateMaterials: Record<string, Record<string, StateVisual>> = {};'
       + materials.slice(end + 3), 'utf8');
-    const handlers = join(out, 'src/scene-core/handlers/index.ts');
-    writeFileSync(handlers, readFileSync(handlers, 'utf8').replace(/^export .*registerExampleHandler.*\r?\n/m, ''), 'utf8');
-    const coreIndex = join(out, 'src/scene-core/index.ts');
-    writeFileSync(coreIndex, readFileSync(coreIndex, 'utf8').replace(/^export .*?(?:registerExampleHandler|ExampleCard).*\r?\n/gm, ''), 'utf8');
-    // These paths belong to the fresh copy above, never an existing user's source tree.
-    for (const rel of ['src/scene-core/handlers/example', 'src/scene-core/cards/ExampleCard.vue', 'public/assets/textures/example.jpg']) {
-      rmSync(join(out, rel), { recursive: true, force: true });
+    // Only remove known files in this freshly copied template, never user source.
+    const demoFiles = ['example', 'tree', 'car', 'worker', 'rack', 'index'].map(name => `src/scene3d/scene/handlers/${name}.ts`);
+    for (const rel of [...demoFiles, 'src/business/cards/ExampleCard.vue', 'public/scene3d/assets/textures/example.jpg']) {
+      rmSync(join(out, rel), { force: true });
     }
   }
 
@@ -180,7 +178,7 @@ export const initProject = (target, opts = {}) => {
   }
 
   let data = {};
-  const dataPath = join(out, 'public', 'scene-data.json');
+  const dataPath = join(out, 'public', 'scene3d', 'scene-data.json');
   if (sceneSource) {
     try {
       data = JSON.parse(readFileSync(sceneSource, 'utf8'));
@@ -209,7 +207,7 @@ export const initProject = (target, opts = {}) => {
   let schema = null;
   if (validateLevel !== 'off') {
     // 工厂注册表从模板业务 profile 提取（P2-R3 单一来源，不维护镜像）
-    const profileSrc = readFileSync(join(TEMPLATE_DIR, 'src', 'scene-profile.ts'), 'utf8');
+    const profileSrc = readFileSync(join(TEMPLATE_DIR, 'src', 'scene3d', 'scene-profile.ts'), 'utf8');
     schema = validateSceneData(data, factoryRegistryFromProfile(profileSrc));
     for (const e of schema.errors) {
       errors.push(`场景 schema 违规 [${e.code}] ${e.path}: ${e.message}`);
@@ -257,11 +255,11 @@ export const initProject = (target, opts = {}) => {
         missingAssets.push(`${id}（解析文件越出资产目录：${rel}）`);
         continue;
       }
-      const dest = join(out, 'public', rel);
+      const dest = join(out, 'public', 'scene3d', rel);
       mkdirSync(dirname(dest), { recursive: true });
       cpSync(join(assetsRoot, rel), dest);
     }
-    // 映射条目：model 相对 public/assets/（剥 assets/ 前缀）；glTF 目录资产指到 .gltf 文件
+    // 映射条目：model 相对 public/scene3d/assets/（剥 assets/ 前缀）；glTF 目录资产指到 .gltf 文件
     manifestOut[id] = {
       model: resolved.entry.modelPath.replace(/^assets\//, ''),
       format: resolved.format,
@@ -285,7 +283,7 @@ export const initProject = (target, opts = {}) => {
 
   // 母版残留且被最终场景引用的资产也进映射（prune 保留的文件需要可解析）
   const referencedIds = new Set(referencedAssetIds(data));
-  const modelsDir = join(out, 'public', 'assets', 'models');
+  const modelsDir = join(out, 'public', 'scene3d', 'assets', 'models');
   if (existsSync(modelsDir)) {
     for (const ent of readdirSync(modelsDir, { withFileTypes: true })) {
       const id = ent.isDirectory() ? ent.name : ent.name.replace(/\.(glb|gltf)$/i, '');
@@ -307,8 +305,8 @@ export const initProject = (target, opts = {}) => {
     }
   }
   // 落资产映射（P2-R1：build 与运行时 loader 的同一真相源；旧工程无此文件走 legacy）
-  mkdirSync(join(out, 'public', 'assets'), { recursive: true });
-  writeFileSync(join(out, 'public', 'assets', 'asset-manifest.json'), `${JSON.stringify(manifestOut, null, 2)}\n`);
+  mkdirSync(join(out, 'public', 'scene3d', 'assets'), { recursive: true });
+  writeFileSync(join(out, 'public', 'scene3d', 'assets', 'asset-manifest.json'), `${JSON.stringify(manifestOut, null, 2)}\n`);
 
   if (opts.assetPackage) {
     try { if(selector === 'all' || wanted.length) inject(opts.assetPackage, out, selector === 'all' ? undefined : wanted); }

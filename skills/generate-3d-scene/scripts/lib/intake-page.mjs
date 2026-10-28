@@ -23,7 +23,7 @@ export { intakeLimits };
 const here = dirname(fileURLToPath(import.meta.url));
 const viewerRoot = resolve(here, 'viewer');
 const skillRoot = resolve(here, '../..');
-const dracoRoot = resolve(skillRoot, 'template/public/assets/draco');
+const dracoRoot = resolve(skillRoot, 'template/public/scene3d/assets/draco');
 
 const MIME = {
   '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp',

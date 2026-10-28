@@ -1,0 +1,102 @@
+{
+  "generated": "2026-10-28",
+  "package": "@hw-seq/sweet-ui-base@5.7.0",
+  "resources": [
+    {
+      "relativePath": "scripts/preview/public/library/sweet-ui-base.umd.cjs",
+      "source": "node_modules/@hw-seq/sweet-ui-base/dist/sweet-ui-base.umd.cjs",
+      "sourceType": "direct-copy",
+      "sha256": "F4C61A3B084D2875D2005E34ABAF5E31CF814963D111BF02B7C6ABB4EA59EF09"
+    },
+    {
+      "relativePath": "scripts/preview/public/library/sweet-ui-base.css",
+      "source": "node_modules/@hw-seq/sweet-ui-base/dist/sweet-ui-base.css",
+      "sourceType": "direct-copy",
+      "sha256": "36677F240C96B697639AFA8C6C95F7841B2FDF2B889A27B568D6D1E62ADF64E2"
+    },
+    {
+      "relativePath": "scripts/preview/public/library/vue.global.prod.js",
+      "source": "old-skill: gts-sweetui-coder/scripts/preview/public/library/vue.global.prod.js",
+      "sourceType": "direct-copy",
+      "sha256": "73D4F2647A44320CF97DE90652B145FA4F055F1BCACEA4C231E4732C0B49631C",
+      "note": "Vue 3.5.25 production build; compatible with SweetUI 5.7.0 (which depends on vue 3.5.29)"
+    },
+    {
+      "relativePath": "scripts/preview/public/library/vue3-sfc-loader.js",
+      "source": "old-skill: gts-sweetui-coder/scripts/preview/public/library/vue3-sfc-loader.js",
+      "sourceType": "direct-copy",
+      "sha256": "F3B2E17E325861BD84C799F57DB14D704568DBD8A91B1C375079BB416AFFCE0E",
+      "note": "vue3-sfc-loader 0.9.5; enables .vue SFC compilation in browser preview"
+    },
+    {
+      "relativePath": "scripts/preview/public/library/xss.js",
+      "source": "old-skill: gts-sweetui-coder/scripts/preview/public/library/xss.js",
+      "sourceType": "direct-copy",
+      "sha256": "4B229A3DB03C14D920E92155E27451A0969EB6BE887977A60C16491177D883AA",
+      "note": "xss 1.0.15; required by SweetUI UMD; aliased as window.xss"
+    },
+    {
+      "relativePath": "scripts/preview/public/library/lodash.min.js",
+      "source": "old-skill: gts-sweetui-coder/scripts/preview/public/library/lodash.min.js",
+      "sourceType": "direct-copy",
+      "sha256": "91CE8F97D7FBA3786414CA9765D1D2EDFA2F6512061928BEA1FAA7EAB31C10F1",
+      "note": "lodash 4.18.1; required by SweetUI UMD; aliased as window._$1"
+    },
+    {
+      "relativePath": "scripts/preview/public/library/dayjs.min.js",
+      "source": "old-skill: gts-sweetui-coder/scripts/preview/public/library/dayjs.min.js",
+      "sourceType": "direct-copy",
+      "sha256": "9CFDB93F38AFCF2D076ABECD66D32BFD3383CDF1967654EBC26A26605DAF4173",
+      "note": "dayjs 1.11.23; required by SweetUI date/time components"
+    },
+    {
+      "relativePath": "scripts/preview/src/theme.js",
+      "source": "self-built",
+      "sourceType": "adapter",
+      "basis": "npm ESM setTheme API (dae function) + CSS selector analysis: uDesign2.2-dark has no standalone token block (0 tokens), GTS UDesign（默认风格）-dark has 382 tokens but is missing from background-color group rule",
+      "logic": "Maps uDesign2.2-dark → GTS UDesign（默认风格）-dark for native setTheme call; adds document.body.style.backgroundColor fix for dark mode; clears inline style on light mode"
+    },
+    {
+      "relativePath": "scripts/preview/src/i18n/index.js",
+      "source": "self-built",
+      "sourceType": "adapter",
+      "basis": "npm ESM i18n + setLocaleMessages API; verified both are top-level exports from @hw-seq/sweet-ui-base",
+      "logic": "Wraps native i18n(lang, app, callback) + setLocaleMessages(dict, app) to support business dictionaries per language"
+    },
+    {
+      "relativePath": "scripts/preview/src/runtime.js",
+      "source": "self-built",
+      "sourceType": "adapter",
+      "basis": "SweetUI default export (install function) + theme.js + i18n/index.js",
+      "logic": "Shared wiring: app.use(SweetUI) + installTheme + installI18n"
+    },
+    {
+      "relativePath": "scripts/preview/index.gts.html",
+      "source": "self-built",
+      "sourceType": "adapter",
+      "basis": "vue3-sfc-loader config + SweetUI UMD global wiring",
+      "logic": "Scripts in body (not head) to avoid UMD's insertBefore on null body; moduleCache maps @hw-seq/sweet-ui-base to UMD global; .js → .mjs type mapping for ESM semantics; CSS handleModule; JSON parse with BOM strip"
+    },
+    {
+      "relativePath": "scripts/verify/whitelists/sweetui-exports.json",
+      "source": "generated",
+      "sourceType": "extracted",
+      "sha256": "5BFFE17901F571F09793B70FEECE8CC1E0B387877D652B569A5E83D2BDED0C0B",
+      "method": "node scripts/gen-whitelists.mjs --package <npm-path>"
+    },
+    {
+      "relativePath": "scripts/verify/whitelists/sweetui-icons.json",
+      "source": "generated",
+      "sourceType": "extracted",
+      "sha256": "2AF0342CE67700D9E52FD1B6143D7949724492B3C243206AE4DB9BC48AC14BD6",
+      "method": "node scripts/gen-whitelists.mjs --package <npm-path>"
+    },
+    {
+      "relativePath": "scripts/verify/whitelists/sweetui-tokens.json",
+      "source": "generated",
+      "sourceType": "extracted",
+      "sha256": "831DA0C04E6646C7230F4B274DF84926089E9B5C70184237779BCB2C257C8ADB",
+      "method": "node scripts/gen-tokens.mjs --extract --package <npm-path>"
+    }
+  ]
+}

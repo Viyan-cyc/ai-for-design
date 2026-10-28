@@ -51,10 +51,10 @@ version: 0.1.0
 
 - scene-data 的舞台区：scene/camera/lights/controls/renderer；业务区：type 分组数组。
 - 节点字段：id、parentId、position、rotation、scale、params、card。params 放业务/结构参数；材质颜色、贴图等默认外观写在 handler，编辑覆盖由视觉层保存。
-- scene-profile 直接导入业务 handler 并登记一次。通常不改 scene-core/index.ts、handlers/index.ts、核心引擎、编辑器或构建脚本。
+- 业务代码固定放 `src/scene3d/scene/handlers`，配色放 `src/scene3d/scene/appearance.ts`，卡片放 `src/business/cards`；`src/scene3d/scene-profile.ts` 建树前统一登记 3D 工厂；Vue 卡片从外部 cards 参数传入。`src/business/data/{types,adapter,connect}.ts` 是二开数据入口，按当前业务定义字段和响应，默认不联网。scene3d 包不依赖 business/boot/App/edit；core 不依赖场景实现；生成时不修改核心引擎、编辑器或构建脚本。
 - 空工程已删除示例业务/卡片并裁剪导出。生成工程是修改依据，不能用 template 的 demo 文件整份覆盖。
 - core 不依赖 edit；edit 经 SceneHandle 公开入口访问 core。蒙皮模型沿用内建加载和编辑限制，不自行烘焙或克隆。
-- 运行资源离线，不使用 CDN 或 fetch 本地文件。动态资源登记 public/offline-resources.json；已有资源由构建收集。
+- 运行资源离线，不使用 CDN 或 fetch 本地文件。动态资源登记 public/scene3d/offline-resources.json；已有资源由构建收集。
 - 用户要求实时状态接入时，按需提供生产数据到 update 片段的映射示例；纯展示不额外实现 MQTT/轮询。
 
 ## 验证失败与重试上限
@@ -68,7 +68,7 @@ version: 0.1.0
 
 ## 交付与保存
 
-成功给出 offline/index.3d.html 的可点击绝对路径，说明双击打开与进入编辑；移动时携带同目录配套文件。保存不触发下载：开发模式写回工程 public/scene-data.json；离线模式点击「保存」复制 scene3d-changes 修改文本，用户粘贴给 Agent 后回写；剪贴板不可用时显示文本框供手动复制。复制不表示源码已保存，不清除未保存状态。Agent 核对 sourceId 与对应工程，并逐项比较 before；有冲突先处理冲突，不覆盖其他修改。path 为路径数组，缺少 after 表示删除，数组整体替换；保留图片 data URI 或落盘后更新引用。回写后重新构建离线页面。
+成功给出 offline/index.3d.html 的可点击绝对路径，说明双击打开与进入编辑；移动时携带同目录配套文件。保存不触发下载：开发模式写回工程 public/scene3d/scene-data.json；离线模式点击「保存」复制 scene3d-changes 修改文本，用户粘贴给 Agent 后回写；剪贴板不可用时显示文本框供手动复制。复制不表示源码已保存，不清除未保存状态。Agent 核对 sourceId 与对应工程，并逐项比较 before；有冲突先处理冲突，不覆盖其他修改。path 为路径数组，缺少 after 表示删除，数组整体替换；保留图片 data URI 或落盘后更新引用。回写后重新构建离线页面。
 
 保存写回场景数据，不改业务 handler 或原 HTML；更新离线产物需重新构建。退出编辑进入当前场景预览，保留内存中的修改并支持返回编辑；退出不等于保存。不承诺构建通过等于绝不白屏，也不把未经目检的效果称为视觉验收通过。
 

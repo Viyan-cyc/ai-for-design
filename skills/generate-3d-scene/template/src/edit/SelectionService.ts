@@ -7,8 +7,8 @@
  * - 点空白/ESC → bridge.clearSelection
  */
 import * as THREE from 'three';
-import type { SceneHandle } from '@/scene-core/createScene';
-import { findBySlotKey } from '@/scene-core';
+import type { SceneHandle } from '../scene3d/scene-core/createScene';
+import { findBySlotKey } from '../scene3d/scene-core/index';
 import type { Bridge } from './Bridge';
 
 const SELECT_COLOR = 0x00a2ff;

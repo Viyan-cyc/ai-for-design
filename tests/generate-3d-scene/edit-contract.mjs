@@ -44,7 +44,7 @@ const expectIdx = argv.indexOf("--expect");
 const EXPECT_PATH =
   expectIdx >= 0
     ? argv[expectIdx + 1]
-    : join(SKILL_ROOT, "template", "public", "scene-data.json");
+    : join(SKILL_ROOT, "template", "public", 'scene3d', "scene-data.json");
 
 const main = async () => {
   if (!existsSync(EXPECT_PATH)) {

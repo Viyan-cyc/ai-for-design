@@ -1,10 +1,10 @@
-// Copy to src/scene-core/handlers/composite-example.ts; register under assemblies.
+// Copy to src/scene3d/scene/handlers/composite-example.ts; register under assemblies.
 import * as THREE from 'three';
-import type { SceneEngine } from '../engine/SceneEngine';
-import type { NodeFactoryDefinition } from '../types';
-import { handlerUtils } from './registry';
-import { createComposite } from './procedural/composite';
-import { labelTexture } from './procedural/canvas-texture';
+import type { SceneEngine } from '../../scene-core';
+import type { NodeFactoryDefinition } from '../../scene-core/types';
+import { handlerUtils } from '../../scene-core/handlers';
+import { createComposite } from '../../scene-core/handlers/procedural/composite';
+import { labelTexture } from '../../scene-core/handlers/procedural/canvas-texture';
 
 export function registerAssemblyHandler(engine: SceneEngine): void {
   const definition: NodeFactoryDefinition = {
