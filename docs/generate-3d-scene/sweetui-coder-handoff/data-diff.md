@@ -10,9 +10,6 @@
 | Metric | Value |
 |--------|-------|
 | Total named exports | 505 |
-| Component exports (Sweet*) | ~120 |
-| Function exports (use*) | ~30 |
-| Type/constant exports | ~355 |
 | Extraction method | ESM index.mjs static analysis |
 
 Key component exports verified: SweetButton, SweetDialog, SweetForm, SweetFormItem, SweetInput, SweetSelect, SweetOption, SweetTable, SweetTableColumn, SweetPagination, SweetEmpty, SweetIcon, SweetAlert, SweetMessage, SweetTooltip
@@ -41,9 +38,9 @@ Replacements used: sweetui-icon-switch-target-cell-l (language), text-only label
 |--------|-------|
 | Total tokens | 588 |
 | Source files | var-ui-common.css + var-ui-uDesign2.2-light.css + var-ui-uDesign2.2-dark.css |
-| Light tokens | 302 |
-| Dark tokens (via GTS selector) | 359 |
-| Common tokens | 27 |
+| Common-only (no light/dark variant) | 207 |
+| Themed (light + dark pair) | 381 |
+| Themed that also have common fallback | 100 |
 | Extraction method | CSS --swt-* variable name extraction from theme-chalk/vars/ |
 
 ### token-catalog.md

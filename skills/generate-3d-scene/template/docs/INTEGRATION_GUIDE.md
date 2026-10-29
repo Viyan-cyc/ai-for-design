@@ -12,7 +12,7 @@ npm run preview
 ```
 
 内网使用组织配置的 npm 源。生成时可能使用共享依赖链接，下载的源码在另一台机器上需要重新 npm install。
-`npm run build` 执行 TypeScript 检查与 Vite 构建。完整工程还支持 `npm run build:offline`，生成 `offline/index.3d.html` 与配套资源；剥离编辑器的工程仅保留普通开发/构建入口。
+`npm run build` 执行 TypeScript 检查与 Vite 构建。完整工程还支持 `npm run build:offline`，生成 `delivery/index.3d.html` 与配套资源；剥离编辑器的工程仅保留普通开发/构建入口。
 
 ## 修改位置
 
@@ -116,6 +116,8 @@ scene-data.json 包括业务/布局以及合法舞台设置；设备材质默认
 
 维护测试不随源码交付，也不作为每次生成的浏览器验收步骤。
 
+通过 skill 的 `scripts/build-offline.mjs <工程目录>` 生成时，还会执行 Node 同步装配检查：真实工厂使用当前场景数据创建节点，捕获重复槽位、提前 finish 等代码错误。它不运行浏览器、动画或模型异步加载；`ASSEMBLY: partial` / `UNCHECKED` 表示未覆盖部分，`RUNTIME: not-run` 表示渲染与交互未测。工程自己的 `npm run build:offline` 仅编译打包，不包含 skill 的装配检查。画面与交互体验由使用者确认。
+
 
 ## 外置卡片与可替换包
 
@@ -167,3 +169,7 @@ onBeforeUnmount(() => { active = false; scene?.dispose(); });
 
 批量数据使用 `handle.batchUpdates(() => { /* 同步调用 patchNodeParams/update */ })`。更新按顺序立即生效，卡片在最外层批次结束时同步一次；异常也会同步已成功的更新，不回滚，不跨 await。默认 business/data/adapter 已使用此机制并保留单条错误隔离。
 外部应用/业务代码可导入 package.json 的 dependencies、optionalDependencies 或 peerDependencies 中声明的运行依赖（包括作用域包子路径）；仍须在项目环境安装依赖。scene3d 与 edit 继续遵守受控依赖白名单，业务不得要求修改 skill 校验器。
+
+## 交付目录
+
+打开 delivery/index.3d.html 预览，preview/ 是其必需运行资源。source/ 是完整源码快照，包含 src、public、依赖清单、配置、构建脚本及必要 vendor 包；进入 source 后安装依赖即可开发。不要只复制 src/public 当作独立工程。工作区的 node_modules、缓存和中间产物不进入交付。修改 source 后以它作为新工作工程；不要再用旧工作区重建覆盖修改。

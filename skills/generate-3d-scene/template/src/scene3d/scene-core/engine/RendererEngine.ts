@@ -26,6 +26,7 @@ export class RendererEngine {
   readonly renderer: THREE.WebGLRenderer;
 
   private config: RendererConfig;
+  private shadowProgramsDirty = false;
   readonly initialOptions: { antialias: boolean; logarithmicDepthBuffer: boolean };
 
   constructor(canvas: HTMLCanvasElement, config: RendererConfig) {
@@ -68,6 +69,7 @@ export class RendererEngine {
   }
 
   setShadowMapType(type: RendererConfig['shadowMap']): void {
+    if (this.renderer.shadowMap.type !== (shadowMapMap[type] ?? THREE.PCFShadowMap)) this.shadowProgramsDirty = true;
     this.renderer.shadowMap.type = shadowMapMap[type] ?? THREE.PCFShadowMap;
     this.config.shadowMap = type;
     // shadowMap 类型变更需重编译材质着色器
@@ -75,6 +77,7 @@ export class RendererEngine {
   }
 
   setShadowMapEnabled(enabled: boolean): void {
+    if (this.renderer.shadowMap.enabled !== enabled) this.shadowProgramsDirty = true;
     this.renderer.shadowMap.enabled = enabled;
     this.config.shadowMapEnabled = enabled;
     this.renderer.shadowMap.needsUpdate = true;
@@ -96,6 +99,18 @@ export class RendererEngine {
 
   /** 每帧渲染 */
   render(scene: THREE.Scene, camera: THREE.Camera): void {
+    // Shadow enable/type changes alter shader sampler declarations. Updating the
+    // shadow map alone leaves cached material programs using the old sampler type.
+    if (this.shadowProgramsDirty) {
+      const materials = new Set<THREE.Material>();
+      scene.traverse(object => {
+        const material = (object as THREE.Mesh).material;
+        if (Array.isArray(material)) material.forEach(item => materials.add(item));
+        else if (material) materials.add(material);
+      });
+      materials.forEach(material => { material.needsUpdate = true; });
+      this.shadowProgramsDirty = false;
+    }
     this.renderer.render(scene, camera);
   }
 

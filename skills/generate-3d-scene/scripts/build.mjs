@@ -2,7 +2,7 @@ import { checkCompositeSource } from './lib/composite-check.mjs';
 /**
  * build.mjs — 工程构建门禁（结构扫描 + 三条铁律 + import 白名单 + 场景预算静态估算）
  *
- * 这是"验证回路"第 ① 道门禁：在启动 dev server / 冒烟之前，
+ * 这是统一离线构建的静态检查步骤，不要求启动服务或浏览器：
  * 用机器扫描把结构性错误、双模式隔离破坏、依赖越权、资源缺失、性能预算超限拦下。
  * 它**不跑** vite build（那是 `npm run build`）；它是构建前的静态契约检查。
  *
@@ -21,7 +21,7 @@ import { checkCompositeSource } from './lib/composite-check.mjs';
  *        [--max-calls N] [--max-triangles N] [--max-materials N] [--strict]
  *   退出码：0 通过（可有警告）/ 1 门禁违规 / 2 用法错误
  *
- * 预算数值来源：构建期静态估算（运行期 perf-fps.mjs 为权威）。
+ * 预算数值来源：构建期静态估算，不代表实际运行帧率；不追加性能验收。
  */
 import { readFileSync, readdirSync, existsSync, statSync } from 'node:fs';
 import { join, resolve, relative, dirname, sep } from 'node:path';
@@ -522,7 +522,7 @@ export const checkProject = (dir, opts = {}) => {
         }
       }
       if (budgetReport.unknownGroups.length) {
-        warnings.push(`以下分组几何由代码生成，静态估算未计入（以 runtime perf 门禁为准）：${budgetReport.unknownGroups.join('；')}`);
+        warnings.push(`以下分组几何由代码生成，静态预算未计入；不代表性能已验证，不要求追加性能验收：${budgetReport.unknownGroups.join('；')}`);
       }
     }
   }

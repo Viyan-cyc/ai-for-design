@@ -1,0 +1,2764 @@
+{
+  "version": "1",
+  "meta": {
+    "name": "现代科技园区",
+    "description": "约 320 × 258 米的示意科技园区；独立建筑、车辆、景观节点均可编辑。检索服务不可达，本次采用几何组合。"
+  },
+  "scene": {
+    "background": "#f6f7f9",
+    "environment": {
+      "intensity": 0.35
+    },
+    "fog": null
+  },
+  "camera": {
+    "type": "PerspectiveCamera",
+    "position": [
+      225,
+      235,
+      280
+    ],
+    "lookAt": [
+      0,
+      7,
+      0
+    ],
+    "fov": 36,
+    "near": 0.5,
+    "far": 1800
+  },
+  "lights": [
+    {
+      "id": "daylight",
+      "type": "DirectionalLight",
+      "color": "#ffffff",
+      "intensity": 2.2,
+      "position": [
+        -140,
+        230,
+        110
+      ],
+      "target": [
+        0,
+        0,
+        0
+      ],
+      "castShadow": true,
+      "shadowMapSize": 1024,
+      "shadowBias": -0.0003,
+      "shadowCameraNear": 1,
+      "shadowCameraFar": 650,
+      "shadowCameraLeft": -210,
+      "shadowCameraRight": 210,
+      "shadowCameraTop": 190,
+      "shadowCameraBottom": -190
+    },
+    {
+      "id": "sky_fill",
+      "type": "HemisphereLight",
+      "color": "#f4f7fa",
+      "groundColor": "#c3cbd2",
+      "intensity": 0.55
+    },
+    {
+      "id": "east_fill",
+      "type": "DirectionalLight",
+      "color": "#ffffff",
+      "intensity": 0.15,
+      "position": [
+        140,
+        90,
+        -110
+      ],
+      "target": [
+        0,
+        0,
+        0
+      ],
+      "castShadow": false
+    }
+  ],
+  "controls": {
+    "type": "OrbitControls",
+    "target": [
+      0,
+      7,
+      0
+    ],
+    "minDistance": 25,
+    "maxDistance": 780,
+    "minPolarAngle": 0.08,
+    "maxPolarAngle": 1.48,
+    "enablePan": true,
+    "enableDamping": true,
+    "dampingFactor": 0.07
+  },
+  "renderer": {
+    "toneMapping": "Neutral",
+    "exposure": 1,
+    "shadowMap": "PCF",
+    "shadowMapEnabled": true,
+    "pixelRatio": 1.25,
+    "shadowMapSize": 1024,
+    "antialias": false,
+    "logarithmicDepthBuffer": false,
+    "maxFps": 60,
+    "renderMode": "demand"
+  },
+  "campus": [
+    {
+      "id": "campus_foundation",
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "site"
+      }
+    },
+    {
+      "id": "boulevard_north",
+      "position": [
+        0,
+        0,
+        -70
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "road",
+        "w": 300,
+        "d": 12
+      }
+    },
+    {
+      "id": "boulevard_south",
+      "position": [
+        0,
+        0,
+        70
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "road",
+        "w": 300,
+        "d": 12
+      }
+    },
+    {
+      "id": "avenue_west",
+      "position": [
+        -75,
+        0,
+        0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "road",
+        "w": 12,
+        "d": 242
+      }
+    },
+    {
+      "id": "avenue_east",
+      "position": [
+        75,
+        0,
+        0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "road",
+        "w": 12,
+        "d": 242
+      }
+    },
+    {
+      "id": "main_entry_avenue",
+      "position": [
+        0,
+        0,
+        103
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "road",
+        "w": 16,
+        "d": 54
+      }
+    },
+    {
+      "id": "central_north_access",
+      "position": [
+        0,
+        0,
+        -48
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "road",
+        "w": 10,
+        "d": 32
+      }
+    },
+    {
+      "id": "south_crosswalk_0",
+      "position": [
+        -75,
+        0,
+        63
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "crossing"
+      }
+    },
+    {
+      "id": "south_crosswalk_75",
+      "position": [
+        0,
+        0,
+        63
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "crossing"
+      }
+    },
+    {
+      "id": "south_crosswalk_150",
+      "position": [
+        75,
+        0,
+        63
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "crossing"
+      }
+    },
+    {
+      "id": "north_crosswalk_0",
+      "position": [
+        -75,
+        0,
+        -63
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "crossing"
+      }
+    },
+    {
+      "id": "north_crosswalk_150",
+      "position": [
+        75,
+        0,
+        -63
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "crossing"
+      }
+    },
+    {
+      "id": "headquarters_east_tower",
+      "position": [
+        23,
+        0,
+        -8
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "landmark",
+        "w": 27,
+        "d": 27,
+        "h": 48
+      }
+    },
+    {
+      "id": "headquarters_west_tower",
+      "position": [
+        -17,
+        0,
+        -18
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "landmark",
+        "w": 25,
+        "d": 25,
+        "h": 34
+      }
+    },
+    {
+      "id": "exhibition_pavilion",
+      "position": [
+        -24,
+        0,
+        23
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "office",
+        "w": 43,
+        "d": 20,
+        "h": 9
+      }
+    },
+    {
+      "id": "innovation_forum",
+      "position": [
+        28,
+        0,
+        29
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "research",
+        "w": 27,
+        "d": 18,
+        "h": 13
+      }
+    },
+    {
+      "id": "arrival_reflecting_pool",
+      "position": [
+        -25,
+        0,
+        47
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "pool",
+        "w": 27,
+        "d": 6
+      }
+    },
+    {
+      "id": "central_garden",
+      "position": [
+        25,
+        0,
+        49
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "lawn",
+        "w": 25,
+        "d": 8
+      }
+    },
+    {
+      "id": "north_court",
+      "position": [
+        34,
+        0,
+        -48
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "lawn",
+        "w": 44,
+        "d": 12
+      }
+    },
+    {
+      "id": "west_court",
+      "position": [
+        -40,
+        0,
+        -44
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "lawn",
+        "w": 28,
+        "d": 16
+      }
+    },
+    {
+      "id": "research_west_01",
+      "position": [
+        -116,
+        0,
+        -33
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "research",
+        "w": 38,
+        "d": 22,
+        "h": 21
+      }
+    },
+    {
+      "id": "research_west_02",
+      "position": [
+        -130,
+        0,
+        13
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "research",
+        "w": 19,
+        "d": 35,
+        "h": 17
+      }
+    },
+    {
+      "id": "research_west_03",
+      "position": [
+        -103,
+        0,
+        39
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "research",
+        "w": 35,
+        "d": 17,
+        "h": 12
+      }
+    },
+    {
+      "id": "research_courtyard",
+      "position": [
+        -104,
+        0,
+        5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "lawn",
+        "w": 21,
+        "d": 22
+      }
+    },
+    {
+      "id": "research_east_01",
+      "position": [
+        110,
+        0,
+        -32
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "research",
+        "w": 47,
+        "d": 22,
+        "h": 24
+      }
+    },
+    {
+      "id": "research_east_02",
+      "position": [
+        119,
+        0,
+        18
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "research",
+        "w": 31,
+        "d": 26,
+        "h": 16
+      }
+    },
+    {
+      "id": "east_garden",
+      "position": [
+        113,
+        0,
+        47
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "lawn",
+        "w": 48,
+        "d": 10
+      }
+    },
+    {
+      "id": "production_hall_a",
+      "position": [
+        -119,
+        0,
+        -104
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "hall",
+        "w": 49,
+        "d": 32,
+        "h": 11
+      }
+    },
+    {
+      "id": "production_hall_b",
+      "position": [
+        -35,
+        0,
+        -105
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "hall",
+        "w": 53,
+        "d": 30,
+        "h": 13
+      }
+    },
+    {
+      "id": "warehouse_a",
+      "position": [
+        35,
+        0,
+        -105
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "warehouse",
+        "w": 48,
+        "d": 30,
+        "h": 10
+      }
+    },
+    {
+      "id": "warehouse_b",
+      "position": [
+        116,
+        0,
+        -104
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "warehouse",
+        "w": 46,
+        "d": 32,
+        "h": 10
+      }
+    },
+    {
+      "id": "loading_truck_0",
+      "position": [
+        20,
+        0,
+        -82
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "truck",
+        "paint": "white"
+      }
+    },
+    {
+      "id": "loading_truck_1",
+      "position": [
+        35,
+        0,
+        -82
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "truck",
+        "paint": "white"
+      }
+    },
+    {
+      "id": "loading_truck_2",
+      "position": [
+        49,
+        0,
+        -82
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "truck",
+        "paint": "white"
+      }
+    },
+    {
+      "id": "loading_truck_3",
+      "position": [
+        105,
+        0,
+        -82
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "truck",
+        "paint": "white"
+      }
+    },
+    {
+      "id": "loading_truck_4",
+      "position": [
+        119,
+        0,
+        -82
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "truck",
+        "paint": "white"
+      }
+    },
+    {
+      "id": "loading_truck_5",
+      "position": [
+        133,
+        0,
+        -82
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "truck",
+        "paint": "white"
+      }
+    },
+    {
+      "id": "visitor_parking",
+      "position": [
+        -113,
+        0,
+        100
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "parking",
+        "w": 65,
+        "d": 36
+      }
+    },
+    {
+      "id": "staff_parking",
+      "position": [
+        44,
+        0,
+        103
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "parking",
+        "w": 40,
+        "d": 31
+      }
+    },
+    {
+      "id": "energy_transformers",
+      "position": [
+        113,
+        0,
+        91
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "energy",
+        "w": 29,
+        "d": 19
+      }
+    },
+    {
+      "id": "energy_service_building",
+      "position": [
+        132,
+        0,
+        116
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "hall",
+        "w": 28,
+        "d": 13,
+        "h": 6
+      }
+    },
+    {
+      "id": "security_gatehouse",
+      "position": [
+        -15,
+        0,
+        118
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "gate"
+      }
+    },
+    {
+      "id": "front_garden_left",
+      "position": [
+        -38,
+        0,
+        105
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "lawn",
+        "w": 32,
+        "d": 25
+      }
+    },
+    {
+      "id": "energy_lawn",
+      "position": [
+        110,
+        0,
+        113
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "lawn",
+        "w": 8,
+        "d": 17
+      }
+    },
+    {
+      "id": "visitor_car_0",
+      "position": [
+        -142,
+        0,
+        85
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "car",
+        "paint": "white"
+      }
+    },
+    {
+      "id": "visitor_car_1",
+      "position": [
+        -136.5,
+        0,
+        85
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "car",
+        "paint": "blue"
+      }
+    },
+    {
+      "id": "visitor_car_2",
+      "position": [
+        -131,
+        0,
+        85
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "car",
+        "paint": "silver"
+      }
+    },
+    {
+      "id": "visitor_car_3",
+      "position": [
+        -125.5,
+        0,
+        85
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "car",
+        "paint": "dark"
+      }
+    },
+    {
+      "id": "visitor_car_4",
+      "position": [
+        -120,
+        0,
+        85
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "car",
+        "paint": "red"
+      }
+    },
+    {
+      "id": "visitor_car_5",
+      "position": [
+        -114.5,
+        0,
+        85
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "car",
+        "paint": "white"
+      }
+    },
+    {
+      "id": "visitor_car_6",
+      "position": [
+        -109,
+        0,
+        85
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "car",
+        "paint": "blue"
+      }
+    },
+    {
+      "id": "visitor_car_7",
+      "position": [
+        -103.5,
+        0,
+        85
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "car",
+        "paint": "silver"
+      }
+    },
+    {
+      "id": "visitor_car_8",
+      "position": [
+        -98,
+        0,
+        85
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "car",
+        "paint": "dark"
+      }
+    },
+    {
+      "id": "visitor_car_9",
+      "position": [
+        -92.5,
+        0,
+        85
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "car",
+        "paint": "red"
+      }
+    },
+    {
+      "id": "visitor_car_10",
+      "position": [
+        -87,
+        0,
+        85
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "car",
+        "paint": "white"
+      }
+    },
+    {
+      "id": "visitor_car_11",
+      "position": [
+        -142,
+        0,
+        115
+      ],
+      "rotation": [
+        0,
+        3.141592653589793,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "car",
+        "paint": "blue"
+      }
+    },
+    {
+      "id": "visitor_car_12",
+      "position": [
+        -136.5,
+        0,
+        115
+      ],
+      "rotation": [
+        0,
+        3.141592653589793,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "car",
+        "paint": "silver"
+      }
+    },
+    {
+      "id": "visitor_car_13",
+      "position": [
+        -131,
+        0,
+        115
+      ],
+      "rotation": [
+        0,
+        3.141592653589793,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "car",
+        "paint": "dark"
+      }
+    },
+    {
+      "id": "visitor_car_14",
+      "position": [
+        -125.5,
+        0,
+        115
+      ],
+      "rotation": [
+        0,
+        3.141592653589793,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "car",
+        "paint": "red"
+      }
+    },
+    {
+      "id": "visitor_car_15",
+      "position": [
+        -120,
+        0,
+        115
+      ],
+      "rotation": [
+        0,
+        3.141592653589793,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "car",
+        "paint": "white"
+      }
+    },
+    {
+      "id": "visitor_car_16",
+      "position": [
+        -114.5,
+        0,
+        115
+      ],
+      "rotation": [
+        0,
+        3.141592653589793,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "car",
+        "paint": "blue"
+      }
+    },
+    {
+      "id": "staff_car_0",
+      "position": [
+        27,
+        0,
+        92
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "car",
+        "paint": "blue"
+      }
+    },
+    {
+      "id": "staff_car_1",
+      "position": [
+        31.4,
+        0,
+        92
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "car",
+        "paint": "white"
+      }
+    },
+    {
+      "id": "staff_car_2",
+      "position": [
+        35.8,
+        0,
+        92
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "car",
+        "paint": "white"
+      }
+    },
+    {
+      "id": "staff_car_3",
+      "position": [
+        40.2,
+        0,
+        92
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "car",
+        "paint": "blue"
+      }
+    },
+    {
+      "id": "staff_car_4",
+      "position": [
+        44.6,
+        0,
+        92
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "car",
+        "paint": "white"
+      }
+    },
+    {
+      "id": "staff_car_5",
+      "position": [
+        49,
+        0,
+        92
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "car",
+        "paint": "white"
+      }
+    },
+    {
+      "id": "staff_car_6",
+      "position": [
+        53.400000000000006,
+        0,
+        92
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "car",
+        "paint": "blue"
+      }
+    },
+    {
+      "id": "staff_car_7",
+      "position": [
+        57.800000000000004,
+        0,
+        92
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "car",
+        "paint": "white"
+      }
+    },
+    {
+      "id": "avenue_car_01",
+      "position": [
+        -72,
+        0,
+        32
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "car",
+        "paint": "blue"
+      }
+    },
+    {
+      "id": "avenue_car_02",
+      "position": [
+        78,
+        0,
+        -38
+      ],
+      "rotation": [
+        0,
+        3.141592653589793,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "car",
+        "paint": "silver"
+      }
+    },
+    {
+      "id": "boulevard_car_03",
+      "position": [
+        43,
+        0,
+        73
+      ],
+      "rotation": [
+        0,
+        1.5707963267948966,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "car",
+        "paint": "white"
+      }
+    },
+    {
+      "id": "entry_car_04",
+      "position": [
+        4,
+        0,
+        98
+      ],
+      "rotation": [
+        0,
+        3.141592653589793,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "car",
+        "paint": "dark"
+      }
+    },
+    {
+      "id": "avenue_tree_0",
+      "position": [
+        -63,
+        0,
+        -51
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "tree",
+        "size": 1
+      }
+    },
+    {
+      "id": "avenue_tree_1",
+      "position": [
+        -63,
+        0,
+        -34
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "tree",
+        "size": 1.1
+      }
+    },
+    {
+      "id": "avenue_tree_2",
+      "position": [
+        -63,
+        0,
+        -16
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "tree",
+        "size": 0.9
+      }
+    },
+    {
+      "id": "avenue_tree_3",
+      "position": [
+        -63,
+        0,
+        2
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "tree",
+        "size": 1
+      }
+    },
+    {
+      "id": "avenue_tree_4",
+      "position": [
+        -63,
+        0,
+        20
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "tree",
+        "size": 1.1
+      }
+    },
+    {
+      "id": "avenue_tree_5",
+      "position": [
+        -63,
+        0,
+        38
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "tree",
+        "size": 0.9
+      }
+    },
+    {
+      "id": "avenue_tree_6",
+      "position": [
+        -63,
+        0,
+        52
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "tree",
+        "size": 1
+      }
+    },
+    {
+      "id": "avenue_tree_7",
+      "position": [
+        63,
+        0,
+        -51
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "tree",
+        "size": 1.1
+      }
+    },
+    {
+      "id": "avenue_tree_8",
+      "position": [
+        63,
+        0,
+        -34
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "tree",
+        "size": 0.9
+      }
+    },
+    {
+      "id": "avenue_tree_9",
+      "position": [
+        63,
+        0,
+        -16
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "tree",
+        "size": 1
+      }
+    },
+    {
+      "id": "avenue_tree_10",
+      "position": [
+        63,
+        0,
+        2
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "tree",
+        "size": 1.1
+      }
+    },
+    {
+      "id": "avenue_tree_11",
+      "position": [
+        63,
+        0,
+        20
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "tree",
+        "size": 0.9
+      }
+    },
+    {
+      "id": "avenue_tree_12",
+      "position": [
+        63,
+        0,
+        38
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "tree",
+        "size": 1
+      }
+    },
+    {
+      "id": "avenue_tree_13",
+      "position": [
+        63,
+        0,
+        52
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "tree",
+        "size": 1.1
+      }
+    },
+    {
+      "id": "boundary_tree_14",
+      "position": [
+        -143,
+        0,
+        -124
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "tree",
+        "size": 0.85
+      }
+    },
+    {
+      "id": "boundary_tree_15",
+      "position": [
+        -125,
+        0,
+        -124
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "tree",
+        "size": 0.85
+      }
+    },
+    {
+      "id": "boundary_tree_16",
+      "position": [
+        -107,
+        0,
+        -124
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "tree",
+        "size": 0.85
+      }
+    },
+    {
+      "id": "boundary_tree_17",
+      "position": [
+        -89,
+        0,
+        -124
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "tree",
+        "size": 0.85
+      }
+    },
+    {
+      "id": "boundary_tree_18",
+      "position": [
+        -71,
+        0,
+        -124
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "tree",
+        "size": 0.85
+      }
+    },
+    {
+      "id": "boundary_tree_19",
+      "position": [
+        -53,
+        0,
+        -124
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "tree",
+        "size": 0.85
+      }
+    },
+    {
+      "id": "boundary_tree_20",
+      "position": [
+        -35,
+        0,
+        -124
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "tree",
+        "size": 0.85
+      }
+    },
+    {
+      "id": "boundary_tree_21",
+      "position": [
+        -17,
+        0,
+        -124
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "tree",
+        "size": 0.85
+      }
+    },
+    {
+      "id": "boundary_tree_22",
+      "position": [
+        1,
+        0,
+        -124
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "tree",
+        "size": 0.85
+      }
+    },
+    {
+      "id": "boundary_tree_23",
+      "position": [
+        19,
+        0,
+        -124
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "tree",
+        "size": 0.85
+      }
+    },
+    {
+      "id": "boundary_tree_24",
+      "position": [
+        37,
+        0,
+        -124
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "tree",
+        "size": 0.85
+      }
+    },
+    {
+      "id": "boundary_tree_25",
+      "position": [
+        55,
+        0,
+        -124
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "tree",
+        "size": 0.85
+      }
+    },
+    {
+      "id": "boundary_tree_26",
+      "position": [
+        73,
+        0,
+        -124
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "tree",
+        "size": 0.85
+      }
+    },
+    {
+      "id": "boundary_tree_27",
+      "position": [
+        91,
+        0,
+        -124
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "tree",
+        "size": 0.85
+      }
+    },
+    {
+      "id": "boundary_tree_28",
+      "position": [
+        109,
+        0,
+        -124
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "tree",
+        "size": 0.85
+      }
+    },
+    {
+      "id": "boundary_tree_29",
+      "position": [
+        127,
+        0,
+        -124
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "tree",
+        "size": 0.85
+      }
+    },
+    {
+      "id": "boundary_tree_30",
+      "position": [
+        145,
+        0,
+        -124
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "tree",
+        "size": 0.85
+      }
+    },
+    {
+      "id": "boundary_tree_31",
+      "position": [
+        -143,
+        0,
+        124
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "tree",
+        "size": 0.85
+      }
+    },
+    {
+      "id": "boundary_tree_32",
+      "position": [
+        -125,
+        0,
+        124
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "tree",
+        "size": 0.85
+      }
+    },
+    {
+      "id": "boundary_tree_33",
+      "position": [
+        -107,
+        0,
+        124
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "tree",
+        "size": 0.85
+      }
+    },
+    {
+      "id": "boundary_tree_34",
+      "position": [
+        -89,
+        0,
+        124
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "tree",
+        "size": 0.85
+      }
+    },
+    {
+      "id": "boundary_tree_35",
+      "position": [
+        -71,
+        0,
+        124
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "tree",
+        "size": 0.85
+      }
+    },
+    {
+      "id": "boundary_tree_36",
+      "position": [
+        -53,
+        0,
+        124
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "tree",
+        "size": 0.85
+      }
+    },
+    {
+      "id": "boundary_tree_37",
+      "position": [
+        -35,
+        0,
+        124
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "tree",
+        "size": 0.85
+      }
+    },
+    {
+      "id": "boundary_tree_38",
+      "position": [
+        37,
+        0,
+        124
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "tree",
+        "size": 0.85
+      }
+    },
+    {
+      "id": "boundary_tree_39",
+      "position": [
+        55,
+        0,
+        124
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "tree",
+        "size": 0.85
+      }
+    },
+    {
+      "id": "boundary_tree_40",
+      "position": [
+        73,
+        0,
+        124
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "tree",
+        "size": 0.85
+      }
+    },
+    {
+      "id": "boundary_tree_41",
+      "position": [
+        91,
+        0,
+        124
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "tree",
+        "size": 0.85
+      }
+    },
+    {
+      "id": "boundary_tree_42",
+      "position": [
+        109,
+        0,
+        124
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "tree",
+        "size": 0.85
+      }
+    },
+    {
+      "id": "boundary_tree_43",
+      "position": [
+        127,
+        0,
+        124
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "tree",
+        "size": 0.85
+      }
+    },
+    {
+      "id": "boundary_tree_44",
+      "position": [
+        145,
+        0,
+        124
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "tree",
+        "size": 0.85
+      }
+    },
+    {
+      "id": "garden_tree_45",
+      "position": [
+        -52,
+        0,
+        48
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "tree",
+        "size": 0.9
+      }
+    },
+    {
+      "id": "garden_tree_46",
+      "position": [
+        -52,
+        0,
+        34
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "tree",
+        "size": 0.9
+      }
+    },
+    {
+      "id": "garden_tree_47",
+      "position": [
+        -52,
+        0,
+        16
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "tree",
+        "size": 0.9
+      }
+    },
+    {
+      "id": "garden_tree_48",
+      "position": [
+        51,
+        0,
+        48
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "tree",
+        "size": 0.9
+      }
+    },
+    {
+      "id": "garden_tree_49",
+      "position": [
+        51,
+        0,
+        34
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "tree",
+        "size": 0.9
+      }
+    },
+    {
+      "id": "garden_tree_50",
+      "position": [
+        -113,
+        0,
+        0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "tree",
+        "size": 0.9
+      }
+    },
+    {
+      "id": "garden_tree_51",
+      "position": [
+        -113,
+        0,
+        12
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "tree",
+        "size": 0.9
+      }
+    },
+    {
+      "id": "garden_tree_52",
+      "position": [
+        -96,
+        0,
+        -1
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "tree",
+        "size": 0.9
+      }
+    },
+    {
+      "id": "garden_tree_53",
+      "position": [
+        -96,
+        0,
+        12
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "tree",
+        "size": 0.9
+      }
+    },
+    {
+      "id": "garden_tree_54",
+      "position": [
+        97,
+        0,
+        48
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "tree",
+        "size": 0.9
+      }
+    },
+    {
+      "id": "garden_tree_55",
+      "position": [
+        114,
+        0,
+        48
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "tree",
+        "size": 0.9
+      }
+    },
+    {
+      "id": "garden_tree_56",
+      "position": [
+        131,
+        0,
+        48
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "tree",
+        "size": 0.9
+      }
+    },
+    {
+      "id": "garden_tree_57",
+      "position": [
+        -48,
+        0,
+        96
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "tree",
+        "size": 0.9
+      }
+    },
+    {
+      "id": "garden_tree_58",
+      "position": [
+        -31,
+        0,
+        96
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "tree",
+        "size": 0.9
+      }
+    },
+    {
+      "id": "garden_tree_59",
+      "position": [
+        -48,
+        0,
+        113
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "tree",
+        "size": 0.9
+      }
+    },
+    {
+      "id": "garden_tree_60",
+      "position": [
+        -31,
+        0,
+        113
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "tree",
+        "size": 0.9
+      }
+    },
+    {
+      "id": "plaza_bench_0",
+      "position": [
+        -39,
+        0,
+        55
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "bench"
+      }
+    },
+    {
+      "id": "plaza_bench_1",
+      "position": [
+        -30,
+        0,
+        55
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "bench"
+      }
+    },
+    {
+      "id": "plaza_bench_2",
+      "position": [
+        -21,
+        0,
+        55
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "bench"
+      }
+    },
+    {
+      "id": "plaza_bench_3",
+      "position": [
+        -12,
+        0,
+        55
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "bench"
+      }
+    },
+    {
+      "id": "street_lamp_0_west",
+      "position": [
+        -84,
+        0,
+        -45
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "lamp"
+      }
+    },
+    {
+      "id": "street_lamp_0_east",
+      "position": [
+        84,
+        0,
+        -45
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "lamp"
+      }
+    },
+    {
+      "id": "street_lamp_1_west",
+      "position": [
+        -84,
+        0,
+        -10
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "lamp"
+      }
+    },
+    {
+      "id": "street_lamp_1_east",
+      "position": [
+        84,
+        0,
+        -10
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "lamp"
+      }
+    },
+    {
+      "id": "street_lamp_2_west",
+      "position": [
+        -84,
+        0,
+        25
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "lamp"
+      }
+    },
+    {
+      "id": "street_lamp_2_east",
+      "position": [
+        84,
+        0,
+        25
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "lamp"
+      }
+    },
+    {
+      "id": "street_lamp_3_west",
+      "position": [
+        -84,
+        0,
+        50
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "lamp"
+      }
+    },
+    {
+      "id": "street_lamp_3_east",
+      "position": [
+        84,
+        0,
+        50
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "params": {
+        "kind": "lamp"
+      }
+    }
+  ]
+}

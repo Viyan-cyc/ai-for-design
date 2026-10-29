@@ -60,8 +60,8 @@
       "relativePath": "scripts/preview/src/i18n/index.js",
       "source": "self-built",
       "sourceType": "adapter",
-      "basis": "npm ESM i18n + setLocaleMessages API; verified both are top-level exports from @hw-seq/sweet-ui-base",
-      "logic": "Wraps native i18n(lang, app, callback) + setLocaleMessages(dict, app) to support business dictionaries per language"
+      "basis": "npm ESM i18n + setLocaleMessages + setSweetI18n API; useLocale().t creates stale closure over non-reactive globalProperties",
+      "logic": "Exports t as computed ref — sweetI18nRef snapshots globalProperties.sweetI18n after each setLanguage(). Templates: t(key) auto-unwraps; JS: t.value(key). Does not handle built-in component inject('sweetI18n') refresh (SweetUI 5.7.0 limitation)"
     },
     {
       "relativePath": "scripts/preview/src/runtime.js",

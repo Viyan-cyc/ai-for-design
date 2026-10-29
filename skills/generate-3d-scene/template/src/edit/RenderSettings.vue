@@ -13,6 +13,7 @@ const fpsCustom = ref(![0, 30, 60].includes(config.value.maxFps ?? 60));
 watch(() => config.value.maxFps, value => { fpsCustom.value = ![0, 30, 60].includes(value ?? 60); });
 const fpsChoice = computed(() => fpsCustom.value ? 'custom' : String(config.value.maxFps));
 const qualityHint = computed(() => ({ fluent: '优先流畅响应，关闭阴影。', balanced: '适度提升清晰度，开启阴影。', fine: '提升清晰度与阴影细节。', custom: '已使用自定义画质参数。' }[preset.value]));
+const qualityLabel = computed(() => ({ fluent: '流畅', balanced: '均衡', fine: '精细', custom: '自定义' }[preset.value]));
 const help = ref('');
 function toggleHelp(key: string): void { help.value = help.value === key ? '' : key; }
 function chooseFps(event: Event): void {
@@ -54,14 +55,14 @@ function checked(event: Event): boolean { return (event.target as HTMLInputEleme
 
 <template>
   <section class="render-settings ed-sec" aria-label="渲染设置">
-    <div class="ed-sec__t">画质与性能<span v-if="preset === 'custom'" class="custom">自定义</span></div>
+    <div class="ed-sec__t">画质与性能</div>
     <div class="setting"><span class="ed-label">画质 <button class="help" aria-label="画质说明" :aria-expanded="help === 'quality'" @click="toggleHelp('quality')">?</button></span>
       <div class="presets" role="group" aria-label="画质档位">
         <button v-for="(label, key) in { fluent: '流畅', balanced: '均衡', fine: '精细' }" :key="key" class="ed-btn"
           :aria-pressed="preset === key" :class="{ 'ed-btn--active': preset === key }" @click="choose(key)">{{ label }}</button>
       </div>
     </div>
-    <p class="hint">{{ qualityHint }}</p>
+    <p class="hint" role="status"><span :class="{ custom: preset === 'custom' }">当前：{{ qualityLabel }}</span> · {{ qualityHint }}</p>
     <p v-if="help === 'quality'" class="help-text">切换档位会应用像素比、阴影开关、算法和全部灯光的阴影分辨率，不改变帧率上限和渲染方式。</p>
     <label class="setting"><span class="ed-label">帧率上限</span><select aria-label="帧率上限" :value="fpsChoice" @change="chooseFps"><option value="30">30 FPS</option><option value="60">60 FPS</option><option value="0">不限制</option><option value="custom">自定义</option></select></label>
     <label v-if="fpsCustom" class="setting"><span class="ed-label">自定义帧率</span><input aria-label="自定义帧率" type="number" min="1" max="240" step="1" :value="config.maxFps || 60" @change="number('maxFps', $event)"></label>

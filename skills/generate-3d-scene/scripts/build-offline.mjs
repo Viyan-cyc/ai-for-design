@@ -3,6 +3,7 @@ import { resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { checkProject } from './build.mjs';
 import { checkEnvironment } from './lib/environment.mjs';
+import { checkAssembly } from './lib/assembly-check.mjs';
 
 const target = process.argv[2];
 if (!target) {
@@ -21,6 +22,17 @@ try {
     result.errors.forEach((error) => console.error(error));
     process.exitCode = 1;
   } else {
+    const assemblyStarted = performance.now();
+    const assembly = await checkAssembly(root);
+    console.log(`TIMING: assembly-check=${Math.round(performance.now() - assemblyStarted)}ms`);
+    console.log(`ASSEMBLY: ${assembly.ok ? (assembly.skipped.length ? 'partial' : 'passed') : 'failed'} | checked=${assembly.checked}, skipped=${assembly.skipped.length}`);
+    console.log('RUNTIME: not-run (no browser, rendering or interaction check)');
+    assembly.skipped.forEach(message => console.warn(`UNCHECKED: ${message}`));
+    if (!assembly.ok) {
+      assembly.errors.forEach(message => console.error(message));
+      console.error('RESULT: FAIL | ASSEMBLY_CHECK');
+      process.exit(1);
+    }
     const child = spawnSync(env.node, [resolve(root, 'scripts/build-offline.mjs')], { cwd: root, stdio: 'inherit' });
     if (child.error) throw child.error;
     process.exitCode = child.status ?? 1;

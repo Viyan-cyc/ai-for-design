@@ -20,7 +20,9 @@
 node scripts/build-offline.mjs <工程目录>
 ```
 
-该命令依次执行静态契约检查、类型检查、离线编译、资源闭包打包，生成工程内 offline/index.3d.html 与配套文件。无需再重复 typecheck、npm run build、lint 或浏览器检查。工程自身 npm run build:offline 提供编译打包能力；默认生成必须走上面的统一命令以包含静态契约检查。
+该命令依次执行静态契约检查、Node 同步装配检查、类型检查、离线编译、资源闭包打包，生成工程内 delivery/index.3d.html 与配套文件。无需再重复 typecheck、npm run build、lint 或浏览器检查。工程自身 npm run build:offline 提供编译打包能力；默认生成必须走上面的统一命令以包含静态契约与装配检查。
+
+装配检查在独立进程中使用真实 Three.js、SceneEngine 和本次 scene-data 执行同步工厂；最多 30 秒，超时或检查脚本失败按阻塞处理，不反复执行。它不创建 WebGL、不执行动画帧、不模拟 DOM、不加载模型或联网。依赖浏览器的节点标记 UNCHECKED，ASSEMBLY: partial 不等于错误或模型不可用；不得因此降级库模型或新增浏览器验收。报出的实际代码错误集中修复，共用下述重跑额度。输出 RUNTIME: not-run；不承诺所有运行路径已验证。
 
 首次失败汇总实际错误并集中修复，最多两轮修复重跑（总计三次尝试）。无实质进展、脚本自身异常或环境失败提前停止；依照处理提示解决或报告阻塞，不能绕过检查、修改 skill 脚本求过关或重置次数。任意一次通过立即交付，不自行再优化。详细次数规则以 SKILL.md 为准。
 

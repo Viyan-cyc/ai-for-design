@@ -1,4 +1,5 @@
 import { runtimeCompatibility } from './runtime-compatibility.mjs';
+import { packageDelivery } from './package-delivery.mjs';
 import { readFileSync, writeFileSync, readdirSync, existsSync, mkdirSync, renameSync, rmSync, openSync, closeSync } from 'node:fs';
 import { resolve, dirname, relative, extname, sep, posix } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -154,8 +155,9 @@ try {
   stage = undefined;
   if (backup) rmSync(backup, { recursive: true });
   timed('publish');
-  console.log(`RESULT: OK\nHTML_PATH: ${resolve(out, 'index.3d.html')}`);
-  console.log(`PASS ${resolve(out, 'index.3d.html')} (${Object.keys(resources).length} resources)`);
+  const deliveryHtml = packageDelivery(root);
+  console.log(`RESULT: OK\nHTML_PATH: ${deliveryHtml}`);
+  console.log(`PASS ${deliveryHtml} (${Object.keys(resources).length} resources)`);
 } catch (error) {
   console.error(`构建未通过：${error.message}`);
   process.exitCode = 1;

@@ -27,9 +27,11 @@ version: 0.1.0
 3. 上传包可选：无包时直接内网检索；有包时按 references/designer-assets.md 全量接收并生成单页模型清单（index.3d-model 卡片），名称自动预填、用户在页面检查、反复更新模型、命名、确认正面/尺寸及性能预算；默认全部使用，全部就绪后下载 models.3d.zip（内含模型和清单）。Agent 执行 import-delivery <原包目录> <回传ZIP> --out <新目录> 校验并导入，优先使用该包模型，缺项才查库。仅检查而本轮无场景需求时，导入成功后回复准备好并停止；重复收到同一清单不重复生成场景。优先在页面“更新模型”；用户另传完整新包时才用 update-package 保留填写内容（见 designer-assets.md）。明确纯几何时跳过检索。未命中及时降级，不循环穷搜。
 4. `node scripts/init.mjs <工程目录> --profile empty --assets referenced --deps shared --defer-build`。模型确认后用 designer-assets inject 注入资源，或 --asset-package 指定已确认资产包；skill 不携带模型库。需组件时加 --with-components，由 init 准备独立依赖。
 5. 读取生成工程现状，局部修改业务 handler、scene-profile 的注册项和 scene-data。设计相机、光照、材质与布局；不要从 demo 模板覆盖现有文件。
-6. `node scripts/build-offline.mjs <工程目录>`。一次执行静态契约、类型检查、资源检查和离线打包。成功直接交付并停止。
+6. `node scripts/build-offline.mjs <工程目录>`。一次执行静态契约、Node 同步装配检查、类型检查、资源检查和离线打包。成功直接交付并停止。
 
 场景构建后不追加 typecheck、普通 build、lint、浏览器、截图、性能采样、验证报告或审美修复。模型接收的固定缩略图/加载检查与整包确认属于资产阶段，不是场景复核。真实错误按下文处理；未经运行不能声称已验证渲染或交互。
+
+装配检查用实际 scene-data 执行工厂注册与同步节点创建，捕获 Duplicate slot、提前 finish、材质实例冲突等代码错误；不是浏览器运行或视觉验收。ASSEMBLY 的 partial / UNCHECKED 表示 Canvas、异步模型等未覆盖，不要求因此打开浏览器、重检库模型或改用几何体。RUNTIME: not-run 表示没有验证渲染与交互。页面好不好看、交互是否好用由用户评价，Agent 不自行做视觉检查或审美修复。
 
 ## 选材与复用
 
@@ -68,7 +70,7 @@ version: 0.1.0
 
 ## 交付与保存
 
-成功给出 offline/index.3d.html 的可点击绝对路径，说明双击打开与进入编辑；移动时携带同目录配套文件。保存不触发下载：开发模式写回工程 public/scene3d/scene-data.json；离线模式点击「保存」复制 scene3d-changes 修改文本，用户粘贴给 Agent 后回写；剪贴板不可用时显示文本框供手动复制。复制不表示源码已保存，不清除未保存状态。Agent 核对 sourceId 与对应工程，并逐项比较 before；有冲突先处理冲突，不覆盖其他修改。path 为路径数组，缺少 after 表示删除，数组整体替换；保留图片 data URI 或落盘后更新引用。回写后重新构建离线页面。
+成功给出 delivery/index.3d.html 的可点击绝对路径，说明双击打开与进入编辑；交付目录根部仅 index.3d.html、preview/（运行资源）、source/（完整二开工程）。移动预览需携带 preview/；二开取 source/。工作区中的 node_modules、缓存、检索临时文件不交付。source/ 是构建快照，用户修改后应将其作为新的工作工程，不要在重建旧工程时覆盖用户改动。保存不触发下载：开发模式写回工程 public/scene3d/scene-data.json；离线模式点击「保存」复制 scene3d-changes 修改文本，用户粘贴给 Agent 后回写；剪贴板不可用时显示文本框供手动复制。复制不表示源码已保存，不清除未保存状态。Agent 核对 sourceId 与对应工程，并逐项比较 before；有冲突先处理冲突，不覆盖其他修改。path 为路径数组，缺少 after 表示删除，数组整体替换；保留图片 data URI 或落盘后更新引用。回写后重新构建离线页面。
 
 保存写回场景数据，不改业务 handler 或原 HTML；更新离线产物需重新构建。退出编辑进入当前场景预览，保留内存中的修改并支持返回编辑；退出不等于保存。不承诺构建通过等于绝不白屏，也不把未经目检的效果称为视觉验收通过。
 
