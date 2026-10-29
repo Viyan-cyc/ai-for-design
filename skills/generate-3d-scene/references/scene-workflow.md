@@ -20,7 +20,7 @@
 node scripts/build-offline.mjs <工程目录>
 ```
 
-该命令依次执行静态契约检查、Node 同步装配检查、类型检查、离线编译、资源闭包打包，生成工程内 delivery/index.3d.html 与配套文件。无需再重复 typecheck、npm run build、lint 或浏览器检查。工程自身 npm run build:offline 提供编译打包能力；默认生成必须走上面的统一命令以包含静态契约与装配检查。
+该命令依次执行静态契约检查、Node 同步装配检查、类型检查、离线编译、资源闭包打包，向初始化指定的用户项目目录输出 index.3d.html、preview/ 和 source/。无需再重复 typecheck、npm run build、lint 或浏览器检查。工程自身 npm run build:offline 提供编译打包能力；默认生成必须走上面的统一命令以包含静态契约与装配检查。
 
 装配检查在独立进程中使用真实 Three.js、SceneEngine 和本次 scene-data 执行同步工厂；最多 30 秒，超时或检查脚本失败按阻塞处理，不反复执行。它不创建 WebGL、不执行动画帧、不模拟 DOM、不加载模型或联网。依赖浏览器的节点标记 UNCHECKED，ASSEMBLY: partial 不等于错误或模型不可用；不得因此降级库模型或新增浏览器验收。报出的实际代码错误集中修复，共用下述重跑额度。输出 RUNTIME: not-run；不承诺所有运行路径已验证。
 
@@ -38,3 +38,7 @@ node scripts/build-offline.mjs <工程目录>
 - 用户请求不含编辑器的源码：strip-edit.mjs 自动剥离并编译已保存外观；TRANSCRIPTION.md 是自动转换摘要，不要求 LLM 人工转录。它是源码包，不是已部署网站。
 - 用户请求部署：按目标环境构建和部署；普通网页构建使用 npm run build。
 - 用户反馈白屏、交互错误或卡顿：执行与问题相关的诊断；不要默认重新跑全套截图/性能流程。
+
+### 开发工作区与交付目录
+
+CLI `node scripts/init.mjs <用户项目目录>` 的参数是最终交付目录，不是开发目录。脚本在用户主目录 `.scene3d/workspaces/` 创建独立工程，输出 WORKSPACE_PATH 和 DELIVERY_PATH。所有源码编辑、模型注入、临时查询文件及其他工程脚本使用 WORKSPACE_PATH，不在用户项目目录初始化源码或安装依赖。统一 build-offline 支持传 WORKSPACE_PATH 或原交付路径；成功返回最终 HTML_PATH。用户项目根目录仅有 index.3d.html、preview/、source/，不再有 delivery/、offline/、node_modules。交付时链接 HTML_PATH。同机后续修改继续使用原工作区；跨电脑使用 source 作为完整工程。旧工程不会自动移动或删除；旧工程无交付配置时仍保留 delivery 输出兼容。

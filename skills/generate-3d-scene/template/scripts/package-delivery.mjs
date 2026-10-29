@@ -1,17 +1,21 @@
 import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, renameSync, rmSync, writeFileSync } from 'node:fs';
-import { resolve, join, relative, sep } from 'node:path';
+import { resolve, join, relative, sep, dirname } from 'node:path';
 import { randomUUID } from 'node:crypto';
 
 // Generated delivery is replaceable; the editable workspace remains authoritative.
 export function packageDelivery(root) {
   root = resolve(root);
-  const out = join(root, 'delivery');
+  const config = join(root, '.scene3d-delivery.json');
+  const out = existsSync(config) ? resolve(JSON.parse(readFileSync(config, 'utf8')).output) : join(root, 'delivery');
+  if (out === root || root.startsWith(out + sep)) throw new Error('交付目录不能包含开发工作区');
   const marker = join('preview', '.scene3d-delivery');
-  if (existsSync(out) && !existsSync(join(out, marker))) throw new Error('delivery 不是本工具创建的目录，请先移走其中的文件');
-  const stage = join(root, `.delivery-stage-${randomUUID()}`);
-  const backup = join(root, `.delivery-backup-${randomUUID()}`);
+  if (existsSync(out) && readdirSync(out).length > 0 && !existsSync(join(out, marker))) throw new Error('delivery 不是本工具创建的目录，请先移走其中的文件');
+  const parent = dirname(out);
+  mkdirSync(parent, { recursive: true });
+  const stage = join(parent, `.delivery-stage-${randomUUID()}`);
+  const backup = join(parent, `.delivery-backup-${randomUUID()}`);
   const removeOwned = (path) => {
-    if (resolve(path, '..') !== root) throw new Error('交付清理路径越界');
+    if (resolve(path, '..') !== parent) throw new Error('交付清理路径越界');
     rmSync(path, { recursive: true, force: true });
   };
   try {

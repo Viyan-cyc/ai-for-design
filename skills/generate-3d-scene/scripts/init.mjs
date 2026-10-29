@@ -27,6 +27,7 @@ import { join, resolve, basename, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import { inject } from './lib/designer-assets.mjs';
+import { workspaceFor } from './lib/workspace.mjs';
 import { checkProject } from './build.mjs';
 import { checkEnvironment, npmEntry } from './lib/environment.mjs';
 import { buildAssetCatalog, resolveAsset, referencedAssetIds } from './lib/asset-catalog.mjs';
@@ -479,11 +480,20 @@ const main = () => {
     console.log(USAGE);
     process.exit(opts.help ? 0 : 2);
   }
-  const result = initProject(positional[0], opts);
+  const deliveryPath = resolve(positional[0]);
+  if (existsSync(deliveryPath) && readdirSync(deliveryPath).length && !existsSync(join(deliveryPath, 'preview/.scene3d-delivery'))) {
+    console.error('目标交付目录非空且不是本工具的交付目录，请使用新的项目目录；不会覆盖旧工程。');
+    process.exit(1);
+  }
+  const workspace = workspaceFor(deliveryPath);
+  const result = initProject(workspace, { ...opts, name: opts.name ?? basename(deliveryPath) });
+  result.deliveryPath = deliveryPath;
+  if (result.ok) writeFileSync(join(workspace, '.scene3d-delivery.json'), JSON.stringify({ output: deliveryPath }, null, 2));
   if (opts.json) {
     console.log(JSON.stringify(result, null, 2));
   } else if (!opts.quiet) {
     console.log(`RESULT: ${result.ok ? 'OK' : 'FAIL'}`);
+    console.log(`WORKSPACE_PATH: ${result.out}\nDELIVERY_PATH: ${deliveryPath}`);
     if (result.timings) console.log(`INIT_TIMING_MS: ${JSON.stringify(result.timings)}`);
     const mark = result.ok ? 'PASS' : 'FAIL';
     console.log(`[init/${mark}] ${result.out}  (name=${result.name ?? '-'}, profile=${result.profile})`);

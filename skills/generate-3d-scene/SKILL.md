@@ -70,7 +70,7 @@ version: 0.1.0
 
 ## 交付与保存
 
-成功给出 delivery/index.3d.html 的可点击绝对路径，说明双击打开与进入编辑；交付目录根部仅 index.3d.html、preview/（运行资源）、source/（完整二开工程）。移动预览需携带 preview/；二开取 source/。工作区中的 node_modules、缓存、检索临时文件不交付。source/ 是构建快照，用户修改后应将其作为新的工作工程，不要在重建旧工程时覆盖用户改动。保存不触发下载：开发模式写回工程 public/scene3d/scene-data.json；离线模式点击「保存」复制 scene3d-changes 修改文本，用户粘贴给 Agent 后回写；剪贴板不可用时显示文本框供手动复制。复制不表示源码已保存，不清除未保存状态。Agent 核对 sourceId 与对应工程，并逐项比较 before；有冲突先处理冲突，不覆盖其他修改。path 为路径数组，缺少 after 表示删除，数组整体替换；保留图片 data URI 或落盘后更新引用。回写后重新构建离线页面。
+成功给出构建返回 HTML_PATH 的可点击绝对路径，说明双击打开与进入编辑；交付目录根部仅 index.3d.html、preview/（运行资源）、source/（完整二开工程）。移动预览需携带 preview/；二开取 source/。工作区中的 node_modules、缓存、检索临时文件不交付。source/ 是构建快照，用户修改后应将其作为新的工作工程，不要在重建旧工程时覆盖用户改动。保存不触发下载：开发模式写回工程 public/scene3d/scene-data.json；离线模式点击「保存」复制 scene3d-changes 修改文本，用户粘贴给 Agent 后回写；剪贴板不可用时显示文本框供手动复制。复制不表示源码已保存，不清除未保存状态。Agent 核对 sourceId 与对应工程，并逐项比较 before；有冲突先处理冲突，不覆盖其他修改。path 为路径数组，缺少 after 表示删除，数组整体替换；保留图片 data URI 或落盘后更新引用。回写后重新构建离线页面。
 
 保存写回场景数据，不改业务 handler 或原 HTML；更新离线产物需重新构建。退出编辑进入当前场景预览，保留内存中的修改并支持返回编辑；退出不等于保存。不承诺构建通过等于绝不白屏，也不把未经目检的效果称为视觉验收通过。
 
@@ -95,3 +95,7 @@ version: 0.1.0
 
 
 生成场景默认使用流畅画质（实际 pixelRatio=1、阴影关闭、阴影分辨率512），60帧上限、按需渲染。保留编辑器的画质档位与高级参数；不得在业务代码中覆盖这些统一配置或新增独立循环。动画/异步变化接线与完整参数见 references/generation-contract.md「渲染性能配置」。
+
+### 开发工作区与交付目录
+
+CLI `node scripts/init.mjs <用户项目目录>` 的参数是最终交付目录，不是开发目录。脚本在用户主目录 `.scene3d/workspaces/` 创建独立工程，输出 WORKSPACE_PATH 和 DELIVERY_PATH。所有源码编辑、模型注入、临时查询文件及其他工程脚本使用 WORKSPACE_PATH，不在用户项目目录初始化源码或安装依赖。统一 build-offline 支持传 WORKSPACE_PATH 或原交付路径；成功返回最终 HTML_PATH。用户项目根目录仅有 index.3d.html、preview/、source/，不再有 delivery/、offline/、node_modules。交付时链接 HTML_PATH。同机后续修改继续使用原工作区；跨电脑使用 source 作为完整工程。旧工程不会自动移动或删除；旧工程无交付配置时仍保留 delivery 输出兼容。

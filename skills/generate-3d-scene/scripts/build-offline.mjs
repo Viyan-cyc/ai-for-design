@@ -4,14 +4,15 @@ import { spawnSync } from 'node:child_process';
 import { checkProject } from './build.mjs';
 import { checkEnvironment } from './lib/environment.mjs';
 import { checkAssembly } from './lib/assembly-check.mjs';
+import { resolveWorkspace } from './lib/workspace.mjs';
 
 const target = process.argv[2];
 if (!target) {
   console.error('用法：node scripts/build-offline.mjs <工程目录>');
   process.exit(2);
 }
-const root = resolve(target);
 try {
+  const root = resolveWorkspace(target);
   const env = checkEnvironment();
   const started = performance.now();
   const result = checkProject(root);

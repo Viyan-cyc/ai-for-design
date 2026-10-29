@@ -1,2 +1,5 @@
 node_modules/
 dist/
+
+skills/generate-3d-scene/*.zip
+outputs/delivery-layout-check/

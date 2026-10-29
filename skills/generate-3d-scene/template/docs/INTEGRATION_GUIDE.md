@@ -173,3 +173,7 @@ onBeforeUnmount(() => { active = false; scene?.dispose(); });
 ## 交付目录
 
 打开 delivery/index.3d.html 预览，preview/ 是其必需运行资源。source/ 是完整源码快照，包含 src、public、依赖清单、配置、构建脚本及必要 vendor 包；进入 source 后安装依赖即可开发。不要只复制 src/public 当作独立工程。工作区的 node_modules、缓存和中间产物不进入交付。修改 source 后以它作为新工作工程；不要再用旧工作区重建覆盖修改。
+
+### 开发工作区与交付目录
+
+CLI `node scripts/init.mjs <用户项目目录>` 的参数是最终交付目录，不是开发目录。脚本在用户主目录 `.scene3d/workspaces/` 创建独立工程，输出 WORKSPACE_PATH 和 DELIVERY_PATH。所有源码编辑、模型注入、临时查询文件及其他工程脚本使用 WORKSPACE_PATH，不在用户项目目录初始化源码或安装依赖。统一 build-offline 支持传 WORKSPACE_PATH 或原交付路径；成功返回最终 HTML_PATH。用户项目根目录仅有 index.3d.html、preview/、source/，不再有 delivery/、offline/、node_modules。交付时链接 HTML_PATH。同机后续修改继续使用原工作区；跨电脑使用 source 作为完整工程。旧工程不会自动移动或删除；旧工程无交付配置时仍保留 delivery 输出兼容。
