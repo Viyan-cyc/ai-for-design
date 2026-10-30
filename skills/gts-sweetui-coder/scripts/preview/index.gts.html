@@ -4,6 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SweetUI 页面预览</title>
+<link rel="stylesheet" href="./public/library/sweet-ui-base.css">
+<style>#ux-boot-error { display:none; white-space:pre-wrap; padding:24px; }</style>
+</head>
+<body theme="uDesign2.2-light">
+<div id="app"></div><pre id="ux-boot-error"></pre>
 <script>window.process = window.process || { env: { NODE_ENV: 'production' } };</script>
 <script src="./public/library/vue.global.prod.js"></script>
 <script src="./public/library/xss.js"></script>
@@ -13,11 +18,6 @@
 <script src="./public/library/dayjs.min.js"></script>
 <script src="./public/library/sweet-ui-base.umd.cjs"></script>
 <script src="./public/library/vue3-sfc-loader.js"></script>
-<link rel="stylesheet" href="./public/library/sweet-ui-base.css">
-<style>#ux-boot-error { display:none; white-space:pre-wrap; padding:24px; }</style>
-</head>
-<body theme="uDesign2.2-light">
-<div id="app"></div><pre id="ux-boot-error"></pre>
 <script src="./preview-data.js"></script>
 <script>
 (function () {

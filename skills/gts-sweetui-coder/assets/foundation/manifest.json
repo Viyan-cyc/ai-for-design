@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "assets": {
+    "workbench-shell": {
+      "version": "1.0.0",
+      "file": "1.0.0/workbench-shell.vue",
+      "sha256": "1d8c121c69b5ad76f6283f5369dc4f258f40529261c8923ca44e5a6b369d436f"
+    },
+    "conversation-composer": {
+      "version": "1.0.0",
+      "file": "1.0.0/conversation-composer.vue",
+      "sha256": "f941530434cfaecda83c3f6770e21c9b1ba53e2864e07e1e50b91cc323ddcfb7"
+    }
+  }
+}

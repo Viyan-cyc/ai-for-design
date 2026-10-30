@@ -303,6 +303,7 @@
 |--swt-color-bg-brand-round-button-hover|color|#c7000b33|#c7000b66|
 |--swt-color-bg-disabled|color|#e9e9e9|#2e2e2e|
 |--swt-color-bg-gray-round-button-hover|color|#1e1e1e33|#f5f5f566|
+|--swt-color-bg-mask|native|#1e1e1e4d|#000000b2|
 |--swt-color-bg-primary|color|#ffffff|#1e1e1e|
 |--swt-color-bg-primary-button-hover|color|#0067d133|#0073e866|
 |--swt-color-bg-secondary|color|#f5f5f5|#000000|
@@ -500,6 +501,7 @@
 |--swt-fill-color-extra-light|other|#fafcff|#fafcff|
 |--swt-fill-color-light|other|rgba(255, 255, 255, 0)|rgba(255, 255, 255, 0)|
 |--swt-fill-color-lighter|other|#fafafa|#fafafa|
+|--swt-filter-shadow-dark|native|0px 6px 8px rgba(0, 0, 0, 0.2)|0px 6px 8px rgba(0, 0, 0, 0.2)|
 |--swt-filter-shadow-light|other|0px 6px 8px rgba(0, 0, 0, 0.2)|0px 6px 8px rgba(0, 0, 0, 0.2)|
 |--swt-font-family-en|font|Huawei Sans,Manrope,Arial,San Francisco,Helvetica,Roboto|Huawei Sans,Manrope,Arial,San Francisco,Helvetica,Roboto|
 |--swt-font-family-other|font|Roboto|Roboto|

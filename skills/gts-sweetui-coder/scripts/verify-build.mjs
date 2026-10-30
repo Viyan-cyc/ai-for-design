@@ -17,6 +17,23 @@ try {
   ok('initializer refuses overwrite',()=>assert.equal(run('init.mjs',[temp,'device-list']).code,1))
   ok('starter compiles',()=>check(root))
   ok('source-only does not publish changed sources',()=>{const before=fs.readFileSync(path.join(root,'preview-data.js'),'utf8');fs.writeFileSync(page,original.replace('设备管理','Changed'));check(root);assert.equal(fs.readFileSync(path.join(root,'preview-data.js'),'utf8'),before);fs.writeFileSync(page,original)})
+  ok('source-only and rejected build preserve existing preview artifacts',()=>{
+    const html=path.join(root,'index.gts.html'),data=path.join(root,'preview-data.js')
+    const beforeHTML=fs.readFileSync(html),beforeData=fs.readFileSync(data)
+    const marker='<!-- existing preview -->\n'+beforeHTML.toString()
+    fs.writeFileSync(html,marker)
+    try {
+      check(root)
+      assert.equal(fs.readFileSync(html,'utf8'),marker)
+      assert.deepEqual(fs.readFileSync(data),beforeData)
+      fs.writeFileSync(page,original.replace('--swt-space-size-24','--swt-no-such-token'))
+      const failed=run('build.mjs',['--dir',root])
+      assert.equal(failed.code,1,failed.text)
+      assert.match(failed.text,/unknown token/)
+      assert.equal(fs.readFileSync(html,'utf8'),marker)
+      assert.deepEqual(fs.readFileSync(data),beforeData)
+    } finally {fs.writeFileSync(html,beforeHTML);fs.writeFileSync(page,original)}
+  })
   function mutate(name,from,to,pattern){ok(name,()=>{fs.writeFileSync(page,original.replace(from,to));try{check(root,pattern.source.includes('SOURCE_OK')?0:1,pattern)}finally{fs.writeFileSync(page,original)}})}
   mutate('unknown token rejected','--swt-space-size-24','--swt-no-such-token',/unknown token/)
   mutate('fallback does not hide unknown token','var(--swt-space-size-24)','var(--swt-no-such-token, 24px)',/unknown token/)
@@ -38,13 +55,26 @@ try {
     for(const name of ['sweet-ui-base.umd.cjs','sweet-ui-base.css','xss.js','lodash.min.js']){const p=path.join(root,'public/library',name);if(fs.existsSync(p))fs.unlinkSync(p)}
     const r=run('build.mjs',['--dir',root]);assert.equal(r.code,1,r.text);assert.match(r.text,/missing\/outside local resource/)
   })
-  for(const name of ['form-dialog','content-grid'])ok('example compiles: '+name,()=>{
+  for(const name of ['form-dialog','content-grid','search-detail'])ok('example compiles: '+name,()=>{
     const r=run('init.mjs',[temp,name]);assert.equal(r.code,0,r.text)
     const dest=path.join(temp,name),pageName=name.split('-').map(s=>s[0].toUpperCase()+s.slice(1)).join(''),source=path.join(skill,'vendor/code-example/references',name)
     fs.copyFileSync(path.join(source,'index.vue'),path.join(dest,'src/pages',pageName,'index.vue'))
     fs.cpSync(path.join(source,'components'),path.join(dest,'src/pages',pageName,'components'),{recursive:true})
     if(fs.existsSync(path.join(source,'api')))fs.cpSync(path.join(source,'api'),path.join(dest,'src/api'),{recursive:true})
     check(dest)
+  })
+  ok('foundation copy is selective, repeatable and protects edited assets',()=>{
+    const project=path.join(temp,'foundation-page')
+    assert.equal(run('init.mjs',[temp,'foundation-page']).code,0)
+    const args=['--dir',project,'--page','FoundationPage','--assets','workbench-shell,conversation-composer']
+    const dest=path.join(project,'src/pages/FoundationPage/components/foundation')
+    let result=run('copy-foundation.mjs',[...args,'--check']);assert.equal(result.code,0,result.text);assert.ok(!fs.existsSync(dest))
+    result=run('copy-foundation.mjs',args);assert.equal(result.code,0,result.text)
+    result=run('copy-foundation.mjs',args);assert.equal(result.code,0,result.text)
+    fs.copyFileSync(path.join(skill,'assets/examples/workbench-conversation/index.vue'),path.join(project,'src/pages/FoundationPage/index.vue'))
+    check(project)
+    const file=path.join(dest,'workbench-shell.vue');fs.appendFileSync(file,'\n<!-- edited -->')
+    const edited=fs.readFileSync(file,'utf8');result=run('copy-foundation.mjs',args);assert.equal(result.code,1);assert.match(result.text,/CONFLICT/);assert.equal(fs.readFileSync(file,'utf8'),edited)
   })
   ok('absolute source asset URLs resolve relative to project',()=>{
     const asset=path.join(root,'src/assets/sample.svg');fs.writeFileSync(asset,'<svg xmlns="http://www.w3.org/2000/svg"></svg>')
@@ -146,36 +176,87 @@ try {
     addStyle(){},handleModule(type,getContentData){if(type==='.css')return Promise.resolve(getContentData()).then(()=>({}))}
   })
   assert.equal(typeof runtime.installRuntime,'function');count++;console.log('PASS: actual loader resolves runtime ESM exports (no private component mount)')
+  ok('composer handles IME, line breaks, busy state, attachments and suggestions',()=>{
+    const source=fs.readFileSync(path.join(skill,'assets/foundation/1.0.0/conversation-composer.vue'),'utf8').split('<script setup>')[1].split('</script>')[0].replace(/^import .*$/gm,'')
+    const props=context.Vue.reactive({modelValue:'hello',model:'demo',models:[],references:[{id:'doc',label:'Doc'}],commands:[],labels:{},busy:false})
+    const events=[]
+    const api=new Function('ref','computed','watch','nextTick','defineProps','defineEmits',source+'\nreturn {keydown,send,attach,attachments,composing,choose}')(
+      context.Vue.ref,context.Vue.computed,()=>{},context.Vue.nextTick,()=>props,()=>(...args)=>events.push(args))
+    const key=(extra={})=>({key:'Enter',preventDefault(){},...extra})
+    api.keydown(key({isComposing:true}));api.keydown(key({shiftKey:true}));assert.equal(events.length,0)
+    props.busy=true;api.send();assert.equal(events.length,0);props.busy=false
+    const file={name:'example.txt'};api.attach({target:{files:[file],value:'selected'}})
+    api.keydown(key());const sent=events.find(e=>e[0]==='send')[1];assert.equal(sent.text,'hello');assert.equal(sent.files.length,1);assert.equal(api.attachments.value.length,0)
+    props.modelValue='@Do';events.length=0;api.keydown(key());assert.equal(events[0][0],'update:modelValue');assert.equal(events[0][1],'@Doc ');assert.ok(!events.some(e=>e[0]==='send'))
+  })
   ok('theme adapter maps names and delegates to native setter only',()=>{
     let call
+    const bodyStyle={}
     const source=fs.readFileSync(path.join(scripts,'preview/src/theme.js'),'utf8').replace(/^import .*$/gm,'').replace(/^export /gm,'')
-    const api=new Function('ref','nativeSetTheme',source+'\nreturn {installTheme,setTheme,theme}')(context.Vue.ref,(...args)=>{call=args;args[1].config.globalProperties.$theme=args[0]})
+    const api=new Function('ref','nativeSetTheme','document',source+'\nreturn {installTheme,setTheme,theme}')(context.Vue.ref,(...args)=>{call=args;args[1].config.globalProperties.$theme=args[0]},{body:{style:bodyStyle}})
     const app={config:{globalProperties:{}}};api.installTheme(app);api.setTheme('uDesign2.2-dark')
     assert.equal(call[0],'GTS UDesign（默认风格）-dark');assert.equal(call[1],app)
     assert.equal(app.config.globalProperties.$theme,'GTS UDesign（默认风格）-dark')
     assert.equal(api.theme.value,'uDesign2.2-dark')
-    api.setTheme('uDesign2.2-light');assert.equal(call[0],'uDesign2.2-light');assert.throws(()=>api.setTheme('other'),/Unsupported/)
-    assert.ok(!/document|offsetHeight/.test(source))
+    assert.equal(bodyStyle.backgroundColor,'var(--swt-color-bg-primary)')
+    api.setTheme('uDesign2.2-light');assert.equal(call[0],'uDesign2.2-light');assert.equal(bodyStyle.backgroundColor,'');assert.throws(()=>api.setTheme('other'),/Unsupported/)
   })
-  // Test only our adapter contract with controlled native callbacks; this is not a SweetUI runtime test.
-  const app={config:{globalProperties:{}}},calls=[]
+  // i18n lifecycle test: in-place mutation + stable delegatingI18n entry + old/new consumer reactivity
+  const app={config:{globalProperties:{}},_provided:{},provide(k,v){app._provided[k]=v}},calls=[]
   function nativeI18n(lang,app,callback){
     calls.push(lang)
-    setTimeout(()=>{app.config.globalProperties.messages={builtIn:lang};app.config.globalProperties.sweetI18n=key=>app.config.globalProperties.messages[key]||key;callback()},1)
+    setTimeout(()=>{
+      const msgs=context.Vue.reactive({builtIn:lang})
+      app.config.globalProperties.sweetI18nLocaleMessages=msgs
+      app.config.globalProperties.sweetI18n=key=>app.config.globalProperties.sweetI18nLocaleMessages[key]||key
+      callback()
+    },1)
   }
-  function merge(messages,app){Object.assign(app.config.globalProperties.messages,messages)}
+  function merge(messages,app){Object.assign(app.config.globalProperties.sweetI18nLocaleMessages,messages)}
   const source=fs.readFileSync(path.join(scripts,'preview/src/i18n/index.js'),'utf8').replace(/^import .*$/gm,'').replace(/^export /gm,'')
-  const lang=new Function('ref','i18n','setLocaleMessages',source+'\nreturn {installI18n,setLanguage,locale}')(context.Vue.ref,nativeI18n,merge)
-  await lang.installI18n(app,{zh_CN:{title:'中文'},en_US:{title:'English'}})
-  assert.equal(app.config.globalProperties.sweetI18n('title'),'中文')
+  const lang=new Function('ref','shallowRef','computed','i18n','setLocaleMessages',source+'\nreturn {installI18n,setLanguage,locale,t}')(context.Vue.ref,context.Vue.shallowRef,context.Vue.computed,nativeI18n,merge)
+  // install
+  await lang.installI18n(app,{zh_CN:{title:'中文',greeting:'你好'},en_US:{title:'English',greeting:'Hello'}})
+  const firstMsgs=app.config.globalProperties.sweetI18nLocaleMessages
+  // provide entry is always delegatingI18n
+  const providedFn=app._provided.sweetI18n
+  assert.equal(providedFn,app.config.globalProperties.sweetI18n,'provide matches gp.sweetI18n')
+  // simulate "old consumer": component captures injected fn at mount, wraps in computed
+  const oldConsumerFn=providedFn
+  const oldComputed=context.Vue.computed(()=>oldConsumerFn('title'))
+  assert.equal(oldComputed.value,'中文','old consumer initial')
+  assert.equal(lang.t.value('title'),'中文')
+  // switch to en_US
   await lang.setLanguage('en_US')
-  assert.equal(app.config.globalProperties.sweetI18n('title'),'English')
+  assert.equal(app.config.globalProperties.sweetI18nLocaleMessages,firstMsgs,'in-place mutation: same reactive object')
+  assert.equal(oldComputed.value,'English','old consumer computed auto-updates via reactivity')
+  assert.equal(lang.t.value('greeting'),'Hello')
   assert.equal(app.config.globalProperties.sweetI18n('builtIn'),'en_US')
+  assert.equal(app._provided.sweetI18n,providedFn,'provide entry unchanged (stable delegatingI18n)')
+  // simulate "new consumer" mounted after switch
+  const newConsumerFn=app._provided.sweetI18n
+  const newComputed=context.Vue.computed(()=>newConsumerFn('title'))
+  assert.equal(newComputed.value,'English','new consumer sees current locale')
+  // switch back to zh_CN
   await lang.setLanguage('zh_CN')
-  assert.equal(app.config.globalProperties.sweetI18n('title'),'中文')
+  assert.equal(app.config.globalProperties.sweetI18nLocaleMessages,firstMsgs,'reactive object preserved across third switch')
+  assert.equal(oldComputed.value,'中文','old consumer updates back to zh_CN')
+  assert.equal(newComputed.value,'中文','new consumer (mounted during en_US) updates via delegatingI18n')
+  assert.equal(lang.t.value('title'),'中文')
   assert.equal(lang.locale.value,'zh_CN')
+  // same-locale early exit: no extra native i18n call
+  const callCountBefore=calls.length
+  await lang.setLanguage('zh_CN')
+  assert.equal(calls.length,callCountBefore,'same-locale early exit skips native i18n')
+  assert.equal(oldComputed.value,'中文','early exit did not break computed')
+  // switch to en_US again: multi-cycle stability
+  await lang.setLanguage('en_US')
+  assert.equal(oldComputed.value,'English','multi-cycle: old consumer still updates')
+  assert.equal(newComputed.value,'English','multi-cycle: new consumer still updates')
+  assert.equal(app.config.globalProperties.sweetI18nLocaleMessages,firstMsgs,'multi-cycle: reactive object still preserved')
+  // unsupported language
   await assert.rejects(lang.setLanguage('unknown'),/Unsupported/)
-  count++;console.log('PASS: language helper delegates to native APIs and merges business dictionary after reset')
+  count++;console.log('PASS: i18n in-place mutation + delegatingI18n: old/new consumer reactivity, same-locale early exit, multi-cycle stability')
   ok('single official stylesheet and no generated theme layer',()=>{
     const html=fs.readFileSync(path.join(scripts,'preview/index.gts.html'),'utf8')
     assert.equal((html.match(/<link[^>]+sweet-ui-base\.css/g)||[]).length,1)
@@ -184,7 +265,7 @@ try {
     const main=fs.readFileSync(path.join(scripts,'preview/src/main.js'),'utf8')
     assert.equal((main.match(/import .*\.css/g)||[]).length,1)
     const language=fs.readFileSync(path.join(scripts,'preview/src/i18n/index.js'),'utf8')
-    assert.ok(!/revision|pending|export function t\(/.test(language))
+    assert.ok(!/revision|pending/.test(language))
   })
 
   console.log('RESULT: OK\nTESTS: '+count+'\nPRIVATE_RUNTIME: not-tested')

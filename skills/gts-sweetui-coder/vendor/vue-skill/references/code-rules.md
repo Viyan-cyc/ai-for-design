@@ -29,9 +29,16 @@
 - 原生组件承担 hover/disabled/focus 等状态，避免 :deep 重写组件主题。内容颜色优先 text/bg/accent/状态等语义 token，基础色阶仅在明确视觉需求下选。
 - 流式布局与合理 min-width/max-width；不用 zoom 或 vw 字号缩放整页。截图缺失信息只做必要推断，不编造产品事实。
 
+## 实例、资源和布局
+- 可复用业务组件的状态按实例创建，不用模块级单例共享输入或请求；既有 runtime/theme/i18n 保持应用级职责。
+- 无依赖请求可并行，有依赖按顺序；创建的事件监听、定时器、Observer 和外部实例在卸载时释放。
+- 主内容 flex:1 并设置 min-width:0；纵向弹性区域设置 min-height:0，明确页面和局部区域的滚动边界。
+- 工具栏允许换行，卡片按可读宽度折列，窄屏保留核心任务；不照搬 EP 栅格 props 或断点。
+- 表格保留关键列，横向滚动限于数据区域；布局折叠优先 CSS，不按窗口尺寸反复重建组件。
+
 ## 语言与主题
 - 默认中文直写；需要国际化才创建 src/i18n/zh_CN.js、en_US.js，使用嵌套 msg.{page}.{category}.{name} 结构，两份 key 对齐。业务记录不进词典。
-- 使用 SweetUI 原生 i18n/setLocaleMessages；组件用 SweetUI 的 useLocale().t 取词，语言切换用随源码的 locale、setLanguage，t 必须在模板/computed 中求值。切换后重新合并业务词典，保留内置词条。
+- 使用 SweetUI 原生 i18n/setLocaleMessages；组件使用 i18n/index.js 导出的 t 取词，语言切换用随源码的 locale、setLanguage。t 是 computed ref：模板中 t(...) 自动解包，JS/computed 中使用 t.value(...)。切换后重新合并业务词典，保留内置词条。
 - 主题用公共 setTheme，普通页面不自己写 body 属性，不再引入另一套主题/i18n 库。
 - 示例和页面代码不写规范出处、审查编号、过程态说明或“为了过检查”等注释。
 

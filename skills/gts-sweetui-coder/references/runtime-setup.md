@@ -75,11 +75,11 @@ node scripts/build.mjs --dir 'D:\project\gts\ai-for-design\output\sweetui-accept
 - 真实打开 index.gts.html：无白屏、资源错误，图标可见；查询、重置、分页及空/错误状态有效。
 - 复用 form-dialog 示例：必填校验、取消、保存及父表刷新有效，不空报成功。
 - 浅色→深色→浅色：深色 selector 为 GTS UDesign（默认风格）-dark，正文、输入、表格、弹窗正常。
-- 按 on-demand-toggle 接入业务词典，直接用 SweetUI useLocale().t；中文→英文→中文时，已挂载的业务文案及组件内置文案同时更新。切换过程中禁用重复点击。
+- 按 on-demand-toggle 接入业务词典，使用 i18n/index.js 导出的 t（computed ref）；模板中 t(...) 自动解包，JS 中 t.value(...)。中文→英文→中文时，业务文案和 SweetUI 内置组件文案均通过 in-place mutation + delegatingI18n 机制同步更新。验证完整生命周期：初始切英文；英文状态下打开新弹窗确认内置文案为英文；关闭后切中文再切英文确认所有组件跟随；切换过程中输入内容、查询条件、分页状态保留。切换过程中禁用重复点击。
 - 同一 src 在已安装目标依赖的真实 Vue 工程中验证 main.js；预览与工程共用 runtime.js，不只修 HTML。
 - 不存在的 token、图标、组件导入应被 build 拒绝；恢复源码再构建。
 
-语言取词与组件状态依赖原生能力，外网未验证其实际浏览器行为。若失败，先查原生初始化、词典合并和版本；有复现证据才做必要修复，不预先增加请求队列、强制重排或另一套主题/翻译系统。
+语言取词与组件状态依赖原生能力；in-place mutation + delegatingI18n 方案经单元测试验证旧/新消费者响应性和同语言环境 early-exit，但模拟测试不替代真实 SweetUI 浏览器验证。若浏览器中失败，先查原生初始化、词典合并和版本；有复现证据才做必要修复，不预先增加请求队列、强制重排或另一套主题/翻译系统。
 
 ## 最终包清理
 

@@ -51,9 +51,9 @@ onMounted(load)
   </main>
 </template>
 <style scoped>
-.page { padding: var(--swt-space-size-24); }
+.page { padding: var(--swt-space-size-24); min-width: 0; color: var(--swt-color-text-primary); background: var(--swt-color-bg-secondary); }
 .heading { margin-bottom: var(--swt-space-size-24); }
-.heading h1 { margin: 0; font-size: var(--swt-font-size-big2); }
+.heading h1 { margin: 0; font-size: var(--swt-font-size-medium); line-height: var(--swt-font-line-height-medium); }
 .heading p { color: var(--swt-color-text-secondary); margin-bottom: 0; }
 .panel { background: var(--swt-color-bg-primary); padding: var(--swt-space-size-24); border-radius: var(--swt-radius-size-medium); }
 .toolbar { display: flex; flex-wrap: wrap; gap: var(--swt-space-size-12); margin-bottom: var(--swt-space-size-16); }

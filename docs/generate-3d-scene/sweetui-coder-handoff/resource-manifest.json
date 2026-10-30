@@ -61,7 +61,7 @@
       "source": "self-built",
       "sourceType": "adapter",
       "basis": "npm ESM i18n + setLocaleMessages + setSweetI18n API; useLocale().t creates stale closure over non-reactive globalProperties",
-      "logic": "Exports t as computed ref — sweetI18nRef snapshots globalProperties.sweetI18n after each setLanguage(). Templates: t(key) auto-unwraps; JS: t.value(key). Does not handle built-in component inject('sweetI18n') refresh (SweetUI 5.7.0 limitation)"
+      "logic": "稳定委托入口 + in-place mutation: shallowRef(currentI18nFn) + delegatingI18n 始终作为 provide/globalProperties 入口 + reviveOldMessages 保持旧 reactive 对象 + initialized 布尔标志。每次 setLanguage 更新 currentI18nFn.value = nativeT (shallowRef 检测新对象)。Templates: t(key) auto-unwraps; JS: t.value(key). 已挂载和新挂载组件的内置文案均通过 delegatingI18n + in-place mutation 同步更新"
     },
     {
       "relativePath": "scripts/preview/src/runtime.js",

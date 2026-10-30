@@ -3,6 +3,6 @@
 - 导出不存在：核对导入名；组件库 API 以安装版本为准，不修改白名单放行假名称。
 - 图标空白：核对完整 iconClass、真实 CSS/字体资源是否加载；不要改回 name 属性。
 - 深色不生效：公共 setTheme 应把逻辑名映射到实际中文 selector，检查目标主题的官方样式及依赖是否已加载，避免重复主题文件覆盖。
-- 语言只在初始化生效：使用原生 useLocale().t 在模板/computed 中取词，切换等待 setLanguage 完成；不要捕获旧的原生翻译函数。
+- 语言只在初始化生效：使用 i18n/index.js 导出的 t（computed ref）取词，模板中 t(...) 自动解包，JS 中 t.value(...)；切换等待 setLanguage 完成。不要使用 useLocale().t（其在 globalProperties 替换后不触发重算，产生 stale 闭包）。
 - 资源缺失：由维护者按 runtime-setup 补齐真实库，不添加空对象替代实现。
 - 表单校验：确认 FormItem.prop 对应 model，ref 挂载后再 validate；不要根据历史报告禁用 defineExpose 或 validate。

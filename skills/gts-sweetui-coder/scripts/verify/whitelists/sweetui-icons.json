@@ -1,10 +1,5 @@
 [
   {
-    "cssClass": "sweetui-icon-cursor-pointer",
-    "contentCode": "",
-    "hasForcedColor": false
-  },
-  {
     "cssClass": "sweetui-icon-3d-f",
     "contentCode": "\\e919",
     "hasForcedColor": true
@@ -12,31 +7,6 @@
   {
     "cssClass": "sweetui-icon-3d-l",
     "contentCode": "\\e91e",
-    "hasForcedColor": false
-  },
-  {
-    "cssClass": "sweetui-icon-Immediate-access-f",
-    "contentCode": "\\e900",
-    "hasForcedColor": true
-  },
-  {
-    "cssClass": "sweetui-icon-Immediate-data-acquisition-configuration-f",
-    "contentCode": "\\e901",
-    "hasForcedColor": true
-  },
-  {
-    "cssClass": "sweetui-icon-Immediate-data-acquisition-configuration-l",
-    "contentCode": "\\e902",
-    "hasForcedColor": false
-  },
-  {
-    "cssClass": "sweetui-icon-Information-center-f",
-    "contentCode": "\\e903",
-    "hasForcedColor": true
-  },
-  {
-    "cssClass": "sweetui-icon-Information-center-l",
-    "contentCode": "\\e904",
     "hasForcedColor": false
   },
   {
@@ -522,12 +492,12 @@
   {
     "cssClass": "sweetui-icon-check-box-half-selected",
     "contentCode": "\\e965",
-    "hasForcedColor": false
+    "hasForcedColor": true
   },
   {
     "cssClass": "sweetui-icon-check-box-selected",
     "contentCode": "\\e966",
-    "hasForcedColor": false
+    "hasForcedColor": true
   },
   {
     "cssClass": "sweetui-icon-check-the-reverse-antenna-connection-f",
@@ -818,6 +788,11 @@
     "cssClass": "sweetui-icon-cursor-move",
     "contentCode": "\\e9a0",
     "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-cursor-pointer",
+    "contentCode": "\\e9a2",
+    "hasForcedColor": true
   },
   {
     "cssClass": "sweetui-icon-cursor-scale-table",
@@ -1425,6 +1400,21 @@
     "hasForcedColor": false
   },
   {
+    "cssClass": "sweetui-icon-Immediate-access-f",
+    "contentCode": "\\e900",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-Immediate-data-acquisition-configuration-f",
+    "contentCode": "\\e901",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-Immediate-data-acquisition-configuration-l",
+    "contentCode": "\\e902",
+    "hasForcedColor": false
+  },
+  {
     "cssClass": "sweetui-icon-import-f",
     "contentCode": "\\ea1e",
     "hasForcedColor": false
@@ -1492,6 +1482,16 @@
   {
     "cssClass": "sweetui-icon-info-f",
     "contentCode": "\\ea2b",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-Information-center-f",
+    "contentCode": "\\e903",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-Information-center-l",
+    "contentCode": "\\e904",
     "hasForcedColor": false
   },
   {

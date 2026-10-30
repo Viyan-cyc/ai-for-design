@@ -2097,6 +2097,14 @@
     }
   },
   {
+    "name": "--swt-color-bg-mask",
+    "category": "native",
+    "values": {
+      "light": "var(--swt-color-gray11-opacity30)",
+      "dark": "var(--swt-color-gray2-opacity70)"
+    }
+  },
+  {
     "name": "--swt-color-bg-primary",
     "category": "color",
     "values": {
@@ -3663,6 +3671,13 @@
     "category": "other",
     "values": {
       "common": "#fafafa"
+    }
+  },
+  {
+    "name": "--swt-filter-shadow-dark",
+    "category": "native",
+    "values": {
+      "common": "0px 6px 8px rgba(0, 0, 0, 0.2)"
     }
   },
   {

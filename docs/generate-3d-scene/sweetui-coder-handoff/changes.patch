@@ -1,8 +1,8 @@
 diff --git a/skills/gts-sweetui-coder1/references/on-demand-toggle.md b/skills/gts-sweetui-coder1/references/on-demand-toggle.md
-index 83665d4..6896e11 100644
+index 83665d4..749cb4a 100644
 --- a/skills/gts-sweetui-coder1/references/on-demand-toggle.md
 +++ b/skills/gts-sweetui-coder1/references/on-demand-toggle.md
-@@ -5,18 +5,16 @@
+@@ -5,18 +5,22 @@
  import { theme, setTheme } from '../../theme.js'
  setTheme('uDesign2.2-dark')
  ~~~
@@ -25,19 +25,30 @@ index 83665d4..6896e11 100644
  4. setup 中不缓存翻译结果；配置存 key，computed 或模板读取 t。
  
 -预览与真实 main 共用 runtime.js。setLanguage 只调用原生 i18n，并在回调中合并对应业务词典，不维护另一套翻译引擎、重绘信号或请求队列。原生 useLocale 在挂载后切换是否正常，由内网验收确认；出现问题先定位原生接线，不预先增加补丁。
-+预览与真实 main 共用 runtime.js。i18n/index.js 导出的 t 是 computed ref，每次 setLanguage 后快照 globalProperties.sweetI18n（原生 i18n 回调后赋值），无需 useLocale。原生 SweetUI 组件通过 inject("sweetI18n") 取词，切换已挂载组件的内置文案不受 useLocale 或此 t 控制——这是 SweetUI 5.7.0 已知限制，不预先增加补丁。
++预览与真实 main 共用 runtime.js。i18n/index.js 导出的 t 是 computed(() => currentI18nFn.value)，其中 currentI18nFn 是 shallowRef，无需 useLocale。
++
++原生 SweetUI 37 个组件通过 inject("sweetI18n") 在 setup 中捕获翻译函数，在 computed 内调用，形成闭包。原生 i18n() 每次调用会创建新 reactive 对象赋给 globalProperties.sweetI18nLocaleMessages，替换属性值不触发已有 computed 重算。
++
++本 skill 采用两层机制修复：
++1. **in-place mutation**：首次 installI18n 后保存首次 reactive 对象引用；后续 setLanguage 在原生 i18n() 回调中，reviveOldMessages 将新 reactive 对象的 key/value 复制到旧对象（先 delete 旧键再赋值），再还原 globalProperties.sweetI18nLocaleMessages = 旧对象。Vue 3 reactive Proxy 追踪 deleteProperty 与属性赋值 → 已有组件 computed 自动重算 → 内置文案同步更新。
++2. **稳定委托入口 delegatingI18n**：始终作为 globalProperties.sweetI18n 和 app.provide("sweetI18n") 的值。delegatingI18n(key, args) = currentI18nFn.value(key, args)，每次 setLanguage 更新 currentI18nFn.value = nativeT（shallowRef 检测新函数对象），已挂载和新挂载组件均通过 delegatingI18n 自动委托到最新翻译函数。initialized 布尔标志替代破比较（currentI18nFn.value !== (key => key) 恒为真），确保同语言环境 early-exite 正确跳过原生调用。
 diff --git a/skills/gts-sweetui-coder1/references/runtime-setup.md b/skills/gts-sweetui-coder1/references/runtime-setup.md
-index 6c78d26..bd12a82 100644
+index 6c78d26..e34430b 100644
 --- a/skills/gts-sweetui-coder1/references/runtime-setup.md
 +++ b/skills/gts-sweetui-coder1/references/runtime-setup.md
-@@ -75,7 +75,7 @@ node scripts/build.mjs --dir 'D:\project\gts\ai-for-design\output\sweetui-accept
+@@ -75,11 +75,11 @@ node scripts/build.mjs --dir 'D:\project\gts\ai-for-design\output\sweetui-accept
  - 真实打开 index.gts.html：无白屏、资源错误，图标可见；查询、重置、分页及空/错误状态有效。
  - 复用 form-dialog 示例：必填校验、取消、保存及父表刷新有效，不空报成功。
  - 浅色→深色→浅色：深色 selector 为 GTS UDesign（默认风格）-dark，正文、输入、表格、弹窗正常。
 -- 按 on-demand-toggle 接入业务词典，直接用 SweetUI useLocale().t；中文→英文→中文时，已挂载的业务文案及组件内置文案同时更新。切换过程中禁用重复点击。
-+- 按 on-demand-toggle 接入业务词典，使用 i18n/index.js 导出的 t（computed ref）；模板中 t(...) 自动解包，JS 中 t.value(...)。中文→英文→中文时，业务文案通过 t 切换更新；SweetUI 内置组件文案由 inject("sweetI18n") 驱动，已挂载组件切换后不更新为已知限制。切换过程中禁用重复点击。
++- 按 on-demand-toggle 接入业务词典，使用 i18n/index.js 导出的 t（computed ref）；模板中 t(...) 自动解包，JS 中 t.value(...)。中文→英文→中文时，业务文案和 SweetUI 内置组件文案均通过 in-place mutation + delegatingI18n 机制同步更新。验证完整生命周期：初始切英文；英文状态下打开新弹窗确认内置文案为英文；关闭后切中文再切英文确认所有组件跟随；切换过程中输入内容、查询条件、分页状态保留。切换过程中禁用重复点击。
  - 同一 src 在已安装目标依赖的真实 Vue 工程中验证 main.js；预览与工程共用 runtime.js，不只修 HTML。
  - 不存在的 token、图标、组件导入应被 build 拒绝；恢复源码再构建。
+ 
+-语言取词与组件状态依赖原生能力，外网未验证其实际浏览器行为。若失败，先查原生初始化、词典合并和版本；有复现证据才做必要修复，不预先增加请求队列、强制重排或另一套主题/翻译系统。
++语言取词与组件状态依赖原生能力；in-place mutation + delegatingI18n 方案经单元测试验证旧/新消费者响应性和同语言环境 early-exit，但模拟测试不替代真实 SweetUI 浏览器验证。若浏览器中失败，先查原生初始化、词典合并和版本；有复现证据才做必要修复，不预先增加请求队列、强制重排或另一套主题/翻译系统。
+ 
+ ## 最终包清理
  
 diff --git a/skills/gts-sweetui-coder1/references/token-catalog.md b/skills/gts-sweetui-coder1/references/token-catalog.md
 index 731bdb4..806ae4e 100644
@@ -99,29 +110,70 @@ index 5b70be7..ca9d34a 100644
 +需要中英文时，在 i18n/ 添加 zh_CN.js、en_US.js，并在 runtime.js 向 installI18n 传入 { zh_CN, en_US }。组件从 i18n/index.js 导入 t 取词（模板自动解包，JS 用 t.value）；切换用 i18n/index.js 的 setLanguage。
  主题从 theme.js 导入 theme、setTheme，默认不显示切换控件。assets/base.css 只处理应用基础布局，不重建组件库主题。
 diff --git a/skills/gts-sweetui-coder1/scripts/preview/src/i18n/index.js b/skills/gts-sweetui-coder1/scripts/preview/src/i18n/index.js
-index 0cfb18b..4690048 100644
+index 0cfb18b..d73387d 100644
 --- a/skills/gts-sweetui-coder1/scripts/preview/src/i18n/index.js
 +++ b/skills/gts-sweetui-coder1/scripts/preview/src/i18n/index.js
-@@ -1,8 +1,10 @@
+@@ -1,24 +1,47 @@
 -import { ref } from 'vue'
-+import { ref, computed } from 'vue'
++import { ref, shallowRef, computed } from 'vue'
  import { i18n, setLocaleMessages } from '@hw-seq/sweet-ui-base'
  export const locale = ref('zh_CN')
  let application
  let dictionaries = {}
-+const sweetI18nRef = ref(null)
-+export const t = computed(() => sweetI18nRef.value || (key => key))
- export function setLanguage(lang) {
-   if (!['zh_CN', 'en_US'].includes(lang)) return Promise.reject(new Error('Unsupported language: ' + lang))
+-export function setLanguage(lang) {
+-  if (!['zh_CN', 'en_US'].includes(lang)) return Promise.reject(new Error('Unsupported language: ' + lang))
++let initialized = false
++const currentI18nFn = shallowRef(key => key)
++export const t = computed(() => currentI18nFn.value)
++function delegatingI18n(key, args) {
++  return currentI18nFn.value(key, args)
++}
++function reviveOldMessages(oldMsgs, newMsgs) {
++  for (const k of Object.keys(oldMsgs)) { delete oldMsgs[k] }
++  for (const k of Object.keys(newMsgs)) { oldMsgs[k] = newMsgs[k] }
++}
++function setLanguageInner(lang, app, isFirst) {
++  const gp = app.config.globalProperties
++  const oldMsgs = gp.sweetI18nLocaleMessages
    return new Promise((resolve, reject) => {
-@@ -10,6 +12,7 @@ export function setLanguage(lang) {
-       i18n(lang, application, () => {
-         try {
-           setLocaleMessages(dictionaries[lang] || {}, application)
-+          sweetI18nRef.value = application.config.globalProperties.sweetI18n
-           locale.value = lang
-           resolve()
-         } catch (error) { reject(error) }
+-    try {
+-      i18n(lang, application, () => {
+-        try {
+-          setLocaleMessages(dictionaries[lang] || {}, application)
+-          locale.value = lang
+-          resolve()
+-        } catch (error) { reject(error) }
+-      })
+-    } catch (error) { reject(error) }
++    i18n(lang, app, () => {
++      try {
++        setLocaleMessages(dictionaries[lang] || {}, app)
++        const nativeT = gp.sweetI18n
++        if (!isFirst && oldMsgs && gp.sweetI18nLocaleMessages !== oldMsgs) {
++          reviveOldMessages(oldMsgs, gp.sweetI18nLocaleMessages)
++          gp.sweetI18nLocaleMessages = oldMsgs
++        }
++        currentI18nFn.value = nativeT
++        gp.sweetI18n = delegatingI18n
++        if (typeof app.provide === 'function') { app.provide('sweetI18n', delegatingI18n) }
++        locale.value = lang
++        initialized = true
++        resolve()
++      } catch (error) { reject(error) }
++    })
+   })
+ }
++export function setLanguage(lang) {
++  if (!['zh_CN', 'en_US'].includes(lang)) return Promise.reject(new Error('Unsupported language: ' + lang))
++  if (locale.value === lang && initialized) return Promise.resolve()
++  return setLanguageInner(lang, application, false)
++}
+ export function installI18n(app, messages = {}, language = 'zh_CN') {
+   application = app
+   dictionaries = messages
+-  return setLanguage(language)
++  return setLanguageInner(language, app, true)
+ }
 diff --git a/skills/gts-sweetui-coder1/scripts/preview/src/theme.js b/skills/gts-sweetui-coder1/scripts/preview/src/theme.js
 index dbdc657..c038520 100644
 --- a/skills/gts-sweetui-coder1/scripts/preview/src/theme.js
@@ -138,10 +190,10 @@ index dbdc657..c038520 100644
    theme.value = name
  }
 diff --git a/skills/gts-sweetui-coder1/scripts/verify-build.mjs b/skills/gts-sweetui-coder1/scripts/verify-build.mjs
-index de3d228..fdebd0f 100644
+index de3d228..a77b723 100644
 --- a/skills/gts-sweetui-coder1/scripts/verify-build.mjs
 +++ b/skills/gts-sweetui-coder1/scripts/verify-build.mjs
-@@ -148,14 +148,15 @@ try {
+@@ -148,34 +148,72 @@ try {
    assert.equal(typeof runtime.installRuntime,'function');count++;console.log('PASS: actual loader resolves runtime ESM exports (no private component mount)')
    ok('theme adapter maps names and delegates to native setter only',()=>{
      let call
@@ -158,28 +210,76 @@ index de3d228..fdebd0f 100644
 +    assert.equal(bodyStyle.backgroundColor,'var(--swt-color-bg-primary)')
 +    api.setTheme('uDesign2.2-light');assert.equal(call[0],'uDesign2.2-light');assert.equal(bodyStyle.backgroundColor,'');assert.throws(()=>api.setTheme('other'),/Unsupported/)
    })
-   // Test only our adapter contract with controlled native callbacks; this is not a SweetUI runtime test.
-   const app={config:{globalProperties:{}}},calls=[]
-@@ -165,14 +166,17 @@ try {
+-  // Test only our adapter contract with controlled native callbacks; this is not a SweetUI runtime test.
+-  const app={config:{globalProperties:{}}},calls=[]
++  // i18n lifecycle test: in-place mutation + stable delegatingI18n entry + old/new consumer reactivity
++  const app={config:{globalProperties:{}},_provided:{},provide(k,v){app._provided[k]=v}},calls=[]
+   function nativeI18n(lang,app,callback){
+     calls.push(lang)
+-    setTimeout(()=>{app.config.globalProperties.messages={builtIn:lang};app.config.globalProperties.sweetI18n=key=>app.config.globalProperties.messages[key]||key;callback()},1)
++    setTimeout(()=>{
++      const msgs=context.Vue.reactive({builtIn:lang})
++      app.config.globalProperties.sweetI18nLocaleMessages=msgs
++      app.config.globalProperties.sweetI18n=key=>app.config.globalProperties.sweetI18nLocaleMessages[key]||key
++      callback()
++    },1)
    }
-   function merge(messages,app){Object.assign(app.config.globalProperties.messages,messages)}
+-  function merge(messages,app){Object.assign(app.config.globalProperties.messages,messages)}
++  function merge(messages,app){Object.assign(app.config.globalProperties.sweetI18nLocaleMessages,messages)}
    const source=fs.readFileSync(path.join(scripts,'preview/src/i18n/index.js'),'utf8').replace(/^import .*$/gm,'').replace(/^export /gm,'')
 -  const lang=new Function('ref','i18n','setLocaleMessages',source+'\nreturn {installI18n,setLanguage,locale}')(context.Vue.ref,nativeI18n,merge)
-+  const lang=new Function('ref','computed','i18n','setLocaleMessages',source+'\nreturn {installI18n,setLanguage,locale,t}')(context.Vue.ref,context.Vue.computed,nativeI18n,merge)
-   await lang.installI18n(app,{zh_CN:{title:'中文'},en_US:{title:'English'}})
-   assert.equal(app.config.globalProperties.sweetI18n('title'),'中文')
+-  await lang.installI18n(app,{zh_CN:{title:'中文'},en_US:{title:'English'}})
+-  assert.equal(app.config.globalProperties.sweetI18n('title'),'中文')
++  const lang=new Function('ref','shallowRef','computed','i18n','setLocaleMessages',source+'\nreturn {installI18n,setLanguage,locale,t}')(context.Vue.ref,context.Vue.shallowRef,context.Vue.computed,nativeI18n,merge)
++  // install
++  await lang.installI18n(app,{zh_CN:{title:'中文',greeting:'你好'},en_US:{title:'English',greeting:'Hello'}})
++  const firstMsgs=app.config.globalProperties.sweetI18nLocaleMessages
++  // provide entry is always delegatingI18n
++  const providedFn=app._provided.sweetI18n
++  assert.equal(providedFn,app.config.globalProperties.sweetI18n,'provide matches gp.sweetI18n')
++  // simulate "old consumer": component captures injected fn at mount, wraps in computed
++  const oldConsumerFn=providedFn
++  const oldComputed=context.Vue.computed(()=>oldConsumerFn('title'))
++  assert.equal(oldComputed.value,'中文','old consumer initial')
 +  assert.equal(lang.t.value('title'),'中文')
++  // switch to en_US
    await lang.setLanguage('en_US')
-   assert.equal(app.config.globalProperties.sweetI18n('title'),'English')
-+  assert.equal(lang.t.value('title'),'English')
+-  assert.equal(app.config.globalProperties.sweetI18n('title'),'English')
++  assert.equal(app.config.globalProperties.sweetI18nLocaleMessages,firstMsgs,'in-place mutation: same reactive object')
++  assert.equal(oldComputed.value,'English','old consumer computed auto-updates via reactivity')
++  assert.equal(lang.t.value('greeting'),'Hello')
    assert.equal(app.config.globalProperties.sweetI18n('builtIn'),'en_US')
++  assert.equal(app._provided.sweetI18n,providedFn,'provide entry unchanged (stable delegatingI18n)')
++  // simulate "new consumer" mounted after switch
++  const newConsumerFn=app._provided.sweetI18n
++  const newComputed=context.Vue.computed(()=>newConsumerFn('title'))
++  assert.equal(newComputed.value,'English','new consumer sees current locale')
++  // switch back to zh_CN
    await lang.setLanguage('zh_CN')
-   assert.equal(app.config.globalProperties.sweetI18n('title'),'中文')
+-  assert.equal(app.config.globalProperties.sweetI18n('title'),'中文')
++  assert.equal(app.config.globalProperties.sweetI18nLocaleMessages,firstMsgs,'reactive object preserved across third switch')
++  assert.equal(oldComputed.value,'中文','old consumer updates back to zh_CN')
++  assert.equal(newComputed.value,'中文','new consumer (mounted during en_US) updates via delegatingI18n')
 +  assert.equal(lang.t.value('title'),'中文')
    assert.equal(lang.locale.value,'zh_CN')
++  // same-locale early exit: no extra native i18n call
++  const callCountBefore=calls.length
++  await lang.setLanguage('zh_CN')
++  assert.equal(calls.length,callCountBefore,'same-locale early exit skips native i18n')
++  assert.equal(oldComputed.value,'中文','early exit did not break computed')
++  // switch to en_US again: multi-cycle stability
++  await lang.setLanguage('en_US')
++  assert.equal(oldComputed.value,'English','multi-cycle: old consumer still updates')
++  assert.equal(newComputed.value,'English','multi-cycle: new consumer still updates')
++  assert.equal(app.config.globalProperties.sweetI18nLocaleMessages,firstMsgs,'multi-cycle: reactive object still preserved')
++  // unsupported language
    await assert.rejects(lang.setLanguage('unknown'),/Unsupported/)
-   count++;console.log('PASS: language helper delegates to native APIs and merges business dictionary after reset')
-@@ -184,7 +188,7 @@ try {
+-  count++;console.log('PASS: language helper delegates to native APIs and merges business dictionary after reset')
++  count++;console.log('PASS: i18n in-place mutation + delegatingI18n: old/new consumer reactivity, same-locale early exit, multi-cycle stability')
+   ok('single official stylesheet and no generated theme layer',()=>{
+     const html=fs.readFileSync(path.join(scripts,'preview/index.gts.html'),'utf8')
+     assert.equal((html.match(/<link[^>]+sweet-ui-base\.css/g)||[]).length,1)
+@@ -184,7 +222,7 @@ try {
      const main=fs.readFileSync(path.join(scripts,'preview/src/main.js'),'utf8')
      assert.equal((main.match(/import .*\.css/g)||[]).length,1)
      const language=fs.readFileSync(path.join(scripts,'preview/src/i18n/index.js'),'utf8')

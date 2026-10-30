@@ -72,8 +72,8 @@ node_modules/vite/bin/vite.js build → OK (1868 modules, 7.74s)
 | Unknown token/icon/component rejected | **Passed** | verify-build tests confirm rejection at build time |
 | Build refuses missing resources | **Passed** | verify-build test confirms build exits with error when runtime files removed |
 | Component APIs match npm reality | **Passed** | All props/events verified from ESM source |
-| zh_CN ↔ en_US business i18n | **待浏览器验证** | t computed ref 从 sweetI18nRef 快照；JS 中已改用 t.value()，模板自动解包 |
-| SweetUI 内置组件文案切换 | **不更新（已知限制）** | 组件通过 inject("sweetI18n") 取词，provide 是非响应式替换，已挂载组件不会受影响 |
+| zh_CN ↔ en_US business i18n | **待用户验证** | t = computed(() => currentI18nFn.value); delegatingI18n 稳定委托入口；JS 中已改用 t.value() |
+| SweetUI 内置组件文案切换 | **待用户验证** | in-place mutation + delegatingI18n：reviveOldMessages 保持旧 reactive 对象 + 始终 provide delegatingI18n；单元测试验证旧/新消费者响应性，浏览器待确认 |
 
 ## i18n 修复依据（npm 源码确认）
 
@@ -91,10 +91,12 @@ Mi = (e) => {
 - `globalProperties` 是普通对象，属性替换不触发 computed 重算 → `useLocale().t` 返回 stale 闭包
 
 修复：
-- `i18n/index.js` 导出 `t = computed(() => sweetI18nRef.value || (key => key))`，其中 `sweetI18nRef` 是 `ref(null)`
-- 每次 `setLanguage()` 回调中快照 `application.config.globalProperties.sweetI18n` 到 `sweetI18nRef`
-- `globalProperties.sweetI18n` 是原生 `i18n()` 在每次调用时重新创建并赋值的翻译函数（`const { t: o } = nue(Mi(t)); t.config.globalProperties.sweetI18n = o`）
-- 组件通过 `inject("sweetI18n")` 取词 — 37 个组件，216 处调用 — `provide("sweetI18n", o)` 同样是非响应式替换，已挂载组件不会获取新值
+- `i18n/index.js` 导出 `t = computed(() => currentI18nFn.value)`，其中 `currentI18nFn = shallowRef(key => key)`
+- **delegatingI18n** 是稳定的委托入口函数：`delegatingI18n(key, args) = currentI18nFn.value(key, args)`。始终作为 `globalProperties.sweetI18n` 和 `app.provide('sweetI18n', ...)` 的值，无论首次安装还是后续切换
+- 每次 `setLanguage` 完成后 `currentI18nFn.value = nativeT`（shallowRef 检测到新函数对象 → 触发 computed 重算）→ 所有通过 delegatingI18n 委托的消费者（旧/新）自动获得最新翻译函数
+- 首次 `installI18n` 调用原生 i18n() 后，`gp.sweetI18n = delegatingI18n` + `app.provide('sweetI18n', delegatingI18n)`；后续 `setLanguage` 同样，不再切换为 wrappedT 闭包
+- **in-place mutation**：`reviveOldMessages(oldMsgs, newMsgs)` 先 delete 旧对象所有键，再从新对象复制所有键值，`gp.sweetI18nLocaleMessages = oldMsgs` 还原旧引用。Vue 3 reactive Proxy 追踪 deleteProperty 和属性赋值 → 37 个组件 216 处 `inject("sweetI18n")` 已有 computed 自动重算 → 内置文案同步更新
+- `initialized` 布尔标志替代 `currentI18nFn.value !== (key => key)` 比较（后者因每次创建新箭头函数而恒为真）；同语言环境 early-exit 正确跳过原生 i18n 调用
 
 用法：模板 `t(key)` 自动解包；JS/computed `t.value(key)` 显式取值。
 
@@ -108,30 +110,34 @@ Mi = (e) => {
 
 ## Remaining Issues
 
-1. **浏览器验证 i18n 业务文案切换**：打开 index.gts.html，点击语言切换按钮，检查标题/按钮/表头/校验提示是否从中文变为英文再切回。内置组件文案（如分页的"共 X 条"、表单校验"此字段为必填项"）在已挂载组件上预期不会自动切换，这是 SweetUI 5.7.0 的限制而非本 skill 缺陷。
+1. **浏览器验证 i18n 切换（业务 + 内置）**：需验证完整生命周期：(a) 初始中文切英文 → 业务文案和内置文案均更新；(b) 英文状态下打开新弹窗/组件 → 新挂载组件文案为英文；(c) 再切中文再切英文 → 原有组件和新挂载组件文案均跟随切换；(d) 切换过程中输入内容、查询条件、分页状态保留。单元测试已验证旧/新消费者响应性和同语言环境 early-exit，但模拟测试不替代真实 SweetUI 浏览器验证。
 2. **CSS dark theme inconsistency**: `background-color:var(--swt-color-bg-primary)` group rule omits `body[theme="GTS UDesign（默认风格）-dark"]`; our theme.js compensates with inline style. SweetUI 5.7.0 CSS issue.
 
 ## Browser Verification Steps
 
 1. 打开 `output/sweetui-acceptance/index.gts.html`
 2. 确认页面正常显示（非白屏），图标可见
-3. 点击语言切换按钮（zh_CN → en_US）
-4. **业务文案预期更新**：标题 → "Device Management"，查询 → "Search"，重置 → "Reset"，表头 → "Device Name"/"Status"/"Actions"，校验提示 → "Device name is required"
-5. **内置文案预期不更新**：分页区"共 X 条"等 SweetUI 内置文案不会变化（已知限制）
-6. 切回 zh_CN 确认业务文案恢复中文
-7. 切换深色/浅色确认背景色正常
+3. **初始中文 → 英文**：点击语言切换按钮（zh_CN → en_US）
+   - 业务文案：标题 → "Device Management"，查询 → "Search"，重置 → "Reset"，表头 → "Device Name"/"Status"/"Actions"
+   - 内置文案：分页区"共 X 条"等 SweetUI 内置文案应同步变化
+4. **英文状态下打开新组件**：点击新增/编辑按钮打开 FormDialog
+   - 弹窗内校验提示应为英文（如 "Device name is required"）
+5. **关闭弹窗后再切中文**：确认表格区、分页区、业务文案恢复中文
+6. **再切英文**：确认所有文案再次变英文，新弹窗内置文案也为英文
+7. **状态保留**：确认切换前后当前页码、搜索条件不丢失
+8. 切换深色/浅色确认背景色正常
 
 ## Changes from Initial Package State
 
 1. **index.gts.html**: Moved all `<script>` tags from `<head>` to end of `<body>` (fixes `insertBefore` on null)
 2. **theme.js**: Added `uDesign2.2-dark → GTS UDesign（默认风格）-dark` mapping + `document.body.style.backgroundColor` fix
-3. **i18n/index.js**: Exported `t` computed ref + `sweetI18nRef` snapshot mechanism; removed `getCurrentInstance` import. Templates use `t(key)` (auto-unwrap), JS uses `t.value(key)`
-4. **on-demand-toggle.md**: Updated i18n section to use `t` from i18n/index.js instead of `useLocale().t`; documented t/t.value usage and built-in component limitation
+3. **i18n/index.js**: 稳定委托入口 + in-place mutation：shallowRef(currentI18nFn) + delegatingI18n 始终作为 provide/globalProperties 入口（不切换为 wrappedT）+ reviveOldMessages 保持旧 reactive 对象 + initialized 布尔标志替代破比较；每次 setLanguage 更新 currentI18nFn.value = nativeT（shallowRef 检测新对象），delegatingI18n 自动委托到最新 T
+4. **on-demand-toggle.md**: Updated i18n section to use `t` from i18n/index.js; documented in-place mutation mechanism for built-in component text updates
 5. **runtime-setup.md**: Updated i18n verification wording from `useLocale().t` to `t` computed ref
 6. **preview/src/README.md**: Updated i18n access method from `useLocale` to `t` from i18n/index.js
 7. **code-rules.md**: Updated i18n rule from `useLocale().t` to `t` computed ref with auto-unwrap/`t.value()` usage note
 8. **error-checklist.md**: Updated i18n error from `useLocale().t` to `t` computed ref; noted `useLocale().t` produces stale closure
-9. **verify-build.mjs**: Updated theme test for GTS mapping + document mock + dark background assertion; updated i18n test to verify `t.value()` follows language switch
+9. **verify-build.mjs**: Updated theme test for GTS mapping + document mock + dark background assertion; i18n lifecycle test: old consumer computed auto-update, new consumer after switch via delegatingI18n, same-locale early exit (initialized flag), multi-cycle stability, same reactive object reference preserved
 10. **fallback-node-manifest.json**: Restored original v24.16.0 with real SHA-256 hashes
 11. **token-catalog.md**: Added --swt-color-bg-mask and --swt-filter-shadow-dark entries from actual CSS
 12. **sweetui-exports.json**: Expanded from 139 to 505 entries (full ESM export list)

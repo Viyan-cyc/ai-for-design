@@ -18,6 +18,12 @@ version: 0.5.2
 
 脚本优先看 RESULT 和 HINT。运行库由维护者一次准备，普通页面不逐次调查 npm 包或运行库。缺资源时按 [运行准备](references/runtime-setup.md) 处理，不能用占位库或静态 HTML 冒充完成。
 
+## 设计路径
+
+自然语言新页面只读一个最相关场景：[查询](references/design/scenes/query.md)、[详情/表单](references/design/scenes/detail-form.md)、[工作台](references/design/scenes/workbench.md)、[对话](references/design/scenes/conversation.md)、[看板](references/design/scenes/dashboard.md)、[展示](references/design/scenes/presentation.md)。先确定主任务、主次区域和密度，不另产规划报告。
+HTML/截图还原读 [参考还原](references/design/reference-reconstruction.md)，保留布局比例和视觉角色，不自动增加指标或筛选。需要视觉搭配时只查 [视觉配方](references/design/visual-recipes.md) 对应条目。局部修改跳过无关设计资料。
+工作台或复合对话输入需求读 [资产索引](references/assets/index.md)，仅复制所需资产；独立列表/表单不自动套工作台。
+
 ## 按需读取
 
 |需要解决的问题|读取方式|
@@ -51,3 +57,5 @@ version: 0.5.2
 ## 维护
 
 私有资源补齐、原生名称核对及内网一次性运行验收见 [runtime-setup](references/runtime-setup.md)。不要把维护调查变成每页的前置步骤。
+
+新增工作台/对话资产的内网维护验收见 [资产交接](references/foundation-handoff.md)，普通页面不重复执行。

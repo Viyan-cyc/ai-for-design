@@ -13,8 +13,8 @@ async function build(){
   if(i<0||!args[i+1]||args[i+1].startsWith('-'))throw Error('Usage: node build.mjs --dir "<project>"');
   const root=path.resolve(args[i+1]),src=path.join(root,'src');
   if(!fs.existsSync(src))throw Error('src folder not found: '+src);
-  // The loader is a fixed skill asset, not a business file. Sync it for existing projects too.
-  fs.copyFileSync(path.join(scripts,'preview/index.gts.html'),path.join(root,'index.gts.html'));
+  // Validate the current loader without replacing an existing preview.
+  const previewHTML=fs.readFileSync(path.join(scripts,'preview/index.gts.html'),'utf8');
   const req=compilerRequire(),sfc=req('@vue/compiler-sfc'),postcss=req('postcss');
   const files=walkFiles(src),key=f=>'/src/'+path.relative(src,f).split(path.sep).join('/');
   const byKey=Object.fromEntries(files.map(f=>[key(f),f]));
@@ -37,7 +37,7 @@ async function build(){
   }
   const sourceOnly=args.includes('--source-only');
   if(!sourceOnly){
-    const html=fs.readFileSync(path.join(root,'index.gts.html'),'utf8');
+    const html=previewHTML;
     for(const m of html.matchAll(/<(?:script|link)\b[^>]*(?:src|href)=["']([^"']+)["']/g))if(m[1]!=='./preview-data.js')localResource(m[1],path.join(root,'index.gts.html'));
     if(fs.existsSync(path.join(root,'public')))for(const f of walkFiles(path.join(root,'public')).filter(f=>f.endsWith('.css')))try{cssResources(fs.readFileSync(f,'utf8'),f);}catch(e){fail(f+': CSS '+e.message);}
   }
@@ -144,6 +144,7 @@ async function build(){
   for(const message of warnings)console.log('WARN: '+message);
   if(errors.size){console.log('RESULT: FAIL | '+errors.size+' error(s)');for(const message of errors)console.log('ERROR: '+message);process.exitCode=1;return;}
   if(sourceOnly){console.log('RESULT: SOURCE_OK\nRUNTIME: not-checked; no preview published');return;}
+  fs.writeFileSync(path.join(root,'index.gts.html'),previewHTML);
   const result=refresh(root,runtimeSources);if(!result.ok)throw Error(result.reason);
   console.log('RESULT: OK\nHTML_PATH: '+path.join(root,'index.gts.html')+'\nPAGES: '+pages.length+'\nRUNTIME: not-run');
 }
