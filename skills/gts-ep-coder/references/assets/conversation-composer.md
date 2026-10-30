@@ -1,4 +1,4 @@
-# ConversationComposer · 1.0.0
+# ConversationComposer
 
 独立的一体化对话输入器，不要求 WorkbenchShell。复制 conversation-composer 后，从 `./components/foundation/conversation-composer.vue` 导入。
 

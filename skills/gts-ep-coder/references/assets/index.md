@@ -14,10 +14,10 @@ node scripts/copy-foundation.mjs --dir "<工程绝对路径>" --page "<Page>" --
 node scripts/copy-foundation.mjs --dir "<工程绝对路径>" --page "<Page>" --assets workbench-shell,conversation-composer
 ```
 
-只传实际需要的 ID。输出目录 `src/pages/<Page>/components/foundation/`，每个资产一个文件；根目录 `.gts-assets.json` 记录版本与原始摘要。源是实体复制，不是共享链接。
+只传实际需要的 ID。输出目录 `src/pages/<Page>/components/foundation/`，每个资产一个文件，实体复制，不是共享链接；不生成版本或安装记录。
 
-脚本不装配 App、不修改主题或已有文件。重复执行复用一致内容；图标脚本的标准 import 接线不视为业务修改。已编辑或版本不一致时报 CONFLICT，先检查差异，不删除、不覆盖、不自动升级；保留现有组件继续集成，或经明确升级需求将新版本放入新的独立工程比较。
+脚本不装配 App、不修改主题或已有文件。目标内容相同则复用，不同则报 CONFLICT 并保留原文件，先检查差异再按需求合并，不删除后强行复制。图标脚本的标准 import 接线不视为业务修改。旧工程的 .gts-assets.json 不再读取或更新，确认无其他用途后可自行删除。
 
-复制后按接口编写配置与 props/emits/slots，再按原流程执行 fetch-icons/build。输入器与骨架均不带业务记录、不访问服务。文件版本 1.0.0 的视觉基线由用户于 2026-10-28 确认；这不等于自动化浏览器验证已完成。
+复制后按接口编写配置与 props/emits/slots，再按原流程执行 fetch-icons/build。输入器与骨架均不带业务记录、不访问服务。资产的视觉基线由用户于 2026-10-28 确认；这不等于自动化浏览器验证已完成。
 
 完整装配示例位于 `assets/examples/workbench-foundation/src/`，仅在接口说明不足以解决装配问题时读相关文件，不默认复制业务示例。示例保留用户确认的斑马纹和分页，普通页面依据需求选择。

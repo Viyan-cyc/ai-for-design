@@ -7,6 +7,8 @@
 
 ## 通用前提
 
+- 需要主题切换时，将 `scripts/preview/theme-scaffold/index.js` 复制为工程 `src/theme/index.js`（已有文件先检查，保留业务修改）。仅在 App.vue 创建一次 `createThemeState()`，通过 props/emits 或 provide/inject 传给导航与图表，不在每个控件各建状态。
+- 内置主题名为 `default`/`dark`；模块校验传入名称、过滤非法存储值，并派生 `isDark`。新增皮肤加载完成后可用 `names` 注册名称；`isDark` 仅表示内置 dark，不把所有自定义皮肤视为深色。图表响应 `theme` 变化后重读 GTS 配色，组件颜色仍由 token 与桥接负责。
 - i18n 装配素材：`scripts/preview/i18n-scaffold/`（接线复用；两语言词典按业务同步更新）。
 - 预览加载器已就绪：`index.gts-ep.html` 的 moduleCache 已映射 `vue-i18n` 与 EP locale 子路径，
   接入后预览直接生效，**无需改预览加载器**。
@@ -19,7 +21,8 @@ App.vue完整参考（XxxYyy是占位名，替换为init返回的PAGE，不固�
 ```vue
 <script setup>
 // 应用壳：装配 i18n / 主题切换（预览与真实工程共用）
-import { ref, getCurrentInstance } from 'vue'
+import { getCurrentInstance } from 'vue'
+import { createThemeState } from './theme/index.js'
 import { useI18n } from 'vue-i18n'
 import { ElConfigProvider, ElTooltip, ElIcon, ElButton } from 'element-plus'
 import { Moon, Sunny } from '@element-plus/icons-vue'
@@ -33,22 +36,7 @@ if (inst) installI18n(inst.appContext.app)
 const { t, locale } = useI18n({ useScope: 'global' })
 
 // 主题切换：data-theme 属性驱动（html[data-theme="..."]）
-const THEME_KEY = 'uxproto-theme'
-const theme = ref('default')
-try { const saved = localStorage.getItem(THEME_KEY); if (['default', 'dark'].includes(saved)) theme.value = saved } catch {}
-document.documentElement.setAttribute('data-theme', theme.value)
-const nextTheme = () => {
-  const target = theme.value === 'default' ? 'dark' : 'default'
-  setTheme(target)
-}
-
-const setTheme = (name) => {
-  theme.value = name
-  document.documentElement.setAttribute('data-theme', name)
-  try { localStorage.setItem(THEME_KEY, name) } catch {}
-}
-
-const isDark = (name) => name !== 'default'
+const { theme, isDark, setTheme, toggleTheme: nextTheme } = createThemeState()
 
 // 语言切换：toggle 到另一语言（持久化在 src/i18n 内）
 const toggleLocale = () => {
@@ -67,9 +55,9 @@ const localeLabel = (loc) => (loc === 'zh-cn' ? 'EN' : '中文')
             {{ localeLabel(locale) }}
           </ElButton>
         </ElTooltip>
-        <ElTooltip :content="isDark(theme) ? t('msg.demo.app.themeLight') : t('msg.demo.app.themeDark')" placement="bottom">
-          <ElButton class="icon-btn" text :aria-label="isDark(theme) ? t('msg.demo.app.themeLight') : t('msg.demo.app.themeDark')" @click="nextTheme">
-            <ElIcon :size="16"><Moon v-if="isDark(theme)" /><Sunny v-else /></ElIcon>
+        <ElTooltip :content="isDark ? t('msg.demo.app.themeLight') : t('msg.demo.app.themeDark')" placement="bottom">
+          <ElButton class="icon-btn" text :aria-label="isDark ? t('msg.demo.app.themeLight') : t('msg.demo.app.themeDark')" @click="nextTheme">
+            <ElIcon :size="16"><Moon v-if="isDark" /><Sunny v-else /></ElIcon>
           </ElButton>
         </ElTooltip>
       </div>
@@ -118,24 +106,15 @@ const localeLabel = (loc) => (loc === 'zh-cn' ? 'EN' : '中文')
 
 ```js
 // App.vue script 内
-import { ref } from 'vue'
-const THEME_KEY = 'uxproto-theme'
-const theme = ref('default')
-try { const saved = localStorage.getItem(THEME_KEY); if (['default', 'dark'].includes(saved)) theme.value = saved } catch {}
-document.documentElement.setAttribute('data-theme', theme.value)
-const setTheme = (name) => {
-  theme.value = name
-  document.documentElement.setAttribute('data-theme', name)
-  try { localStorage.setItem(THEME_KEY, name) } catch {}
-}
+import { createThemeState } from './theme/index.js'
+const { theme, isDark, setTheme, toggleTheme: nextTheme } = createThemeState()
 ```
 
 切换控件形态按用户描述实现（图标/下拉/菜单项均可）。
 
-## 三、代码自查与维护验收
+## 三、代码自查
 
 - 跑 build 门禁：`node scripts/build.mjs --dir "<工程目录>"` 期望 `RESULT: OK`。
-- 普通生成按规则完成源码自查及build，不自动打开浏览器。维护者验证接线时，浏览器检查：语言切换后词典与 EP 分页文案跟随、`data-theme` 持久化、控制台无 `Error: 27` 与未定义 token。
 
 标准main启用国际化时仅追加：
 

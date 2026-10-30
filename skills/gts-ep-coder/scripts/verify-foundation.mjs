@@ -38,14 +38,15 @@ try {
     assert(!fs.existsSync(target(project, 'workbench-shell')));
     assert.equal(fs.readFileSync(path.join(project, 'src/pages/TestPage/index.vue'), 'utf8'), '<template><div /></template>');
   });
-  test('repeat preserves source and receipt timestamps', () => {
+  test('repeat preserves source timestamp without creating a receipt', () => {
     const file = target(project, 'conversation-composer');
     const receipt = path.join(project, '.gts-assets.json');
-    const before = [fs.statSync(file).mtimeMs, fs.statSync(receipt).mtimeMs];
+    const before = fs.statSync(file).mtimeMs;
     const result = run(project, 'conversation-composer');
     assert.equal(result.code, 0, result.output);
     assert(result.output.includes('REUSED:'));
-    assert.deepEqual([fs.statSync(file).mtimeMs, fs.statSync(receipt).mtimeMs], before);
+    assert.equal(fs.statSync(file).mtimeMs, before);
+    assert(!fs.existsSync(receipt));
   });
   test('standard icon wiring remains reusable', () => {
     const file = target(project, 'conversation-composer');
@@ -59,12 +60,11 @@ try {
     const file = target(project, 'conversation-composer');
     fs.appendFileSync(file, '\n<!-- project-specific change -->\n');
     const saved = fs.readFileSync(file, 'utf8');
-    const receipt = fs.readFileSync(path.join(project, '.gts-assets.json'), 'utf8');
     const result = run(project, 'workbench-shell,conversation-composer');
     assert.equal(result.code, 1, result.output);
     assert(result.output.includes('CONFLICT'));
     assert.equal(fs.readFileSync(file, 'utf8'), saved);
-    assert.equal(fs.readFileSync(path.join(project, '.gts-assets.json'), 'utf8'), receipt);
+    assert(!fs.existsSync(path.join(project, '.gts-assets.json')));
     assert(!fs.existsSync(target(project, 'workbench-shell')));
   });
   test('unknown asset rejects before any source addition', () => {
@@ -76,23 +76,14 @@ try {
     assert.equal(run(project, 'workbench-shell', [], '../Escape').code, 1);
     assert.equal(run(project, 'workbench-shell,workbench-shell').code, 1);
   });
-  test('malformed receipt is preserved', () => {
-    const fresh = fixture('bad-receipt');
+  test('legacy receipt is ignored and preserved', () => {
+    const fresh = fixture('legacy-receipt');
     const file = path.join(fresh, '.gts-assets.json');
     fs.writeFileSync(file, 'not-json');
-    assert.equal(run(fresh, 'workbench-shell').code, 1);
+    const result = run(fresh, 'workbench-shell');
+    assert.equal(result.code, 0, result.output);
     assert.equal(fs.readFileSync(file, 'utf8'), 'not-json');
-    assert(!fs.existsSync(target(fresh, 'workbench-shell')));
-  });
-  test('different installed version is not silently upgraded', () => {
-    const fresh = fixture('version');
-    assert.equal(run(fresh, 'workbench-shell').code, 0);
-    const file = path.join(fresh, '.gts-assets.json');
-    const receipt = JSON.parse(fs.readFileSync(file, 'utf8'));
-    Object.values(receipt.assets)[0].version = '0.9.0';
-    fs.writeFileSync(file, JSON.stringify(receipt));
-    assert.equal(run(fresh, 'workbench-shell').code, 1);
-    assert.equal(JSON.parse(fs.readFileSync(file, 'utf8')).assets['src/pages/TestPage/components/foundation/workbench-shell.vue'].version, '0.9.0');
+    assert(fs.existsSync(target(fresh, 'workbench-shell')));
   });
   test('linked destination cannot write outside project', () => {
     const fresh = fixture('linked');

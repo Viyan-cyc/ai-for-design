@@ -14,7 +14,7 @@ metadata:
 1. **`index.gts-ep.html`** —— 离线预览（本地 UMD 运行时 + 浏览器内 SFC 编译，双击即看，无需服务器）；
 2. **`src/`** —— 标准工程源码，可整目录拷入任何 Vue 3 + Element Plus 2.13.5 工程（接入说明见 `src/README.md`）。
 
-页面代码是主交付物；预览 HTML 只是让你和用户**当场看到编译渲染结果**的手段。
+页面代码是主交付物；预览 HTML 供用户查看页面效果。
 
 ---
 
@@ -101,7 +101,9 @@ build 门禁用）、`env.lock.json` 的 lock hash 与 skill 携带的 `package-
 
 **装不上时把 `RESULT: FAIL`、`DETAIL:`、`HINT:` 原样报给用户**——那是环境问题，人的活（见硬约束 0.2）。
 
-### ② `init.mjs` —— 每个需求建一次工程（幂等）
+### ② `init.mjs` —— 仅新建页面时初始化工程
+
+修改已有页面时定位现有工程，跳过 init，只修改需求涉及的 src 源码并保留其他内容，不直接编辑生成的 HTML；执行自查和 build 后交付同一预览入口。init 遇到已有 src 的目标目录会报错，不是幂等更新工具。
 
 ```bash
 node scripts/init.mjs "<artifact-folder 绝对路径>" "<slug>"
@@ -122,11 +124,10 @@ main.js、api 服务层示例、主题三件套、starter 页面）。
 - **HTML/截图还原**：读 [参考还原](references/design/reference-reconstruction.md)，先保留布局和视觉角色，再映射 token。局部修改只读相关检查条目。未经要求不增添筛选框、统计卡片或数据。
 - **复用骨架/输入器**：用户指定，或需求明确具有顶部导航＋可收展主导航＋多工作区页签，才查 [资产索引](references/assets/index.md)。对话输入可单独复用；独立查询/表单/展示页不因此加载骨架。先运行索引中的 check，再复制所选资产。不遍历实现和完整示例。
 
-交付前按 [视觉验收](references/design/visual-review.md) 检查实际效果；用户已确认的相同版本不重复要求确认。浏览器工具不可用或被策略阻止时不绕过，记录未测项；静态构建不能作为视觉通过的依据。
 
 ### ③ 写代码 —— 主战场
 
-**运行源码只写 `src/` 下**（可选资产脚本另在工程根写 `.gts-assets.json` 安装记录）：页面放 `src/pages/{Page}/index.vue`（一页一目录，子组件/样式放同目录），
+**运行源码只写 `src/` 下**：页面放 `src/pages/{Page}/index.vue`（一页一目录，子组件/样式放同目录），
 `App.vue` 修改挂载与需求明确的装配。主题 css（`src/assets/themes/`）与 `index.gts-ep.html` 是交付件骨架，
 不改不删；换肤按 `src/assets/themes/README.md` 协议追加。
 
@@ -187,7 +188,7 @@ main.js、api 服务层示例、主题三件套、starter 页面）。
 
 - 换肤**机制**随工程交付（`src/assets/themes/` 协议：一皮肤一文件（.less）、`html[data-theme="{name}"]`、
   bridge.less 自动跟随、新增皮肤插槽）——这部分不删不用重做，页面颜色全程走 token。
-- **切换 UI 默认不在**。用户要求深浅切换 → 接入 UI，**形态按用户描述决定**（图标 toggle/
+- **切换 UI 默认不在**。用户要求深浅切换 → 按参考复制主题状态模块，由应用壳创建一次并向控件传递状态与动作；已有项目保留已修改实现，不直接覆盖。**形态按用户描述决定**（图标 toggle/
   下拉/菜单项均可），参考实现见 `references/on-demand-toggle.md`。
 - **内置 default + dark 两套皮肤**。两套皮肤均由 gen-tokens 从 `design-language/样式Token/设计系统.md` §1.2 统一双主题表（`Token｜用途｜Light｜Dark`）生成，无工程回填项。
 
@@ -197,7 +198,7 @@ main.js、api 服务层示例、主题三件套、starter 页面）。
 - 编码规则见 `vendor/vue-skill/references/code-rules.md` 第十二节（容器流式、ElRow/ElCol
   响应式栅格、宽度纪律、@media 口径、表格自适应）；断点与窗口适配口径见
   `references/design-language.md` §3.3。
-- 布局按上述响应式口径编写；完成规则自查且构建通过后交付预览链接，新页面和视觉结构变更在工具允许时打开产物检查；检查范围见 references/design/visual-review.md。不得要求每次微调重复全套测试；未运行不宣称视觉验收。
+- 布局按上述响应式口径编写；完成源码自查且构建通过后交付预览链接。
 
 ### ③.5 `fetch-icons.mjs` —— 图标检索替换（有新增或变化的图标时）
 
@@ -234,11 +235,10 @@ IconPlus API（探测即取配置，再 `getIconInfo → getIcon×2` 并行拉�
 node scripts/build.mjs --dir "<工程目录（含 src/）>"
 ```
 
-build 用真实 `@vue/compiler-sfc`（parse + compileScript + compileTemplate）编译每个 `.vue`，
-并做 token/样式纪律检查。首次跑之前确保 ① 已通过。**错误一次全列出**：FAIL 时逐条给
+build 用真实 `@vue/compiler-sfc` 编译 Vue SFC，检查 CSS/Less、导入导出、组件绑定、资源与 token 等代码问题；它仅覆盖部分编码规则，不替代源码自查。随包 UMD 的无 DOM 导出探测不挂载业务页面，输出 `RUNTIME: not-run`。首次跑之前确保 ① 已通过。**错误一次全列出**：FAIL 时逐条给
 `ERROR: <file>: <msg>`，一轮改完再跑即可，不用逐个试。
 
-- `RESULT: OK` → 拿 `HTML_PATH` 走第 ⑤ 步；这是静态构建通过，不代表已做浏览器运行验收。构建输出 `index.gts-ep.html`；旧工程中已有的其他HTML不自动删除，交付以本次 `HTML_PATH` 为准
+- `RESULT: OK` → 拿 `HTML_PATH` 走第 ⑤ 步。构建输出 `index.gts-ep.html`；旧工程中已有的其他HTML不自动删除，交付以本次 `HTML_PATH` 为准
 - `RESULT: FAIL |` → 读每条 `ERROR:`（含 `file:line`），改代码，**再跑一次 build**。
   代码问题在重试额度内集中修复；达到上限或提前停止时如实报告未通过
 - `WARN: ...`（token 有 fallback 但未定义、样式内出现 hex 等）→ **必须处理**，
@@ -254,7 +254,7 @@ build同步固定预览加载器，使已有工程使用当前解析规则；业
 
 ### ⑤ 交付 —— 不能省
 
-build 返回 `RESULT: OK` 之后，必须向用户交付预览页面的可点击链接：
+build 返回 `RESULT: OK` 之后，必须向用户交付预览页面的可点击链接，页面效果由用户预览确认：
 
 ```
 预览：<HTML_PATH 的绝对路径>（双击用浏览器打开）
@@ -326,7 +326,7 @@ build的编译/token错误在重试额度内修复，达到上限或提前停止
 - **样式一律 `<style scoped lang="less">`**；禁止 `:root` / `html` / `body` / `[data-theme]` 选择器（build 会拒）。
 - **所有颜色走 token**：`var(--color-brand)` 这类规范名；页面局部派生值用 `--page-*` 前缀定义；页面不得定义 `--el-*`，已有运行时变量可引用。
   页面里不写 hex 色值；build对硬编码hex给出WARN，按前述要求处理。名称检查不验证每处CSS继承/作用域，局部 `--page-*` 定义必须覆盖其使用位置。
-- **只用真实 Element Plus 组件**，模板标签一律 **PascalCase**（`<ElTable>`），模板里用到的每个
+- **标准交互控件优先使用 Element Plus**，组件模板标签一律 **PascalCase**（`<ElTable>`），模板里用到的每个
   组件、`ElMessage` 等命令式 API、vue 的 API（`ref`/`reactive`/…）**每个文件各自 import**——
   漏 import 编译能过但运行时白屏。编译宏（`defineProps` 等）不用 import。
 - 图标从 `@element-plus/icons-vue` 导入（如 `import { Search } from '@element-plus/icons-vue'`）。
@@ -337,7 +337,7 @@ build的编译/token错误在重试额度内修复，达到上限或提前停止
 - 间距/圆角/字号/投影等同样用 token：`var(--space-size-16)`、`var(--radius-size-normal)`、
   `var(--shadow-1)`。
 - 组件状态（悬停/聚焦/禁用/加载）由 Element Plus + 桥接层自动获得，页面不重绘状态色。
-- 标准按钮、输入和表格继续使用 EP；已评审的复合资产可用语义化原生按钮、select、textarea 实现固定交互。这是资产内部的受控例外，不允许普通页面借此整体替换组件库或覆盖 EP 内部样式。
+- 页面布局与展示区域可用语义化 HTML 和 GTS token；标准按钮、表单控件和表格优先用 EP。没有合适组件承载的自定义交互区域可组合 EP 与原生元素，并实现必要的键盘、焦点和状态行为；复用资产时保留其已有实现。业务页面不覆盖 EP 内部主题样式。
 - **自适应纪律**：布局容器禁写死总宽（内容流式，控件固有定宽配 `max-width: 100%` 兜底）；
   字体禁用 vw/vh 视口缩放；多卡片用响应式栅格（细则见 code-rules 第十二节）。
   build 会对 `zoom` 与 font-size vw/vh 出 WARN。
@@ -378,5 +378,7 @@ build的编译/token错误在重试额度内修复，达到上限或提前停止
 ## 维护回归（仅修改skill时）
 
 维护候选资产或设计流程时，另外执行 `node scripts/verify-foundation.mjs`；普通页面不执行维护测试。
+
+修改主题状态模块时执行 `node scripts/verify-theme.mjs`；它只检查状态逻辑，不挂载页面，普通页面不执行。
 
 共享环境更新后，维护者执行 `node scripts/verify-build.mjs` 和 `node scripts/verify-fetch-icons.mjs`。普通页面不执行它们。当前离线源码支持JavaScript、Vue SFC、CSS/Less和字面量动态import；不把TS/JSX、CSS modules或非字面量动态路径默认为可用。本地CSS依赖优先在JS中显式import；build会将已验证样式及资源路径编入离线映射，标准src保持原样。
