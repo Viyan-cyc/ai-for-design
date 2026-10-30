@@ -37,7 +37,7 @@ node scripts/cleanup-starter.mjs --dir 'D:\project\gts\ai-for-design\output\swee
 node scripts/build.mjs --dir 'D:\project\gts\ai-for-design\output\sweetui-foundation-check'
 ~~~
 
-每次修改 src 后重新 build。资产脚本不会覆盖已编辑组件；发生 CONFLICT 读差异后人工合并，不删文件绕过保护。修改包内资产后，用脚本计算 assets/foundation/manifest.json 对应文件的真实 SHA-256，再运行回归，不编造哈希。
+每次修改 src 后重新 build。资产脚本不会覆盖已编辑组件；发生 CONFLICT 读差异后人工合并，不删文件绕过保护。修改包内组件后运行回归即可，无需维护版本或哈希清单。同步本次简化时，删除新包 assets/foundation/manifest.json 和已被平移替代的 1.0.0 目录；确认组件已在 foundation 根目录后再删除。旧工程 .gts-assets.json 不再被读取，可在确认无其他用途后删除，不删除或覆盖其组件。
 
 ## 一次集中验收
 - 工作台：收展、搜索、菜单、工作区新增/切换/关闭、全关闭空态、会话面板；切换保留草稿，关闭时取消任务。窄桌面和常用宽度不整页横向滚动，只有指定区域滚动。

@@ -1,12 +1,11 @@
 #!/usr/bin/env node
-// Copy only explicitly selected, versioned components. Never overwrite project source.
+// Copy only explicitly selected components. Never overwrite project source.
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { createHash } from 'node:crypto';
 
 const catalog = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../assets/foundation');
-const hash = value => createHash('sha256').update(value).digest('hex');
+const assets = new Set(['workbench-shell', 'conversation-composer']);
 const canonical = value => value.replace(/\r\n/g, '\n');
 
 function fail(code, message) {
@@ -50,37 +49,20 @@ try {
   if (!fs.existsSync(path.join(pageDir, 'index.vue'))) fail('PAGE', `Initialize page first: ${pageDir}`);
   const selected = options['--assets'].split(',');
   if (new Set(selected).size !== selected.length || selected.some(id => !id)) fail('ASSETS', 'Duplicate or empty asset ID');
-  const manifest = JSON.parse(fs.readFileSync(path.join(catalog, 'manifest.json'), 'utf8'));
-  const receiptPath = path.join(project, '.gts-assets.json');
-  noLinks(project, receiptPath);
-  let receipt = { schemaVersion: 1, assets: {} };
-  if (fs.existsSync(receiptPath)) {
-    try { receipt = JSON.parse(fs.readFileSync(receiptPath, 'utf8')); }
-    catch { fail('RECEIPT', 'Invalid .gts-assets.json; preserve it and inspect before retry'); }
-    if (receipt.schemaVersion !== 1 || !receipt.assets || Array.isArray(receipt.assets) || typeof receipt.assets !== 'object') {
-      fail('RECEIPT', 'Unsupported asset receipt');
-    }
-  }
   // Validate the entire selection before creating directories or files.
   const plan = selected.map(id => {
-    if (!Object.hasOwn(manifest.assets, id)) fail('ASSETS', `Unknown asset: ${id}`);
-    const entry = manifest.assets[id];
-    const source = path.resolve(catalog, entry.file);
+    if (!assets.has(id)) fail('ASSETS', `Unknown asset: ${id}`);
+    const source = path.join(catalog, id + '.vue');
     noLinks(catalog, source);
     const bytes = fs.readFileSync(source);
-    if (hash(bytes) !== entry.sha256) fail('INTEGRITY', `Source hash mismatch: ${id}`);
     const relative = `src/pages/${page}/components/foundation/${id}.vue`;
     const destination = path.join(project, relative);
     noLinks(project, destination);
     const expected = canonical(bytes.toString('utf8'));
     if (fs.existsSync(destination) && canonical(fs.readFileSync(destination, 'utf8')) !== expected) {
-      fail('CONFLICT', `Preserved modified or different-version file: ${destination}`);
+      fail('CONFLICT', `Preserved modified or different file: ${destination}`);
     }
-    const installed = receipt.assets[relative];
-    if (installed && (installed.id !== id || installed.version !== entry.version || installed.sourceSha256 !== entry.sha256)) {
-      fail('CONFLICT', `Preserved different-version receipt: ${relative}`);
-    }
-    return { id, entry, relative, destination, bytes, exists: fs.existsSync(destination) };
+    return { id, destination, bytes, exists: fs.existsSync(destination) };
   });
 
   if (!options.check) {
@@ -91,19 +73,12 @@ try {
         // Exclusive creation also protects a concurrently created file.
         fs.writeFileSync(item.destination, item.bytes, { flag: 'wx' });
       }
-      receipt.assets[item.relative] = {
-        id: item.id, version: item.entry.version, sourceSha256: item.entry.sha256
-      };
-    }
-    const serialized = JSON.stringify(receipt, null, 2) + '\n';
-    if (!fs.existsSync(receiptPath) || fs.readFileSync(receiptPath, 'utf8') !== serialized) {
-      fs.writeFileSync(receiptPath, serialized);
     }
   }
   console.log('RESULT: OK');
   console.log('MODE: ' + (options.check ? 'check (no writes)' : 'copy'));
   for (const item of plan) {
-    console.log(`${item.exists ? 'REUSED' : options.check ? 'PLANNED' : 'COPIED'}: ${item.id}@${item.entry.version} -> ${item.destination}`);
+    console.log(`${item.exists ? 'REUSED' : options.check ? 'PLANNED' : 'COPIED'}: ${item.id} -> ${item.destination}`);
   }
   console.log('NEXT: assemble props/emits/slots using SweetUI contracts, then build');
 } catch (error) {

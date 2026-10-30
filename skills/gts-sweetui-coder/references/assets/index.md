@@ -8,6 +8,6 @@ node scripts/copy-foundation.mjs --dir "<工程绝对路径>" --page "<PAGE>" --
 node scripts/copy-foundation.mjs --dir "<工程绝对路径>" --page "<PAGE>" --assets workbench-shell,conversation-composer
 ~~~
 
-只传所需 ID。组件复制到 src/pages/<PAGE>/components/foundation/，不自动装配 App 或业务。已修改的目标文件不覆盖；出现冲突先读差异，不删除后强行复制。工程根 .gts-assets.json 是复制记录，不是每页新增的验收流程。
+只传所需 ID。组件复制到 src/pages/<PAGE>/components/foundation/，不自动装配 App 或业务。已修改的目标文件不覆盖；出现冲突先读差异，不删除后强行复制。不生成版本清单或工程复制记录；目标内容相同则复用，不同则报冲突。
 复合导航按钮和输入器 textarea/file input 保留语义化 HTML；普通按钮、搜索输入、模型选择使用 SweetUI。这是复合结构需要，不是业务页面放弃 SweetUI 的理由。
 本地检查覆盖编译、名称及复制边界，真实 SweetUI 行为见 [内网交接](../foundation-handoff.md)。装配不明确时只读 assets/examples/workbench-conversation/index.vue 的相关部分。

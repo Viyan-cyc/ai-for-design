@@ -73,6 +73,7 @@ try {
     result=run('copy-foundation.mjs',args);assert.equal(result.code,0,result.text)
     fs.copyFileSync(path.join(skill,'assets/examples/workbench-conversation/index.vue'),path.join(project,'src/pages/FoundationPage/index.vue'))
     check(project)
+    assert.ok(!fs.existsSync(path.join(project,'.gts-assets.json')))
     const file=path.join(dest,'workbench-shell.vue');fs.appendFileSync(file,'\n<!-- edited -->')
     const edited=fs.readFileSync(file,'utf8');result=run('copy-foundation.mjs',args);assert.equal(result.code,1);assert.match(result.text,/CONFLICT/);assert.equal(fs.readFileSync(file,'utf8'),edited)
   })
@@ -177,7 +178,7 @@ try {
   })
   assert.equal(typeof runtime.installRuntime,'function');count++;console.log('PASS: actual loader resolves runtime ESM exports (no private component mount)')
   ok('composer handles IME, line breaks, busy state, attachments and suggestions',()=>{
-    const source=fs.readFileSync(path.join(skill,'assets/foundation/1.0.0/conversation-composer.vue'),'utf8').split('<script setup>')[1].split('</script>')[0].replace(/^import .*$/gm,'')
+    const source=fs.readFileSync(path.join(skill,'assets/foundation/conversation-composer.vue'),'utf8').split('<script setup>')[1].split('</script>')[0].replace(/^import .*$/gm,'')
     const props=context.Vue.reactive({modelValue:'hello',model:'demo',models:[],references:[{id:'doc',label:'Doc'}],commands:[],labels:{},busy:false})
     const events=[]
     const api=new Function('ref','computed','watch','nextTick','defineProps','defineEmits',source+'\nreturn {keydown,send,attach,attachments,composing,choose}')(
