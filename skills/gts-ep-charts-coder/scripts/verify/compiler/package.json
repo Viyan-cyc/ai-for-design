@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "@vue/compiler-sfc": "^3.5.25",
+    "less": "^4.2.0"
+  }
+}

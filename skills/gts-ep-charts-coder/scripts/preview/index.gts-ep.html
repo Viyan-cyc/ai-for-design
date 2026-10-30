@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="default">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UX Prototype Preview</title>
+
+    <!-- ═══ 1. 本地运行时（FIXED — 勿改勿删勿换 CDN）═══ -->
+    <script src="./public/library/vue.global.prod.js"></script>
+    <script src="./public/library/dayjs.min.js"></script>
+    <script src="./public/library/element-plus.full.min.js"></script>
+    <script src="./public/library/element-plus-icons-vue.iife.min.js"></script>
+    <script src="./public/library/element-plus-locale-zh-cn.min.js"></script>
+    <script src="./public/library/element-plus-locale-en.min.js"></script>
+    <script src="./public/library/vue-i18n.global.prod.js"></script>
+    <script src="./public/library/echarts.min.js"></script>
+    <script src="./public/library/vue-echarts.iife.min.js"></script>
+    <script src="./public/library/less.min.js"></script>
+    <script src="./public/library/vue3-sfc-loader.js"></script>
+    <link rel="stylesheet" href="./public/library/element-plus.index.css">
+    <link rel="stylesheet" href="./public/library/vue-echarts.style.css">
+
+    <!-- ═══ 2. 主题（样式文件即交付件，位于 src/assets/themes/*.less）═══
+         主题不走 <link>：file:// 下浏览器拦截 less 的 XHR 取源，改由下方 boot
+         阶段用已入场的 less.min.js 对 preview-data.js 里的源文本 less.render
+         编译后注入（与 SFC <style lang="less"> 同一编译器）。themes/ 下所有
+         .less 自动发现加载，新皮肤放入即生效，无需注册。 -->
+
+    <!-- ═══ 3. 页面骨架样式（FIXED）═══ -->
+    <style>
+        html, body, #app { height: 100%; margin: 0; padding: 0; }
+        body {
+            font-family: var(--font-family);
+            background: var(--color-bg-1);
+            color: var(--color-text-primary);
+        }
+        #ux-boot-error {
+            display: none;
+            margin: 24px auto;
+            max-width: 720px;
+            padding: 12px 16px;
+            font-size: 13px;
+            white-space: pre-wrap;
+            color: var(--color-error, #e02128);
+            background: #fee7e8;
+            border: 1px solid #f59297;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div id="app"></div>
+    <pre id="ux-boot-error"></pre>
+
+    <!-- 源码映射（由 build-data.mjs / build.mjs 从 src/ 自动生成）-->
+    <script src="./preview-data.js"></script>
+
+    <script>
+        // ═══ 预览加载器（FIXED — 勿改）═══
+        // .vue 源码来自 window.__UX_PROTO_SRC__（src/ 的打包映射），由 vue3-sfc-loader
+        // 在浏览器内现场编译 — 与真实 Vite 工程同一套代码，无需构建步骤。
+        window.setTheme = (name) => document.documentElement.setAttribute("data-theme", name);
+
+        (function () {
+            var bootError = document.getElementById("ux-boot-error");
+            function showBootError(msg) {
+                bootError.textContent = "预览加载失败：" + msg;
+                bootError.style.display = "block";
+            }
+            // Browser resize-delivery notifications are not boot failures. Keep the
+            // native console event visible; do not cancel events or patch ResizeObserver.
+            window.addEventListener("error", function (e) {
+                var resizeDeliveryNotice = !e.error && (
+                    e.message === "ResizeObserver loop completed with undelivered notifications." ||
+                    e.message === "ResizeObserver loop limit exceeded"
+                );
+                if (resizeDeliveryNotice) return;
+                showBootError(e.message || "资源加载失败");
+            });
+            window.addEventListener("unhandledrejection", function(e){showBootError((e.reason && e.reason.message) || String(e.reason));});
+
+            if (!window.__UX_PROTO_SRC__) {
+                showBootError("preview-data.js 缺失或为空 — 运行 node scripts/build.mjs --dir 重新生成");
+                return;
+            }
+
+            var ASSET_EXT = [".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp", ".ico", ".bmp"];
+            var SRC = window.__UX_PROTO_SRC__;
+
+            function addStyle(textContent) {
+                var style = document.createElement("style");
+                style.textContent = textContent;
+                document.head.appendChild(style);
+            }
+
+            var options = {
+                moduleCache: Object.assign(Object.create(null), {
+                    vue: Vue,
+                    "vue-i18n": VueI18n,
+                    "element-plus": ElementPlus,
+                    "element-plus/es/locale/lang/zh-cn": ElementPlusLocaleZhCn,
+                    "element-plus/es/locale/lang/en": ElementPlusLocaleEn,
+                    "@element-plus/icons-vue": ElementPlusIconsVue,
+                    dayjs: dayjs,
+                    echarts: echarts,
+                    "vue-echarts": VueECharts,
+                    less: less,
+                }),
+                getFile: function (path) {
+                    var clean = String(path).split("?")[0].split("#")[0];
+                    if (ASSET_EXT.some(function (ext) { return clean.endsWith(ext); })) {
+                        var assetExt = clean.slice(clean.lastIndexOf("."));
+                        return Promise.resolve({ getContentData: function () { return ""; }, type: assetExt });
+                    }
+                    clean = window.__UX_RESOLVE_SOURCE__(clean, "/src/App.vue", SRC) || clean;
+                    var content = SRC[clean];
+                    if (content === undefined) {
+                        return Promise.reject(new Error("源码映射中找不到 " + clean + " — 检查文件与import路径；源码修改后重跑build"));
+                    }
+                    // 剥 BOM：Windows 编辑器常写入 EF BB BF，会毒化 CSS 首条选择器 / JSON.parse
+                    if (content.charCodeAt(0) === 0xfeff) content = content.slice(1);
+                    // 类型取自真实扩展名；.js 按 .mjs 处理 —— sfc-loader 只对 .mjs 走 ESM 解析，
+                    // 而 Vite 语义中 src/ 下 .js 本就是 ESM，此处映射使预览与真实工程一致
+                    var type = clean.slice(clean.lastIndexOf("."));
+                    if (type === ".js") type = ".mjs";
+                    // 契约要求 getContentData 返回 Promise（部分调用链直接 .then）
+                    return Promise.resolve({ getContentData: function () { return Promise.resolve(content); }, type: type });
+                },
+                handleModule: function (type, getContentData, path) {
+                    if (type === ".css") {
+                        return Promise.resolve(getContentData()).then(addStyle).then(function () { return {}; });
+                    }
+                    if (type === ".less") {
+                        // 组件显式 import 的 .less；主题 themes/*.less 走上方 boot 注入通道，不经此处
+                        return Promise.resolve(getContentData())
+                            .then(function (text) { return less.render(String(text)); })
+                            .then(function (out) { addStyle(out.css); })
+                            .then(function () { return {}; });
+                    }
+                    if (type === ".json") {
+                        // ESM 语义：default import 拿到解析后的对象（剥 BOM —— Windows 编辑器常带）
+                        return Promise.resolve(getContentData()).then(function (text) {
+                            var parsed = JSON.parse(String(text).replace(/^﻿/, ""));
+                            return { default: parsed, __esModule: true };
+                        });
+                    }
+                    if (ASSET_EXT.indexOf(type) !== -1) {
+                        // 返回相对预览根的 URL（真实工程中 import 资源同样得到 URL，语义一致）
+                        return Promise.resolve("." + String(path).split("?")[0]);
+                    }
+                    // 注意：必须返回 undefined（不是 null）才会走 loader 对 .vue/.js 的默认编译处理
+                    return undefined;
+                },
+                addStyle: function (styleStr) { addStyle(styleStr); },
+                log: function (type) {
+                    if (type === "error") {
+                        var args = Array.prototype.slice.call(arguments, 1);
+                        showBootError(args.map(String).join(" "));
+                        console.error.apply(console, args);
+                    }
+                },
+            };
+
+            // 主题先行：themes/ 下全部 .less 在挂载前经 less.render 编译注入（与 SFC
+            // <style lang="less"> 同一编译器），避免无主题闪屏。file:// 下 less 无法
+            // 自行 XHR 取源，故从 preview-data.js 的源码映射取文本。base/bridge 先于
+            // 皮肤由字母序天然满足，皮肤间按 data-theme 分域互不依赖。
+            var THEME_DIR = "/src/assets/themes/";
+            var themePaths = Object.keys(SRC)
+                .filter(function (p) { return p.indexOf(THEME_DIR) === 0 && p.slice(-5) === ".less"; })
+                .sort();
+            Promise.all(themePaths.map(function (p) {
+                return less.render(SRC[p]);
+            })).then(function (styles) {
+                styles.forEach(function(out){addStyle(out.css);});
+                // Icon barrel: if /src/assets/icons/index.js exists, pre-load it
+                // and create a Proxy that merges barrel exports with EP icons.
+                // Hit → company SVG (dual-theme CSS switch); miss → EP original.
+                var barrelSrc = SRC["/src/assets/icons/index.js"];
+                var initPromise;
+                if (barrelSrc) {
+                    initPromise = window["vue3-sfc-loader"].loadModule("/src/assets/icons/index.js", options)
+                        .then(function (barrel) {
+                            options.moduleCache["@element-plus/icons-vue"] = new Proxy(ElementPlusIconsVue, {
+                                get: function (target, prop) {
+                                    if (prop in barrel) return barrel[prop];
+                                    return target[prop];
+                                }
+                            });
+                        })
+                        .catch(function (e) {
+                            console.warn("[ux-proto] icon barrel failed, using EP icons:", e);
+                        });
+                } else {
+                    initPromise = Promise.resolve();
+                }
+
+                return initPromise;
+            }).then(function () {
+                var app = Vue.createApp({
+                    components: {
+                        UxRoot: Vue.defineAsyncComponent(function () {
+                            return window["vue3-sfc-loader"].loadModule("/src/App.vue", options);
+                        }),
+                    },
+                    template: "<UxRoot />",
+                });
+                app.use(ElementPlus, { locale: ElementPlusLocaleZhCn });
+                app.mount("#app");
+            }).catch(function (e) {
+                showBootError("主题编译失败：" + ((e && e.message) || e));
+            });
+        })();
+    </script>
+</body>
+</html>
