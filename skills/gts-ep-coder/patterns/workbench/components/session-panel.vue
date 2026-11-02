@@ -2,7 +2,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { ElButton, ElInput, ElIcon, ElEmpty } from 'element-plus'
 import { Close, Search, Plus, ChatDotRound } from '@element-plus/icons-vue'
-import { getSessions } from '../../../api/foundation.js'
+import { getSessions } from '../api/foundation.js'
 defineProps({business:Boolean})
 defineEmits(['close','open','new'])
 const sessions=ref([])

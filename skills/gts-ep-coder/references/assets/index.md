@@ -10,8 +10,8 @@
 先读所选接口，再执行（Page 为 init 返回的 PAGE）：
 
 ```sh
-node scripts/copy-foundation.mjs --dir "<工程绝对路径>" --page "<Page>" --assets workbench-shell,conversation-composer --check
-node scripts/copy-foundation.mjs --dir "<工程绝对路径>" --page "<Page>" --assets workbench-shell,conversation-composer
+node scripts/copy-components.mjs --dir "<工程绝对路径>" --page "<Page>" --assets workbench-shell,conversation-composer --check
+node scripts/copy-components.mjs --dir "<工程绝对路径>" --page "<Page>" --assets workbench-shell,conversation-composer
 ```
 
 只传实际需要的 ID。输出目录 `src/pages/<Page>/components/foundation/`，每个资产一个文件，实体复制，不是共享链接；不生成版本或安装记录。
@@ -20,4 +20,4 @@ node scripts/copy-foundation.mjs --dir "<工程绝对路径>" --page "<Page>" --
 
 复制后按接口编写配置与 props/emits/slots，再按原流程执行 fetch-icons/build。输入器与骨架均不带业务记录、不访问服务。资产的视觉基线由用户于 2026-10-28 确认；这不等于自动化浏览器验证已完成。
 
-完整装配示例位于 `assets/examples/workbench-foundation/src/`，仅在接口说明不足以解决装配问题时读相关文件，不默认复制业务示例。示例保留用户确认的斑马纹和分页，普通页面依据需求选择。
+完整装配示例位于 `patterns/workbench/`，装配方法见 `patterns/workbench/README.md`；主题由 init 提供，基础组件由 copy-components 复制。仅在接口说明不足以解决装配问题时读相关文件，不默认复制业务示例。示例保留用户确认的斑马纹和分页，普通页面依据需求选择。

@@ -1,9 +1,11 @@
 <script setup>
 import { ref, computed, watch, nextTick } from 'vue'
-import { ElIcon } from 'element-plus'
-import { Plus, Promotion, Close, Document, Box, ArrowDown, VideoPause } from '@element-plus/icons-vue'
+import { ElIcon, ElDropdown, ElDropdownMenu, ElDropdownItem } from 'element-plus'
+import { Plus, Promotion, Close, Document, Box, ArrowDown, Check, VideoPause } from '@element-plus/icons-vue'
 const props = defineProps({ modelValue: {type:String, default:''}, model:String, models:Array, busy:Boolean, placeholder: {type:String,default:'输入问题，支持 @ 引用文件、/ 调用命令，Shift + Enter 换行'}, references:{type:Array,default:()=>[]}, commands:{type:Array,default:()=>[]} })
 const emit=defineEmits(['update:modelValue','update:model','send','stop'])
+const modelMenuOpen=ref(false)
+const selectedModel=computed(()=>props.models?.find(item=>item.id===props.model)?.label || '选择模型')
 const textArea=ref(null)
 const fileInput=ref(null)
 const attachments=ref([])
@@ -50,8 +52,11 @@ function attach(event){attachments.value.push(...Array.from(event.target.files))
    <div class="tools">
     <input ref="fileInput" type="file" multiple class="file-input" @change="attach" />
     <button class="tool" aria-label="添加附件" title="添加本地附件（不上传）" :disabled="busy" @click="fileInput?.click()"><ElIcon :size="18"><Plus /></ElIcon></button>
-    <div class="model"><ElIcon :size="16"><Box /></ElIcon><select :value="model" aria-label="选择模型" :disabled="busy" @change="emit('update:model',$event.target.value)"><option v-for="item in models" :key="item.id" :value="item.id">{{ item.label }}</option></select><ElIcon :size="12"><ArrowDown /></ElIcon></div>
-    <span class="counter">{{ busy ? '正在生成演示回复…' : modelValue.length ? modelValue.length+' / 4000' : '' }}</span>
+    <ElDropdown trigger="click" placement="top-start" popper-class="gts-composer-model-menu" :disabled="busy" @visible-change="modelMenuOpen=$event" @command="emit('update:model',$event)">
+     <button type="button" class="model-trigger" :disabled="busy" aria-label="选择模型" aria-haspopup="menu" :aria-expanded="modelMenuOpen"><ElIcon :size="16"><Box /></ElIcon><span>{{ selectedModel }}</span><ElIcon class="model-arrow" :class="{open:modelMenuOpen}" :size="12"><ArrowDown /></ElIcon></button>
+     <template #dropdown><ElDropdownMenu><ElDropdownItem v-for="item in models" :key="item.id" :command="item.id" :class="{'model-selected':item.id===model}"><span class="gts-model-option"><span>{{ item.label }}</span><ElIcon class="gts-model-check" :style="{visibility:item.id===model?'visible':'hidden'}"><Check /></ElIcon></span></ElDropdownItem></ElDropdownMenu></template>
+    </ElDropdown>
+    <span class="counter">{{ busy ? '正在生成…' : modelValue.length ? modelValue.length+' / 4000' : '' }}</span>
     <button v-if="busy" class="send stop" aria-label="停止生成" @click="emit('stop')"><ElIcon :size="18"><VideoPause /></ElIcon></button>
     <button v-else class="send" :disabled="!canSend" aria-label="发送消息" @click="send"><ElIcon :size="18"><Promotion /></ElIcon></button>
    </div>
@@ -67,11 +72,15 @@ textarea { display: block; width: 100%; box-sizing: border-box; border: 0; outli
 textarea::placeholder { color: var(--color-text-placeholder); }
 .tools { display: flex; align-items: center; gap: var(--space-size-12); margin-top: var(--space-size-8); }
 button { cursor: pointer; font: inherit; background: transparent; border: 0; color: var(--color-text-secondary); }
-button:focus-visible,select:focus-visible { outline: 2px solid var(--color-brand); outline-offset: 2px; }
+button:focus-visible { outline: 2px solid var(--color-brand); outline-offset: 2px; }
 button:disabled { cursor: default; color: var(--color-text-disabled); }
 .tool { display: grid; place-items: center; padding: var(--space-size-4); }
-.model { display: flex; align-items: center; gap: var(--space-size-4); color: var(--color-text-secondary); min-width: 0; }
-select { appearance: none; cursor: pointer; min-width: 0; max-width: 100%; background: var(--color-bg-2); color: inherit; border: 0; outline: 0; font: inherit; font-size: var(--font-size-small); }
+.model-trigger { display: flex; align-items: center; gap: var(--space-size-8); padding: var(--space-size-4) var(--space-size-8); border-radius: var(--radius-size-normal); font-size: var(--font-size-small); max-width: 240px; }
+.model-trigger span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.model-trigger:hover:not(:disabled) { background: var(--color-hover); color: var(--color-text-primary); }
+.model-arrow { flex-shrink: 0; transition: transform .18s; }
+.model-arrow.open { transform: rotate(180deg); }
+.model-selected { color: var(--color-brand); font-weight: var(--font-weight-bold); }
 .counter { flex: 1; text-align: right; font-size: var(--font-size-small); color: var(--color-text-placeholder); }
 .send { width: 32px; height: 32px; max-width: 100%; border-radius: var(--radius-size-medium); display: grid; place-items: center; flex-shrink: 0; }
 .send:not(:disabled) { background: var(--color-brand); color: var(--color-text-inverse); }
@@ -81,4 +90,33 @@ select { appearance: none; cursor: pointer; min-width: 0; max-width: 100%; backg
 .suggestions { position: absolute; bottom: 100%; left: 0; width: 100%; background: var(--color-bg-4); border: 1px solid var(--page-composer-border); border-radius: var(--radius-size-medium); box-shadow: var(--shadow-1); padding: var(--space-size-8); box-sizing: border-box; z-index: 5; }
 .suggest-title { color: var(--color-text-secondary); font-size: var(--font-size-small); padding: var(--space-size-4) var(--space-size-8); }
 .suggestions button { display: flex; gap: var(--space-size-8); align-items: center; width: 100%; text-align: left; padding: var(--space-size-8); border-radius: var(--radius-size-normal); }.suggestions .selected { background: var(--color-select); color: var(--color-brand); }
+</style>
+
+<style lang="less">
+/* Teleported menu: namespaced so other dropdowns keep their own styling. */
+.gts-composer-model-menu.el-popper {
+  border-radius: var(--radius-size-medium);
+  box-shadow: var(--shadow-1);
+}
+.gts-composer-model-menu .el-dropdown-menu {
+  padding: var(--space-size-8);
+  border-radius: var(--radius-size-medium);
+}
+.gts-composer-model-menu .el-dropdown-menu__item {
+  border-radius: var(--radius-size-normal);
+  padding: var(--space-size-8) var(--space-size-12);
+}
+.gts-composer-model-menu .model-selected {
+  background: var(--color-select);
+  color: var(--color-brand);
+  font-weight: var(--font-weight-bold);
+}
+.gts-composer-model-menu .gts-model-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-size-24);
+  width: 100%;
+}
+.gts-composer-model-menu .gts-model-check { flex-shrink: 0; }
 </style>

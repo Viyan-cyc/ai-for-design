@@ -2,7 +2,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { ElButton, ElInput, ElSelect, ElOption, ElTable, ElTableColumn, ElPagination, ElDrawer, ElDescriptions, ElDescriptionsItem, ElIcon, ElAlert } from 'element-plus'
 import { Search, Refresh, ArrowRight, Monitor, CircleCheck, Warning } from '@element-plus/icons-vue'
-import { getResources } from '../../../api/foundation.js'
+import { getResources } from '../api/foundation.js'
 const records=ref([])
 const query=ref('')
 const status=ref('all')

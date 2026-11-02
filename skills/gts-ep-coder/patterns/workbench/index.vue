@@ -2,10 +2,12 @@
 import { ref, computed } from 'vue'
 import { ElIcon, ElTooltip, ElDialog, ElButton, ElEmpty } from 'element-plus'
 import { Monitor, Connection, Grid, DataAnalysis, FolderOpened, Setting, Moon, Sunny, Bell, FullScreen, MagicStick } from '@element-plus/icons-vue'
-import WorkbenchShell from './components/workbench-shell.vue'
+import WorkbenchShell from './workbench-shell.vue'
 import AiWorkspace from './components/ai-workspace.vue'
 import ResourceWorkspace from './components/resource-workspace.vue'
 import SessionPanel from './components/session-panel.vue'
+const props=defineProps({busyBySession:{type:Object,default:()=>({})}})
+const emit=defineEmits(['send','stop'])
 const mode=ref('ai')
 const theme=ref('default')
 const sessionsOpen=ref(false)
@@ -41,7 +43,7 @@ async function fullscreen(){try{if(document.fullscreenElement)await document.exi
    </template>
    <SessionPanel v-if="sessionsOpen" :business="mode==='resources'" @close="sessionsOpen=false" @open="openSession" @new="newTab();sessionsOpen=false" />
    <template v-if="mode==='ai'">
-    <template v-for="tab in tabs" :key="tab.id"><AiWorkspace v-show="activeTab===tab.id" :session="tab" /></template>
+    <template v-for="tab in tabs" :key="tab.id"><AiWorkspace v-show="activeTab===tab.id" :session="tab" :busy="!!props.busyBySession[tab.id]" @send="emit('send',{sessionId:tab.id,...$event})" @stop="emit('stop',tab.id)" /></template>
     <ElEmpty v-if="!active" description="开始一个新的工作区"><ElButton type="primary" @click="newTab">新建会话</ElButton></ElEmpty>
    </template>
    <template v-else><template v-for="tab in resourceTabs" :key="tab.id"><ResourceWorkspace v-show="activeResource===tab.id" /></template></template>

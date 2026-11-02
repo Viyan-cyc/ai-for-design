@@ -1,13 +1,14 @@
 <script setup>
-import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
+const emit = defineEmits(['send', 'stop'])
+import { ref, computed, onMounted, nextTick } from 'vue'
 import { ElIcon, ElButton, ElTable, ElTableColumn, ElPagination, ElEmpty, ElAlert } from 'element-plus'
 import { ArrowDown, ArrowUp, ArrowRight, CircleCheckFilled, DataAnalysis, Warning, Document, Close, MoreFilled, Connection } from '@element-plus/icons-vue'
-import ConversationComposer from './conversation-composer.vue'
-import { getEvidence, getReport, getDemoReply } from '../../../api/foundation.js'
-const props=defineProps({session:Object})
+import ConversationComposer from '../components/foundation/conversation-composer.vue'
+import { getEvidence, getReport } from '../api/foundation.js'
+const props=defineProps({session:Object,busy:Boolean})
 const input=ref('')
 const model=ref('qwen')
-const busy=ref(false)
+const busy=computed(()=>props.busy)
 const messages=ref([])
 const evidence=ref([])
 const evidencePage=ref(1)
@@ -23,26 +24,18 @@ const conversation=ref(null)
 const models=[{id:'qwen',label:'Qwen3.6-35B-A38'},{id:'deepseek',label:'DeepSeek-V3.2'},{id:'glm',label:'GLM-4.6-Plus'}]
 const references=[{id:'alarm',label:'关联告警.json'},{id:'runbook',label:'应急处置手册.pdf'}]
 const commands=[{id:'diagnose',label:'开始关联诊断',value:'请分析当前告警的关联关系'},{id:'summary',label:'总结当前会话',value:'请总结当前会话的结论与建议'}]
-let timer
-let generation=0
 async function load(){try{[evidence.value,report.value]=await Promise.all([getEvidence(),getReport()]);error.value=''}catch{error.value='加载示例失败，请重试'}}
 onMounted(load)
-onUnmounted(()=>{clearTimeout(timer);generation++})
+
 async function scrollBottom(){await nextTick();conversation.value?.scrollTo({top:conversation.value.scrollHeight,behavior:'smooth'})}
 function send(payload){
  if(busy.value)return
+ emit('send',payload)
  const text=payload.text||'请分析附件'
  messages.value.push({id:`u-${Date.now()}`,role:'user',text,files:payload.files.map(f=>f.name)})
- busy.value=true
- const id=++generation
  scrollBottom()
- timer=setTimeout(async()=>{
-  try{const text=await getDemoReply(payload.text||'请分析附件');if(id===generation)messages.value.push({id:`a-${Date.now()}`,role:'assistant',text})}
-  catch{if(id===generation)messages.value.push({id:`e-${Date.now()}`,role:'assistant',text:'演示回复失败，请重试。'})}
-  finally{if(id===generation){busy.value=false;scrollBottom()}}
- },1800)
 }
-function stop(){clearTimeout(timer);generation++;busy.value=false;messages.value.push({id:`stop-${Date.now()}`,role:'assistant',text:'已停止生成。'});scrollBottom()}
+function stop(){emit('stop')}
 function focusEvidence(id){selected.value=id;showEvidence.value=true}
 </script>
 <template>

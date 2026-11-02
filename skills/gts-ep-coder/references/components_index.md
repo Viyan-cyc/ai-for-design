@@ -4,7 +4,7 @@
 - 表中规范路径是维护时的来源标识，相对外部 `design-language/` 源树根；不是生成页面时必读的文件路径。
 - 复合组件同时遵循内部按钮、输入框等子组件规则。
 - 组件文档明确指定的部位、状态和尺寸用于该组件，其余参数遵循 Design System；每份规范文档末尾的"不要"用于检查错误用法。
-- ★ = 高频组件（`vue-skill/components/` 下有可直接抄的示例 SFC）。
+- ★ = 高频组件（skill 根目录的 `components/` 下有可直接抄的示例 SFC）。
 
 本索引按GTS规范组织，不是Element Plus全部组件清单；未收录不代表不支持。名称先查 `scripts/verify/whitelists/element-plus-exports.json`（相对skill根）；白名单仅证明导出存在，属性/事件/插槽仍需核对实际版本资料。
 
@@ -164,4 +164,4 @@ const chartColors = ['--color-chart-1','--color-chart-2','--color-chart-3',
 ```
 
 - 默认六色序列 `color-chart-1..6` 顺序使用；无障碍场景用 `-accessible` 变体，不逐色拼接两组。
-- 示例：`components/VChart.vue`、`code-example/references/mixed-chart/`。
+- 示例：`components/VChart.vue`、`patterns/mixed-chart/`。

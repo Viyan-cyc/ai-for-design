@@ -7,7 +7,7 @@ import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import assert from 'node:assert/strict';
 
-const script = path.join(path.dirname(fileURLToPath(import.meta.url)), 'copy-foundation.mjs');
+const script = path.join(path.dirname(fileURLToPath(import.meta.url)), 'copy-components.mjs');
 const scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'gts-foundation-'));
 const tests = [];
 function fixture(name) {
