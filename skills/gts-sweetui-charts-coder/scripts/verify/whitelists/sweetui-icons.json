@@ -1,0 +1,3592 @@
+[
+  {
+    "cssClass": "sweetui-icon-3d-f",
+    "contentCode": "\\e919",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-3d-l",
+    "contentCode": "\\e91e",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-according-to-the-abnormallayer-duetoview-f",
+    "contentCode": "\\e905",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-according-to-the-abnormallayer-duetoview-l",
+    "contentCode": "\\e906",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-add-a-subnode-f",
+    "contentCode": "\\e907",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-add-a-subnode-l",
+    "contentCode": "\\e908",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-add-f",
+    "contentCode": "\\e909",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-add-l",
+    "contentCode": "\\e90a",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-add-line-f",
+    "contentCode": "\\e90b",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-add-line-l",
+    "contentCode": "\\e90c",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-advanced-filter-f",
+    "contentCode": "\\e90d",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-advanced-filter-l",
+    "contentCode": "\\e90e",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-altitude-measurement-f",
+    "contentCode": "\\e90f",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-altitude-measurement-l",
+    "contentCode": "\\e910",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-angle-f",
+    "contentCode": "\\e911",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-angle-l",
+    "contentCode": "\\e912",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-antenna-group-f",
+    "contentCode": "\\e913",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-antenna-group-l",
+    "contentCode": "\\e914",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-apc-f",
+    "contentCode": "\\e915",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-apc-l",
+    "contentCode": "\\e916",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-area-map-f",
+    "contentCode": "\\e917",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-area-map-l",
+    "contentCode": "\\e918",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-arrow-add",
+    "contentCode": "\\ebd2",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-arrow-down",
+    "contentCode": "\\e91a",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-arrow-down-right-f",
+    "contentCode": "\\e91b",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-arrow-down-right-l",
+    "contentCode": "\\e91c",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-arrow-left",
+    "contentCode": "\\e91d",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-arrow-minus",
+    "contentCode": "\\ebd1",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-arrow-right",
+    "contentCode": "\\e91f",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-arrow-up",
+    "contentCode": "\\e920",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-arrow-up-left-f",
+    "contentCode": "\\e921",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-arrow-up-left-l",
+    "contentCode": "\\e922",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-ascending-f",
+    "contentCode": "\\e923",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-ascending-l",
+    "contentCode": "\\e924",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-asp-f",
+    "contentCode": "\\e925",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-asp-l",
+    "contentCode": "\\e926",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-asset-transfer-f",
+    "contentCode": "\\e927",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-asset-transfer-l",
+    "contentCode": "\\e928",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-association-f",
+    "contentCode": "\\e929",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-association-l",
+    "contentCode": "\\e92a",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-auto-add-neighbor-f",
+    "contentCode": "\\e92b",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-auto-add-neighbor-l",
+    "contentCode": "\\e92c",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-avatar-f",
+    "contentCode": "\\e92d",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-avatar-l",
+    "contentCode": "\\e92e",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-average",
+    "contentCode": "\\e92f",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-back-f",
+    "contentCode": "\\e930",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-back-l",
+    "contentCode": "\\e931",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-backtrack-f",
+    "contentCode": "\\e932",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-backtrack-l",
+    "contentCode": "\\e933",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-backup-f",
+    "contentCode": "\\e934",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-backup-l",
+    "contentCode": "\\e935",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-bar-chart-f",
+    "contentCode": "\\e936",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-bar-chart-l",
+    "contentCode": "\\e937",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-base-station-f",
+    "contentCode": "\\e938",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-basestation-l",
+    "contentCode": "\\e939",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-batch-selection-element-f",
+    "contentCode": "\\e93a",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-batch-selection-element-l",
+    "contentCode": "\\e93b",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-be-ready-f",
+    "contentCode": "\\e93c",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-beam-f",
+    "contentCode": "\\e93d",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-beam-l",
+    "contentCode": "\\e93e",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-below-semicircle",
+    "contentCode": "\\e93f",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-beready-l",
+    "contentCode": "\\e940",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-best-view-map-f",
+    "contentCode": "\\e941",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-best-view-map-l",
+    "contentCode": "\\e942",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-bicyclic-graph-f",
+    "contentCode": "\\e943",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-bicyclic-graph-l",
+    "contentCode": "\\e944",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-box-plot-f",
+    "contentCode": "\\e945",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-box-plot-l",
+    "contentCode": "\\e946",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-bubble-chart-f",
+    "contentCode": "\\e947",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-bubble-chart-l",
+    "contentCode": "\\e948",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-building-f",
+    "contentCode": "\\e949",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-building-l",
+    "contentCode": "\\e94a",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-byuser-f",
+    "contentCode": "\\e94b",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-byuser-l",
+    "contentCode": "\\e94c",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-cancel-editing-f",
+    "contentCode": "\\e94d",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-cancel-editing-l",
+    "contentCode": "\\e94e",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-capacity-management-f",
+    "contentCode": "\\e94f",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-capacity-management-l",
+    "contentCode": "\\e950",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-card-f",
+    "contentCode": "\\e951",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-card-l",
+    "contentCode": "\\e952",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-carrier-frequency-f",
+    "contentCode": "\\e953",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-carrier-frequency-l",
+    "contentCode": "\\e954",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-cell-bak-f",
+    "contentCode": "\\e955",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-cell-bak-l",
+    "contentCode": "\\e956",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-cell-f",
+    "contentCode": "\\e957",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-cell-indoor-f",
+    "contentCode": "\\e958",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-cell-indoor-l",
+    "contentCode": "\\e959",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-cell-l",
+    "contentCode": "\\e95a",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-cell-outdoor-f",
+    "contentCode": "\\e95b",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-cell-outdoor-l",
+    "contentCode": "\\e95c",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-cell-total-f",
+    "contentCode": "\\e95d",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-cell-total-l",
+    "contentCode": "\\e95e",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-change-f",
+    "contentCode": "\\e95f",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-change-l",
+    "contentCode": "\\e960",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-change-password-f",
+    "contentCode": "\\e961",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-change-password-l",
+    "contentCode": "\\e962",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-chart-options-f",
+    "contentCode": "\\e963",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-chart-options-l",
+    "contentCode": "\\e964",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-check-box-half-selected",
+    "contentCode": "\\e965",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-check-box-selected",
+    "contentCode": "\\e966",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-check-the-reverse-antenna-connection-f",
+    "contentCode": "\\e967",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-check-the-reverse-antenna-connection-l",
+    "contentCode": "\\e968",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-checkbox-unselected-l",
+    "contentCode": "\\e969",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-checkmark-f",
+    "contentCode": "\\e96a",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-checkmark-l",
+    "contentCode": "\\e96b",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-checkthe-vip-user-association-area-f",
+    "contentCode": "\\e96c",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-checkthe-vip-user-association-area-l",
+    "contentCode": "\\e96d",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-circle-1",
+    "contentCode": "\\e96e",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-circle-2",
+    "contentCode": "\\e96f",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-circle-3",
+    "contentCode": "\\e970",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-circle-4",
+    "contentCode": "\\e971",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-circle-5",
+    "contentCode": "\\e972",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-circle-6",
+    "contentCode": "\\e973",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-circle-7-l",
+    "contentCode": "\\e974",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-circle-check-f",
+    "contentCode": "\\e975",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-circle-check-l",
+    "contentCode": "\\e976",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-circle-close-f",
+    "contentCode": "\\e977",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-circle-close-l",
+    "contentCode": "\\e978",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-clean-f",
+    "contentCode": "\\e979",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-clean-l",
+    "contentCode": "\\e97a",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-clear-content-f",
+    "contentCode": "\\e97b",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-clear-content-l",
+    "contentCode": "\\e97c",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-clear-filter-f",
+    "contentCode": "\\e97d",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-clear-filter-l",
+    "contentCode": "\\e97e",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-click-count-statistics-f",
+    "contentCode": "\\e97f",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-click-count-statistics-l",
+    "contentCode": "\\e980",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-close",
+    "contentCode": "\\e981",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-close-f",
+    "contentCode": "\\e982",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-close-l",
+    "contentCode": "\\e983",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-close8x8",
+    "contentCode": "\\e984",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-collapse",
+    "contentCode": "\\e985",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-collect-l",
+    "contentCode": "\\e986",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-collected-f",
+    "contentCode": "\\e987",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-color-select-f",
+    "contentCode": "\\e988",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-color-select-l",
+    "contentCode": "\\e989",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-column-select-f",
+    "contentCode": "\\e98a",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-column-select-l",
+    "contentCode": "\\e98b",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-comment-f",
+    "contentCode": "\\e98c",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-comment-l",
+    "contentCode": "\\e98d",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-compass-f",
+    "contentCode": "\\e98e",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-compass-l",
+    "contentCode": "\\e98f",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-complaint-handling-f",
+    "contentCode": "\\e990",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-complaint-handling-l",
+    "contentCode": "\\e991",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-copy-f",
+    "contentCode": "\\e992",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-copy-l",
+    "contentCode": "\\e993",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-copy-only-f",
+    "contentCode": "\\e994",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-copy-only-l",
+    "contentCode": "\\e995",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-count",
+    "contentCode": "\\e996",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-counter-f",
+    "contentCode": "\\e997",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-counter-l",
+    "contentCode": "\\e998",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-create-acp-task-f",
+    "contentCode": "\\e999",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-create-acp-task-l",
+    "contentCode": "\\e99a",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-csv-f",
+    "contentCode": "\\e99b",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-csv-l",
+    "contentCode": "\\e99c",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-cursor-arrow",
+    "contentCode": "\\e99d",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-cursor-col-resize",
+    "contentCode": "\\e99e",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-cursor-drag",
+    "contentCode": "\\e99f",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-cursor-move",
+    "contentCode": "\\e9a0",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-cursor-pointer",
+    "contentCode": "\\e9a2",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-cursor-scale-table",
+    "contentCode": "\\e9a3",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-cut-f",
+    "contentCode": "\\e9a4",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-cut-l",
+    "contentCode": "\\e9a5",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-dashboard-f",
+    "contentCode": "\\e9a8",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-dashboard-l",
+    "contentCode": "\\e9a9",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-data-acquisition",
+    "contentCode": "\\e9aa",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-data-acquisition-and",
+    "contentCode": "\\e9ab",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-data-synchronization-f",
+    "contentCode": "\\e9ac",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-data-synchronization-l",
+    "contentCode": "\\e9ad",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-date-f",
+    "contentCode": "\\e9ae",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-date-l",
+    "contentCode": "\\e9af",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-delete-f",
+    "contentCode": "\\e9b0",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-delete-l",
+    "contentCode": "\\e9b1",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-delete-line-f",
+    "contentCode": "\\e9b2",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-delete-line-l",
+    "contentCode": "\\e9b3",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-derived-data2-f",
+    "contentCode": "\\e9b4",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-derived-data2-l",
+    "contentCode": "\\e9b5",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-derivedt-up-f",
+    "contentCode": "\\e9b6",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-derivedt-up-f-1",
+    "contentCode": "\\e9b7",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-descending-f",
+    "contentCode": "\\e9b8",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-descending-l",
+    "contentCode": "\\e9b9",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-developer-options-f",
+    "contentCode": "\\e9ba",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-developer-options-l",
+    "contentCode": "\\e9bb",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-difference-f",
+    "contentCode": "\\e9bc",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-difference-l",
+    "contentCode": "\\e9bd",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-dimension",
+    "contentCode": "\\e9be",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-disassociate-f",
+    "contentCode": "\\e9bf",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-disassociate-l",
+    "contentCode": "\\e9c0",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-discarded-f",
+    "contentCode": "\\e9c1",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-discarded-l",
+    "contentCode": "\\e9c2",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-display-setting-f",
+    "contentCode": "\\e9c3",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-display-setting-l",
+    "contentCode": "\\e9c4",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-double-screen-f",
+    "contentCode": "\\e9c5",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-double-screen-l",
+    "contentCode": "\\e9c6",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-down",
+    "contentCode": "\\e9c7",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-download-f",
+    "contentCode": "\\e9c8",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-download-l",
+    "contentCode": "\\e9c9",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-download-more-index-f",
+    "contentCode": "\\e9ca",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-download-more-index-l",
+    "contentCode": "\\e9cb",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-draft-f",
+    "contentCode": "\\e9cc",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-draft-l",
+    "contentCode": "\\e9cd",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-drag-zoom",
+    "contentCode": "\\e9ce",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-draw-polygon-f",
+    "contentCode": "\\e9cf",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-draw-polygon-l",
+    "contentCode": "\\e9d0",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-drill-down-f",
+    "contentCode": "\\e9d1",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-drill-down-l",
+    "contentCode": "\\e9d2",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-drow-polygon-f",
+    "contentCode": "\\e9d3",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-drow-polygon-l",
+    "contentCode": "\\e9d4",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-edit-f",
+    "contentCode": "\\e9d5",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-edit-l",
+    "contentCode": "\\e9d6",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-engineering-parameter-check-and-correction-f",
+    "contentCode": "\\e9d7",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-engineering-parameter-check-and-correction-l",
+    "contentCode": "\\e9d8",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-engineering-parameter-management-f",
+    "contentCode": "\\e9d9",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-engineering-parameter-management-l",
+    "contentCode": "\\e9da",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-enter-f",
+    "contentCode": "\\e9db",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-enter-l",
+    "contentCode": "\\e9dc",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-error-f",
+    "contentCode": "\\e9dd",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-error-l",
+    "contentCode": "\\e9de",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-event-Point-l",
+    "contentCode": "\\e9df",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-evu-settings-f",
+    "contentCode": "\\e9e0",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-evu-settings-l",
+    "contentCode": "\\e9e1",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-excel-f",
+    "contentCode": "\\e9e2",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-excel-l",
+    "contentCode": "\\e9e3",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-expand",
+    "contentCode": "\\e9e4",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-export-f",
+    "contentCode": "\\e9e5",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-export-l",
+    "contentCode": "\\e9e6",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-exportkmz-f",
+    "contentCode": "\\e9e7",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-exportkmz-l",
+    "contentCode": "\\e9e8",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-exportreport-f",
+    "contentCode": "\\e9e9",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-exportreport-l",
+    "contentCode": "\\e9ea",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-fan-community-f",
+    "contentCode": "\\e9eb",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-fan-community-l",
+    "contentCode": "\\e9ec",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-favorite-f",
+    "contentCode": "\\e9ed",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-favorite-l",
+    "contentCode": "\\e9ee",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-file-f",
+    "contentCode": "\\e9ef",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-file-l",
+    "contentCode": "\\e9f0",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-filter-l",
+    "contentCode": "\\e9f1",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-filtered-f",
+    "contentCode": "\\e9f2",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-fishbone-f",
+    "contentCode": "\\e9f3",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-fishbone-l",
+    "contentCode": "\\e9f4",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-folder-f",
+    "contentCode": "\\e9f5",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-folder-l",
+    "contentCode": "\\e9f6",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-folder-opened-f",
+    "contentCode": "\\e9f7",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-folder-opened-l",
+    "contentCode": "\\e9f8",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-frequency-analysis-f",
+    "contentCode": "\\e9f9",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-frequency-analysis-l",
+    "contentCode": "\\e9fa",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-frequency-point-analysis-f",
+    "contentCode": "\\e9fb",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-frequency-point-analysis-l",
+    "contentCode": "\\e9fc",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-from-the-configuration-update-f",
+    "contentCode": "\\e9fd",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-from-the-configuration-update-l",
+    "contentCode": "\\e9fe",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-full-screen",
+    "contentCode": "\\e9ff",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-full-screen-f",
+    "contentCode": "\\ea00",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-full-screen-l",
+    "contentCode": "\\ea01",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-function-f",
+    "contentCode": "\\ea02",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-function-l",
+    "contentCode": "\\ea03",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-general-f",
+    "contentCode": "\\ea04",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-general-l",
+    "contentCode": "\\ea05",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-go-f",
+    "contentCode": "\\ea06",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-go-l",
+    "contentCode": "\\ea07",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-grid-f",
+    "contentCode": "\\ea08",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-grid-l",
+    "contentCode": "\\ea09",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-group-editing-f",
+    "contentCode": "\\ea0a",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-group-editing-l",
+    "contentCode": "\\ea0b",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-group-f",
+    "contentCode": "\\ea0c",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-group-l",
+    "contentCode": "\\ea0d",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-gsm-capacity-evaluation-f",
+    "contentCode": "\\ea0e",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-gsm-capacity-evaluation-l",
+    "contentCode": "\\ea0f",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-gsm-frequency-analysis-f",
+    "contentCode": "\\ea10",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-gsm-frequency-analysis-l",
+    "contentCode": "\\ea11",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-gu-anr-f",
+    "contentCode": "\\ea12",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-gu-anr-l",
+    "contentCode": "\\ea13",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-help-f",
+    "contentCode": "\\ea14",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-help-l",
+    "contentCode": "\\ea15",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-hide",
+    "contentCode": "\\ea16",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-hints",
+    "contentCode": "\\ea17",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-home-f",
+    "contentCode": "\\ea18",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-home-l",
+    "contentCode": "\\ea19",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-icon-management-f",
+    "contentCode": "\\ea1a",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-icon-management-l",
+    "contentCode": "\\ea1b",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-image-f",
+    "contentCode": "\\ea1c",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-image-l",
+    "contentCode": "\\ea1d",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-Immediate-access-f",
+    "contentCode": "\\e900",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-Immediate-data-acquisition-configuration-f",
+    "contentCode": "\\e901",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-Immediate-data-acquisition-configuration-l",
+    "contentCode": "\\e902",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-import-f",
+    "contentCode": "\\ea1e",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-import-l",
+    "contentCode": "\\ea1f",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-import-log-f",
+    "contentCode": "\\ea20",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-import-log-l",
+    "contentCode": "\\ea21",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-import-query-template-f",
+    "contentCode": "\\ea22",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-import-query-template-l",
+    "contentCode": "\\ea23",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-important",
+    "contentCode": "\\ea24",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-index-comparative-analysis-l",
+    "contentCode": "\\ea25",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-index-comparative-analysis-l-1",
+    "contentCode": "\\ea26",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-indicator-f",
+    "contentCode": "\\ea27",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-indicator-l",
+    "contentCode": "\\ea28",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-indoorsite-f",
+    "contentCode": "\\ea29",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-indoorsite-l",
+    "contentCode": "\\ea2a",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-info-f",
+    "contentCode": "\\ea2b",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-Information-center-f",
+    "contentCode": "\\e903",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-Information-center-l",
+    "contentCode": "\\e904",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-insert-row-f",
+    "contentCode": "\\ea2c",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-insert-row-l",
+    "contentCode": "\\ea2d",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-inter-f-f",
+    "contentCode": "\\ea2e",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-inter-f-l",
+    "contentCode": "\\ea2f",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-interference-analysis-f",
+    "contentCode": "\\ea30",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-interference-analysis-l",
+    "contentCode": "\\ea31",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-interference-contrast-f",
+    "contentCode": "\\ea32",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-interference-contrast-l",
+    "contentCode": "\\ea33",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-intersection-f",
+    "contentCode": "\\ea34",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-intersection-l",
+    "contentCode": "\\ea35",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-invisible-f",
+    "contentCode": "\\ea36",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-invisible-l",
+    "contentCode": "\\ea37",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-issue-analysis-f",
+    "contentCode": "\\ea38",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-issue-analysis-l",
+    "contentCode": "\\ea39",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-kqi",
+    "contentCode": "\\ea3a",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-left",
+    "contentCode": "\\ea3b",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-legend-f",
+    "contentCode": "\\ea3c",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-legend-l",
+    "contentCode": "\\ea3d",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-line-chart-f",
+    "contentCode": "\\ea3e",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-line-chart-l",
+    "contentCode": "\\ea3f",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-line-f",
+    "contentCode": "\\ea40",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-line-l",
+    "contentCode": "\\ea41",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-link-f",
+    "contentCode": "\\ea42",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-link-l",
+    "contentCode": "\\ea43",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-lmmediate-access-l",
+    "contentCode": "\\ea44",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-load-threshold-f",
+    "contentCode": "\\ea45",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-load-threshold-l",
+    "contentCode": "\\ea46",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-loading",
+    "contentCode": "\\ea47",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-lock-f",
+    "contentCode": "\\ea48",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-lock-l",
+    "contentCode": "\\ea49",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-lte-access-optimization-f",
+    "contentCode": "\\ea4a",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-lte-access-optimization-l",
+    "contentCode": "\\ea4b",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-lte-call-drop-optimization-f",
+    "contentCode": "\\ea4c",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-lte-call-drop-optimization-l",
+    "contentCode": "\\ea4d",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-lte-capa-citye-valuation-and-optimization-f",
+    "contentCode": "\\ea4e",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-lte-capa-citye-valuation-and-optimization-l",
+    "contentCode": "\\ea4f",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-lte-downlink-rate-optimization-f",
+    "contentCode": "\\ea50",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-lte-downlink-rate-optimization-l",
+    "contentCode": "\\ea51",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-lte-handover-optimization-f",
+    "contentCode": "\\ea52",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-lte-handover-optimization-l",
+    "contentCode": "\\ea53",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-lte-uplink-interference-detection-f",
+    "contentCode": "\\ea54",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-lte-uplink-interference-detection-l",
+    "contentCode": "\\ea55",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-lte-uplink-rate-optimization-f",
+    "contentCode": "\\ea56",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-lte-uplink-rate-optimization-l",
+    "contentCode": "\\ea57",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-mail-f",
+    "contentCode": "\\ea58",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-mail-l",
+    "contentCode": "\\ea59",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-maintain-data-now-f",
+    "contentCode": "\\ea5a",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-maintain-data-now-l",
+    "contentCode": "\\ea5b",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-manage-tasks-f",
+    "contentCode": "\\ea5c",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-manage-tasks-l",
+    "contentCode": "\\ea5d",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-manual-drawin-go-froad-f",
+    "contentCode": "\\ea5e",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-manual-drawin-go-froad-l",
+    "contentCode": "\\ea5f",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-map-f",
+    "contentCode": "\\ea60",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-map-l",
+    "contentCode": "\\ea61",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-map-location-f",
+    "contentCode": "\\ea62",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-map-location-l",
+    "contentCode": "\\ea63",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-master-servercell-f",
+    "contentCode": "\\ea64",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-master-servercell-l",
+    "contentCode": "\\ea65",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-max",
+    "contentCode": "\\ea66",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-median",
+    "contentCode": "\\ea67",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-menu-f",
+    "contentCode": "\\ea68",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-menu-l",
+    "contentCode": "\\ea69",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-message-f",
+    "contentCode": "\\ea6a",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-message-l",
+    "contentCode": "\\ea6b",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-migration-of-element-f",
+    "contentCode": "\\ea6c",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-migration-of-element-l",
+    "contentCode": "\\ea6d",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-min",
+    "contentCode": "\\ea6e",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-minor",
+    "contentCode": "\\ea6f",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-minus",
+    "contentCode": "\\ea70",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-mix-chart-f",
+    "contentCode": "\\ea71",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-mix-chart-l",
+    "contentCode": "\\ea72",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-mobileterminal-f",
+    "contentCode": "\\ea73",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-mobileterminal-l",
+    "contentCode": "\\ea74",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-more-f",
+    "contentCode": "\\ea75",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-more-l",
+    "contentCode": "\\ea76",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-more1",
+    "contentCode": "\\ea77",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-move-l",
+    "contentCode": "\\ea78",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-multilayer-export-f",
+    "contentCode": "\\ea79",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-multilayer-export-l",
+    "contentCode": "\\ea7a",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-nav-api-l",
+    "contentCode": "\\ea7b",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-nav-fold",
+    "contentCode": "\\ea7c",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-nav-unfold",
+    "contentCode": "\\ea7d",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-neighbor-b-f",
+    "contentCode": "\\ea7e",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-neighbor-b-l",
+    "contentCode": "\\ea7f",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-neighbor-f",
+    "contentCode": "\\ea80",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-neighbor-f-f",
+    "contentCode": "\\ea81",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-neighbor-f-l",
+    "contentCode": "\\ea82",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-neighbor-l",
+    "contentCode": "\\ea83",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-neighboring-cell-optimization-f",
+    "contentCode": "\\ea84",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-neighboring-cell-optimization-l",
+    "contentCode": "\\ea85",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-new-task-f",
+    "contentCode": "\\ea86",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-new-task-l",
+    "contentCode": "\\ea87",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-no-user-permission-l",
+    "contentCode": "\\ebcf",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-nr-coverage-evaluation-f",
+    "contentCode": "\\ea89",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-nr-coverage-evaluation-l",
+    "contentCode": "\\ea8a",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-object-f",
+    "contentCode": "\\ea8b",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-object-group-management-f",
+    "contentCode": "\\ea8c",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-object-group-management-l",
+    "contentCode": "\\ea8d",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-object-l",
+    "contentCode": "\\ea8e",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-obtain-the-tracking-server-information-f",
+    "contentCode": "\\ea8f",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-obtain-the-tracking-server-information-l",
+    "contentCode": "\\ea90",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-off-l",
+    "contentCode": "\\ea91",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-ok",
+    "contentCode": "\\ea92",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-ok-f",
+    "contentCode": "\\ea93",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-ok-l",
+    "contentCode": "\\ea94",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-on-l",
+    "contentCode": "\\ea95",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-one-screen-f",
+    "contentCode": "\\ea96",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-one-screen-l",
+    "contentCode": "\\ea97",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-operations-synchronization-f",
+    "contentCode": "\\ea98",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-operations-synchronization-l",
+    "contentCode": "\\ea99",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-other-data-f",
+    "contentCode": "\\ea9a",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-other-data-l",
+    "contentCode": "\\ea9b",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-outdoors-interferes-with-indoors-f",
+    "contentCode": "\\ea9c",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-outdoors-interferes-with-indoors-l",
+    "contentCode": "\\ea9d",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-overlay-sector-analysis-f",
+    "contentCode": "\\ea9e",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-overlay-sector-analysis-l",
+    "contentCode": "\\ea9f",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-parameter-browsing-and-query-f",
+    "contentCode": "\\eaa0",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-parameter-browsing-and-query-l",
+    "contentCode": "\\eaa1",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-parameter-change-history-f",
+    "contentCode": "\\eaa2",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-parameter-change-history-l",
+    "contentCode": "\\eaa3",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-paste-f",
+    "contentCode": "\\eaa4",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-paste-l",
+    "contentCode": "\\eaa5",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-pause-f",
+    "contentCode": "\\eaa6",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-pause-l",
+    "contentCode": "\\eaa7",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-percent",
+    "contentCode": "\\eaa8",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-performance-alarm-and-analysis-f",
+    "contentCode": "\\eaa9",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-performance-alarm-and-analysis-l",
+    "contentCode": "\\eaaa",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-performance-management-f",
+    "contentCode": "\\eaab",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-performance-management-l",
+    "contentCode": "\\eaac",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-performance-optimization-f",
+    "contentCode": "\\eaad",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-performance-optimization-l",
+    "contentCode": "\\eaae",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-performance-report-f",
+    "contentCode": "\\eaaf",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-performance-report-l",
+    "contentCode": "\\eab0",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-permission-f",
+    "contentCode": "\\eab2",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-permission-l",
+    "contentCode": "\\eab3",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-pie-graph-f",
+    "contentCode": "\\eab4",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-pie-graph-l",
+    "contentCode": "\\eab5",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-pivot-f",
+    "contentCode": "\\eab6",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-pivot-l",
+    "contentCode": "\\eab7",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-planet-map-l",
+    "contentCode": "\\eab8",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-planetmap-f",
+    "contentCode": "\\eab9",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-planning-f",
+    "contentCode": "\\eaba",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-planning-l",
+    "contentCode": "\\eabb",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-plus",
+    "contentCode": "\\eabc",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-pname-f",
+    "contentCode": "\\eabd",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-pname-l",
+    "contentCode": "\\eabe",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-poi-f",
+    "contentCode": "\\eabf",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-poi-l",
+    "contentCode": "\\eac0",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-pollutioncell-f",
+    "contentCode": "\\eac1",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-pollutioncell-l",
+    "contentCode": "\\eac2",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-polygon-line-f",
+    "contentCode": "\\eac3",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-polygon-line-l",
+    "contentCode": "\\eac4",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-port-definition-l",
+    "contentCode": "\\eac5",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-portdefinition-f",
+    "contentCode": "\\eac6",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-possible-f",
+    "contentCode": "\\eac7",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-possible-l",
+    "contentCode": "\\eac8",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-private-network-community-f",
+    "contentCode": "\\eac9",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-private-network-community-l",
+    "contentCode": "\\eaca",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-property-f",
+    "contentCode": "\\eacb",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-property-l",
+    "contentCode": "\\eacc",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-property-setting-f",
+    "contentCode": "\\eacd",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-property-setting-l",
+    "contentCode": "\\eace",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-public-participation-status-statistics-f",
+    "contentCode": "\\eacf",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-public-participation-status-statistics-l",
+    "contentCode": "\\ead0",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-publish-f",
+    "contentCode": "\\ead1",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-publish-l",
+    "contentCode": "\\ead2",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-px-polygon-setting-f",
+    "contentCode": "\\ead3",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-px-polygon-setting-l",
+    "contentCode": "\\ead4",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-query-data-volume-f",
+    "contentCode": "\\ead5",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-query-data-volume-l",
+    "contentCode": "\\ead6",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-quick-simulation-f",
+    "contentCode": "\\ead7",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-quick-simulation-l",
+    "contentCode": "\\ead8",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-quit-f",
+    "contentCode": "\\ead9",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-quit-l",
+    "contentCode": "\\eada",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-radial-bar-chart-f",
+    "contentCode": "\\eadb",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-radial-bar-chart-l",
+    "contentCode": "\\eadc",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-ranging-f",
+    "contentCode": "\\eadd",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-ranging-l",
+    "contentCode": "\\eade",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-rank-chart-f",
+    "contentCode": "\\eadf",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-rank-chart-l",
+    "contentCode": "\\eae0",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-redio-selected",
+    "contentCode": "\\eae1",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-redio-unselected",
+    "contentCode": "\\eae2",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-redo",
+    "contentCode": "\\eae3",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-refresh-f",
+    "contentCode": "\\eae4",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-refresh-l",
+    "contentCode": "\\eae5",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-refresh-left",
+    "contentCode": "\\eae6",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-refresh-right",
+    "contentCode": "\\eae7",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-related-cell-f",
+    "contentCode": "\\eae8",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-related-cell-l",
+    "contentCode": "\\eae9",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-related-words-statistics-indexes-f",
+    "contentCode": "\\eaea",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-related-words-statistics-indexes-l",
+    "contentCode": "\\eaeb",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-reset-f",
+    "contentCode": "\\eaec",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-reset-l",
+    "contentCode": "\\eaed",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-restore-screen-f",
+    "contentCode": "\\eaee",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-restore-screen-l",
+    "contentCode": "\\eaef",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-result-f",
+    "contentCode": "\\eaf0",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-result-kpi-f",
+    "contentCode": "\\eaf1",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-result-kpi-l",
+    "contentCode": "\\eaf2",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-result-l",
+    "contentCode": "\\eaf3",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-result-l1",
+    "contentCode": "\\eaf4",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-right",
+    "contentCode": "\\eaf5",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-ring-chart-f",
+    "contentCode": "\\eaf6",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-ring-chart-l",
+    "contentCode": "\\eaf7",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-road-f",
+    "contentCode": "\\eaf8",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-road-l",
+    "contentCode": "\\eaf9",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-rotate-f",
+    "contentCode": "\\eafa",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-rotate-l",
+    "contentCode": "\\eafb",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-ruler-f",
+    "contentCode": "\\eafc",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-ruler-l",
+    "contentCode": "\\eafd",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-run-f",
+    "contentCode": "\\eafe",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-run-l",
+    "contentCode": "\\eaff",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-sau-settings-f",
+    "contentCode": "\\eb00",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-sau-settings-l",
+    "contentCode": "\\eb01",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-save-as-f",
+    "contentCode": "\\eb02",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-save-as-l",
+    "contentCode": "\\eb03",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-save-f",
+    "contentCode": "\\eb04",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-save-l",
+    "contentCode": "\\eb05",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-scale-to-original",
+    "contentCode": "\\eb06",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-scatter-chart-f",
+    "contentCode": "\\eb07",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-scatter-chart-l",
+    "contentCode": "\\eb08",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-screen-f",
+    "contentCode": "\\eb09",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-screen-l",
+    "contentCode": "\\eb0a",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-screens-f",
+    "contentCode": "\\eb0b",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-screens-l",
+    "contentCode": "\\eb0c",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-sdr-f",
+    "contentCode": "\\eb0d",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-sdr-l",
+    "contentCode": "\\eb0e",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-search-f",
+    "contentCode": "\\eb0f",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-search-l",
+    "contentCode": "\\eb10",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-search1-f",
+    "contentCode": "\\eb11",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-search1-l",
+    "contentCode": "\\eb12",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-secondary-statistics-f",
+    "contentCode": "\\eb13",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-secondary-statistics-l",
+    "contentCode": "\\eb14",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-select-the-network-element-f",
+    "contentCode": "\\eb15",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-select-the-network-element-l",
+    "contentCode": "\\eb16",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-seleted-range-f",
+    "contentCode": "\\eb17",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-seleted-range-l",
+    "contentCode": "\\eb18",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-serious-warning-f",
+    "contentCode": "\\eb19",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-serious-warning-l",
+    "contentCode": "\\eb1a",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-service-cell-f",
+    "contentCode": "\\eb1b",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-servicecell-l",
+    "contentCode": "\\eb1c",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-seting-f",
+    "contentCode": "\\eb1d",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-seting-l",
+    "contentCode": "\\eb1e",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-setting-performance-alarms-f",
+    "contentCode": "\\eb1f",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-setting-performance-alarms-l",
+    "contentCode": "\\eb20",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-setting-vip-f",
+    "contentCode": "\\eb21",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-setting-vip-l",
+    "contentCode": "\\eb22",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-sfn-cellline-f",
+    "contentCode": "\\eb23",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-sfn-cellline-l",
+    "contentCode": "\\eb24",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-share-f",
+    "contentCode": "\\eb25",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-share-l",
+    "contentCode": "\\eb26",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-simulation5g-f",
+    "contentCode": "\\eb27",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-simulation5g-l",
+    "contentCode": "\\eb28",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-single-cell-connection-f",
+    "contentCode": "\\eb29",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-single-cell-connection-l",
+    "contentCode": "\\eb2a",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-single-cell-detail-f",
+    "contentCode": "\\eb2b",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-single-cell-detail-l",
+    "contentCode": "\\eb2c",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-single-cell-presentation-f",
+    "contentCode": "\\eb2d",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-single-cell-presentation-l",
+    "contentCode": "\\eb2e",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-singling-f",
+    "contentCode": "\\eb2f",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-singling-l",
+    "contentCode": "\\eb30",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-site-total-f",
+    "contentCode": "\\eb31",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-site-total-l",
+    "contentCode": "\\eb32",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-siteindoor-f",
+    "contentCode": "\\eb33",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-siteindoor-l",
+    "contentCode": "\\eb34",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-siteoutdoor-f",
+    "contentCode": "\\eb35",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-siteoutdoor-l",
+    "contentCode": "\\eb36",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-skin-peeler-f",
+    "contentCode": "\\eb37",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-skin-peeler-l",
+    "contentCode": "\\eb38",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-slow-f",
+    "contentCode": "\\eb39",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-slow-l",
+    "contentCode": "\\eb3a",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-sort-f",
+    "contentCode": "\\eb3b",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-sort-l",
+    "contentCode": "\\eb3c",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-stacked-chart-f",
+    "contentCode": "\\eb3d",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-stacked-chart-full-f",
+    "contentCode": "\\eb3e",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-stacked-chart-full-l",
+    "contentCode": "\\eb3f",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-stacked-chart-l",
+    "contentCode": "\\eb40",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-standard-deviation",
+    "contentCode": "\\eb41",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-start-f",
+    "contentCode": "\\eb42",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-start-for-ecast-creating-feature-library-f",
+    "contentCode": "\\eb43",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-start-for-ecast-creating-feature-library-l",
+    "contentCode": "\\eb44",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-start-l",
+    "contentCode": "\\eb45",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-statistics-f",
+    "contentCode": "\\eb46",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-statistics-l",
+    "contentCode": "\\eb47",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-stop-f",
+    "contentCode": "\\eb48",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-stop-l",
+    "contentCode": "\\eb49",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-subscribed-f",
+    "contentCode": "\\eb4a",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-subscribed-l",
+    "contentCode": "\\eb4b",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-success-f",
+    "contentCode": "\\eb4c",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-success-l",
+    "contentCode": "\\eb4d",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-summation1",
+    "contentCode": "\\eb4e",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-switch-target-cell-f",
+    "contentCode": "\\eb4f",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-switch-target-cell-l",
+    "contentCode": "\\eb50",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-table-f",
+    "contentCode": "\\eb51",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-table-l",
+    "contentCode": "\\eb52",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-table-more-f",
+    "contentCode": "\\eb53",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-table-more-l",
+    "contentCode": "\\eb54",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-task-5g-f",
+    "contentCode": "\\eb55",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-task-5g-l",
+    "contentCode": "\\eb56",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-task-list-f",
+    "contentCode": "\\eb57",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-task-list-l",
+    "contentCode": "\\eb58",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-tatp-segmentation-analysis-f",
+    "contentCode": "\\eb59",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-tatp-segmentation-analysis-l",
+    "contentCode": "\\eb5a",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-template-f",
+    "contentCode": "\\eb5b",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-template-l",
+    "contentCode": "\\eb5c",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-text-f",
+    "contentCode": "\\eb5d",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-text-l",
+    "contentCode": "\\eb5e",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-thumbs-up-f",
+    "contentCode": "\\eb5f",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-thumbs-up-l",
+    "contentCode": "\\eb60",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-time-grain-f",
+    "contentCode": "\\eb61",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-time-grain-l",
+    "contentCode": "\\eb62",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-time-line-green",
+    "contentCode": "\\eb63",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-timer-f",
+    "contentCode": "\\eb64",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-timer-l",
+    "contentCode": "\\eb65",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-tip-f",
+    "contentCode": "\\eb66",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-tip-l",
+    "contentCode": "\\eb67",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-tips",
+    "contentCode": "\\eb68",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-top-n-cell-analysis-f",
+    "contentCode": "\\eb69",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-top-n-cell-analysis-l",
+    "contentCode": "\\eb6a",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-top-n-cell-settings-f",
+    "contentCode": "\\eb6b",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-top-n-cell-settings-l",
+    "contentCode": "\\eb6c",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-topic-6d-f",
+    "contentCode": "\\eb6d",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-topic-6d-l",
+    "contentCode": "\\eb6e",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-topic-base-f",
+    "contentCode": "\\eb6f",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-topic-base-l",
+    "contentCode": "\\eb70",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-topic-cellrate-f",
+    "contentCode": "\\eb71",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-topic-cellrate-l",
+    "contentCode": "\\eb72",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-topic-complaint-f",
+    "contentCode": "\\eb73",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-topic-complaint-l",
+    "contentCode": "\\eb74",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-topic-coverage-f",
+    "contentCode": "\\eb75",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-topic-coverage-l",
+    "contentCode": "\\eb76",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-topic-experience-f",
+    "contentCode": "\\eb77",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-topic-experience-l",
+    "contentCode": "\\eb78",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-topic-mimo-f",
+    "contentCode": "\\eb79",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-topic-mimo-l",
+    "contentCode": "\\eb7a",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-topic-network-planning-f",
+    "contentCode": "\\eb7b",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-topic-network-planning-l",
+    "contentCode": "\\eb7c",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-topic-plan-f",
+    "contentCode": "\\eb7d",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-topic-plan-l",
+    "contentCode": "\\eb7e",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-topic-quality-f",
+    "contentCode": "\\eb7f",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-topic-quality-l",
+    "contentCode": "\\eb80",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-topic-scale-f",
+    "contentCode": "\\eb81",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-topic-scale-l",
+    "contentCode": "\\eb82",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-topic-service-f",
+    "contentCode": "\\eb83",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-topic-service-l",
+    "contentCode": "\\eb84",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-topic-sum-f",
+    "contentCode": "\\eb85",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-topic-sum-l",
+    "contentCode": "\\eb86",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-topic-total-f",
+    "contentCode": "\\eb87",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-topic-total-l",
+    "contentCode": "\\eb88",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-topic-traffic-f",
+    "contentCode": "\\eb89",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-topic-traffic-l",
+    "contentCode": "\\eb8a",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-topic-user-f",
+    "contentCode": "\\eb8b",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-topic-user-l",
+    "contentCode": "\\eb8c",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-topic-voice-f",
+    "contentCode": "\\eb8d",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-topic-voice-l",
+    "contentCode": "\\eb8e",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-topicapacity-f",
+    "contentCode": "\\eb8f",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-topicapacity-l",
+    "contentCode": "\\eb90",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-toview-the-chart-f",
+    "contentCode": "\\eb91",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-toview-the-chart-l",
+    "contentCode": "\\eb92",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-toview-the-kpl-details-f",
+    "contentCode": "\\eb93",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-toview-the-kpl-details-l",
+    "contentCode": "\\eb94",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-track-f",
+    "contentCode": "\\eb95",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-track-l",
+    "contentCode": "\\eb96",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-tree-f",
+    "contentCode": "\\eb97",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-tree-l",
+    "contentCode": "\\eb98",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-triple-screen-f",
+    "contentCode": "\\eb99",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-triple-screen-l",
+    "contentCode": "\\eb9a",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-turn-f",
+    "contentCode": "\\eb9b",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-turn-l",
+    "contentCode": "\\eb9c",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-ul-coverage-evaluation-f",
+    "contentCode": "\\eb9d",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-ul-coverage-evaluation-l",
+    "contentCode": "\\eb9e",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-umts-capacity-evaluation-f",
+    "contentCode": "\\eb9f",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-umts-capacity-evaluation-l",
+    "contentCode": "\\eba0",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-undo",
+    "contentCode": "\\eba1",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-union-f",
+    "contentCode": "\\eba2",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-union-l",
+    "contentCode": "\\eba3",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-unlock-f",
+    "contentCode": "\\eba4",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-unlock-l",
+    "contentCode": "\\eba5",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-unshare-f",
+    "contentCode": "\\eba6",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-unshare-l",
+    "contentCode": "\\eba7",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-unsorted-f",
+    "contentCode": "\\eba8",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-unsorted-l",
+    "contentCode": "\\eba9",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-up",
+    "contentCode": "\\ebaa",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-upload-f",
+    "contentCode": "\\ebab",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-upload-l",
+    "contentCode": "\\ebac",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-upon-semicircle",
+    "contentCode": "\\ebad",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-urgent",
+    "contentCode": "\\ebae",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-user-1",
+    "contentCode": "\\ebaf",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-user-permission-l",
+    "contentCode": "\\ebd0",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-user1-l",
+    "contentCode": "\\ebb0",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-user2-f",
+    "contentCode": "\\ebb1",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-user2-l",
+    "contentCode": "\\ebb2",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-variance",
+    "contentCode": "\\ebb3",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-view",
+    "contentCode": "\\ebb4",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-view-alarms-f",
+    "contentCode": "\\ebb5",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-view-alarms-l",
+    "contentCode": "\\ebb6",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-view-logs-f",
+    "contentCode": "\\ebb7",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-view-logs-l",
+    "contentCode": "\\ebb8",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-view-proble-mareas-f",
+    "contentCode": "\\ebb9",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-view-proble-mareas-l",
+    "contentCode": "\\ebba",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-view-task-f",
+    "contentCode": "\\ebbb",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-view-task-l",
+    "contentCode": "\\ebbc",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-view-task-result-f",
+    "contentCode": "\\ebbd",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-view-task-result-l",
+    "contentCode": "\\ebbe",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-vip-event-f",
+    "contentCode": "\\ebbf",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-vip-event-l",
+    "contentCode": "\\ebc0",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-vip-scenario-f",
+    "contentCode": "\\ebc1",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-vip-scenario-l",
+    "contentCode": "\\ebc2",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-visible-f",
+    "contentCode": "\\ebc3",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-visible-l",
+    "contentCode": "\\ebc4",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-waiting-f",
+    "contentCode": "\\ebc5",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-waiting-l",
+    "contentCode": "\\ebc6",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-warning-circle-f",
+    "contentCode": "\\ebc7",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-warning-circle-l",
+    "contentCode": "\\ebc8",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-warning-f",
+    "contentCode": "\\ebc9",
+    "hasForcedColor": true
+  },
+  {
+    "cssClass": "sweetui-icon-warning-l",
+    "contentCode": "\\ebca",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-zoom-in-f",
+    "contentCode": "\\ebcb",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-zoom-in-l",
+    "contentCode": "\\ebcc",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-zoom-out-f",
+    "contentCode": "\\ebcd",
+    "hasForcedColor": false
+  },
+  {
+    "cssClass": "sweetui-icon-zoom-out-l",
+    "contentCode": "\\ebce",
+    "hasForcedColor": false
+  }
+]

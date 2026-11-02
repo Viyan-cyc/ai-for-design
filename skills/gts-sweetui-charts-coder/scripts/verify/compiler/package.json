@@ -1,0 +1,7 @@
+{
+  "private": true,
+  "dependencies": {
+    "@vue/compiler-sfc": "3.5.29",
+    "postcss": "8.5.6"
+  }
+}
