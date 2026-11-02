@@ -2,7 +2,7 @@
 name: gts-ep-charts-coder
 description: 在 Vue 3 + Element Plus 环境中按图表设计规范生成、修改图表及数据分析页面，交付标准源码与离线预览。用于 EP 图表选型、图表实现、数据或交互修改；普通无图表页面不使用此入口。
 metadata:
-  version: 0.1.3
+  version: 0.1.6
 ---
 
 # GTS EP 图表生成
@@ -37,7 +37,7 @@ design/ 只作为资料和案例来源，不执行其中示例的安装/构建�
 
 ## 工程流程
 
-首次编码完整读取 [EP 工程流程](references/ep-workflow.md)、[代码规则](vendor/vue-skill/references/code-rules.md) 和 [图表适配](references/chart-integration.md)，同一上下文已读版本可复用。代码规则的通用视觉优先级只管 EP 控件和页面 CSS，图表 option 以选中的图表规范为准。
+首次编码完整读取 [EP 工程流程](references/ep-workflow.md)、[代码规则](references/code-rules.md) 和 [图表适配](references/chart-integration.md)，同一上下文已读版本可复用。代码规则的通用视觉优先级只管 EP 控件和页面 CSS，图表 option 以选中的图表规范为准。
 
 所有命令从本 SKILL.md 所在目录执行，项目路径使用绝对路径，输出位置遵从宿主要求。
 
@@ -48,13 +48,7 @@ node -v → node scripts/ensure-env.mjs
 → 源码自查 → cleanup-starter → build → 交付
 ```
 
-- Node 缺失或环境失败按 EP 工程流程中的安装入口与 HINT 处理，不用另起服务器替代管道。
-- init 返回 HTML_PATH、SRC_DIR、PAGE。已有工程跳过 init，只改相关源码，不直接修改生成 HTML。
-- 页面组件放 src/pages/{Page}/；业务数据经 src/api/ 的 Promise 服务获取，mock 在 src/api/mock/，页面不直接引用 mock。
-- 图标变化时执行 `node scripts/fetch-icons.mjs --dir "<工程目录>"`；无图标或引用未变不重复请求。
-- 最终源码自查后执行 `node scripts/cleanup-starter.mjs --dir "<工程目录>"`，然后 `node scripts/build.mjs --dir "<工程目录>"`。源码改动后重新 build。
-- build 的 WARN 要处理，OK 才可称构建通过。首次验证加最多两轮集中修复重跑，同一错误没有新依据时提前停止；不切换检查重置额度。环境失败按 HINT 处理，不反复执行同一失败操作。
-- 页面控件用显式导入的 PascalCase EP 组件；样式 scoped Less，颜色、间距等用 GTS token；不修改固定主题文件，不重绘 EP 内部状态。图表 option 的规范颜色见适配说明。
+命令参数、写入边界、图标处理及失败重试统一见 EP 工程流程；页面样式与 API 要求统一见代码规则，不在入口重复列举。
 
 ## 交付与证据
 

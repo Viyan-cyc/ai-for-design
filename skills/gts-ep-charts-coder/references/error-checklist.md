@@ -281,7 +281,7 @@ box-shadow: var(--shadow-1);
 
 ### 错误 21：图表配色来源或主题适配错误
 
-图表规范定义的系列色可以作为 option 的 hex；不要把它当作页面 CSS 硬编码错误。不得擅自换成品牌色或每次筛选重排身份色。需映射宿主 token 的颜色，挂载后读取真实计算值、主题变化时更新；不向 Canvas option 直接传 CSS var 字符串。详见 [图表适配](../../../references/chart-integration.md)。
+图表规范定义的系列色可以作为 option 的 hex；不要把它当作页面 CSS 硬编码错误。不得擅自换成品牌色或每次筛选重排身份色。需映射宿主 token 的颜色，挂载后读取真实计算值、主题变化时更新；不向 Canvas option 直接传 CSS var 字符串。详见 [图表适配](chart-integration.md)。
 
 ## 七、代码组织与数据
 

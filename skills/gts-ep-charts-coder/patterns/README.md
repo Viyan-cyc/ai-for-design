@@ -1,17 +1,21 @@
 # Element Plus + GTS 代码示例索引
 
+示例用于结构和 API 参考，图表配色、几何和交互按本次 design/ 规范调整，不以示例的 GTS 图表 token 覆盖 HD/半导体规范。
+
 仅在需要整页参考时搜索当前需求对应条目；已有准确示例路径时不重复读索引。
 
 ---
+
+本索引中的目录路径均相对 skill 根目录。
 
 ## 示例总览
 
 | 编号 | 示例名称 | 用途描述 | 核心组件 | 目录路径 |
 | --- | --- | --- | --- | --- |
-| 001 | table-search-drawer | 搜索表单+数据表格+详情抽屉组合页面 | ElForm, ElInput, ElSelect, ElDatePicker, ElTable, ElTableColumn, ElPagination, ElDrawer, ElTag, ElButton | `references/table-search-drawer/` |
-| 002 | mixed-chart | 折线+柱状混合图表页，图表色走 Token | VChart (vue-echarts), ElCard | `references/mixed-chart/` |
-| 006 | content-states | 内容状态九态整页对照：首次使用/加载/有数据/空结果/筛选无结果/无权限/加载失败/已删除/部分模块失败 | ElSegmented, ElResult, ElSkeleton, ElTable, ElEmpty | `references/content-states/` |
-| 007 | feedback-flow | 操作反馈流四区对照：全局消息/嵌入式消息（6 组语义全对照）/系统通知/确认与高危确认 | ElMessage, ElNotification, ElDialog, ElCheckbox, ElButton | `references/feedback-flow/` |
+| 001 | table-search-drawer | 搜索表单+数据表格+详情抽屉组合页面 | ElForm, ElInput, ElSelect, ElDatePicker, ElTable, ElTableColumn, ElPagination, ElDrawer, ElTag, ElButton | `patterns/table-search-drawer/` |
+| 002 | mixed-chart | 折线+柱状混合图表页，图表色走 Token | VChart (vue-echarts), ElCard | `patterns/mixed-chart/` |
+| 006 | content-states | 内容状态九态整页对照：首次使用/加载/有数据/空结果/筛选无结果/无权限/加载失败/已删除/部分模块失败 | ElSegmented, ElResult, ElSkeleton, ElTable, ElEmpty | `patterns/content-states/` |
+| 007 | feedback-flow | 操作反馈流四区对照：全局消息/嵌入式消息（6 组语义全对照）/系统通知/确认与高危确认 | ElMessage, ElNotification, ElDialog, ElCheckbox, ElButton | `patterns/feedback-flow/` |
 
 ---
 
@@ -28,7 +32,7 @@
 
 **文件结构**：
 ```
-references/table-search-drawer/
+patterns/table-search-drawer/
 ├── index.vue                    # 主页面入口
 └── components/
     ├── search-form.vue          # 顶部搜索表单
@@ -48,7 +52,7 @@ references/table-search-drawer/
 
 **文件结构**：
 ```
-references/mixed-chart/
+patterns/mixed-chart/
 └── index.vue
 ```
 
@@ -77,7 +81,7 @@ references/mixed-chart/
 
 **文件结构**：
 ```
-references/content-states/
+patterns/content-states/
 └── index.vue
 ```
 
@@ -100,7 +104,7 @@ references/content-states/
 
 **文件结构**：
 ```
-references/feedback-flow/
+patterns/feedback-flow/
 ├── index.vue                    # 展台页：全局消息 + 嵌入式 6 语义 + 通知 + 确认入口
 └── components/
     └── danger-dialog.vue        # 高危确认 L1 对话框（三原则硬实现）
@@ -180,3 +184,12 @@ references/feedback-flow/
 | feedback-flow | api/operations.js | api/mock/operation-result.js |
 
 只复制当前使用的示例及依赖，不遍历全库。组件用法片段中的ElTable/VChart通过props接收业务数据，整页服务负责提供；图表主题变化后重算option并清理Observer。UI配置可在组件，业务记录不内嵌。模拟操作明确标为演示，未接入动作不冒充成功。
+
+## 已有布局参考
+
+- [卡片布局](dashboard-cards/index.vue)
+- [表单弹窗](form-dialog/index.vue)
+- [左右分栏](split-panel/index.vue)
+- [筛选与分栏](search-split-panel/index.vue)
+
+仅在任务需要时读取；示例不覆盖 design/ 图表规范。
