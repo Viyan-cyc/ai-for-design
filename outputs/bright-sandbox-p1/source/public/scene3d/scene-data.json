@@ -1,0 +1,166 @@
+{
+  "version": "1",
+  "meta": {
+    "name": "bright-sandbox-p1",
+    "description": "明亮沙盘 P1：四栋参数化建筑与统一材质。程序化组件维护样例，不是模型检索生成任务。外观待用户评价。"
+  },
+  "scene": {
+    "background": "#f1f5fa",
+    "environment": {
+      "intensity": 0.65
+    },
+    "fog": null
+  },
+  "camera": {
+    "type": "PerspectiveCamera",
+    "position": [
+      85,
+      95,
+      115
+    ],
+    "lookAt": [
+      0,
+      4,
+      0
+    ],
+    "fov": 38,
+    "near": 0.1,
+    "far": 600
+  },
+  "lights": [
+    {
+      "id": "preset_sky",
+      "type": "HemisphereLight",
+      "color": "#ffffff",
+      "groundColor": "#c7cbd1",
+      "intensity": 0.65
+    },
+    {
+      "id": "preset_key",
+      "type": "DirectionalLight",
+      "color": "#fffaf3",
+      "intensity": 2.1,
+      "position": [
+        -48,
+        90,
+        54
+      ],
+      "target": [
+        0,
+        0,
+        0
+      ],
+      "castShadow": true,
+      "shadowCameraLeft": -60,
+      "shadowCameraRight": 60,
+      "shadowCameraTop": 60,
+      "shadowCameraBottom": -60,
+      "shadowCameraNear": 0.1,
+      "shadowCameraFar": 300,
+      "shadowBias": -0.0002
+    },
+    {
+      "id": "preset_fill",
+      "type": "DirectionalLight",
+      "color": "#ffffff",
+      "intensity": 0.35,
+      "position": [
+        42,
+        36,
+        -48
+      ],
+      "target": [
+        0,
+        0,
+        0
+      ],
+      "castShadow": false
+    }
+  ],
+  "controls": {
+    "type": "OrbitControls",
+    "target": [
+      0,
+      4,
+      0
+    ],
+    "minDistance": 2,
+    "maxDistance": 300
+  },
+  "renderer": {
+    "toneMapping": "ACESFilmic",
+    "exposure": 1,
+    "shadowMap": "PCF",
+    "shadowMapEnabled": false,
+    "pixelRatio": 1,
+    "shadowMapSize": 512,
+    "antialias": false,
+    "logarithmicDepthBuffer": false,
+    "maxFps": 60,
+    "renderMode": "demand"
+  },
+  "buildings": [
+    {
+      "id": "office_main",
+      "params": {
+        "kind": "office",
+        "width": 20,
+        "depth": 14,
+        "height": 24
+      },
+      "position": [
+        -22,
+        0,
+        -15
+      ]
+    },
+    {
+      "id": "office_low",
+      "params": {
+        "kind": "office",
+        "width": 26,
+        "depth": 12,
+        "height": 12
+      },
+      "position": [
+        -22,
+        0,
+        12
+      ]
+    },
+    {
+      "id": "factory_large",
+      "params": {
+        "kind": "factory",
+        "width": 30,
+        "depth": 20,
+        "height": 9
+      },
+      "position": [
+        21,
+        0,
+        -14
+      ]
+    },
+    {
+      "id": "factory_small",
+      "params": {
+        "kind": "factory",
+        "width": 22,
+        "depth": 14,
+        "height": 7,
+        "roofDetails": false
+      },
+      "position": [
+        21,
+        0,
+        14
+      ]
+    }
+  ],
+  "site": [
+    {
+      "id": "site"
+    }
+  ]
+}

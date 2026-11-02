@@ -1,0 +1,620 @@
+import { invalidateResources } from './render-invalidation';
+/**
+ * scene-core/materials — 状态视觉注册表（v3：数据无材质，视觉全部在代码）
+ *
+ * 3d-templete registerMaterials 模式移植：type 名 → 状态名 → 视觉规格。
+ * 状态名来自节点的 params.status（handler update 钩子里调 applyState）。
+ * 场景状态配色位于 scene/appearance.ts；本文件仅含通用应用机制。
+ *
+ * 视觉规格两种形态：
+ * - mapUrl: 贴图 URL（直接加载换贴图，普通资产/图元用）
+ * - map: 资产 manifest.states 的贴图集 key（多状态资产用，AssetEngine.applyState 消费）
+ * - 其余键为材质参数（克隆实例材质后改）
+ */
+import * as THREE from 'three';
+import type { MaterialSpec, MaterialType } from './types';
+
+/** 单个状态的视觉规格 */
+export interface StateVisual {
+
+  /** 贴图 URL（普通资产/图元） */
+  mapUrl?: string;
+
+  /** 资产贴图集 key（多状态资产；AssetEngine.applyState 消费） */
+  map?: string;
+
+  color?: string;
+  metalness?: number;
+  roughness?: number;
+  emissive?: string;
+  emissiveIntensity?: number;
+  opacity?: number;
+  wireframe?: boolean;
+  flatShading?: boolean;
+
+  /** 面渲染方向（three.js 原生名） */
+  side?: 'FrontSide' | 'BackSide' | 'DoubleSide';
+
+  /** 几何级变体兜底：换 GLB 实例（资产 manifest.states.model 键） */
+  model?: string;
+}
+
+/** 编辑器视觉层条目（serialize 的 __visuals 字段；按需导出时编译进 scene/generated/appearance.ts） */
+export interface VisualOverride extends Partial<Omit<MaterialSpec, 'type'>> {
+
+  /** 内联材质类型（与 libraryRef 互斥）；缺省 MeshStandardMaterial */
+  materialType?: MaterialType;
+
+  /** 引用材质库条目（与 inline 调参字段互斥；共享实例归 MaterialLibService） */
+  libraryRef?: string;
+
+  /** 阴影开关（编辑器调参；默认值在代码，覆盖走视觉层） */
+  castShadow?: boolean;
+  receiveShadow?: boolean;
+
+  /** 显示开关（运行时态；undo 恢复走视觉层） */
+  visible?: boolean;
+
+  /** 锁定（编辑器私有；视口点选/Gizmo 跳过，树中仍可选中看属性） */
+  locked?: boolean;
+
+  /** 局部变换覆盖（槽位层用；物体级不用——物体级 transform 是数据层显式字段） */
+  position?: [number, number, number];
+  rotation?: [number, number, number];
+  scale?: [number, number, number];
+
+  /** 子网格槽位覆盖（GLB 内部 mesh 单独换材质/隐藏；key = 名称路径，物体级字段为默认态） */
+  slots?: Record<string, VisualOverride>;
+}
+
+/** VisualOverride 里不属于材质规格的键（保留物体现有这些字段用；增量纯开关判定也用） */
+export const NON_MATERIAL_VISUAL_KEYS = new Set([
+  'libraryRef', 'materialType', 'castShadow', 'receiveShadow', 'visible', 'locked', 'slots',
+  'position', 'rotation', 'scale',
+]);
+
+/** 抽取 VisualOverride 中的内联材质字段（MaterialSpec 参数面） */
+const extractMaterialFields = (o: VisualOverride): Record<string, unknown> => {
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(o)) {
+    if (v !== undefined && !NON_MATERIAL_VISUAL_KEYS.has(k)) {
+      out[k] = v;
+    }
+  }
+  return out;
+};
+
+/**
+ * 把 VisualOverride 应用到实例材质（编辑器视觉层专用；多材质数组按序克隆替换，不塌缩）。
+ *
+ * 应用范围由第二参控制：
+ * - 'full'（重建/挂载路径）：visible + 阴影 + 材质
+ * - 'switches'（纯开关增量）：visible + 阴影——已编辑过材质的物体上，显隐/锁定/开关类
+ *   update 若重放材质会克隆一份材质（旧 clone 不释放）且贴图异步重赋，会话级泄漏
+ *
+ * 内联材质两条路径：
+ * - 同类型：克隆现有材质打补丁（applyMaterialScalars 只改显式字段）——GLB 内嵌贴图、
+ *   图元默认色等未指定字段全部保留；GLB 实例材质与缓存根共享，必须克隆后改。
+ * - 跨类型：工厂重建（Lambert/Standard/Physical 参数面不同，补丁做不了类型切换），
+ *   但 base 材质上存在、目标类型也有、spec 未显式指定的贴图槽拷贝引用（换类型不丢贴图）。
+ */
+export const applyVisualOverride = (
+  root: THREE.Object3D,
+  o: VisualOverride | null | undefined,
+  scope: 'full' | 'switches' = 'full',
+): void => {
+  if (!o) {
+    return;
+  }
+  if (o.visible !== undefined) {
+    root.visible = o.visible;
+  }
+  const applyShadow = (child: THREE.Object3D): void => {
+    const mesh = child as THREE.Mesh;
+    if (o.castShadow !== undefined) {
+      mesh.castShadow = o.castShadow;
+    }
+    if (o.receiveShadow !== undefined) {
+      mesh.receiveShadow = o.receiveShadow;
+    }
+  };
+  const applyTransform = (): void => {
+    if (o.position !== undefined) {
+      root.position.set(o.position[0] ?? 0, o.position[1] ?? 0, o.position[2] ?? 0);
+    }
+    if (o.rotation !== undefined) {
+      root.rotation.set(o.rotation[0] ?? 0, o.rotation[1] ?? 0, o.rotation[2] ?? 0);
+    }
+    if (o.scale !== undefined) {
+      root.scale.set(o.scale[0] ?? 1, o.scale[1] ?? 1, o.scale[2] ?? 1);
+    }
+  };
+  applyTransform();
+  if (scope === 'switches') {
+    root.traverse(applyShadow);
+    return;
+  }
+  // 引用材质库（libraryRef）：共享实例由 MaterialLibService 独占，core 不碰材质（只处理显示/阴影）
+  const refMode = o.libraryRef !== undefined;
+  const fields = extractMaterialFields(o);
+  const hasMaterial = o.materialType !== undefined || Object.keys(fields).length > 0;
+  const spec = { type: o.materialType ?? 'MeshStandardMaterial', ...fields } as MaterialSpec;
+  root.traverse((child) => {
+    applyShadow(child);
+    const mesh = child as THREE.Mesh;
+    if (!mesh.isMesh || refMode || !hasMaterial) {
+      return;
+    }
+    const base = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+    const patched = base.map((b) => applyInlineMaterial(b, spec));
+    mesh.material = Array.isArray(mesh.material) || patched.length > 1 ? patched : patched[0]!;
+  });
+  // 槽位层：子网格按 key 单独应用（物体级字段作默认态先应用，槽命中覆盖）
+  if (o.slots && scope === 'full') {
+    for (const [slotKey, slotOverride] of Object.entries(o.slots)) {
+      if (slotOverride === null || slotOverride === undefined) {
+        continue;
+      }
+      const target = findBySlotKey(root, slotKey);
+      if (!target) {
+        console.warn(`[materials] 槽位未命中（模型重导出改名？已忽略）: ${slotKey}`);
+        continue;
+      }
+      applyVisualOverride(target, slotOverride, 'full');
+    }
+  }
+
+};
+
+/**
+ * 无名节点的槽位路径段：`#N` = 该节点在**父节点的无名子节点中的序号**
+ * （兄弟局部序，与遍历顺序无关——槽位 key 生成/解析统一此口径）。
+ */
+export const unnamedChildIndex = (node: THREE.Object3D): string => {
+  if (!node.parent) {
+    return '#0';
+  }
+  let n = 0;
+  for (const c of node.parent.children) {
+    if (c === node) {
+      return `#${n}`;
+    }
+    if (!c.name) {
+      n += 1;
+    }
+  }
+  return '#0';
+};
+
+/**
+ * 按槽位 key（名称路径）定位 mesh。key 从 GLB 内部根（如 Armature）起算；
+ * root 是场景节点（可能含工厂 Group 外壳 + gltf.scene 容器如 'Scene'）——
+ * 首段在 root 直接子级找不到时，向内逐层探一层容器再找（对齐 buildReport 口径）。
+ */
+export const findBySlotKey = (root: THREE.Object3D, slotKey: string): THREE.Object3D | null => {
+  const tryFrom = (start: THREE.Object3D): THREE.Object3D | null => {
+    const parts = slotKey.split('/');
+    let cur: THREE.Object3D = start;
+    for (const part of parts) {
+      let next: THREE.Object3D | undefined = cur.children.find((c) => c.name === part);
+      if (!next && part.startsWith('#')) {
+        const idx = Number(part.slice(1));
+        let n = 0;
+        next = cur.children.find((c) => {
+          if (c.name) {
+            return false;
+          }
+          if (n === idx) {
+            return true;
+          }
+          n += 1;
+          return false;
+        });
+      }
+      if (!next) {
+        return null;
+      }
+      cur = next;
+    }
+    return cur;
+  };
+  const direct = tryFrom(root);
+  if (direct) {
+    return direct;
+  }
+  // 首段未命中：探一层容器（gltf.scene 壳；非 mesh 且非空）再试
+  for (const child of root.children) {
+    if ((child as THREE.Mesh).isMesh || child.children.length === 0) {
+      continue;
+    }
+    const found = tryFrom(child);
+    if (found) {
+      return found;
+    }
+  }
+  return null;
+};
+
+/** 材质克隆为节点私有（P3-RRR1）：清除缓存共享标记（Material.clone 深拷 userData 会带上） */
+const claimPrivateMaterial = (mat: THREE.Material): THREE.Material => {
+  if ((mat.userData as { isCloneResource?: boolean }).isCloneResource) {
+    const ud = mat.userData as { isCloneResource?: boolean };
+    delete ud.isCloneResource;
+  }
+  return mat;
+};
+
+/** 内联材质应用到单个 base：同类型 clone+patch，跨类型重建+继承兼容贴图槽 */
+const applyInlineMaterial = (base: THREE.Material | null | undefined, spec: MaterialSpec): THREE.Material => {
+  const targetType = spec.type ?? 'MeshStandardMaterial';
+  if (base && base.type === targetType) {
+    const mat = claimPrivateMaterial(base.clone());
+    applyMaterialScalars(mat, spec);
+    void applyMaterialTextures(mat, spec);
+    return mat;
+  }
+  const mat = createMaterialFromSpec(spec);
+  if (base) {
+    inheritTextures(mat, base, spec);
+  }
+  void applyMaterialTextures(mat, spec);
+  return mat;
+};
+
+/** 跨类型重建时继承贴图槽：base 有、目标类型也有、spec 未显式给的槽拷贝引用 */
+const inheritTextures = (mat: THREE.Material, base: THREE.Material, spec: MaterialSpec): void => {
+  const m = mat as unknown as Record<string, THREE.Texture | null>;
+  const b = base as unknown as Record<string, THREE.Texture | null | undefined>;
+  const s = spec as unknown as Record<string, unknown>;
+  for (const slot of TEXTURE_SLOT_KEYS) {
+    if (!(slot in mat) || !(slot in base)) {
+      continue;
+    }
+    const tex = b[slot];
+    if (tex && s[slot] === undefined) {
+      m[slot] = tex;
+      mat.needsUpdate = true;
+    }
+  }
+};
+
+// ══════════════════════════════════════════════════════════════
+// 材质规格工厂（材质编辑器 + 材质库共用）
+// ══════════════════════════════════════════════════════════════
+
+/** 贴图槽全集（spec 中这些键是 URL 字符串；标量通道跳过） */
+const TEXTURE_SLOT_KEYS = new Set<string>([
+  'map', 'emissiveMap', 'normalMap', 'bumpMap', 'displacementMap', 'alphaMap', 'aoMap', 'lightMap', 'envMap',
+  'specularMap', 'roughnessMap', 'metalnessMap',
+  'clearcoatMap', 'clearcoatRoughnessMap', 'clearcoatNormalMap', 'transmissionMap', 'thicknessMap',
+  'specularIntensityMap', 'specularColorMap', 'sheenColorMap', 'sheenRoughnessMap',
+  'iridescenceMap', 'iridescenceThicknessMap', 'anisotropyMap',
+]);
+
+/** 色彩空间三分桶（其余数据槽 NoColorSpace = Texture 默认，无需设置） */
+const SRGB_SLOTS = new Set(['map', 'emissiveMap', 'specularMap', 'sheenColorMap', 'specularColorMap']);
+const LINEAR_SLOTS = new Set(['lightMap', 'envMap']);
+
+/** 第二 UV（channel=1）槽（0.185 由 texture.channel 选择 uv/uv1） */
+const UV1_SLOTS = new Set(['aoMap', 'lightMap']);
+
+const COLOR_KEYS = new Set(['color', 'emissive', 'attenuationColor', 'specularColor', 'sheenColor']);
+const VEC2_KEYS = new Set(['normalScale', 'clearcoatNormalScale', 'iridescenceThicknessRange']);
+
+const SIDE_MAP = { FrontSide: THREE.FrontSide, BackSide: THREE.BackSide, DoubleSide: THREE.DoubleSide } as const;
+const COMBINE_MAP = { MultiplyOperation: THREE.MultiplyOperation, MixOperation: THREE.MixOperation, AddOperation: THREE.AddOperation } as const;
+const NORMAL_MAP_TYPE_MAP = { TangentSpaceNormalMap: THREE.TangentSpaceNormalMap, ObjectSpaceNormalMap: THREE.ObjectSpaceNormalMap } as const;
+
+/** 类型切换字段白名单（迁移用）：COMMON 三类型共有；Standard 集含 Physical（继承关系） */
+const COMMON_FIELDS = [
+  'color', 'opacity', 'transparent', 'alphaTest', 'side', 'flatShading', 'wireframe', 'fog', 'vertexColors',
+  'emissive', 'emissiveIntensity',
+  'map', 'emissiveMap', 'normalMap', 'normalScale', 'normalMapType', 'bumpMap', 'bumpScale',
+  'displacementMap', 'displacementScale', 'displacementBias', 'alphaMap', 'aoMap', 'aoMapIntensity',
+  'lightMap', 'lightMapIntensity', 'envMap', 'envMapIntensity',
+];
+const LAMBERT_FIELDS = ['specularMap', 'combine', 'reflectivity', 'refractionRatio'];
+const STANDARD_FIELDS = ['roughness', 'roughnessMap', 'metalness', 'metalnessMap'];
+const PHYSICAL_FIELDS = [
+  'clearcoat', 'clearcoatRoughness', 'clearcoatNormalMap', 'clearcoatNormalScale', 'clearcoatMap', 'clearcoatRoughnessMap',
+  'transmission', 'transmissionMap', 'thickness', 'thicknessMap', 'attenuationColor', 'attenuationDistance', 'dispersion',
+  'specularIntensity', 'specularIntensityMap', 'specularColor', 'specularColorMap',
+  'sheen', 'sheenColor', 'sheenColorMap', 'sheenRoughness', 'sheenRoughnessMap',
+  'iridescence', 'iridescenceIOR', 'iridescenceThicknessRange', 'iridescenceMap', 'iridescenceThicknessMap',
+  'anisotropy', 'anisotropyRotation', 'anisotropyMap', 'ior',
+];
+
+const fieldsForType = (type: MaterialType): Set<string> => {
+  if (type === 'MeshLambertMaterial') {
+    return new Set([...COMMON_FIELDS, ...LAMBERT_FIELDS]);
+  }
+  if (type === 'MeshPhysicalMaterial') {
+    return new Set([...COMMON_FIELDS, ...STANDARD_FIELDS, ...PHYSICAL_FIELDS]);
+  }
+  return new Set([...COMMON_FIELDS, ...STANDARD_FIELDS]);
+};
+
+/**
+ * 把 spec 的标量/颜色/枚举/向量参数写入材质（新建与热更新共用；不重建实例）。
+ * 贴图槽跳过（applyMaterialTextures 异步处理）；缺省字段不动。
+ */
+export const applyMaterialScalars = (mat: THREE.Material, spec: MaterialSpec): void => {
+  const m = mat as unknown as Record<string, unknown>;
+  for (const [key, val] of Object.entries(spec)) {
+    if (key === 'type' || val === undefined || TEXTURE_SLOT_KEYS.has(key)) {
+      continue;
+    }
+    if (!(key in mat)) {
+      continue;
+    }
+    if (COLOR_KEYS.has(key) && typeof val === 'string') {
+      m[key] = new THREE.Color(val);
+    } else if (VEC2_KEYS.has(key) && Array.isArray(val)) {
+      m[key] = new THREE.Vector2(val[0] as number, val[1] as number);
+    } else if (key === 'side') {
+      m[key] = SIDE_MAP[val as keyof typeof SIDE_MAP];
+    } else if (key === 'combine') {
+      m[key] = COMBINE_MAP[val as keyof typeof COMBINE_MAP];
+    } else if (key === 'normalMapType') {
+      m[key] = NORMAL_MAP_TYPE_MAP[val as keyof typeof NORMAL_MAP_TYPE_MAP];
+    } else if (key === 'attenuationDistance') {
+      m[key] = val === null ? Infinity : val;
+    } else {
+      m[key] = val;
+    }
+  }
+  // opacity<1 且未显式给 transparent 时自动开启（保持旧内联行为；transparent 显式值优先）
+  if (spec.transparent === undefined && spec.opacity !== undefined && spec.opacity < 1) {
+    mat.transparent = true;
+  }
+  // flatShading/vertexColors 影响着色程序，改动后需重编译
+  if (spec.flatShading !== undefined || spec.vertexColors !== undefined) {
+    mat.needsUpdate = true;
+  }
+};
+
+/** 新建材质实例（唯一实例化入口；贴图槽由 applyMaterialTextures 异步赋值） */
+export const createMaterialFromSpec = (spec: MaterialSpec): THREE.MeshLambertMaterial | THREE.MeshStandardMaterial | THREE.MeshPhysicalMaterial => {
+  const type = spec.type ?? 'MeshStandardMaterial';
+  const mat = type === 'MeshLambertMaterial' ? new THREE.MeshLambertMaterial()
+    : type === 'MeshPhysicalMaterial' ? new THREE.MeshPhysicalMaterial()
+      : new THREE.MeshStandardMaterial();
+  applyMaterialScalars(mat, spec);
+  mat.needsUpdate = true;
+  return mat;
+};
+
+/** 贴图缓存（键 = colorSpace|channel|url；同参数只加载一次） */
+const matTexCache = new Map<string, Promise<THREE.Texture>>();
+
+const loadMaterialTexture = (url: string, colorSpace: THREE.ColorSpace, channel: number): Promise<THREE.Texture> => {
+  const key = `${colorSpace}|${channel}|${url}`;
+  let p = matTexCache.get(key);
+  if (!p) {
+    p = new THREE.TextureLoader().loadAsync(url).then((tex) => {
+      setTimeout(invalidateResources, 0);
+      tex.colorSpace = colorSpace;
+      tex.channel = channel;
+      return tex;
+    });
+    matTexCache.set(key, p);
+  }
+  return p;
+};
+
+/** 清空材质贴图缓存（dispose 时调用） */
+export const clearMaterialTextureCache = (): void => {
+  matTexCache.forEach((p) => void p.then((tex) => tex.dispose()).catch(() => {}));
+  matTexCache.clear();
+};
+
+/** 材质 → 贴图加载代数（异步竞态守卫：慢的旧加载完成时，已发起新一轮赋值则丢弃） */
+const texGenerations = new WeakMap<THREE.Material, number>();
+
+/** 贴图槽异步赋值（三分桶 colorSpace + 第二 UV channel；null=清除，undefined=不动） */
+export const applyMaterialTextures = async (mat: THREE.Material, spec: MaterialSpec): Promise<void> => {
+  const m = mat as unknown as Record<string, THREE.Texture | null>;
+  const gen = (texGenerations.get(mat) ?? 0) + 1;
+  texGenerations.set(mat, gen);
+  const jobs: Array<Promise<void>> = [];
+  for (const slot of TEXTURE_SLOT_KEYS) {
+    if (!(slot in mat)) {
+      continue;
+    }
+    const val = (spec as unknown as Record<string, unknown>)[slot];
+    if (val === null) {
+      m[slot] = null;
+      continue;
+    }
+    if (typeof val !== 'string') {
+      continue;
+    }
+    const colorSpace = SRGB_SLOTS.has(slot) ? THREE.SRGBColorSpace
+      : LINEAR_SLOTS.has(slot) ? THREE.LinearSRGBColorSpace : THREE.NoColorSpace;
+    const channel = UV1_SLOTS.has(slot) ? 1 : 0;
+    jobs.push(loadMaterialTexture(val, colorSpace, channel).then((tex) => {
+      if (texGenerations.get(mat) !== gen) {
+        return; // 已有更新一轮的赋值（或清除）——旧结果丢弃
+      }
+      m[slot] = tex;
+      mat.needsUpdate = true;
+    }));
+  }
+  await Promise.all(jobs);
+};
+
+/**
+ * 类型切换参数迁移：共有参数保留、目标类型特有参数取默认（丢弃）、
+ * Standard→Physical 时 roughness/metalness 保留（Physical 白名单含 Standard 集）。
+ */
+export const migrateMaterialSpec = (spec: MaterialSpec, nextType: MaterialType): MaterialSpec => {
+  const allowed = fieldsForType(nextType);
+  const out: Record<string, unknown> = { type: nextType };
+  for (const [key, val] of Object.entries(spec)) {
+    if (key === 'type' || val === undefined) {
+      continue;
+    }
+    if (allowed.has(key)) {
+      out[key] = val;
+    }
+  }
+  return out as unknown as MaterialSpec;
+};
+
+/** 图元默认材质（视觉在代码：引擎内建默认值，数据层无颜色字段） */
+export const PRIMITIVE_DEFAULT_COLOR = '#9cabb8';
+
+const SIDE_NAMES: Record<number, 'FrontSide' | 'BackSide' | 'DoubleSide'> = {
+  [THREE.FrontSide]: 'FrontSide',
+  [THREE.BackSide]: 'BackSide',
+  [THREE.DoubleSide]: 'DoubleSide',
+};
+
+/**
+ * 读单个 mesh 活材质的完整 MaterialSpec（标量/颜色/枚举；贴图槽不溯源——
+ * GLB 内嵌贴图无 URL，贴图编辑走素材库上传通道）。
+ * 编辑器「无 override 时的初始值种子」统一口径：GLB / 图元 / 代码组合模型
+ * 都读活实例真值，不猜默认值。
+ */
+export const readMaterialSpec = (mesh: THREE.Mesh): MaterialSpec => {
+  const base = Array.isArray(mesh.material) ? mesh.material[0] : mesh.material;
+  if (!base) {
+    return { type: 'MeshStandardMaterial' };
+  }
+  const type: MaterialType = base.type === 'MeshLambertMaterial' || base.type === 'MeshPhysicalMaterial'
+    ? base.type
+    : 'MeshStandardMaterial';
+  const spec: Record<string, unknown> = { type };
+  const b = base as unknown as Record<string, unknown>;
+  for (const key of fieldsForType(type)) {
+    if (TEXTURE_SLOT_KEYS.has(key) || !(key in base)) {
+      continue;
+    }
+    const val = b[key];
+    if (val === undefined) {
+      continue;
+    }
+    if (COLOR_KEYS.has(key)) {
+      const c = val as THREE.Color;
+      if (c && c.isColor) {
+        spec[key] = `#${c.getHexString()}`;
+      }
+      continue;
+    }
+    if (key === 'side') {
+      spec[key] = SIDE_NAMES[val as number] ?? 'FrontSide';
+      continue;
+    }
+    if (key === 'attenuationDistance') {
+      spec[key] = val === Infinity ? null : val;
+      continue;
+    }
+    if (typeof val === 'number' || typeof val === 'boolean') {
+      spec[key] = val;
+    }
+  }
+  return spec as unknown as MaterialSpec;
+};
+
+/** 简易贴图缓存（同 URL 只加载一次；实例间共享纹理） */
+const texCache = new Map<string, THREE.Texture>();
+
+/** 清空贴图缓存（dispose 时调用） */
+export const clearTextureCache = (): void => {
+  texCache.forEach((tex) => tex.dispose());
+  texCache.clear();
+};
+
+/** 加载或取缓存贴图 */
+export const loadTexture = async (url: string): Promise<THREE.Texture> => {
+  let tex = texCache.get(url);
+  if (!tex) {
+    tex = await new THREE.TextureLoader().loadAsync(url);
+    setTimeout(invalidateResources, 0);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    texCache.set(url, tex);
+  }
+  return tex;
+};
+
+/**
+ * 把 StateVisual 的参数级视觉应用到单个 mesh 材质（applyState 内部工具）。
+ * 贴图由调用方异步赋值（mapUrl 路径）。
+ */
+export const applyVisualToMaterial = (mat: THREE.MeshStandardMaterial, visual: StateVisual): void => {
+  if (visual.color !== undefined) {
+    mat.color = new THREE.Color(visual.color);
+  }
+  if (visual.metalness !== undefined) {
+    mat.metalness = visual.metalness;
+  }
+  if (visual.roughness !== undefined) {
+    mat.roughness = visual.roughness;
+  }
+  if (visual.emissive !== undefined) {
+    mat.emissive = new THREE.Color(visual.emissive);
+    mat.emissiveIntensity = visual.emissiveIntensity ?? 1;
+  }
+  if (visual.opacity !== undefined) {
+    mat.transparent = visual.opacity < 1;
+    mat.opacity = visual.opacity;
+  }
+  if (visual.wireframe !== undefined) {
+    mat.wireframe = visual.wireframe;
+  }
+  if (visual.flatShading !== undefined) {
+    mat.flatShading = visual.flatShading;
+    mat.needsUpdate = true;
+  }
+  if (visual.side !== undefined) {
+    mat.side = visual.side === 'FrontSide' ? THREE.FrontSide
+      : visual.side === 'BackSide' ? THREE.BackSide
+        : THREE.DoubleSide;
+  }
+};
+
+/**
+ * applyState — 状态视觉核心（v3 唯一"数据→视觉"入口；由 handler/AssetEngine 调）。
+ *
+ * 语义：map/mapUrl 键换贴图（材质克隆后换 map），model 键换 GLB 实例，
+ * 其余键改材质参数。未知状态由调用方处理（回落默认视觉）。
+ *
+ * @param root 物体实例根（SceneEngine 已建好的 Object3D）
+ * @param _stateName 状态名（日志/扩展用；视觉本身由 visual 描述）
+ * @param visual 状态视觉规格（materials.ts / 资产 manifest.states 查表所得）
+ * @param opts.modelSwapper 几何级变体兜底（model 键）：调用方提供换实例实现，缺省忽略
+ */
+export const applyState = async (
+  root: THREE.Object3D,
+  _stateName: string,
+  visual: StateVisual,
+  opts: { modelSwapper?: (modelKey: string) => void } = {},
+): Promise<void> => {
+  if (visual.model && opts.modelSwapper) {
+    opts.modelSwapper(visual.model);
+    return;
+  }
+  const pending: Array<Promise<void>> = [];
+  root.traverse((child) => {
+    const mesh = child as THREE.Mesh;
+    if (!mesh.isMesh) {
+      return;
+    }
+    const base = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+    const cloned = base.map((m) => claimPrivateMaterial((m ?? new THREE.MeshStandardMaterial()).clone()) as THREE.MeshStandardMaterial);
+    if (visual.mapUrl) {
+      pending.push(loadTexture(visual.mapUrl).then((tex) => {
+        cloned.forEach((std) => {
+          std.map = tex;
+          std.needsUpdate = true;
+        });
+      }));
+    }
+    // visual.map（资产贴图集 key）由 AssetEngine.applyState 消费（预载贴图集在资产侧）
+    cloned.forEach((std) => {
+      applyVisualToMaterial(std, visual);
+    });
+    mesh.material = Array.isArray(mesh.material) || cloned.length > 1 ? cloned : cloned[0]!;
+  });
+  await Promise.all(pending);
+};
