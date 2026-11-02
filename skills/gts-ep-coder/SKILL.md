@@ -113,7 +113,7 @@ node scripts/init.mjs "<artifact-folder 绝对路径>" "<slug>"
 - 返回值记住三个：`HTML_PATH`（预览入口）、`SRC_DIR`（你写代码的地方）、`PAGE`（init返回的PascalCase页面目录名，如DeviceList）。
 
 init 会生成完整骨架：`index.gts-ep.html` + `public/library/`（UMD 运行时）+ `src/`（App.vue、
-main.js、api 服务层示例、主题三件套、starter 页面）。
+main.js、api 服务层示例、主题文件、starter 页面）。
 **默认不含任何切换 UI**（国际化 / 主题切换均为按需能力，见下方判据）。
 
 ### ②.5 选择设计路径与可选资产
@@ -172,13 +172,7 @@ main.js、api 服务层示例、主题三件套、starter 页面）。
   2. 文案 key 化：页面用 `const { t } = useI18n()` + key（key 命名 `msg.{页面}.{分类}.{语义}`，
      至少 3 个点，见 code-rules 规则 10.2）；
   3. 词典进 `src/i18n/locales/{zh-cn,en}.js`（**两份 key 集合必须一致**，en 缺失会回落中文）；
-     - 词典边界（只收两类，判定法：对接真实后端后词条还用得上吗）：
-       ① 界面文案（标签/按钮/占位符/提示/空态）；
-       ② 枚举显示名——封闭集合的 code→label（如 level/status/业务域），存于数据的只有 code，
-          显示文案由 `t()` 解析；对接后端后词典保留，仅把 code 集合对齐后端枚举表。
-       记录内容**不进词典**：标题/描述/设备或资源名称/人名/时长等开放文本，存于 mock、
-       对接后被真实数据取代，组件不得对数据值做 `t()` 包装（否则真实数据会显示 key 路径，
-       破坏「页面零改动」契约）。拿不准封闭/开放时，按记录内容处理。
+     - 词典只收界面文案与封闭枚举，不收开放业务记录；判定方法与不确定时的处理遵循必读 code-rules 规则 10.3。
   4. App.vue 接线 + 切换 UI：**UI 形态按用户描述决定**（图标/下拉/菜单项均可），参考实现见
      `references/on-demand-toggle.md`（含预览必需：统一安装须先于 `useI18n`，EP 文案经
      `ElConfigProvider` 跟随）。真实工程入口通过 `installI18n(app)` 在mount前安装；仅启用国际化时允许对main追加该接线，不改其他骨架。
@@ -319,7 +313,7 @@ build的编译/token错误在重试额度内修复，达到上限或提前停止
 | ✅ 修改 | `src/App.vue`（挂载页面与按需装配）；启用i18n时main仅追加规定的安装接线 |
 | ❌ 不动 | `index.gts-ep.html`、`public/library/`、`src/main.js`（仅允许上行i18n接线例外）、`src/assets/themes/*.less`（交付骨架，改了换肤/预览体系就散了） |
 
-换肤需求走 `src/assets/themes/README.md` 协议**追加**皮肤文件，不动既有三件套。
+换肤需求走 `src/assets/themes/README.md` 协议**追加**皮肤文件，不动既有 base.less、bridge.less、default.less 和 dark.less。
 
 ### 3. 页面代码规范（design-language）
 
@@ -328,7 +322,7 @@ build的编译/token错误在重试额度内修复，达到上限或提前停止
   页面里不写 hex 色值；build对硬编码hex给出WARN，按前述要求处理。名称检查不验证每处CSS继承/作用域，局部 `--page-*` 定义必须覆盖其使用位置。
 - **标准交互控件优先使用 Element Plus**，组件模板标签一律 **PascalCase**（`<ElTable>`），模板里用到的每个
   组件、`ElMessage` 等命令式 API、vue 的 API（`ref`/`reactive`/…）**每个文件各自 import**——
-  漏 import 编译能过但运行时白屏。编译宏（`defineProps` 等）不用 import。
+  当前 build 会检查静态组件标签的绑定与导入导出；通过不代表所有运行时引用均正确。编译宏（`defineProps` 等）不用 import。
 - 图标从 `@element-plus/icons-vue` 导入（如 `import { Search } from '@element-plus/icons-vue'`）。
   EP 图标是**无宽高的裸 svg**，直接放模板里 font-size 控不住尺寸（会撑到 200px+）：
   - 裸 svg 图标必须包进 `<ElIcon :size="N">` 或显式写 `width`/`height`；

@@ -32,7 +32,7 @@ import { ElButton, ElTable, ElForm, ElFormItem } from 'element-plus'
 ```
 
 ```vue
-<!-- ❌ 错误：未导入直接使用，编译能过但运行时白屏 -->
+<!-- ❌ 错误：未导入直接使用；当前 build 会拒绝未绑定的组件标签 -->
 <el-button>提交</el-button>
 ```
 
