@@ -1,0 +1,3195 @@
+﻿diff --git a/skills/gts-sweetui-coder/assets/examples/workbench-conversation/index.vue b/skills/gts-sweetui-coder/assets/examples/workbench-conversation/index.vue
+new file mode 100644
+index 0000000..5d4c23c
+--- /dev/null
++++ b/skills/gts-sweetui-coder/assets/examples/workbench-conversation/index.vue
+@@ -0,0 +1,188 @@
++<script setup>
++import { ref, computed, onMounted, onUnmounted } from 'vue'
++import { SweetButton, SweetIcon, SweetDialog, SweetAlert } from '@hw-seq/sweet-ui-base'
++import WorkbenchShell from './components/foundation/workbench-shell.vue'
++import AiWorkspace from './components/ai-workspace.vue'
++import ResourceWorkspace from './components/resource-workspace.vue'
++import SessionPanel from './components/session-panel.vue'
++
++const mode = ref('ai')
++const sessionsOpen = ref(false)
++const info = ref('')
++const isDark = ref(false)
++onMounted(() => { isDark.value = (document.body.getAttribute('theme') || '').includes('dark') })
++
++// watch theme attribute
++let themeObserver = null
++onMounted(() => {
++  themeObserver = new MutationObserver(() => {
++    isDark.value = (document.body.getAttribute('theme') || '').includes('dark')
++  })
++  themeObserver.observe(document.body, { attributes: true, attributeFilter: ['theme'] })
++})
++onUnmounted(() => { themeObserver?.disconnect() })
++const tabs = ref([
++  { id: 'mail', title: '閭欢搴旂敤鍙戦€佸け璐ユ帓鏌?, status: 'done' },
++  { id: 'network', title: '鏍稿績浜ゆ崲鏈洪摼璺瘖鏂?, status: 'pending' },
++  { id: 'storage', title: '瀛樺偍瀹归噺瓒嬪娍鍒嗘瀽', status: 'idle' }
++])
++const resourceTabs = ref([{ id: 'resources', title: '璧勬簮鎬昏', status: 'done', closable: false }])
++const activeTab = ref('mail')
++const activeResource = ref('resources')
++const activeMenu = ref('monitor')
++const active = computed(() => tabs.value.find(t => t.id === activeTab.value))
++const menus = computed(() => [
++  { id: 'monitor', label: mode.value === 'ai' ? '鏅鸿兘鐩戞帶' : '璧勬簮鎬昏', icon: 'sweetui-icon-dashboard-l', tone: 'blue' },
++  { id: 'flow', label: mode.value === 'ai' ? '杩愮淮娴佺▼' : '鏈嶅姟鐩綍', icon: 'sweetui-icon-link-l', tone: 'green' },
++  { id: 'jobs', label: '浣滀笟涓績', icon: 'sweetui-icon-task-list-l', tone: 'blue' },
++  { id: 'visual', label: '鍙鍖栦腑蹇?, icon: 'sweetui-icon-indicator-l', tone: 'purple' },
++  { id: 'files', label: '鐭ヨ瘑涓庢枃妗?, icon: 'sweetui-icon-folder-opened-l', tone: 'purple' },
++  { id: 'settings', label: '绯荤粺璁剧疆', icon: 'sweetui-icon-seting-l', tone: 'blue' }
++])
++function switchMode() { sessionsOpen.value = false; activeMenu.value = 'monitor' }
++function toggleTheme() {
++  const current = document.body.getAttribute('theme') || ''
++  window.setTheme(current.includes('dark') ? 'uDesign2.2-light' : 'uDesign2.2-dark')
++}
++function closeTab(id) {
++  const list = mode.value === 'ai' ? tabs : resourceTabs
++  const current = mode.value === 'ai' ? activeTab : activeResource
++  const i = list.value.findIndex(t => t.id === id)
++  list.value = list.value.filter(t => t.id !== id)
++  if (current.value === id) current.value = list.value[Math.max(0, i - 1)]?.id || ''
++}
++function newTab() {
++  const item = { id: `workspace-${Date.now()}`, title: mode.value === 'ai' ? '鏂版帓闅滀細璇? : '璧勬簮鏌ヨ', status: 'idle' }
++  if (mode.value === 'ai') { tabs.value.push(item); activeTab.value = item.id }
++  else { resourceTabs.value.push(item); activeResource.value = item.id }
++}
++function selectMenu(id) {
++  activeMenu.value = id
++  if (id === 'monitor') return
++  const name = menus.value.find(m => m.id === id)?.label
++  info.value = `${name}涓哄彲閰嶇疆瀵艰埅鍏ュ彛銆傛湰娆¤仛鐒﹂鏋跺鐢紝璇ヤ笟鍔℃ā鍧楀皻鏈帴鍏ャ€俙
++}
++function openSession(item) {
++  if (!tabs.value.some(t => t.id === item.id)) tabs.value.push({ ...item, status: 'idle' })
++  activeTab.value = item.id
++  sessionsOpen.value = false
++}
++async function fullscreen() {
++  try {
++    if (document.fullscreenElement) await document.exitFullscreen()
++    else await document.documentElement.requestFullscreen()
++  } catch { info.value = '褰撳墠娴忚鍣ㄤ笉鏀寔椤甸潰鍏ㄥ睆锛岃浣跨敤娴忚鍣ㄥ叏灞忓姛鑳姐€? }
++}
++</script>
++<template>
++  <div class="foundation">
++    <WorkbenchShell
++      :brand="mode === 'ai' ? 'MindOps' : 'CloudOps'"
++      :workspace-name="mode === 'ai' ? '鏅鸿兘杩愮淮宸ヤ綔鍙? : '璧勬簮绠＄悊宸ヤ綔鍙?"
++      :menus="menus"
++      :tabs="mode === 'ai' ? tabs : resourceTabs"
++      :active-tab="mode === 'ai' ? activeTab : activeResource"
++      :active-menu="activeMenu"
++      @select-menu="selectMenu"
++      @select-tab="mode === 'ai' ? activeTab = $event : activeResource = $event"
++      @close-tab="closeTab"
++      @new-tab="newTab"
++      @sessions="sessionsOpen = !sessionsOpen"
++    >
++      <template #tools>
++        <div class="preview-mode">
++          <span>楠ㄦ灦棰勮</span>
++          <select v-model="mode" aria-label="鍒囨崲绀轰緥" @change="switchMode">
++            <option value="ai">AI 宸ヤ綔鍙?/option>
++            <option value="resources">鏅€氭煡璇㈤〉</option>
++          </select>
++        </div>
++        <div class="tool-group">
++          <SweetButton text aria-label="鎵撳紑鏈€杩戜細璇? @click="sessionsOpen = !sessionsOpen">
++            <SweetIcon icon-class="sweetui-icon-manage-tasks-l" :size="17" />
++          </SweetButton>
++          <SweetButton text aria-label="鏌ョ湅閫氱煡" @click="info = '褰撳墠涓虹绾块瑙堬紝娌℃湁鏂扮殑涓氬姟閫氱煡銆?">
++            <SweetIcon icon-class="sweetui-icon-message-l" :size="17" />
++          </SweetButton>
++          <SweetButton text aria-label="鍏ㄥ睆棰勮" @click="fullscreen">
++            <SweetIcon icon-class="sweetui-icon-full-screen-l" :size="17" />
++          </SweetButton>
++          <SweetButton text aria-label="鍒囨崲娣辨祬涓婚" @click="toggleTheme">
++            <SweetIcon :icon-class="isDark ? 'sweetui-icon-skin-peeler-l' : 'sweetui-icon-skin-peeler-l'" :size="17" />
++          </SweetButton>
++          <span class="avatar">杩?/span>
++        </div>
++      </template>
++
++      <SessionPanel
++        v-if="sessionsOpen"
++        :business="mode === 'resources'"
++        @close="sessionsOpen = false"
++        @open="openSession"
++        @new="newTab(); sessionsOpen = false"
++      />
++
++      <template v-if="mode === 'ai'">
++        <template v-for="tab in tabs" :key="tab.id">
++          <AiWorkspace v-show="activeTab === tab.id" :session="tab" />
++        </template>
++        <div v-if="!active" class="empty-state">
++          <SweetIcon icon-class="sweetui-icon-message-l" :size="40" />
++          <p>寮€濮嬩竴涓柊鐨勫伐浣滃尯</p>
++          <SweetButton type="primary" @click="newTab">鏂板缓浼氳瘽</SweetButton>
++        </div>
++      </template>
++      <template v-else>
++        <template v-for="tab in resourceTabs" :key="tab.id">
++          <ResourceWorkspace v-show="activeResource === tab.id" />
++        </template>
++      </template>
++    </WorkbenchShell>
++
++    <SweetDialog :model-value="!!info" title="棰勮璇存槑" width="440" draggable :close-on-click-modal="false" @update:model-value="info = ''">
++      <p>{{ info }}</p>
++      <template #footer>
++        <SweetButton type="primary" @click="info = ''">鐭ラ亾浜?/SweetButton>
++      </template>
++    </SweetDialog>
++  </div>
++</template>
++<style scoped>
++.foundation {
++  height: 100vh; overflow: hidden;
++  font-size: var(--swt-font-size-normal);
++  line-height: var(--swt-font-line-height-normal);
++  color: var(--swt-color-text-primary);
++}
++.preview-mode {
++  display: flex; gap: var(--swt-space-size-8); align-items: center;
++  font-size: var(--swt-font-size-small); color: var(--swt-color-text-secondary);
++  border-right: 1px solid var(--swt-color-dividing-line-primary);
++  padding-right: var(--swt-space-size-16);
++}
++.preview-mode select {
++  font: inherit; color: var(--swt-color-accent-text-normal); border: 0;
++  background: var(--swt-color-bg-primary); cursor: pointer;
++  outline-color: var(--swt-color-accent-normal);
++}
++.tool-group { display: flex; align-items: center; gap: var(--swt-space-size-12); }
++.avatar {
++  width: 28px; height: 28px; max-width: 100%;
++  display: grid; place-items: center; border-radius: 50%;
++  color: var(--swt-color-text-inverse);
++  background: var(--swt-color-accent-normal);
++  font-size: var(--swt-font-size-small);
++  border: 2px solid var(--swt-color-overlay-gray1-and-accent-normal-opacity10);
++}
++.empty-state {
++  flex: 1; display: flex; flex-direction: column;
++  align-items: center; justify-content: center;
++  gap: var(--swt-space-size-12); color: var(--swt-color-text-secondary);
++}
++.empty-state p { font-size: var(--swt-font-size-normal); margin: 0; }
++
++@media (max-width: 992px) {
++  .preview-mode > span { display: none; }
++  .tool-group { gap: var(--swt-space-size-4); }
++}
++</style>
+diff --git a/skills/gts-sweetui-coder/assets/foundation/conversation-composer.vue b/skills/gts-sweetui-coder/assets/foundation/conversation-composer.vue
+new file mode 100644
+index 0000000..265e999
+--- /dev/null
++++ b/skills/gts-sweetui-coder/assets/foundation/conversation-composer.vue
+@@ -0,0 +1,252 @@
++<script setup>
++import { ref, computed, watch, nextTick } from 'vue'
++import { SweetIcon, SweetSelect, SweetOption, SweetButton } from '@hw-seq/sweet-ui-base'
++const props = defineProps({
++  modelValue: { type: String, default: '' },
++  model: String,
++  models: { type: Array, default: () => [] },
++  busy: Boolean,
++  placeholder: { type: String, default: '杈撳叆闂锛孲hift + Enter 鎹㈣' },
++  references: { type: Array, default: () => [] },
++  commands: { type: Array, default: () => [] },
++  labels: { type: Object, default: () => ({}) },
++  disclaimer: { type: String, default: '' }
++})
++const emit = defineEmits(['update:modelValue', 'update:model', 'send', 'stop'])
++const labels = computed(() => ({
++  suggestions: '寮曠敤鍜屽懡浠ゅ缓璁?,
++  references: '寮曠敤涓婁笅鏂?,
++  commands: '蹇嵎鍛戒护',
++  remove: '绉婚櫎闄勪欢',
++  input: '瀵硅瘽杈撳叆',
++  attach: '娣诲姞闄勪欢',
++  model: '閫夋嫨妯″瀷',
++  busy: '姝ｅ湪鐢熸垚鈥?,
++  stop: '鍋滄鐢熸垚',
++  send: '鍙戦€佹秷鎭?,
++  ...props.labels
++}))
++const textArea = ref(null)
++const fileInput = ref(null)
++const attachments = ref([])
++const composing = ref(false)
++const suggestionIndex = ref(0)
++const dismissed = ref(false)
++const trigger = computed(() => props.modelValue.match(/(?:^|\s)([@/])([^\s@/]*)$/))
++const suggestions = computed(() => {
++  if (!trigger.value || dismissed.value) return []
++  const source = trigger.value[1] === '@' ? props.references : props.commands
++  return source.filter(x => x.label.toLowerCase().includes(trigger.value[2].toLowerCase()))
++})
++const canSend = computed(() => !!props.modelValue.trim() || !!attachments.value.length)
++watch(() => props.modelValue, async () => {
++  dismissed.value = false
++  suggestionIndex.value = 0
++  await nextTick()
++  resize()
++})
++function resize() {
++  if (textArea.value) {
++    textArea.value.style.height = 'auto'
++    textArea.value.style.height = `${Math.min(140, Math.max(32, textArea.value.scrollHeight))}px`
++  }
++}
++function update(event) { emit('update:modelValue', event.target.value) }
++function choose(item) {
++  if (!item) return
++  const match = trigger.value
++  if (!match) return
++  const prefix = props.modelValue.slice(0, props.modelValue.length - match[0].length)
++  emit('update:modelValue', `${prefix}${match[0].startsWith(' ') ? ' ' : ''}${match[1] === '@' ? '@' + item.label : item.value} `)
++  textArea.value?.focus()
++}
++function keydown(event) {
++  if (event.isComposing || composing.value) return
++  if (event.key === 'Escape') { dismissed.value = true; return }
++  if (suggestions.value.length && ['ArrowDown', 'ArrowUp'].includes(event.key)) {
++    event.preventDefault()
++    suggestionIndex.value = (suggestionIndex.value + (event.key === 'ArrowDown' ? 1 : -1) + suggestions.value.length) % suggestions.value.length
++    return
++  }
++  if (event.key === 'Enter' && !event.shiftKey) {
++    event.preventDefault()
++    if (suggestions.value.length) choose(suggestions.value[suggestionIndex.value])
++    else send()
++  }
++}
++function send() {
++  if (props.busy || !canSend.value) return
++  emit('send', { text: props.modelValue.trim(), files: [...attachments.value], model: props.model })
++  attachments.value = []
++  emit('update:modelValue', '')
++}
++function attach(event) {
++  if (props.busy) return
++  attachments.value.push(...Array.from(event.target.files))
++  event.target.value = ''
++  textArea.value?.focus()
++}
++</script>
++<template>
++  <div class="composer-root">
++    <div v-if="suggestions.length" class="suggestions" role="listbox" :aria-label="labels.suggestions">
++      <div class="suggest-title">{{ trigger[1] === '@' ? labels.references : labels.commands }}</div>
++      <button
++        type="button" v-for="(item, index) in suggestions" :key="item.id"
++        role="option" :aria-selected="index === suggestionIndex"
++        :class="{ selected: index === suggestionIndex }"
++        @click="choose(item)"
++      >
++        <SweetIcon icon-class="sweetui-icon-file-l" :size="14" />
++        {{ item.label }}
++      </button>
++    </div>
++    <div class="composer" :class="{ busy }">
++      <div v-if="attachments.length" class="attachments">
++        <span v-for="(file, index) in attachments" :key="file.name + '-' + index">
++          <SweetIcon icon-class="sweetui-icon-file-l" :size="14" />
++          {{ file.name }}
++          <button type="button" :aria-label="labels.remove + file.name" @click="attachments.splice(index, 1)">
++            <SweetIcon icon-class="sweetui-icon-close" :size="12" />
++          </button>
++        </span>
++      </div>
++      <textarea
++        ref="textArea" :value="modelValue"
++        :placeholder="placeholder" maxlength="4000"
++        :aria-label="labels.input" rows="1"
++        @input="update" @keydown="keydown"
++        @compositionstart="composing = true"
++        @compositionend="composing = false"
++      />
++      <div class="tools">
++        <input ref="fileInput" type="file" multiple class="file-input" @change="attach" />
++        <SweetButton class="tool" :aria-label="labels.attach" :disabled="busy" @click="fileInput?.click()">
++          <SweetIcon :size="16" icon-class="sweetui-icon-add-l" />
++        </SweetButton>
++        <div v-if="models.length" class="model-selector">
++          <SweetSelect
++            :model-value="model"
++            :aria-label="labels.model"
++            :disabled="busy"
++            size="small"
++            @update:model-value="emit('update:model', $event)"
++          >
++            <SweetOption v-for="item in models" :key="item.id" :value="item.id" :label="item.label" />
++          </SweetSelect>
++        </div>
++        <span class="counter">{{ busy ? labels.busy : modelValue.length ? modelValue.length + ' / 4000' : '' }}</span>
++        <SweetButton v-if="busy" class="send stop" :aria-label="labels.stop" @click="emit('stop')">
++          <SweetIcon :size="16" icon-class="sweetui-icon-stop-l" />
++        </SweetButton>
++        <SweetButton v-else type="primary" class="send" :disabled="!canSend" :aria-label="labels.send" @click="send">
++          <SweetIcon :size="16" icon-class="sweetui-icon-arrow-up" />
++        </SweetButton>
++      </div>
++    </div>
++    <p v-if="disclaimer" class="disclaimer">{{ disclaimer }}</p>
++  </div>
++</template>
++<style scoped>
++.composer-root {
++  position: relative; width: 100%;
++  --page-border: color-mix(in srgb, var(--swt-color-accent-normal) 18%, var(--swt-color-bg-primary));
++}
++.composer {
++  border: 1px solid var(--page-border);
++  border-radius: var(--swt-radius-size-big2);
++  padding: var(--swt-space-size-8) var(--swt-space-size-12) var(--swt-space-size-8);
++  background: var(--swt-color-bg-primary);
++  transition: border-color .18s, box-shadow .18s;
++}
++.composer:focus-within {
++  border-color: var(--swt-color-accent-normal);
++  box-shadow: 0 0 0 3px color-mix(in srgb, var(--swt-color-accent-normal) 9%, transparent);
++}
++textarea {
++  display: block; width: 100%; box-sizing: border-box;
++  border: 0; outline: 0; resize: none;
++  min-height: 28px; max-height: 140px;
++  background: transparent; color: var(--swt-color-text-primary);
++  font: inherit; font-size: var(--swt-font-size-normal);
++  line-height: var(--swt-font-line-height-normal);
++  padding: var(--swt-space-size-4) 0;
++}
++textarea::placeholder { color: var(--swt-color-text-extra); }
++.tools {
++  display: flex; flex-wrap: nowrap; align-items: center;
++  gap: var(--swt-space-size-8); margin-top: var(--swt-space-size-4);
++}
++.tool {
++  display: grid; place-items: center;
++  width: 28px; height: 28px; padding: 0; flex-shrink: 0;
++}
++.model-selector {
++  min-width: 100px; max-width: 180px; flex-shrink: 0;
++  font-size: var(--swt-font-size-small);
++}
++.counter {
++  flex: 1; text-align: right;
++  font-size: var(--swt-font-size-small);
++  color: var(--swt-color-text-extra);
++  white-space: nowrap;
++}
++.send {
++  width: 28px; height: 28px; max-width: 100%;
++  border-radius: var(--swt-radius-size-medium);
++  display: grid; place-items: center;
++  padding: 0; flex-shrink: 0;
++}
++.disclaimer {
++  text-align: center; color: var(--swt-color-text-extra);
++  font-size: var(--swt-font-size-small);
++  margin: var(--swt-space-size-4) 0 0;
++}
++.file-input { display: none; }
++.attachments {
++  display: flex; flex-wrap: wrap;
++  gap: var(--swt-space-size-4); margin-bottom: var(--swt-space-size-4);
++}
++.attachments span {
++  display: flex; align-items: center; gap: var(--swt-space-size-4);
++  background: var(--swt-color-bg-secondary);
++  border-radius: var(--swt-radius-size-normal);
++  padding: var(--swt-space-size-2) var(--swt-space-size-8);
++  font-size: var(--swt-font-size-small); max-width: 100%;
++  overflow-wrap: anywhere;
++}
++.attachments button {
++  cursor: pointer; font: inherit; background: transparent; border: 0;
++  color: var(--swt-color-text-secondary); display: grid; place-items: center;
++  width: 16px; height: 16px; padding: 0;
++}
++.attachments button:focus-visible,
++.suggestions button:focus-visible {
++  outline: 2px solid var(--swt-color-accent-normal); outline-offset: 2px;
++}
++.suggestions {
++  position: absolute; bottom: 100%; left: 0; width: 100%;
++  background: var(--swt-color-bg-primary);
++  border: 1px solid var(--page-border);
++  border-radius: var(--swt-radius-size-medium);
++  box-shadow: var(--swt-shadow1, 0 2px 8px rgba(0,0,0,.12));
++  padding: var(--swt-space-size-4); box-sizing: border-box; z-index: 5;
++}
++.suggest-title {
++  color: var(--swt-color-text-secondary);
++  font-size: var(--swt-font-size-small);
++  padding: var(--swt-space-size-4) var(--swt-space-size-8);
++}
++.suggestions button {
++  cursor: pointer; font: inherit; background: transparent; border: 0;
++  color: var(--swt-color-text-primary); display: flex; gap: var(--swt-space-size-8);
++  align-items: center; width: 100%; text-align: left;
++  padding: var(--swt-space-size-6) var(--swt-space-size-8);
++  border-radius: var(--swt-radius-size-normal);
++  font-size: var(--swt-font-size-small);
++}
++.suggestions .selected {
++  background: var(--swt-color-overlay-gray1-and-accent-normal-opacity10);
++  color: var(--swt-color-accent-normal);
++}
++</style>
+diff --git a/skills/gts-sweetui-coder/assets/foundation/workbench-shell.vue b/skills/gts-sweetui-coder/assets/foundation/workbench-shell.vue
+new file mode 100644
+index 0000000..8fe2ffa
+--- /dev/null
++++ b/skills/gts-sweetui-coder/assets/foundation/workbench-shell.vue
+@@ -0,0 +1,316 @@
++<script setup>
++import { ref, computed } from 'vue'
++import { SweetInput, SweetButton, SweetIcon, SweetTooltip } from '@hw-seq/sweet-ui-base'
++const props = defineProps({
++  brand: String,
++  workspaceName: String,
++  menus: { type: Array, default: () => [] },
++  tabs: { type: Array, default: () => [] },
++  activeMenu: String,
++  activeTab: String,
++  labels: { type: Object, default: () => ({}) }
++})
++const emit = defineEmits(['select-menu', 'select-tab', 'close-tab', 'new-tab', 'sessions'])
++const expanded = ref(false)
++const query = ref('')
++const favoritesOnly = ref(false)
++const favorites = ref([])
++const labels = computed(() => ({
++  navigation: '涓诲鑸?,
++  toggle: '灞曞紑鎴栨敹璧峰鑸?,
++  search: '鎼滅储搴旂敤',
++  allApps: '鍏ㄩ儴搴旂敤',
++  myFavorites: '鎴戠殑鏀惰棌',
++  empty: '鏆傛棤鍖归厤搴旂敤',
++  tabs: '宸ヤ綔鍖?,
++  close: '鍏抽棴',
++  newTab: '鏂板缓宸ヤ綔鍖?,
++  sessions: '鏈€杩戜細璇?,
++  collapse: '鏀惰捣瀵艰埅',
++  expand: '灞曞紑瀵艰埅',
++  ...props.labels
++}))
++const visibleMenus = computed(() =>
++  props.menus.filter(m =>
++    m.label.toLowerCase().includes(query.value.toLowerCase()) &&
++    (!favoritesOnly.value || favorites.value.includes(m.id))
++  )
++)
++function toggleFavorite(id) {
++  favorites.value = favorites.value.includes(id)
++    ? favorites.value.filter(x => x !== id)
++    : [...favorites.value, id]
++}
++</script>
++<template>
++  <div class="shell">
++    <header class="topnav">
++      <SweetButton text :aria-expanded="expanded" :aria-label="labels.toggle" @click="expanded = !expanded">
++        <SweetIcon icon-class="sweetui-icon-menu-l" :size="18" />
++      </SweetButton>
++      <span class="brand">{{ brand }}</span>
++      <span v-if="workspaceName" class="product">
++        <SweetIcon icon-class="sweetui-icon-dashboard-l" :size="14" />
++        {{ workspaceName }}
++      </span>
++      <div class="top-tools"><slot name="tools" /></div>
++    </header>
++    <div class="body">
++      <aside class="navigation" :class="{ expanded }" :aria-label="labels.navigation">
++        <div v-if="expanded" class="nav-search">
++          <div class="nav-filters">
++            <button type="button" :class="{ selected: !favoritesOnly }" @click="favoritesOnly = false">{{ labels.allApps }}</button>
++            <button type="button" :class="{ selected: favoritesOnly }" @click="favoritesOnly = true">{{ labels.myFavorites }}</button>
++          </div>
++          <SweetInput v-model="query" clearable :placeholder="labels.search" :aria-label="labels.search" size="small" />
++        </div>
++        <nav class="nav-list">
++          <div
++            v-for="item in visibleMenus" :key="item.id"
++            class="nav-row" :class="{ current: activeMenu === item.id }"
++          >
++            <SweetTooltip :content="item.label" placement="right" :disabled="expanded">
++              <button
++                type="button" class="nav-action"
++                :aria-label="item.label"
++                :aria-current="activeMenu === item.id ? 'page' : undefined"
++                @click="emit('select-menu', item.id)"
++              >
++                <span class="nav-symbol" :class="item.tone">
++                  <SweetIcon v-if="item.icon" :icon-class="item.icon" :size="18" />
++                  <span v-else class="initial">{{ item.label.slice(0, 1) }}</span>
++                </span>
++                <span v-if="expanded" class="nav-label">{{ item.label }}</span>
++              </button>
++            </SweetTooltip>
++            <button v-if="expanded" type="button" class="favorite" :aria-label="(favorites.includes(item.id) ? '鍙栨秷鏀惰棌' : '鏀惰棌') + item.label" @click="toggleFavorite(item.id)">
++              <SweetIcon v-if="expanded" :icon-class="favorites.includes(item.id) ? 'sweetui-icon-favorite-f' : 'sweetui-icon-favorite-l'" :size="14" />
++            </button>
++          </div>
++          <p v-if="expanded && !visibleMenus.length" class="empty">{{ labels.empty }}</p>
++        </nav>
++        <button type="button" class="collapse-button" :aria-label="expanded ? labels.collapse : labels.expand" @click="expanded = !expanded">
++          <SweetIcon :icon-class="expanded ? 'sweetui-icon-arrow-left' : 'sweetui-icon-arrow-right'" :size="16" />
++          <span v-if="expanded">{{ labels.collapse }}</span>
++        </button>
++      </aside>
++      <main class="main">
++        <div class="tabbar">
++          <SweetButton text class="session-toggle" :aria-label="labels.sessions" @click="emit('sessions')">
++            <SweetIcon icon-class="sweetui-icon-nav-fold" :size="16" />
++          </SweetButton>
++          <nav class="tabs" :aria-label="labels.tabs">
++            <div
++              v-for="tab in tabs" :key="tab.id"
++              class="tab" :class="{ active: activeTab === tab.id }"
++            >
++              <button
++                type="button"
++                :title="tab.title"
++                @click="emit('select-tab', tab.id)"
++              >
++                <span class="status-dot" :class="tab.status" />
++                <span class="tab-title">{{ tab.title }}</span>
++              </button>
++              <SweetButton
++                v-if="tab.closable !== false" text
++                :aria-label="labels.close + ' ' + tab.title"
++                @click.stop="emit('close-tab', tab.id)"
++              >
++                <SweetIcon icon-class="sweetui-icon-close" :size="13" />
++              </SweetButton>
++            </div>
++          </nav>
++          <SweetButton text :aria-label="labels.newTab" @click="emit('new-tab')">
++            <SweetIcon icon-class="sweetui-icon-add-l" :size="17" />
++          </SweetButton>
++        </div>
++        <div class="content"><slot /></div>
++        <div v-if="!tabs.length" class="empty-workspace">
++          <SweetIcon icon-class="sweetui-icon-add-l" :size="32" />
++          <p>鏆傛棤宸ヤ綔鍖?/p>
++          <SweetButton type="primary" @click="emit('new-tab')">{{ labels.newTab }}</SweetButton>
++        </div>
++      </main>
++    </div>
++  </div>
++</template>
++<style scoped>
++.shell {
++  height: 100%; min-height: 0; min-width: 0;
++  display: flex; flex-direction: column;
++  background: var(--swt-color-bg-primary);
++  color: var(--swt-color-text-primary);
++  --page-line: color-mix(in srgb, var(--swt-color-accent-normal) 10%, var(--swt-color-bg-primary));
++}
++.topnav {
++  height: 48px; display: flex; gap: var(--swt-space-size-12);
++  align-items: center; padding: 0 var(--swt-space-size-16) 0 var(--swt-space-size-8);
++  border-bottom: 1px solid var(--page-line); flex-shrink: 0;
++}
++.brand {
++  font-size: var(--swt-font-size-normal1);
++  font-weight: var(--swt-font-weight-bold);
++  color: var(--swt-color-accent-text-normal);
++  letter-spacing: .3px;
++  white-space: nowrap;
++}
++.product {
++  display: inline-flex; gap: var(--swt-space-size-8); align-items: center;
++  border-radius: var(--swt-radius-size-normal);
++  background: var(--swt-color-overlay-gray1-and-accent-normal-opacity10);
++  padding: var(--swt-space-size-4) var(--swt-space-size-12);
++  font-size: var(--swt-font-size-small);
++  font-weight: var(--swt-font-weight-bold);
++  color: var(--swt-color-accent-text-normal);
++  white-space: nowrap;
++}
++.top-tools { display: flex; align-items: center; margin-left: auto; gap: var(--swt-space-size-12); }
++
++.body { flex: 1; min-height: 0; display: flex; }
++
++.navigation {
++  width: 48px; flex-shrink: 0;
++  border-right: 1px solid var(--page-line);
++  display: flex; flex-direction: column; min-height: 0;
++  padding-top: var(--swt-space-size-8);
++  transition: width .2s ease;
++  overflow: hidden;
++}
++.navigation.expanded { width: 216px; max-width: 45%; }
++
++.nav-search { padding: var(--swt-space-size-8) var(--swt-space-size-12) var(--swt-space-size-16); }
++.nav-filters {
++  display: flex; gap: var(--swt-space-size-12); margin-bottom: var(--swt-space-size-12);
++  font-size: var(--swt-font-size-small);
++}
++.nav-filters button {
++  font: inherit; cursor: pointer; background: transparent; border: 0;
++  color: var(--swt-color-text-secondary);
++}
++.nav-filters .selected { color: var(--swt-color-accent-text-normal); font-weight: var(--swt-font-weight-bold); }
++
++.nav-list { overflow: auto; flex: 1; }
++
++.nav-row {
++  display: flex; align-items: center;
++  border-radius: var(--swt-radius-size-normal);
++  margin: 0 var(--swt-space-size-4) var(--swt-space-size-8);
++}
++.nav-row.current { background: var(--swt-color-overlay-gray1-and-accent-normal-opacity10); }
++
++.nav-action {
++  height: 40px; flex: 1; display: flex; align-items: center;
++  gap: var(--swt-space-size-12); padding: 0 var(--swt-space-size-8);
++  min-width: 0; cursor: pointer; font: inherit; color: inherit;
++  background: transparent; border: 0; text-align: left;
++}
++.nav-action:focus-visible { outline: 2px solid var(--swt-color-accent-focus); outline-offset: 2px; }
++.nav-symbol {
++  width: 24px; height: 24px; max-width: 100%;
++  border-radius: var(--swt-radius-size-normal);
++  display: grid; place-items: center;
++  color: var(--swt-color-accent-text-normal);
++  background: var(--swt-color-overlay-gray1-and-accent-normal-opacity10);
++  flex-shrink: 0;
++}
++.nav-symbol.green {
++  color: var(--swt-color-success-text-normal);
++  background: var(--swt-color-overlay-gray1-and-success-normal-opacity10, color-mix(in srgb, var(--swt-color-success) 12%, var(--swt-color-bg-primary)));
++}
++.nav-symbol.purple {
++  color: var(--swt-color-chart-3, var(--swt-color-accent-text-normal));
++  background: var(--swt-color-overlay-gray1-and-chart-3-opacity10, color-mix(in srgb, var(--swt-color-chart-3, var(--swt-color-accent-normal)) 12%, var(--swt-color-bg-primary)));
++}
++.nav-label {
++  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
++  font-size: var(--swt-font-size-small);
++}
++.favorite {
++  padding: var(--swt-space-size-8); cursor: pointer;
++  font: inherit; background: transparent; border: 0;
++  color: var(--swt-color-text-extra);
++}
++.favorite:hover { color: var(--swt-color-accent-text-normal); }
++
++.collapse-button {
++  height: 44px; display: flex; align-items: center;
++  gap: var(--swt-space-size-12); padding: 0 var(--swt-space-size-16);
++  color: var(--swt-color-text-secondary);
++  border-top: 1px solid var(--page-line);
++  cursor: pointer; font: inherit; background: transparent; border-left: 0; border-right: 0; border-bottom: 0;
++}
++
++.empty { padding: var(--swt-space-size-12); color: var(--swt-color-text-secondary); font-size: var(--swt-font-size-small); }
++.initial { min-width: 18px; text-align: center; }
++
++.main {
++  flex: 1; min-width: 0; min-height: 0;
++  display: flex; flex-direction: column;
++  position: relative;
++}
++.tabbar {
++  display: flex; align-items: center;
++  height: 48px; gap: var(--swt-space-size-8);
++  border-bottom: 1px solid var(--page-line);
++  padding: 0 var(--swt-space-size-8);
++  flex-shrink: 0;
++}
++.session-toggle {
++  border-right: 1px solid var(--page-line);
++  border-radius: 0;
++}
++.tabs {
++  display: flex; flex: 1; min-width: 0;
++  overflow: auto; gap: var(--swt-space-size-8);
++  scrollbar-width: thin;
++}
++.tab {
++  display: flex; align-items: center;
++  flex: 0 1 245px; min-width: 150px;
++  border-radius: var(--swt-radius-size-normal);
++  color: var(--swt-color-text-secondary);
++}
++.tab > button:first-child {
++  flex: 1; display: flex; align-items: center;
++  gap: var(--swt-space-size-8); min-width: 0;
++  padding: var(--swt-space-size-8) var(--swt-space-size-12);
++  cursor: pointer; font: inherit; color: inherit;
++  background: transparent; border: 0; text-align: left;
++}
++.tab.active {
++  background: var(--swt-color-overlay-gray1-and-accent-normal-opacity10);
++  color: var(--swt-color-accent-text-normal);
++}
++.tab.active > button:first-child { font-weight: var(--swt-font-weight-bold); }
++.tab-title {
++  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
++  font-size: var(--swt-font-size-small);
++}
++.status-dot {
++  width: 8px; height: 8px; border-radius: 50%;
++  border: 1.5px solid var(--swt-color-info, var(--swt-color-accent-normal));
++  flex-shrink: 0;
++}
++.status-dot.done {
++  border-color: var(--swt-color-success);
++  background: var(--swt-color-overlay-gray1-and-success-normal-opacity10, rgba(var(--swt-color-success-rgb, 0,168,112), 0.15));
++}
++.status-dot.pending { border-color: var(--swt-color-warning); }
++
++.content { flex: 1; min-height: 0; min-width: 0; position: relative; display: flex; overflow: hidden; }
++
++.empty-workspace {
++  position: absolute; inset: 0;
++  display: flex; flex-direction: column;
++  align-items: center; justify-content: center;
++  gap: var(--swt-space-size-12);
++  color: var(--swt-color-text-secondary);
++}
++.empty-workspace p { font-size: var(--swt-font-size-normal); margin: 0; }
++
++@media (max-width: 768px) {
++  .product { display: none; }
++  .navigation { width: 48px; }
++}
++</style>
+diff --git a/skills/gts-sweetui-coder/references/assets/conversation-composer.md b/skills/gts-sweetui-coder/references/assets/conversation-composer.md
+new file mode 100644
+index 0000000..5b2f6a5
+--- /dev/null
++++ b/skills/gts-sweetui-coder/references/assets/conversation-composer.md
+@@ -0,0 +1,19 @@
++# ConversationComposer
++
++浠?./components/foundation/conversation-composer.vue 瀵煎叆锛屽彲鐙珛浣跨敤銆?+
++|鎺ュ彛|鍚箟|
++|---|---|
++|modelValue / update:modelValue|鍙楁帶鑽夌|
++|model / update:model|鍙楁帶妯″瀷 ID锛沵odels 涓?{id,label} 鏁扮粍锛岀┖鏁扮粍闅愯棌閫夋嫨鍣▅
++|busy|鐢熸垚涓樉绀哄仠姝紝绂佹鍙戦€亅
++|placeholder / disclaimer|鐢变笟鍔℃彁渚涳紱涓嶉粯璁ゅ绉版槸婕旂ず鎴栫湡瀹炴ā鍨媩
++|references / commands|鍙€?{id,label} / {id,label,value}锛涘熬閮?@ 鍜?/ 瑙﹀彂寤鸿锛屼笉璇诲彇鏂囦欢|
++|labels|鍙搷搴斿紡瑕嗙洊 suggestions/references/commands/remove/input/attach/model/busy/stop/send锛涘浗闄呭寲浣跨敤鐖剁骇 computed + 鍏叡 t.value|
++|send|{text,files:File[],model}锛屼粎鍙戜簨浠讹紝涓嶄笂浼犳垨璋冪敤妯″瀷|
++|stop|鐖剁骇鍙栨秷瀹為檯璇锋眰/瀹氭椂鍣紝涓嶈兘鍙敼鍙?busy|
++
++Enter 鍙戦€侊紝Shift+Enter 鎹㈣锛屼腑鏂囪緭鍏ユ硶 composing 鏃朵笉鍙戦€侊紱寤鸿鏀寔涓婁笅閿?Enter/Escape銆傛枃鏈渶澶?4000 瀛楋紝杈撳叆鍖烘渶澶?140px 鍚庡唴閮ㄦ粴鍔ㄣ€傞檮浠跺彧鍦ㄦ祻瑙堝櫒鎸佹湁銆傝緭鍏ュ櫒榛樿闄愬 max-width: 720px 骞跺眳涓紝鐖剁骇鍙鐩?composer-root 鐨?max-width銆?+
++鐖剁骇 send 涓珛鍗充繚瀛樿姹傚壇鏈紝鍐嶈缃?busy銆傚彂閫佸悗杈撳叆鍣ㄦ竻绌哄凡鍙戦€佽崏绋垮拰闄勪欢锛涘け璐ラ噸璇曚娇鐢ㄧ埗绾т繚瀛樼殑璇锋眰銆傛湭鎻愪氦闄勪欢鍦ㄧ粍浠堕攢姣佹椂涓㈠け锛屽垏鎹㈠伐浣滃尯闇€淇濈暀瀹炰緥銆?+涓嶈鍦ㄥ灞傞噸澶嶅杈撳叆妗嗚竟鐣岋紱鍘熺敓 textarea 鏄竴浣撳寲杈撳叆缁撴瀯闇€瑕侊紝鏅€氳〃鍗曚粛浣跨敤 SweetInput銆?diff --git a/skills/gts-sweetui-coder/references/assets/index.md b/skills/gts-sweetui-coder/references/assets/index.md
+new file mode 100644
+index 0000000..132a1d1
+--- /dev/null
++++ b/skills/gts-sweetui-coder/references/assets/index.md
+@@ -0,0 +1,28 @@
++# 璧勪骇绱㈠紩
++
++鍙鐢ㄥ熀纭€缁勪欢璧勪骇锛屼粎澶嶅埗鎵€闇€鍒扮洰鏍囬〉闈?`components/foundation/` 鐩綍銆?+
++## 澶嶅埗鍛戒护
++
++```bash
++node scripts/copy-foundation.mjs --dir <project> --page <PascalCasePage> --assets <id,id>
++```
++
++- `--check` 浠呮鏌ヤ笉鍐欏叆
++- 宸插瓨鍦ㄤ笖鏈慨鏀圭殑鍚屽悕鏂囦欢鑷姩璺宠繃锛涘凡淇敼鍒欐姤 CONFLICT
++
++## 鍙敤璧勪骇
++
++| ID | 鏂囦欢 | 鐢ㄩ€?|
++|---|---|---|
++| workbench-shell | workbench-shell.vue | 宸ヤ綔鍙版鏋讹細椤堕儴瀵艰埅銆佹敹灞曚晶鏍忋€佸伐浣滃尯椤电銆佺┖鎬?|
++| conversation-composer | conversation-composer.vue | 瀵硅瘽杈撳叆鍣細textarea + 妯″瀷閫夋嫨 + 闄勪欢 + @/ 寤鸿琛ュ叏 |
++
++鐙珛鍒楄〃/琛ㄥ崟涓嶈嚜鍔ㄥ宸ヤ綔鍙般€傚伐浣滃彴鎴栧鍚堝璇濊緭鍏ラ渶姹傝瀵瑰簲璧勪骇鏂囨。锛涗粎澶嶅埗鎵€闇€璧勪骇銆?+
++## 绀轰緥
++
++| 璺緞 | 璇存槑 |
++|---|---|
++| assets/examples/workbench-conversation/ | 宸ヤ綔鍙帮紜瀵硅瘽瀹屾暣缁勫悎锛氬鑸€佷細璇濋潰鏉裤€佸杞璇濄€佸垎鏋愮粨鏋滈潰鏉裤€佸叧鑱旇瘉鎹潰鏉裤€佽緭鍏ュ櫒 |
++| vendor/code-example/references/table-search-drawer/ | 鏌ヨ锛嬭鎯咃細鎼滅储琛ㄥ崟銆佹暟鎹〃鏍笺€佸垎椤点€佽鎯呮娊灞夛紝鍚?api/mock 鏈嶅姟鍒嗗眰 |
+diff --git a/skills/gts-sweetui-coder/references/assets/workbench-shell.md b/skills/gts-sweetui-coder/references/assets/workbench-shell.md
+new file mode 100644
+index 0000000..ea614e6
+--- /dev/null
++++ b/skills/gts-sweetui-coder/references/assets/workbench-shell.md
+@@ -0,0 +1,19 @@
++# WorkbenchShell
++
++浠?./components/foundation/workbench-shell.vue 瀵煎叆銆傜埗瀹瑰櫒鎻愪緵鏄庣‘楂樺害锛堝椤甸潰妗嗘灦鐨勫彲鐢ㄩ珮搴︼級锛涗富鍖?slot 鑷瀹氫箟鍐呴儴婊氬姩锛宮in-width/min-height 涓?0銆?+
++|鎺ュ彛|鍚箟|
++|---|---|
++|brand / workspaceName|鏍囬锛屼笉鍐呯疆浼佷笟鍝佺墝|
++|menus|{id,label,icon?}锛宨con 涓虹湡瀹?SweetIcon 瀹屾暣绫诲悕锛屼笉鏄?Vue 缁勪欢|
++|tabs|{id,title,closable?}|
++|activeMenu / activeTab|鍙楁帶閫変腑 ID|
++|select-menu / select-tab / close-tab|鍙戦€佸搴?ID锛岀埗绾х淮鎶ょ姸鎬亅
++|new-tab / sessions|鐖剁骇瀹炵幇鏂板鍙婁細璇濆尯鏄鹃殣锛涙棤鍔熻兘鏃朵笉瑕佸亣瑁呮垚鍔焲
++|tools / default slot|宸ュ叿涓庝笟鍔″唴瀹癸紝涓嶈嚜鍔ㄥ鍔犱富棰?璇█鎸夐挳|
++|labels|鍙搷搴斿紡瑕嗙洊 navigation/toggle/search/empty/tabs/close/newTab/sessions锛屽惎鐢ㄥ浗闄呭寲鏃剁敱鐖剁骇 computed 浣跨敤鍏叡 t.value 鐢熸垚|
++
++鍐呴儴鍙鐞嗘敹灞曞拰鎼滅储锛屼笉鎸佹湁涓氬姟璁板綍銆傚叧闂椿鍔ㄥ伐浣滃尯鍚庣埗绾ч€夋嫨鐩搁偦椤癸紱鍏抽棴鍏ㄩ儴鍦ㄤ富鍖烘樉绀哄唴缃┖鎬侊紙甯︽柊寤烘寜閽級銆傝淇濈暀杈撳叆鐢?v-show 鎴栧凡鏈夌紦瀛樼瓥鐣ワ紝涓嶇敤鍒囨崲鏃堕噸寤烘暣椤点€備笟鍔″紓姝ヤ换鍔″拰娓呮簮浜庣埗绾ц礋璐ｃ€?+榛樿鏀惰捣瀵艰埅 56px銆佸睍寮€ 216px 鏄璧勪骇鐨勫竷灞€閫夋嫨锛屼笉鏄?SweetUI 瀹樻柟灏哄瑕佹眰銆?+
++**瀹屾暣缁勫悎绀轰緥**瑙?`assets/examples/workbench-conversation/index.vue`锛屾紨绀轰簡瀵艰埅銆佷細璇濋潰鏉裤€佸杞璇濄€佸垎鏋愮粨鏋滈潰鏉裤€佸叧鑱旇瘉鎹潰鏉垮拰杈撳叆鍣ㄧ殑瀹屾暣瑁呴厤銆?diff --git a/skills/gts-sweetui-coder/scripts/copy-foundation.mjs b/skills/gts-sweetui-coder/scripts/copy-foundation.mjs
+new file mode 100644
+index 0000000..a227f24
+--- /dev/null
++++ b/skills/gts-sweetui-coder/scripts/copy-foundation.mjs
+@@ -0,0 +1,85 @@
++#!/usr/bin/env node
++import fs from 'node:fs';
++import path from 'node:path';
++import { fileURLToPath } from 'node:url';
++
++const catalog = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../assets/foundation');
++const assets = new Set(['workbench-shell', 'conversation-composer']);
++const canonical = value => value.replace(/\r\n/g, '\n');
++
++function fail(code, message) {
++  throw Object.assign(new Error(message), { code });
++}
++
++function noLinks(root, target) {
++  const relative = path.relative(root, target);
++  if (relative.startsWith('..') || path.isAbsolute(relative)) fail('PATH', 'Target escapes project');
++  let current = root;
++  for (const part of relative.split(path.sep).filter(Boolean)) {
++    current = path.join(current, part);
++    let stat;
++    try { stat = fs.lstatSync(current); }
++    catch (error) { if (error.code === 'ENOENT') continue; throw error; }
++    if (stat.isSymbolicLink()) fail('PATH', `Linked target is not allowed: ${current}`);
++  }
++}
++
++try {
++  const args = process.argv.slice(2);
++  const options = {};
++  for (let i = 0; i < args.length; i++) {
++    const name = args[i];
++    if (name === '--check') {
++      if (options.check) fail('ARGS', 'Duplicate --check');
++      options.check = true;
++    } else if (['--dir', '--page', '--assets'].includes(name)) {
++      if (options[name] || !args[i + 1] || args[i + 1].startsWith('--')) fail('ARGS', `Invalid ${name}`);
++      options[name] = args[++i];
++    } else fail('ARGS', `Unknown option: ${name}`);
++  }
++  if (!options['--dir'] || !options['--page'] || !options['--assets']) {
++    fail('ARGS', 'Usage: --dir <project> --page <PascalCasePage> --assets <id,id> [--check]');
++  }
++  const page = options['--page'];
++  if (!/^[A-Z][A-Za-z0-9]*$/.test(page)) fail('PAGE', 'Page must be an init-generated PascalCase name');
++  const project = fs.realpathSync(path.resolve(options['--dir']));
++  const pageDir = path.join(project, 'src/pages', page);
++  noLinks(project, pageDir);
++  if (!fs.existsSync(path.join(pageDir, 'index.vue'))) fail('PAGE', `Initialize page first: ${pageDir}`);
++  const selected = options['--assets'].split(',');
++  if (new Set(selected).size !== selected.length || selected.some(id => !id)) fail('ASSETS', 'Duplicate or empty asset ID');
++  const plan = selected.map(id => {
++    if (!assets.has(id)) fail('ASSETS', `Unknown asset: ${id}`);
++    const source = path.join(catalog, id + '.vue');
++    noLinks(catalog, source);
++    const bytes = fs.readFileSync(source);
++    const relative = `src/pages/${page}/components/foundation/${id}.vue`;
++    const destination = path.join(project, relative);
++    noLinks(project, destination);
++    const expected = canonical(bytes.toString('utf8'));
++    if (fs.existsSync(destination) && canonical(fs.readFileSync(destination, 'utf8')) !== expected) {
++      fail('CONFLICT', `Preserved modified or different file: ${destination}`);
++    }
++    return { id, destination, bytes, exists: fs.existsSync(destination) };
++  });
++
++  if (!options.check) {
++    for (const item of plan) {
++      if (!item.exists) {
++        fs.mkdirSync(path.dirname(item.destination), { recursive: true });
++        noLinks(project, item.destination);
++        fs.writeFileSync(item.destination, item.bytes, { flag: 'wx' });
++      }
++    }
++  }
++  console.log('RESULT: OK');
++  console.log('MODE: ' + (options.check ? 'check (no writes)' : 'copy'));
++  for (const item of plan) {
++    console.log(`${item.exists ? 'REUSED' : options.check ? 'PLANNED' : 'COPIED'}: ${item.id} -> ${item.destination}`);
++  }
++  console.log('NEXT: assemble props/emits/slots using SweetUI contracts, then build');
++} catch (error) {
++  console.error(`RESULT: FAIL | ${error.code || 'COPY'}: ${error.message}`);
++  console.error('HINT: Inspect the reported path/arguments. Existing source is never overwritten.');
++  process.exitCode = 1;
++}
+diff --git a/skills/gts-sweetui-coder/scripts/preview/index.gts.html b/skills/gts-sweetui-coder/scripts/preview/index.gts.html
+index 1c62b5f..2eae138 100644
+--- a/skills/gts-sweetui-coder/scripts/preview/index.gts.html
++++ b/skills/gts-sweetui-coder/scripts/preview/index.gts.html
+@@ -76,7 +76,7 @@
+         .dt-side-panel.side-panel-bottom.showContent { box-shadow:rgba(0,0,0,var(--swt-color-shadow-opacity)) 0 -3px 5px; }
+         .dt-side-panel.side-panel-bottom.showContent .toggle-button { filter:drop-shadow(0px -4px 3px rgba(0,0,0,var(--swt-color-shadow-opacity))); }
+         body {
+-            font-family: var(--swt-font-family, Arial, 'Microsoft YaHei', sans-serif);
++            font-family: var(--swt-font-family, Roboto, 'Microsoft YaHei', sans-serif);
+             background: var(--swt-color-bg-primary, #ffffff);
+             color: var(--swt-color-text-primary, #1e1e1e);
+         }
+diff --git a/skills/gts-sweetui-coder/vendor/code-example/references/README.md b/skills/gts-sweetui-coder/vendor/code-example/references/README.md
+index 3aef28a..18c49c3 100644
+--- a/skills/gts-sweetui-coder/vendor/code-example/references/README.md
++++ b/skills/gts-sweetui-coder/vendor/code-example/references/README.md
+@@ -12,6 +12,7 @@
+ | 002 | mixed-chart | 鎶樼嚎+鏌辩姸娣峰悎鍥捐〃椤碉紝鍥捐〃鑹茶蛋 Token | VChart (vue-echarts), SweetCard | `references/mixed-chart/` |
+ | 006 | content-states | 鍐呭鐘舵€佷節鎬佹暣椤靛鐓?| SweetIcon, SweetInput, SweetButton, SweetTable, SweetTag, SweetEmpty, SweetResult, SweetSkeleton | `references/content-states/` |
+ | 007 | feedback-flow | 鎿嶄綔鍙嶉娴侊細鍏ㄥ眬娑堟伅/宓屽叆寮忔秷鎭?绯荤粺閫氱煡/纭涓庨珮鍗辩‘璁?| SweetMessage, SweetNotification, SweetDialog, SweetCheckbox, SweetButton, SweetIcon | `references/feedback-flow/` |
++| 008 | workbench-conversation | AI 宸ヤ綔鍙?+ 瀵硅瘽杈撳叆鍣?+ 鍏宠仈璇佹嵁闈㈡澘 + 璧勬簮鏌ヨ椤碉紝鍚鑸€侀〉绛俱€佷細璇濋潰鏉裤€佸垎鏋愭姤鍛婂崱銆佷緷璧栭摼璺?| WorkbenchShell, ConversationComposer, SweetTable, SweetPagination, SweetAlert, SweetTag, SweetDialog, SweetDrawer | `assets/examples/workbench-conversation/` |
+ 
+ ---
+ 
+@@ -26,10 +27,20 @@
+ - 鏁版嵁琛ㄦ牸锛氭敮鎸佹帓搴忋€佸垎椤点€佹枒椹汗
+ - 璇︽儏鎶藉眽锛氱偣鍑昏〃鏍艰灞曞紑璇︽儏闈㈡澘
+ 
++**鏍稿績鍔熻兘锛堣ˉ鍏咃級**锛?+- 鏈嶅姟灞傦細`api/tasks.js` 灏佽鏌ヨ閫昏緫锛宍api/mock/tasks-data.js` 瀛樻斁妯℃嫙鏁版嵁
++- 绔炴€佸鐞嗭細璇锋眰搴忓彿鏈哄埗锛屾棫璇锋眰缁撴灉涓嶈鐩栨柊璇锋眰
++- 閿欒鎬侊細SweetAlert 灞曠ず鍔犺浇澶辫触锛屽甫閲嶈瘯鎸夐挳
++- 浼樺厛绾у垪鍜岃礋璐ｄ汉鍒?+
+ **鏂囦欢缁撴瀯**锛? ```
+ references/table-search-drawer/
+ 鈹溾攢鈹€ index.vue
++鈹溾攢鈹€ api/
++鈹?  鈹溾攢鈹€ tasks.js
++鈹?  鈹斺攢鈹€ mock/
++鈹?      鈹斺攢鈹€ tasks-data.js
+ 鈹斺攢鈹€ components/
+     鈹溾攢鈹€ search-form.vue
+     鈹溾攢鈹€ data-table.vue
+@@ -72,6 +83,7 @@ references/feedback-flow/
+ | 鍥捐〃 | 002 | mixed-chart |
+ | 鍐呭鐘舵€?| 006 | content-states |
+ | 鎿嶄綔鍙嶉娴?| 007 | feedback-flow |
++| 宸ヤ綔鍙?瀵硅瘽 | 008 | workbench-conversation |
+ 
+ ### 鎸変娇鐢ㄧ殑鏍稿績缁勪欢
+ 
+diff --git a/skills/gts-sweetui-coder/vendor/code-example/references/table-search-drawer/api/mock/tasks-data.js b/skills/gts-sweetui-coder/vendor/code-example/references/table-search-drawer/api/mock/tasks-data.js
+new file mode 100644
+index 0000000..6f74074
+--- /dev/null
++++ b/skills/gts-sweetui-coder/vendor/code-example/references/table-search-drawer/api/mock/tasks-data.js
+@@ -0,0 +1,34 @@
++export const tasks = [
++  { id: 1, name: '缃戝叧杩炴帴寮傚父鎺掓煡', type: 'Bug', status: 'running', date: '2026-09-01', value: 120, assignee: '寮犱紵', priority: 'high', description: '鐢熶骇鐜缃戝叧闂存瓏鎬ф柇杩烇紝褰卞搷API璋冪敤鎴愬姛鐜? },
++  { id: 2, name: '鏁版嵁瀵煎嚭鍔熻兘浼樺寲', type: 'Feature', status: 'warning', date: '2026-09-02', value: 80, assignee: '鏉庡', priority: 'medium', description: '澶ф暟鎹噺瀵煎嚭鏃跺唴瀛樺崰鐢ㄨ繃楂橈紝闇€瑕佹祦寮忓鐞? },
++  { id: 3, name: '鏃ュ織閲囬泦鍛ㄦ湡璋冩暣', type: 'Task', status: 'idle', date: '2026-09-03', value: 66, assignee: '鐜嬬', priority: 'low', description: '灏嗘棩蹇楅噰闆嗛棿闅斾粠5绉掕皟鏁翠负10绉掍互闄嶄綆璐熻浇' },
++  { id: 4, name: '鐩戞帶闈㈡澘鏍峰紡淇', type: 'Bug', status: 'error', date: '2026-09-04', value: 45, assignee: '璧垫晱', priority: 'high', description: '娣辫壊涓婚涓嬪浘琛ㄦ爣绛句笉鍙' },
++  { id: 5, name: '鏉冮檺瀹℃壒娴佹敼閫?, type: 'Feature', status: 'running', date: '2026-09-05', value: 200, assignee: '闄堟櫒', priority: 'high', description: '鏀寔澶氱骇瀹℃壒鍜屽苟琛屽鎵硅妭鐐? },
++  { id: 6, name: '鎶ヨ〃鐢熸垚鎬ц兘浼樺寲', type: 'Task', status: 'warning', date: '2026-09-06', value: 150, assignee: '鍒樻磱', priority: 'medium', description: '鏈堝害鎶ヨ〃鐢熸垚鏃堕棿浠?鍒嗛挓浼樺寲鍒?0绉掍互鍐? },
++  { id: 7, name: '鍛婅闃堝€奸厤缃洿鏂?, type: 'Task', status: 'running', date: '2026-09-07', value: 30, assignee: '鍛ㄦ澃', priority: 'low', description: '鏍规嵁涓氬姟璋冩暣CPU鍜屽唴瀛樺憡璀﹂槇鍊? },
++  { id: 8, name: '鐢ㄦ埛璁よ瘉妯″潡鍗囩骇', type: 'Feature', status: 'idle', date: '2026-09-08', value: 95, assignee: '瀛欒姵', priority: 'high', description: '浠庡崟鍥犵礌璁よ瘉鍗囩骇涓哄鍥犵礌璁よ瘉' },
++  { id: 9, name: '鎺ュ彛瓒呮椂闂鎺掓煡', type: 'Bug', status: 'error', date: '2026-09-09', value: 55, assignee: '鍚村己', priority: 'high', description: '绗笁鏂规帴鍙ｈ皟鐢ㄨ秴鏃堕鐜囦笂鍗? },
++  { id: 10, name: '閰嶇疆涓績鏁版嵁鍚屾', type: 'Task', status: 'running', date: '2026-09-10', value: 110, assignee: '閮戠惓', priority: 'medium', description: '澶氶泦缇ら厤缃疄鏃跺悓姝ユ満鍒跺疄鐜? },
++  { id: 11, name: '鍓嶇鏋勫缓娴佹按绾挎敼閫?, type: 'Task', status: 'running', date: '2026-09-11', value: 88, assignee: '寮犱紵', priority: 'medium', description: '浠嶹ebpack杩佺Щ鍒癡ite锛屾彁鍗囨瀯寤洪€熷害' },
++  { id: 12, name: '鏁版嵁搴撴參鏌ヨ娌荤悊', type: 'Bug', status: 'warning', date: '2026-09-12', value: 170, assignee: '鏉庡', priority: 'high', description: 'TOP 10鎱㈡煡璇㈤渶瑕佷紭鍖栫储寮曟垨鏀瑰啓SQL' },
++  { id: 13, name: '娑堟伅鎺ㄩ€侀€氶亾浼樺寲', type: 'Feature', status: 'idle', date: '2026-09-13', value: 60, assignee: '鐜嬬', priority: 'low', description: '鏀寔浼佷笟寰俊鍜岄拤閽夋帹閫侀€氶亾' },
++  { id: 14, name: '瀹¤鏃ュ織妯″潡寮€鍙?, type: 'Feature', status: 'running', date: '2026-09-14', value: 135, assignee: '璧垫晱', priority: 'high', description: '鍏抽敭鎿嶄綔瀹¤鏃ュ織璁板綍涓庢煡璇㈠姛鑳? },
++  { id: 15, name: '缂撳瓨绌块€忛槻鎶ゅ疄鐜?, type: 'Task', status: 'warning', date: '2026-09-15', value: 42, assignee: '闄堟櫒', priority: 'medium', description: '瀹炵幇甯冮殕杩囨护鍣ㄩ槻姝㈢紦瀛樼┛閫? },
++  { id: 16, name: 'CI/CD閮ㄧ讲鑷姩鍖?, type: 'Task', status: 'running', date: '2026-09-16', value: 78, assignee: '鍒樻磱', priority: 'medium', description: '鑷姩鍖栨祴璇曚笌鐏板害鍙戝竷娴佺▼' },
++  { id: 17, name: 'SSL璇佷功鑷姩缁湡', type: 'Task', status: 'idle', date: '2026-09-17', value: 25, assignee: '鍛ㄦ澃', priority: 'low', description: '闆嗘垚ACME鍗忚瀹炵幇璇佷功鑷姩缁湡' },
++  { id: 18, name: 'API缃戝叧闄愭祦绛栫暐', type: 'Feature', status: 'warning', date: '2026-09-18', value: 92, assignee: '瀛欒姵', priority: 'high', description: '瀹炵幇鍩轰簬浠ょ墝妗剁殑鍏ㄥ眬闄愭祦' },
++  { id: 19, name: '鏁版嵁鑴辨晱瑙勫垯寮曟搸', type: 'Feature', status: 'running', date: '2026-09-19', value: 115, assignee: '鍚村己', priority: 'high', description: '鏁忔劅鏁版嵁灞曠ず鏃惰嚜鍔ㄨ劚鏁忓鐞? },
++  { id: 20, name: '鍒嗗竷寮忛摼璺拷韪?, type: 'Feature', status: 'idle', date: '2026-09-20', value: 180, assignee: '閮戠惓', priority: 'medium', description: '闆嗘垚OpenTelemetry瀹炵幇璺ㄦ湇鍔￠摼璺拷韪? },
++  { id: 21, name: '鏂囦欢瀛樺偍杩佺ЩS3', type: 'Task', status: 'running', date: '2026-09-21', value: 65, assignee: '寮犱紵', priority: 'medium', description: '浠庢湰鍦板瓨鍌ㄨ縼绉诲埌瀵硅薄瀛樺偍鏈嶅姟' },
++  { id: 22, name: '鍓嶇鎬ц兘鐩戞帶鎺ュ叆', type: 'Task', status: 'warning', date: '2026-09-22', value: 48, assignee: '鏉庡', priority: 'low', description: '鎺ュ叆Web Vitals鎸囨爣閲囬泦' },
++  { id: 23, name: '鍒嗗竷寮忛攣鏈嶅姟鎼缓', type: 'Task', status: 'idle', date: '2026-09-23', value: 55, assignee: '鐜嬬', priority: 'medium', description: '鍩轰簬Redis瀹炵幇鍒嗗竷寮忛攣鏈嶅姟' },
++  { id: 24, name: '瀹夊叏绠＄悊骞冲彴瀵规帴', type: 'Feature', status: 'running', date: '2026-09-24', value: 210, assignee: '璧垫晱', priority: 'high', description: '涓嶴OC瀹夊叏绠＄悊骞冲彴鏁版嵁鑱斿姩' },
++  { id: 25, name: '瀹瑰櫒璧勬簮閰嶉浼樺寲', type: 'Task', status: 'warning', date: '2026-09-25', value: 38, assignee: '闄堟櫒', priority: 'medium', description: '璋冩暣K8s璧勬簮璇锋眰鍜岄檺鍒堕厤缃? },
++  { id: 26, name: '澶氱鎴锋暟鎹殧绂婚獙璇?, type: 'Bug', status: 'error', date: '2026-09-26', value: 160, assignee: '鍒樻磱', priority: 'urgent', description: '鍙戠幇璺ㄧ鎴锋暟鎹彲瑙佹€ф紡娲? },
++  { id: 27, name: '鏈嶅姟闄嶇骇绛栫暐鍒跺畾', type: 'Feature', status: 'idle', date: '2026-09-27', value: 72, assignee: '鍛ㄦ澃', priority: 'medium', description: '鍒跺畾鏍稿績鏈嶅姟闄嶇骇鍜岀啍鏂瓥鐣? },
++  { id: 28, name: '瀛橀噺鏁版嵁杩佺Щ楠岃瘉', type: 'Task', status: 'running', date: '2026-09-28', value: 95, assignee: '瀛欒姵', priority: 'high', description: '鍗冧竾绾ф暟鎹縼绉诲悗鐨勫畬鏁存€ф牎楠? },
++  { id: 29, name: '鐏板害鍙戝竷骞冲彴寮€鍙?, type: 'Feature', status: 'warning', date: '2026-09-29', value: 140, assignee: '鍚村己', priority: 'high', description: '鏀寔鎸夋瘮渚嬪拰鎸夎鍒欑伆搴﹀彂甯? },
++  { id: 30, name: '瀹归噺瑙勫垝鎶ュ憡鐢熸垚', type: 'Task', status: 'idle', date: '2026-09-30', value: 33, assignee: '閮戠惓', priority: 'low', description: '鍩轰簬鐩戞帶鏁版嵁鐢熸垚瀹归噺瑙勫垝寤鸿' },
++  { id: 31, name: 'K8s闆嗙兢鍗囩骇1.30', type: 'Task', status: 'idle', date: '2026-10-01', value: 200, assignee: '寮犱紵', priority: 'high', description: 'Kubernetes闆嗙兢浠?.28鍗囩骇鍒?.30' },
++  { id: 32, name: '瀹夊叏鍩虹嚎妫€鏌ヨ剼鏈?, type: 'Feature', status: 'running', date: '2026-10-02', value: 85, assignee: '鏉庡', priority: 'medium', description: '鑷姩鍖栨湇鍔″櫒瀹夊叏鍩虹嚎鍚堣妫€鏌? }
++]
+diff --git a/skills/gts-sweetui-coder/vendor/code-example/references/table-search-drawer/api/tasks.js b/skills/gts-sweetui-coder/vendor/code-example/references/table-search-drawer/api/tasks.js
+new file mode 100644
+index 0000000..9f73951
+--- /dev/null
++++ b/skills/gts-sweetui-coder/vendor/code-example/references/table-search-drawer/api/tasks.js
+@@ -0,0 +1,15 @@
++import { tasks } from './mock/tasks-data.js'
++
++export async function getTaskList({ keyword = '', type = '', dateRange = [], page = 1, pageSize = 20 } = {}) {
++  await new Promise(r => setTimeout(r, 300))
++  const kw = keyword.trim().toLowerCase()
++  const rows = tasks.filter(row => {
++    if (kw && !row.name.toLowerCase().includes(kw) && !row.assignee.includes(kw)) return false
++    if (type && row.type !== type) return false
++    if (dateRange?.[0] && row.date < dateRange[0]) return false
++    if (dateRange?.[1] && row.date > dateRange[1]) return false
++    return true
++  })
++  const start = (Math.max(1, page) - 1) * pageSize
++  return { list: rows.slice(start, start + pageSize).map(r => ({ ...r })), total: rows.length }
++}
+diff --git a/skills/gts-sweetui-coder/vendor/code-example/references/table-search-drawer/components/data-table.vue b/skills/gts-sweetui-coder/vendor/code-example/references/table-search-drawer/components/data-table.vue
+index d932f33..dc904fb 100644
+--- a/skills/gts-sweetui-coder/vendor/code-example/references/table-search-drawer/components/data-table.vue
++++ b/skills/gts-sweetui-coder/vendor/code-example/references/table-search-drawer/components/data-table.vue
+@@ -1,33 +1,21 @@
+ <script setup>
+-import { SweetTable, SweetTableColumn, SweetPagination, SweetTag } from '@hw-seq/sweet-ui-base'
++import { ref } from 'vue'
++import { SweetTable, SweetTableColumn, SweetPagination, SweetTag, SweetIcon } from '@hw-seq/sweet-ui-base'
+ 
+ defineOptions({ name: 'DataTable' })
+ 
+-defineProps({
+-  data: {
+-    type: Array,
+-    default: () => []
+-  },
+-  loading: {
+-    type: Boolean,
+-    default: false
+-  },
+-  total: {
+-    type: Number,
+-    default: 0
+-  },
+-  currentPage: {
+-    type: Number,
+-    default: 1
+-  },
+-  pageSize: {
+-    type: Number,
+-    default: 20
+-  }
++const props = defineProps({
++  data: { type: Array, default: () => [] },
++  loading: { type: Boolean, default: false },
++  total: { type: Number, default: 0 },
++  currentPage: { type: Number, default: 1 },
++  pageSize: { type: Number, default: 20 }
+ })
+ 
+ const emit = defineEmits(['row-click', 'page-change', 'size-change'])
+ 
++const innerPage = ref(props.currentPage)
++
+ const statusMap = {
+   running: { type: 'success', label: '杩愯涓? },
+   warning: { type: 'warning', label: '鍛婅' },
+@@ -35,61 +23,94 @@ const statusMap = {
+   idle: { type: 'info', label: '绌洪棽' }
+ }
+ 
+-const getStatusConfig = (status) => {
+-  return statusMap[status] || { type: 'info', label: status }
++const priorityMap = {
++  urgent: { type: 'danger', label: '绱ф€? },
++  high: { type: 'warning', label: '楂? },
++  medium: { type: '', label: '涓? },
++  low: { type: 'info', label: '浣? }
++}
++
++const getStatusConfig = (status) => statusMap[status] || { type: 'info', label: status }
++const getPriorityConfig = (priority) => priorityMap[priority] || { type: 'info', label: priority }
++
++const typeIconMap = {
++  Bug: 'sweetui-icon-urgent',
++  Feature: 'sweetui-icon-Information-center-l',
++  Task: 'sweetui-icon-add-l'
++}
++
++function onPageChange(page) {
++  innerPage.value = page
++  emit('page-change', page)
++}
++
++function onSizeChange(size) {
++  innerPage.value = 1
++  emit('size-change', size)
+ }
+ </script>
+ 
+ <template>
+   <div class="data-table-wrapper">
+     <SweetTable
+-      :data="data"
+-      v-loading="loading"
+-      stripe
+-      highlight-current-row
++      :data="data" v-loading="loading"
++      stripe highlight-current-row
++      size="small"
+       class="data-table"
+       @row-click="(row) => emit('row-click', row)"
+     >
+-      <SweetTableColumn prop="id" label="ID" width="80" />
+-      <SweetTableColumn prop="name" label="鍚嶇О" min-width="160" show-overflow-tooltip />
+-      <SweetTableColumn prop="type" label="绫诲瀷" min-width="100" />
+-      <SweetTableColumn prop="status" label="鐘舵€? width="100">
++      <SweetTableColumn prop="id" label="ID" width="60" align="center" />
++      <SweetTableColumn prop="name" label="鍚嶇О" min-width="200" show-overflow-tooltip>
++        <template #default="{ row }">
++          <div class="name-cell">
++            <SweetIcon :icon-class="typeIconMap[row.type] || 'sweetui-icon-add-l'" :size="14" />
++            <span>{{ row.name }}</span>
++          </div>
++        </template>
++      </SweetTableColumn>
++      <SweetTableColumn prop="type" label="绫诲瀷" width="100" align="center" />
++      <SweetTableColumn prop="status" label="鐘舵€? width="90" align="center">
+         <template #default="{ row }">
+           <SweetTag :type="getStatusConfig(row.status).type" size="small">
+             {{ getStatusConfig(row.status).label }}
+           </SweetTag>
+         </template>
+       </SweetTableColumn>
+-      <SweetTableColumn prop="date" label="鏃ユ湡" min-width="120" />
+-      <SweetTableColumn prop="value" label="鏁板€? width="120" align="right" />
++      <SweetTableColumn prop="priority" label="浼樺厛绾? width="90" align="center">
++        <template #default="{ row }">
++          <SweetTag v-if="row.priority" :type="getPriorityConfig(row.priority).type" size="small">
++            {{ getPriorityConfig(row.priority).label }}
++          </SweetTag>
++        </template>
++      </SweetTableColumn>
++      <SweetTableColumn prop="assignee" label="璐熻矗浜? width="80" />
++      <SweetTableColumn prop="date" label="鏃ユ湡" width="110" />
++      <SweetTableColumn prop="value" label="鏁板€? width="80" align="right" />
+     </SweetTable>
+ 
+     <div class="table-pagination">
+       <SweetPagination
+-        :current-page="currentPage"
++        v-model:current-page="innerPage"
+         :page-size="pageSize"
+         :total="total"
+-        layout="total, sizes, prev, pager, next, jumper"
+-        :page-sizes="[10, 20, 50, 100]"
+-        @current-change="(page) => emit('page-change', page)"
+-        @size-change="(size) => emit('size-change', size)"
++        layout="total, sizes, prev, pager, next"
++        :page-sizes="[10, 20, 50]"
++        @current-change="onPageChange"
++        @size-change="onSizeChange"
+       />
+     </div>
+   </div>
+ </template>
+ 
+-<style scoped lang="css">
+-.data-table-wrapper {
+-  width: 100%;
+-}
+-
+-.data-table {
+-  width: 100%;
++<style scoped>
++.data-table-wrapper { width: 100%; }
++.data-table { width: 100%; }
++.name-cell {
++  display: flex; align-items: center; gap: var(--swt-space-size-8);
+ }
+-
+ .table-pagination {
+-  display: flex;
+-  justify-content: flex-end;
+-  margin-top: var(--swt-space-size-16);
++  display: flex; justify-content: flex-end;
++  margin-top: var(--swt-space-size-12);
++  padding: var(--swt-space-size-8) 0;
+ }
+ </style>
+diff --git a/skills/gts-sweetui-coder/vendor/code-example/references/table-search-drawer/components/detail-drawer.vue b/skills/gts-sweetui-coder/vendor/code-example/references/table-search-drawer/components/detail-drawer.vue
+index ac265ab..39391b6 100644
+--- a/skills/gts-sweetui-coder/vendor/code-example/references/table-search-drawer/components/detail-drawer.vue
++++ b/skills/gts-sweetui-coder/vendor/code-example/references/table-search-drawer/components/detail-drawer.vue
+@@ -1,20 +1,14 @@
+ <script setup>
+ import {
+   SweetDrawer, SweetDescriptions, SweetDescriptionsItem,
+-  SweetTag, SweetDivider
++  SweetTag, SweetDivider, SweetButton, SweetIcon
+ } from '@hw-seq/sweet-ui-base'
+ 
+ defineOptions({ name: 'DetailDrawer' })
+ 
+ defineProps({
+-  modelValue: {
+-    type: Boolean,
+-    default: false
+-  },
+-  data: {
+-    type: Object,
+-    default: null
+-  }
++  modelValue: { type: Boolean, default: false },
++  data: { type: Object, default: null }
+ })
+ 
+ const emit = defineEmits(['update:modelValue'])
+@@ -26,20 +20,26 @@ const statusMap = {
+   idle: { type: 'info', label: '绌洪棽' }
+ }
+ 
+-const getStatusConfig = (status) => {
+-  return statusMap[status] || { type: 'info', label: status }
++const priorityMap = {
++  urgent: { type: 'danger', label: '绱ф€? },
++  high: { type: 'warning', label: '楂? },
++  medium: { type: '', label: '涓? },
++  low: { type: 'info', label: '浣? }
+ }
++
++const getStatusConfig = (status) => statusMap[status] || { type: 'info', label: status }
++const getPriorityConfig = (priority) => priorityMap[priority] || { type: 'info', label: priority }
+ </script>
+ 
+ <template>
+   <SweetDrawer
+     :model-value="modelValue"
+-    title="璇︽儏"
++    title="浠诲姟璇︽儏"
+     size="480px"
+     @update:model-value="(val) => emit('update:modelValue', val)"
+   >
+     <template v-if="data">
+-      <SweetDescriptions :column="1" border>
++      <SweetDescriptions :column="1" border size="small">
+         <SweetDescriptionsItem label="ID">{{ data.id }}</SweetDescriptionsItem>
+         <SweetDescriptionsItem label="鍚嶇О">{{ data.name }}</SweetDescriptionsItem>
+         <SweetDescriptionsItem label="绫诲瀷">{{ data.type }}</SweetDescriptionsItem>
+@@ -48,12 +48,34 @@ const getStatusConfig = (status) => {
+             {{ getStatusConfig(data.status).label }}
+           </SweetTag>
+         </SweetDescriptionsItem>
++        <SweetDescriptionsItem label="浼樺厛绾?>
++          <SweetTag v-if="data.priority" :type="getPriorityConfig(data.priority).type" size="small">
++            {{ getPriorityConfig(data.priority).label }}
++          </SweetTag>
++        </SweetDescriptionsItem>
++        <SweetDescriptionsItem label="璐熻矗浜?>{{ data.assignee || '--' }}</SweetDescriptionsItem>
+         <SweetDescriptionsItem label="鏃ユ湡">{{ data.date }}</SweetDescriptionsItem>
+         <SweetDescriptionsItem label="鏁板€?>{{ data.value }}</SweetDescriptionsItem>
+       </SweetDescriptions>
+ 
+       <SweetDivider />
+ 
++      <div v-if="data.description" class="detail-desc">
++        <h4 class="desc-title">鎻忚堪</h4>
++        <p class="desc-body">{{ data.description }}</p>
++      </div>
++
++      <div class="detail-actions">
++        <SweetButton size="small" type="primary">
++          <SweetIcon icon-class="sweetui-icon-edit-l" :size="14" />
++          缂栬緫
++        </SweetButton>
++        <SweetButton size="small">
++          <SweetIcon icon-class="sweetui-icon-delete-l" :size="14" />
++          鍒犻櫎
++        </SweetButton>
++      </div>
++
+       <div class="detail-extra">
+         <slot name="extra" :data="data" />
+       </div>
+@@ -61,7 +83,23 @@ const getStatusConfig = (status) => {
+   </SweetDrawer>
+ </template>
+ 
+-<style scoped lang="css">
++<style scoped>
++.desc-title {
++  font-size: var(--swt-font-size-small);
++  font-weight: var(--swt-font-weight-bold);
++  margin: 0 0 var(--swt-space-size-4);
++}
++.desc-body {
++  font-size: var(--swt-font-size-normal);
++  color: var(--swt-color-text-secondary);
++  margin: 0;
++  line-height: var(--swt-font-line-height-normal);
++}
++.detail-desc { margin-bottom: var(--swt-space-size-12); }
++.detail-actions {
++  display: flex; gap: var(--swt-space-size-8);
++  padding: var(--swt-space-size-4) 0;
++}
+ .detail-extra {
+   padding: var(--swt-space-size-8) 0;
+ }
+diff --git a/skills/gts-sweetui-coder/vendor/code-example/references/table-search-drawer/components/search-form.vue b/skills/gts-sweetui-coder/vendor/code-example/references/table-search-drawer/components/search-form.vue
+index 28cdf63..4ed7586 100644
+--- a/skills/gts-sweetui-coder/vendor/code-example/references/table-search-drawer/components/search-form.vue
++++ b/skills/gts-sweetui-coder/vendor/code-example/references/table-search-drawer/components/search-form.vue
+@@ -8,10 +8,7 @@ import {
+ defineOptions({ name: 'SearchForm' })
+ 
+ defineProps({
+-  loading: {
+-    type: Boolean,
+-    default: false
+-  }
++  loading: { type: Boolean, default: false }
+ })
+ 
+ const emit = defineEmits(['search', 'reset'])
+@@ -24,9 +21,9 @@ const formData = reactive({
+ })
+ 
+ const typeOptions = [
+-  { value: 'bug', label: 'Bug' },
+-  { value: 'feature', label: 'Feature' },
+-  { value: 'task', label: 'Task' }
++  { value: 'Bug', label: 'Bug' },
++  { value: 'Feature', label: 'Feature' },
++  { value: 'Task', label: 'Task' }
+ ]
+ 
+ const handleSearch = () => {
+@@ -34,6 +31,7 @@ const handleSearch = () => {
+ }
+ 
+ const handleReset = () => {
++  Object.assign(formData, { keyword: '', type: '', dateRange: [] })
+   formRef.value?.resetFields()
+   emit('reset')
+ }
+@@ -42,16 +40,19 @@ const handleReset = () => {
+ <template>
+   <SweetForm ref="formRef" :model="formData" inline class="search-form">
+     <SweetFormItem label="鍏抽敭璇?>
+-      <SweetInput v-model="formData.keyword" placeholder="璇疯緭鍏ュ叧閿瘝" clearable class="input-keyword" />
++      <SweetInput
++        v-model="formData.keyword"
++        placeholder="璇疯緭鍏ュ悕绉版垨璐熻矗浜?
++        clearable
++        class="input-keyword"
++      />
+     </SweetFormItem>
+ 
+     <SweetFormItem label="绫诲瀷">
+       <SweetSelect v-model="formData.type" placeholder="璇烽€夋嫨" clearable class="input-type">
+         <SweetOption
+-          v-for="item in typeOptions"
+-          :key="item.value"
+-          :label="item.label"
+-          :value="item.value"
++          v-for="item in typeOptions" :key="item.value"
++          :label="item.label" :value="item.value"
+         />
+       </SweetSelect>
+     </SweetFormItem>
+@@ -69,7 +70,7 @@ const handleReset = () => {
+ 
+     <SweetFormItem>
+       <SweetButton type="primary" :loading="loading" @click="handleSearch">
+-        <SweetIcon icon-class="sweetui-icon-search-l" />
++        <SweetIcon icon-class="sweetui-icon-search-l" :size="14" />
+         鎼滅储
+       </SweetButton>
+       <SweetButton @click="handleReset">閲嶇疆</SweetButton>
+@@ -77,26 +78,12 @@ const handleReset = () => {
+   </SweetForm>
+ </template>
+ 
+-<style scoped lang="css">
++<style scoped>
+ .search-form {
+-  display: flex;
+-  flex-wrap: wrap;
+-  align-items: center;
+-  gap: var(--swt-space-size-8);
+-}
+-
+-.input-keyword {
+-  width: 200px;
+-  max-width: 100%;
+-}
+-
+-.input-type {
+-  width: 160px;
+-  max-width: 100%;
+-}
+-
+-.input-date {
+-  width: 260px;
+-  max-width: 100%;
++  display: flex; flex-wrap: wrap;
++  align-items: center; gap: var(--swt-space-size-8);
+ }
++.input-keyword { width: 220px; max-width: 100%; }
++.input-type { width: 140px; max-width: 100%; }
++.input-date { width: 260px; max-width: 100%; }
+ </style>
+diff --git a/skills/gts-sweetui-coder/vendor/code-example/references/table-search-drawer/index.vue b/skills/gts-sweetui-coder/vendor/code-example/references/table-search-drawer/index.vue
+index dbdabf1..10edabd 100644
+--- a/skills/gts-sweetui-coder/vendor/code-example/references/table-search-drawer/index.vue
++++ b/skills/gts-sweetui-coder/vendor/code-example/references/table-search-drawer/index.vue
+@@ -1,62 +1,59 @@
+ <script setup>
+-import { ref, reactive } from 'vue'
+-import { SweetRow, SweetCol, SweetCard } from '@hw-seq/sweet-ui-base'
++import { ref, reactive, onMounted, onUnmounted } from 'vue'
++import { SweetCard, SweetButton, SweetIcon, SweetAlert } from '@hw-seq/sweet-ui-base'
++import { getTaskList } from './api/tasks.js'
+ import SearchForm from './components/search-form.vue'
+ import DataTable from './components/data-table.vue'
+ import DetailDrawer from './components/detail-drawer.vue'
+ 
+ defineOptions({ name: 'TableSearchDrawerPage' })
+ 
+-const searchFormRef = ref()
+-const searchParams = reactive({
+-  keyword: '',
+-  type: '',
+-  dateRange: []
+-})
+-
++const defaults = () => ({ keyword: '', type: '', dateRange: [] })
++const searchParams = reactive(defaults())
+ const tableData = ref([])
+ const tableLoading = ref(false)
+ const tableTotal = ref(0)
+ const currentPage = ref(1)
+ const pageSize = ref(20)
+-
+ const drawerVisible = ref(false)
+ const currentRow = ref(null)
++const loadError = ref('')
++let requestSeq = 0
++onUnmounted(() => { requestSeq++ })
+ 
+-const fetchData = async (params, page, size) => {
++const fetchData = async () => {
++  const seq = ++requestSeq
+   tableLoading.value = true
++  loadError.value = ''
+   try {
+-    tableData.value = [
+-      { id: 1, name: '浠诲姟 A', type: 'Bug', status: 'running', date: '2026-09-01', value: 120 },
+-      { id: 2, name: '浠诲姟 B', type: 'Feature', status: 'warning', date: '2026-09-02', value: 80 },
+-      { id: 3, name: '浠诲姟 C', type: 'Task', status: 'idle', date: '2026-09-03', value: 66 }
+-    ]
+-    tableTotal.value = 3
++    const result = await getTaskList({ ...searchParams, page: currentPage.value, pageSize: pageSize.value })
++    if (seq !== requestSeq) return
++    tableData.value = result.list
++    tableTotal.value = result.total
++  } catch (error) {
++    if (seq === requestSeq) loadError.value = error.message || '鍔犺浇澶辫触'
+   } finally {
+-    tableLoading.value = false
++    if (seq === requestSeq) tableLoading.value = false
+   }
+ }
+ 
+ const handleSearch = (params) => {
+-  Object.assign(searchParams, params)
++  Object.assign(searchParams, defaults(), params)
+   currentPage.value = 1
+-  fetchData(searchParams, currentPage.value, pageSize.value)
++  fetchData()
+ }
+ 
+-const handleReset = () => {
+-  currentPage.value = 1
+-  fetchData(searchParams, currentPage.value, pageSize.value)
+-}
++const handleReset = () => handleSearch(defaults())
+ 
+ const handlePageChange = (page) => {
+   currentPage.value = page
+-  fetchData(searchParams, currentPage.value, pageSize.value)
++  fetchData()
+ }
+ 
+ const handleSizeChange = (size) => {
+   pageSize.value = size
+   currentPage.value = 1
+-  fetchData(searchParams, currentPage.value, pageSize.value)
++  fetchData()
+ }
+ 
+ const handleRowClick = (row) => {
+@@ -64,65 +61,65 @@ const handleRowClick = (row) => {
+   drawerVisible.value = true
+ }
+ 
+-fetchData(searchParams, currentPage.value, pageSize.value)
++onMounted(fetchData)
+ </script>
+ 
+ <template>
+   <div class="page-root">
+-    <SweetRow :gutter="0">
+-      <SweetCol :span="24">
+-        <SweetCard shadow="never" class="search-card">
+-          <SearchForm
+-            ref="searchFormRef"
+-            :loading="tableLoading"
+-            @search="handleSearch"
+-            @reset="handleReset"
+-          />
+-        </SweetCard>
+-      </SweetCol>
+-    </SweetRow>
+-
+-    <SweetRow :gutter="0">
+-      <SweetCol :span="24">
+-        <SweetCard shadow="never" class="table-card">
+-          <DataTable
+-            :data="tableData"
+-            :loading="tableLoading"
+-            :total="tableTotal"
+-            :current-page="currentPage"
+-            :page-size="pageSize"
+-            @row-click="handleRowClick"
+-            @page-change="handlePageChange"
+-            @size-change="handleSizeChange"
+-          />
+-        </SweetCard>
+-      </SweetCol>
+-    </SweetRow>
+-
+-    <DetailDrawer
+-      v-model="drawerVisible"
+-      :data="currentRow"
+-    />
++    <div class="page-header">
++      <h1>浠诲姟绠＄悊</h1>
++      <SweetButton type="primary" size="small">
++        <SweetIcon icon-class="sweetui-icon-add-l" :size="14" />
++        鏂板缓浠诲姟
++      </SweetButton>
++    </div>
++
++    <SweetAlert v-if="loadError" :title="loadError" type="error" :closable="false" show-icon>
++      <SweetButton size="small" @click="fetchData">閲嶈瘯</SweetButton>
++    </SweetAlert>
++
++    <SweetCard shadow="never" class="search-card">
++      <SearchForm :loading="tableLoading" @search="handleSearch" @reset="handleReset" />
++    </SweetCard>
++
++    <SweetCard shadow="never" class="table-card">
++      <DataTable
++        :data="tableData" :loading="tableLoading"
++        :total="tableTotal" :current-page="currentPage" :page-size="pageSize"
++        @row-click="handleRowClick"
++        @page-change="handlePageChange"
++        @size-change="handleSizeChange"
++      />
++    </SweetCard>
++
++    <DetailDrawer v-model="drawerVisible" :data="currentRow" />
+   </div>
+ </template>
+ 
+-<style scoped lang="css">
++<style scoped>
+ .page-root {
+   padding: var(--swt-space-size-20);
+-  background: var(--swt-color-bg-primary);
++  background: var(--swt-color-bg-secondary);
+   min-height: 100%;
++  display: flex; flex-direction: column; gap: var(--swt-space-size-12);
++}
++.page-header {
++  display: flex; align-items: center; justify-content: space-between;
++}
++.page-header h1 {
++  font-size: var(--swt-font-size-normal2);
++  font-weight: var(--swt-font-weight-bold);
++  margin: 0;
+ }
+-
+ .search-card {
+   border-radius: var(--swt-radius-size-medium);
+   border: 1px solid var(--swt-color-dividing-line-primary);
+-  background: var(--swt-color-bg-secondary);
+-  margin-bottom: var(--swt-space-size-16);
++  background: var(--swt-color-gray1);
+ }
+-
+ .table-card {
+   border-radius: var(--swt-radius-size-medium);
+   border: 1px solid var(--swt-color-dividing-line-primary);
+-  background: var(--swt-color-bg-secondary);
++  background: var(--swt-color-gray1);
++  flex: 1; min-height: 0;
+ }
+ </style>
+diff --git a/skills/gts-sweetui-coder/assets/examples/workbench-conversation/api/foundation.js b/skills/gts-sweetui-coder/assets/examples/workbench-conversation/api/foundation.js
+new file mode 100644
+--- /dev/null
++++ b/skills/gts-sweetui-coder/assets/examples/workbench-conversation/api/foundation.js
++import { resources, sessions, evidence, report } from './mock/foundation-data.js'
++const clone = data => JSON.parse(JSON.stringify(data))
++export async function getResources() { return clone(resources) }
++export async function getSessions() { return clone(sessions) }
++export async function getEvidence() { return clone(evidence) }
++export async function getReport() { return clone(report) }
++export async function getDemoReply(text) {
++  return `演示回复：已收到"${text}"。这里展示组件的发送与生成状态，未连接真实模型；附件仅保留在当前浏览器会话中。`
++}
++
+
+diff --git a/skills/gts-sweetui-coder/assets/examples/workbench-conversation/api/mock/foundation-data.js b/skills/gts-sweetui-coder/assets/examples/workbench-conversation/api/mock/foundation-data.js
+new file mode 100644
+--- /dev/null
++++ b/skills/gts-sweetui-coder/assets/examples/workbench-conversation/api/mock/foundation-data.js
++export const resources = [
++  { id: "R-001", name: "应用服务器-01", region: "北京二区", ip: "10.24.1.11", status: "运行中", owner: "基础设施组", updated: "2026-10-28 09:42" },
++  { id: "R-002", name: "存储节点-02", region: "广州一区", ip: "10.24.2.12", status: "运行中", owner: "平台工程组", updated: "2026-10-28 09:42" },
++  { id: "R-003", name: "边缘网关-03", region: "上海一区", ip: "10.24.3.13", status: "运行中", owner: "网络运维组", updated: "2026-10-28 09:42" },
++  { id: "R-004", name: "核心交换机-04", region: "北京二区", ip: "10.24.0.14", status: "运行中", owner: "基础设施组", updated: "2026-10-28 09:42" },
++  { id: "R-005", name: "应用服务器-05", region: "广州一区", ip: "10.24.1.15", status: "运行中", owner: "平台工程组", updated: "2026-10-28 09:42" },
++  { id: "R-006", name: "存储节点-06", region: "上海一区", ip: "10.24.2.16", status: "需关注", owner: "网络运维组", updated: "2026-10-28 09:42" },
++  { id: "R-007", name: "边缘网关-07", region: "北京二区", ip: "10.24.3.17", status: "运行中", owner: "基础设施组", updated: "2026-10-28 09:42" },
++  { id: "R-008", name: "核心交换机-08", region: "广州一区", ip: "10.24.0.18", status: "运行中", owner: "平台工程组", updated: "2026-10-28 09:42" },
++  { id: "R-009", name: "应用服务器-09", region: "上海一区", ip: "10.24.1.19", status: "运行中", owner: "网络运维组", updated: "2026-10-28 09:42" },
++  { id: "R-010", name: "存储节点-10", region: "北京二区", ip: "10.24.2.20", status: "运行中", owner: "基础设施组", updated: "2026-10-28 09:42" },
++  { id: "R-011", name: "边缘网关-11", region: "广州一区", ip: "10.24.3.21", status: "运行中", owner: "平台工程组", updated: "2026-10-28 09:42" },
++  { id: "R-012", name: "核心交换机-12", region: "上海一区", ip: "10.24.0.22", status: "需关注", owner: "网络运维组", updated: "2026-10-28 09:42" },
++  { id: "R-013", name: "应用服务器-13", region: "北京二区", ip: "10.24.1.23", status: "运行中", owner: "基础设施组", updated: "2026-10-28 09:42" },
++  { id: "R-014", name: "存储节点-14", region: "广州一区", ip: "10.24.2.24", status: "运行中", owner: "平台工程组", updated: "2026-10-28 09:42" },
++  { id: "R-015", name: "边缘网关-15", region: "上海一区", ip: "10.24.3.25", status: "运行中", owner: "网络运维组", updated: "2026-10-28 09:42" },
++  { id: "R-016", name: "核心交换机-16", region: "北京二区", ip: "10.24.0.26", status: "运行中", owner: "基础设施组", updated: "2026-10-28 09:42" },
++  { id: "R-017", name: "应用服务器-17", region: "广州一区", ip: "10.24.1.27", status: "运行中", owner: "平台工程组", updated: "2026-10-28 09:42" },
++  { id: "R-018", name: "存储节点-18", region: "上海一区", ip: "10.24.2.28", status: "需关注", owner: "网络运维组", updated: "2026-10-28 09:42" },
++  { id: "R-019", name: "边缘网关-19", region: "北京二区", ip: "10.24.3.29", status: "运行中", owner: "基础设施组", updated: "2026-10-28 09:42" },
++  { id: "R-020", name: "核心交换机-20", region: "广州一区", ip: "10.24.0.30", status: "运行中", owner: "平台工程组", updated: "2026-10-28 09:42" },
++  { id: "R-021", name: "应用服务器-21", region: "上海一区", ip: "10.24.1.31", status: "运行中", owner: "网络运维组", updated: "2026-10-28 09:42" },
++  { id: "R-022", name: "存储节点-22", region: "北京二区", ip: "10.24.2.32", status: "运行中", owner: "基础设施组", updated: "2026-10-28 09:42" },
++  { id: "R-023", name: "边缘网关-23", region: "广州一区", ip: "10.24.3.33", status: "运行中", owner: "平台工程组", updated: "2026-10-28 09:42" },
++  { id: "R-024", name: "核心交换机-24", region: "上海一区", ip: "10.24.0.34", status: "需关注", owner: "网络运维组", updated: "2026-10-28 09:42" }
++]
++
++export const sessions = [
++  { id: 'mail', title: '邮件应用发送失败排查', time: '今天 10:35', status: '已完成' },
++  { id: 'network', title: '核心交换机链路诊断', time: '今天 09:42', status: '待处理' },
++  { id: 'storage', title: '存储容量趋势分析', time: '昨天 16:20', status: '已完成' }
++]
++
++export const evidence = [
++  { id: 'a1', name: '核心交换机电源异常', device: 'ZJINT-CORE-SW-01', level: '紧急', time: '10:23:15' },
++  { id: 'a2', name: 'BGP 邻居会话中断', device: 'ZJINT-CORE-SW-01', level: '重要', time: '10:24:03' },
++  { id: 'a3', name: '邮件服务连接超时', device: 'MAIL-APP-02', level: '重要', time: '10:25:42' }
++]
++
++export const report = {
++  question: '银行客户反馈邮件应用发送失败，同时出现大量告警，请帮我排查关联关系和根因。',
++  summary: '已完成邮件应用与底层网络的关联分析，发现一条需要优先关注的故障链路。',
++  steps: [
++    { id: 'query', title: '全网告警查询', time: '500ms', text: '查询 10:20:15 — 10:35:42 的全网告警，定位业务异常时间窗口。', action: '查看关联告警' },
++    { id: 'clean', title: '告警清洗与关联', time: '300ms', text: '合并重复事件，关联交换机、网络邻居与邮件应用的依赖关系。', action: '查看清洗结果' },
++    { id: 'root', title: '识别潜在根因', time: '600ms', text: '核心交换机电源异常先于网络会话中断，建议优先核查设备供电状态。', action: '查看分析结论' }
++  ],
++  conclusion: '核心交换机电源模块异常，可能引发 BGP 会话中断，继而影响邮件服务连接。',
++  description: '当前为示例分析，不代表真实诊断。实际处置前应核对设备日志、供电告警与业务恢复情况。',
++  suggestions: ['检查电源模块与供电链路', '核对 BGP 邻居恢复状态', '验证邮件业务连通性']
++}
++
+
+diff --git a/skills/gts-sweetui-coder/assets/examples/workbench-conversation/components/ai-workspace.vue b/skills/gts-sweetui-coder/assets/examples/workbench-conversation/components/ai-workspace.vue
+new file mode 100644
+--- /dev/null
++++ b/skills/gts-sweetui-coder/assets/examples/workbench-conversation/components/ai-workspace.vue
++<script setup>
++import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
++import { SweetButton, SweetIcon, SweetTable, SweetTableColumn, SweetPagination, SweetAlert } from '@hw-seq/sweet-ui-base'
++import ConversationComposer from './foundation/conversation-composer.vue'
++import { getEvidence, getReport, getDemoReply } from '../api/foundation.js'
++const props = defineProps({ session: Object })
++const input = ref('')
++const model = ref('qwen')
++const busy = ref(false)
++const messages = ref([])
++const evidence = ref([])
++const evidencePage = ref(1)
++const evidencePageSize = 5
++const pagedEvidence = computed(() => evidence.value.slice((evidencePage.value - 1) * evidencePageSize, evidencePage.value * evidencePageSize))
++const report = ref(null)
++const error = ref('')
++const analysisOpen = ref(true)
++const resultOpen = ref(true)
++const showEvidence = ref(true)
++const selected = ref('query')
++const conversation = ref(null)
++const models = [
++  { id: 'qwen', label: 'Qwen3.6-35B-A38' },
++  { id: 'deepseek', label: 'DeepSeek-V3.2' },
++  { id: 'glm', label: 'GLM-4.6-Plus' }
++]
++const references = [
++  { id: 'alarm', label: '关联告警.json' },
++  { id: 'runbook', label: '应急处置手册.pdf' }
++]
++const commands = [
++  { id: 'diagnose', label: '开始关联诊断', value: '请分析当前告警的关联关系' },
++  { id: 'summary', label: '总结当前会话', value: '请总结当前会话的结论与建议' }
++]
++let timer
++let generation = 0
++async function load() {
++  try {
++    [evidence.value, report.value] = await Promise.all([getEvidence(), getReport()])
++    error.value = ''
++  } catch { error.value = '加载示例失败，请重试' }
++}
++onMounted(load)
++onUnmounted(() => { clearTimeout(timer); generation++ })
++async function scrollBottom() {
++  await nextTick()
++  conversation.value?.scrollTo({ top: conversation.value.scrollHeight, behavior: 'smooth' })
++}
++function send(payload) {
++  if (busy.value) return
++  const text = payload.text || '请分析附件'
++  messages.value.push({ id: `u-${Date.now()}`, role: 'user', text, files: payload.files.map(f => f.name) })
++  busy.value = true
++  const id = ++generation
++  scrollBottom()
++  timer = setTimeout(async () => {
++    try {
++      const text = await getDemoReply(payload.text || '请分析附件')
++      if (id === generation) messages.value.push({ id: `a-${Date.now()}`, role: 'assistant', text })
++    } catch {
++      if (id === generation) messages.value.push({ id: `e-${Date.now()}`, role: 'assistant', text: '演示回复失败，请重试。' })
++    } finally {
++      if (id === generation) { busy.value = false; scrollBottom() }
++    }
++  }, 1800)
++}
++function stop() {
++  clearTimeout(timer); generation++; busy.value = false
++  messages.value.push({ id: `stop-${Date.now()}`, role: 'assistant', text: '已停止生成。' })
++  scrollBottom()
++}
++function focusEvidence(id) { selected.value = id; showEvidence.value = true }
++</script>
++<template>
++  <section class="ai-workspace" :class="{ 'without-evidence': !showEvidence }">
++    <div class="chat-pane">
++      <header class="pane-header">
++        <strong>{{ session.title }}</strong>
++        <span class="round">轮次 {{ session.id === 'mail' ? 6 + messages.filter(m => m.role === 'user').length : messages.filter(m => m.role === 'user').length }} / 100</span>
++        <button type="button" class="plain-icon" aria-label="切换关联面板" title="切换关联面板" @click="showEvidence = !showEvidence">
++          <SweetIcon icon-class="sweetui-icon-link-l" :size="17" />
++        </button>
++      </header>
++      <SweetAlert v-if="error" :title="error" type="error" show-icon>
++        <SweetButton size="small" @click="load">重试</SweetButton>
++      </SweetAlert>
++      <div ref="conversation" class="conversation">
++        <template v-if="report && session.id === 'mail'">
++          <div class="user-message">{{ report.question }}</div>
++          <div class="thought">
++            <SweetIcon icon-class="sweetui-icon-success-f" :size="16" />
++            已深度思考 · 2.3s
++            <span class="demo-label">演示分析</span>
++          </div>
++          <p class="intro">{{ report.summary }}</p>
++          <section class="analysis-card">
++            <button type="button" class="card-heading" :aria-expanded="analysisOpen" @click="analysisOpen = !analysisOpen">
++              <SweetIcon icon-class="sweetui-icon-issue-analysis-l" :size="16" />
++              <strong>告警分析</strong>
++              <SweetIcon v-if="analysisOpen" icon-class="sweetui-icon-arrow-up" :size="14" />
++              <SweetIcon v-else icon-class="sweetui-icon-arrow-down" :size="14" />
++            </button>
++            <div v-if="analysisOpen" class="pipeline">
++              <article v-for="step in report.steps" :key="step.id" class="step">
++                <span class="step-marker">
++                  <SweetIcon icon-class="sweetui-icon-success-f" :size="22" />
++                </span>
++                <div class="step-main">
++                  <div class="step-head">
++                    <strong>{{ step.title }}</strong>
++                    <span class="duration">耗时 {{ step.time }}</span>
++                  </div>
++                  <p>{{ step.text }}</p>
++                  <button type="button" class="outline-action" :class="{ chosen: selected === step.id }" @click="focusEvidence(step.id)">
++                    <SweetIcon icon-class="sweetui-icon-file-l" :size="13" />
++                    {{ step.action }}
++                  </button>
++                </div>
++              </article>
++            </div>
++          </section>
++          <section class="analysis-card result-card">
++            <button type="button" class="card-heading result-heading" :aria-expanded="resultOpen" @click="resultOpen = !resultOpen">
++              <SweetIcon icon-class="sweetui-icon-warning-l" :size="16" />
++              <strong>需重点关注的分析结论</strong>
++              <SweetIcon v-if="resultOpen" icon-class="sweetui-icon-arrow-up" :size="14" />
++              <SweetIcon v-else icon-class="sweetui-icon-arrow-down" :size="14" />
++            </button>
++            <div v-if="resultOpen" class="conclusion">
++              <span class="eyebrow">潜在根因</span>
++              <h3>{{ report.conclusion }}</h3>
++              <p>{{ report.description }}</p>
++            </div>
++          </section>
++        </template>
++        <div v-else-if="!messages.length" class="welcome">
++          <span class="welcome-mark">
++            <SweetIcon icon-class="sweetui-icon-issue-analysis-l" :size="28" />
++          </span>
++          <h2>让问题更快得到解答</h2>
++          <p>描述当前现象，或引用文件作为分析上下文。</p>
++          <button type="button" class="outline-action" @click="input = '请分析当前告警的关联关系'">
++          分析关联告警
++            <SweetIcon icon-class="sweetui-icon-arrow-right" :size="14" />
++          </button>
++        </div>
++        <article v-for="message in messages" :key="message.id" :class="message.role === 'user' ? 'user-message' : 'assistant-message'">
++          {{ message.text }}
++          <div v-if="message.files?.length" class="message-files">{{ message.files.join(' · ') }}</div>
++        </article>
++        <p v-if="busy" class="generating">
++          <SweetIcon icon-class="sweetui-icon-loading" :size="14" />
++          正在整理演示回复…
++        </p>
++      </div>
++      <div class="composer-area">
++        <ConversationComposer
++          v-model="input" v-model:model="model"
++          :models="models" :busy="busy"
++          :references="references" :commands="commands"
++          disclaimer="内容由 AI 生成，请结合实际业务判断 · 当前为离线交互演示"
++          @send="send"
++          @stop="stop"
++        />
++      </div>
++    </div>
++    <aside v-if="showEvidence" class="evidence-pane">
++      <header class="pane-header">
++        <span class="view-active">关联信息</span>
++        <span class="context-label">随对话同步的上下文</span>
++        <button type="button" class="plain-icon" aria-label="收起关联信息" @click="showEvidence = false">
++          <SweetIcon icon-class="sweetui-icon-close" :size="16" />
++        </button>
++      </header>
++      <div class="evidence-scroll">
++        <section class="context-card">
++          <div class="section-heading">
++            <SweetIcon icon-class="sweetui-icon-file-l" :size="17" />
++            <h3>{{ selected === 'clean' ? '清洗后的关联告警' : '关联告警信息' }}</h3>
++            <span class="small-badge">{{ evidence.length }} 条</span>
++          </div>
++          <p class="context-summary">10:20:15 — 10:35:42 · 按业务异常时间窗口关联</p>
++          <SweetTable stripe :data="pagedEvidence" size="small">
++            <SweetTableColumn prop="name" label="告警标题" min-width="160" />
++            <SweetTableColumn prop="level" label="级别" width="66">
++              <template #default="scope">
++                <span class="severity" :class="scope.row.level === '紧急' ? 'critical' : 'major'">{{ scope.row.level }}</span>
++              </template>
++            </SweetTableColumn>
++            <SweetTableColumn prop="time" label="发生时间" width="90" />
++            <SweetTableColumn prop="device" label="设备" min-width="150" show-overflow-tooltip />
++          </SweetTable>
++          <div class="table-foot">
++            <span>共 {{ evidence.length }} 条</span>
++            <SweetPagination v-model:current-page="evidencePage" :page-size="evidencePageSize" :total="evidence.length" :pager-count="5" layout="prev, pager, next" background small />
++          </div>
++        </section>
++        <section class="context-card">
++          <div class="section-heading">
++            <SweetIcon icon-class="sweetui-icon-link-l" :size="17" />
++            <h3>业务影响链路</h3>
++            <span class="small-badge">关联路径</span>
++          </div>
++          <div class="dependency">
++            <div v-for="(item, index) in ['设备供电异常', '网络会话中断', '邮件连接超时']" :key="item" class="dependency-item">
++              <span class="dependency-dot" :class="{ error: index === 0 }" />
++              <strong>{{ item }}</strong>
++              <small>{{ ['基础设施', '网络层', '应用层'][index] }}</small>
++            </div>
++          </div>
++          <p class="context-note">时间先后与依赖关系可用于辅助判断，不能单独证明因果。</p>
++        </section>
++        <section v-if="report" class="context-card" :class="{ 'highlight-card': selected === 'root' }">
++          <div class="section-heading">
++            <SweetIcon icon-class="sweetui-icon-success-f" :size="17" />
++            <h3>建议核查事项</h3>
++          </div>
++          <ol class="recommendations">
++            <li v-for="item in report.suggestions" :key="item">{{ item }}</li>
++          </ol>
++          <div class="note">执行前，请结合真实设备日志与变更记录确认。</div>
++        </section>
++        <div class="context-footer">独立辅助区域 · 可通过标题右侧按钮收起</div>
++      </div>
++    </aside>
++  </section>
++</template>
++<style scoped>
++.ai-workspace {
++  --page-line: color-mix(in srgb, var(--swt-color-accent-normal) 11%, var(--swt-color-bg-primary));
++  --page-soft: color-mix(in srgb, var(--swt-color-overlay-gray1-and-accent-normal-opacity10) 40%, var(--swt-color-bg-primary));
++  display: flex; flex: 1; min-width: 0; min-height: 0;
++}
++.chat-pane {
++  flex: 1; min-width: 0; display: flex; flex-direction: column;
++  border-right: 1px solid var(--page-line);
++}
++.pane-header {
++  height: 48px; flex: 0 0 48px;
++  display: flex; align-items: center; gap: var(--swt-space-size-12);
++  padding: 0 var(--swt-space-size-16);
++  border-bottom: 1px solid var(--page-line);
++  box-sizing: border-box; background: var(--swt-color-bg-primary);
++}
++.pane-header > strong { flex: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: var(--swt-font-size-normal); }
++.round {
++  color: var(--swt-color-accent-text-normal);
++  background: var(--swt-color-overlay-gray1-and-accent-normal-opacity10);
++  padding: 0 var(--swt-space-size-8); border-radius: 50%;
++  font-size: var(--swt-font-size-small); white-space: nowrap;
++}
++button { font: inherit; cursor: pointer; }
++.plain-icon {
++  background: transparent; border: 0; color: var(--swt-color-text-secondary);
++  display: grid; place-items: center; padding: var(--swt-space-size-4);
++}
++.plain-icon:hover { color: var(--swt-color-accent-text-normal); }
++button:focus-visible { outline: 2px solid var(--swt-color-accent-focus); outline-offset: 2px; }
++
++.conversation {
++  flex: 1; min-height: 0; overflow: auto;
++  padding: var(--swt-space-size-20) 8% var(--swt-space-size-24);
++}
++.user-message {
++  width: fit-content; max-width: 86%;
++  margin: 0 0 var(--swt-space-size-20) auto;
++  background: var(--swt-color-accent-normal);
++  color: var(--swt-color-text-inverse);
++  border-radius: var(--swt-radius-size-big1) var(--swt-radius-size-big1) var(--swt-radius-size-normal) var(--swt-radius-size-big1);
++  padding: var(--swt-space-size-12) var(--swt-space-size-16);
++  box-shadow: var(--swt-shadow1, 0 2px 8px rgba(0,0,0,.12));
++  font-size: var(--swt-font-size-normal); overflow-wrap: anywhere;
++}
++.thought {
++  display: flex; gap: var(--swt-space-size-8); align-items: center;
++  color: var(--swt-color-text-secondary); font-size: var(--swt-font-size-small);
++  padding-bottom: var(--swt-space-size-16);
++  border-bottom: 1px solid var(--page-line);
++}
++.demo-label { margin-left: auto; color: var(--swt-color-text-extra); }
++.intro { margin: var(--swt-space-size-16) 0; font-size: var(--swt-font-size-small); color: var(--swt-color-text-secondary); }
++
++.analysis-card {
++  border: 1px solid var(--page-line); border-radius: var(--swt-radius-size-big);
++  overflow: hidden; margin-bottom: var(--swt-space-size-12);
++}
++.card-heading {
++  display: flex; align-items: center; width: 100%;
++  gap: var(--swt-space-size-8); background: var(--page-soft);
++  border: 0; padding: var(--swt-space-size-8) var(--swt-space-size-12);
++  color: var(--swt-color-accent-text-normal); font-size: var(--swt-font-size-small);
++  text-align: left; cursor: pointer;
++}
++.card-heading strong { flex: 1; }
++.result-heading { color: var(--swt-color-warning); }
++.pipeline { padding: var(--swt-space-size-20) var(--swt-space-size-16); }
++
++.step {
++  display: flex; gap: var(--swt-space-size-12);
++  position: relative; padding-bottom: var(--swt-space-size-24);
++}
++.step:last-child { padding-bottom: 0; }
++.step:not(:last-child)::before {
++  content: ''; position: absolute;
++  left: 10px; top: 28px; bottom: var(--swt-space-size-4);
++  width: 2px;
++  background: color-mix(in srgb, var(--swt-color-success) 38%, var(--swt-color-bg-primary));
++}
++.step-marker { color: var(--swt-color-success); height: 24px; flex-shrink: 0; }
++.step-main { min-width: 0; }
++.step-head { display: flex; align-items: center; gap: var(--swt-space-size-12); flex-wrap: wrap; }
++.step-head strong { font-weight: var(--swt-font-weight-bold); }
++.duration {
++  background: var(--swt-color-bg-secondary); color: var(--swt-color-text-secondary);
++  font-size: var(--swt-font-size-small); border-radius: 50%;
++  padding: 0 var(--swt-space-size-8);
++}
++.step p { font-size: var(--swt-font-size-small); color: var(--swt-color-text-secondary); margin: var(--swt-space-size-12) 0; }
++
++.outline-action {
++  display: inline-flex; align-items: center; gap: var(--swt-space-size-8);
++  border: 1px solid var(--page-line); border-radius: var(--swt-radius-size-medium);
++  padding: var(--swt-space-size-4) var(--swt-space-size-12);
++  background: var(--swt-color-bg-primary); color: var(--swt-color-text-secondary);
++  font-size: var(--swt-font-size-small); cursor: pointer;
++}
++.outline-action:hover, .outline-action.chosen {
++  color: var(--swt-color-accent-text-normal); border-color: var(--swt-color-accent-normal);
++  background: var(--swt-color-overlay-gray1-and-accent-normal-opacity10);
++}
++
++.conclusion { padding: var(--swt-space-size-16); }
++.eyebrow { color: var(--swt-color-accent-text-normal); font-size: var(--swt-font-size-small); }
++.conclusion h3 { font-size: var(--swt-font-size-normal); line-height: 1.5; margin: var(--swt-space-size-8) 0; }
++.conclusion p { color: var(--swt-color-text-secondary); font-size: var(--swt-font-size-small); margin: 0; }
++
++.composer-area {
++  padding: var(--swt-space-size-8) 8% var(--swt-space-size-12);
++  background: var(--swt-color-bg-primary);
++}
++
++.evidence-pane {
++  flex: 1; min-width: 0; display: flex; flex-direction: column;
++  background: var(--page-soft);
++}
++.view-active {
++  background: var(--swt-color-overlay-gray1-and-accent-normal-opacity10);
++  color: var(--swt-color-accent-text-normal); font-weight: var(--swt-font-weight-bold);
++  font-size: var(--swt-font-size-small);
++  padding: var(--swt-space-size-4) var(--swt-space-size-12);
++  border-radius: var(--swt-radius-size-normal);
++}
++.context-label { flex: 1; font-size: var(--swt-font-size-small); color: var(--swt-color-text-extra); }
++
++.evidence-scroll { flex: 1; min-height: 0; overflow: auto; padding: var(--swt-space-size-16); }
++.context-card {
++  background: var(--swt-color-bg-primary); border: 1px solid var(--page-line);
++  border-radius: var(--swt-radius-size-big); padding: var(--swt-space-size-16);
++  margin-bottom: var(--swt-space-size-12);
++}
++.section-heading { display: flex; align-items: center; gap: var(--swt-space-size-8); }
++.section-heading > .sweeticon { color: var(--swt-color-accent-text-normal); }
++.section-heading h3 { font-size: var(--swt-font-size-normal); margin: 0; flex: 1; }
++.small-badge {
++  font-size: var(--swt-font-size-small); color: var(--swt-color-text-secondary);
++  background: var(--swt-color-bg-secondary); border-radius: 50%;
++  padding: 0 var(--swt-space-size-8);
++}
++.severity {
++  font-size: var(--swt-font-size-small); border-radius: var(--swt-radius-size-normal);
++  padding: 0 var(--swt-space-size-4); white-space: nowrap;
++}
++.critical { color: var(--swt-color-danger-text-normal); background: var(--swt-color-danger-light, color-mix(in srgb, var(--swt-color-danger) 10%, var(--swt-color-bg-primary))); }
++.major { color: var(--swt-color-warning); background: var(--swt-color-warning-light, color-mix(in srgb, var(--swt-color-warning) 10%, var(--swt-color-bg-primary))); }
++
++.table-foot {
++  display: flex; align-items: center; flex-wrap: wrap;
++  gap: var(--swt-space-size-16); justify-content: space-between;
++  color: var(--swt-color-text-extra); font-size: var(--swt-font-size-small);
++  margin-top: var(--swt-space-size-16);
++}
++
++.context-summary {
++  font-size: var(--swt-font-size-small); color: var(--swt-color-text-secondary);
++  background: var(--page-soft); padding: var(--swt-space-size-8) var(--swt-space-size-12);
++  border-radius: var(--swt-radius-size-normal); margin: var(--swt-space-size-12) 0;
++}
++
++.dependency {
++  display: flex; margin: var(--swt-space-size-24) 0; gap: var(--swt-space-size-16);
++}
++.dependency-item {
++  flex: 1; min-width: 0; position: relative;
++  display: flex; flex-direction: column; align-items: center;
++  text-align: center; gap: var(--swt-space-size-8);
++}
++.dependency-item:not(:last-child)::after {
++  content: ''; position: absolute;
++  left: 60%; right: -40%; top: 7px;
++  border-top: 1px dashed var(--swt-color-dividing-line-primary);
++}
++.dependency-dot {
++  width: 14px; height: 14px; border-radius: 50%;
++  background: var(--swt-color-overlay-gray1-and-accent-normal-opacity10);
++  border: 1px solid var(--swt-color-accent-normal); z-index: 1;
++}
++.dependency-dot.error {
++  background: var(--swt-color-danger-light, color-mix(in srgb, var(--swt-color-danger) 10%, var(--swt-color-bg-primary)));
++  border-color: var(--swt-color-danger);
++}
++.dependency-item strong { font-size: var(--swt-font-size-small); }
++.dependency-item small { color: var(--swt-color-text-secondary); font-size: var(--swt-font-size-small); }
++
++.context-note, .context-footer { color: var(--swt-color-text-extra); font-size: var(--swt-font-size-small); }
++.context-footer { text-align: center; padding: var(--swt-space-size-12); }
++.recommendations { padding-left: var(--swt-space-size-20); margin: var(--swt-space-size-16) 0; }
++.recommendations li { padding: var(--swt-space-size-8) 0; font-size: var(--swt-font-size-small); }
++.recommendations li::marker { color: var(--swt-color-accent-text-normal); }
++.note {
++  background: var(--page-soft); font-size: var(--swt-font-size-small);
++  color: var(--swt-color-text-secondary); padding: var(--swt-space-size-12);
++  border-radius: var(--swt-radius-size-medium);
++}
++.highlight-card { border-color: var(--swt-color-accent-normal); }
++
++.assistant-message { padding: var(--swt-space-size-16) 0; overflow-wrap: anywhere; }
++.message-files, .generating { font-size: var(--swt-font-size-small); }
++.generating { color: var(--swt-color-text-secondary); display: flex; align-items: center; gap: var(--swt-space-size-8); }
++
++.welcome { padding: var(--swt-space-size-48) 0; text-align: center; }
++.welcome-mark { color: var(--swt-color-accent-text-normal); }
++.welcome h2 { font-size: var(--swt-font-size-medium); }
++.welcome p { color: var(--swt-color-text-secondary); font-size: var(--swt-font-size-small); }
++
++@media (max-width: 1200px) {
++  .chat-pane { flex: 1.2; }
++  .conversation { padding-left: var(--swt-space-size-24); padding-right: var(--swt-space-size-24); }
++  .composer-area { padding-left: var(--swt-space-size-20); padding-right: var(--swt-space-size-20); }
++  .context-label { visibility: hidden; }
++}
++@media (max-width: 992px) {
++  .evidence-pane { position: absolute; inset: 0; z-index: 10; }
++  .chat-pane { border: 0; }
++}
++</style>
++
+
+diff --git a/skills/gts-sweetui-coder/assets/examples/workbench-conversation/components/foundation/conversation-composer.vue b/skills/gts-sweetui-coder/assets/examples/workbench-conversation/components/foundation/conversation-composer.vue
+new file mode 100644
+--- /dev/null
++++ b/skills/gts-sweetui-coder/assets/examples/workbench-conversation/components/foundation/conversation-composer.vue
++<script setup>
++import { ref, computed, watch, nextTick } from 'vue'
++import { SweetIcon, SweetSelect, SweetOption, SweetButton } from '@hw-seq/sweet-ui-base'
++const props = defineProps({
++  modelValue: { type: String, default: '' },
++  model: String,
++  models: { type: Array, default: () => [] },
++  busy: Boolean,
++  placeholder: { type: String, default: '输入问题，Shift + Enter 换行' },
++  references: { type: Array, default: () => [] },
++  commands: { type: Array, default: () => [] },
++  labels: { type: Object, default: () => ({}) },
++  disclaimer: { type: String, default: '' }
++})
++const emit = defineEmits(['update:modelValue', 'update:model', 'send', 'stop'])
++const labels = computed(() => ({
++  suggestions: '引用和命令建议',
++  references: '引用上下文',
++  commands: '快捷命令',
++  remove: '移除附件',
++  input: '对话输入',
++  attach: '添加附件',
++  model: '选择模型',
++  busy: '正在生成…',
++  stop: '停止生成',
++  send: '发送消息',
++  ...props.labels
++}))
++const textArea = ref(null)
++const fileInput = ref(null)
++const attachments = ref([])
++const composing = ref(false)
++const suggestionIndex = ref(0)
++const dismissed = ref(false)
++const trigger = computed(() => props.modelValue.match(/(?:^|\s)([@/])([^\s@/]*)$/))
++const suggestions = computed(() => {
++  if (!trigger.value || dismissed.value) return []
++  const source = trigger.value[1] === '@' ? props.references : props.commands
++  return source.filter(x => x.label.toLowerCase().includes(trigger.value[2].toLowerCase()))
++})
++const canSend = computed(() => !!props.modelValue.trim() || !!attachments.value.length)
++watch(() => props.modelValue, async () => {
++  dismissed.value = false
++  suggestionIndex.value = 0
++  await nextTick()
++  resize()
++})
++function resize() {
++  if (textArea.value) {
++    textArea.value.style.height = 'auto'
++    textArea.value.style.height = `${Math.min(140, Math.max(32, textArea.value.scrollHeight))}px`
++  }
++}
++function update(event) { emit('update:modelValue', event.target.value) }
++function choose(item) {
++  if (!item) return
++  const match = trigger.value
++  if (!match) return
++  const prefix = props.modelValue.slice(0, props.modelValue.length - match[0].length)
++  emit('update:modelValue', `${prefix}${match[0].startsWith(' ') ? ' ' : ''}${match[1] === '@' ? '@' + item.label : item.value} `)
++  textArea.value?.focus()
++}
++function keydown(event) {
++  if (event.isComposing || composing.value) return
++  if (event.key === 'Escape') { dismissed.value = true; return }
++  if (suggestions.value.length && ['ArrowDown', 'ArrowUp'].includes(event.key)) {
++    event.preventDefault()
++    suggestionIndex.value = (suggestionIndex.value + (event.key === 'ArrowDown' ? 1 : -1) + suggestions.value.length) % suggestions.value.length
++    return
++  }
++  if (event.key === 'Enter' && !event.shiftKey) {
++    event.preventDefault()
++    if (suggestions.value.length) choose(suggestions.value[suggestionIndex.value])
++    else send()
++  }
++}
++function send() {
++  if (props.busy || !canSend.value) return
++  emit('send', { text: props.modelValue.trim(), files: [...attachments.value], model: props.model })
++  attachments.value = []
++  emit('update:modelValue', '')
++}
++function attach(event) {
++  if (props.busy) return
++  attachments.value.push(...Array.from(event.target.files))
++  event.target.value = ''
++  textArea.value?.focus()
++}
++</script>
++<template>
++  <div class="composer-root">
++    <div v-if="suggestions.length" class="suggestions" role="listbox" :aria-label="labels.suggestions">
++      <div class="suggest-title">{{ trigger[1] === '@' ? labels.references : labels.commands }}</div>
++      <button
++        type="button" v-for="(item, index) in suggestions" :key="item.id"
++        role="option" :aria-selected="index === suggestionIndex"
++        :class="{ selected: index === suggestionIndex }"
++        @click="choose(item)"
++      >
++        <SweetIcon icon-class="sweetui-icon-file-l" :size="14" />
++        {{ item.label }}
++      </button>
++    </div>
++    <div class="composer" :class="{ busy }">
++      <div v-if="attachments.length" class="attachments">
++        <span v-for="(file, index) in attachments" :key="file.name + '-' + index">
++          <SweetIcon icon-class="sweetui-icon-file-l" :size="14" />
++          {{ file.name }}
++          <button type="button" :aria-label="labels.remove + file.name" @click="attachments.splice(index, 1)">
++            <SweetIcon icon-class="sweetui-icon-close" :size="12" />
++          </button>
++        </span>
++      </div>
++      <textarea
++        ref="textArea" :value="modelValue"
++        :placeholder="placeholder" maxlength="4000"
++        :aria-label="labels.input" rows="1"
++        @input="update" @keydown="keydown"
++        @compositionstart="composing = true"
++        @compositionend="composing = false"
++      />
++      <div class="tools">
++        <input ref="fileInput" type="file" multiple class="file-input" @change="attach" />
++        <SweetButton class="tool" :aria-label="labels.attach" :disabled="busy" @click="fileInput?.click()">
++          <SweetIcon :size="16" icon-class="sweetui-icon-add-l" />
++        </SweetButton>
++        <div v-if="models.length" class="model-selector">
++          <SweetSelect
++            :model-value="model"
++            :aria-label="labels.model"
++            :disabled="busy"
++            size="small"
++            @update:model-value="emit('update:model', $event)"
++          >
++            <SweetOption v-for="item in models" :key="item.id" :value="item.id" :label="item.label" />
++          </SweetSelect>
++        </div>
++        <span class="counter">{{ busy ? labels.busy : modelValue.length ? modelValue.length + ' / 4000' : '' }}</span>
++        <SweetButton v-if="busy" class="send stop" :aria-label="labels.stop" @click="emit('stop')">
++          <SweetIcon :size="16" icon-class="sweetui-icon-stop-l" />
++        </SweetButton>
++        <SweetButton v-else type="primary" class="send" :disabled="!canSend" :aria-label="labels.send" @click="send">
++          <SweetIcon :size="16" icon-class="sweetui-icon-arrow-up" />
++        </SweetButton>
++      </div>
++    </div>
++    <p v-if="disclaimer" class="disclaimer">{{ disclaimer }}</p>
++  </div>
++</template>
++<style scoped>
++.composer-root {
++  position: relative; width: 100%;
++  --page-border: color-mix(in srgb, var(--swt-color-accent-normal) 18%, var(--swt-color-bg-primary));
++}
++.composer {
++  border: 1px solid var(--page-border);
++  border-radius: var(--swt-radius-size-big2);
++  padding: var(--swt-space-size-8) var(--swt-space-size-12) var(--swt-space-size-8);
++  background: var(--swt-color-bg-primary);
++  transition: border-color .18s, box-shadow .18s;
++}
++.composer:focus-within {
++  border-color: var(--swt-color-accent-normal);
++  box-shadow: 0 0 0 3px color-mix(in srgb, var(--swt-color-accent-normal) 9%, transparent);
++}
++textarea {
++  display: block; width: 100%; box-sizing: border-box;
++  border: 0; outline: 0; resize: none;
++  min-height: 28px; max-height: 140px;
++  background: transparent; color: var(--swt-color-text-primary);
++  font: inherit; font-size: var(--swt-font-size-normal);
++  line-height: var(--swt-font-line-height-normal);
++  padding: var(--swt-space-size-4) 0;
++}
++textarea::placeholder { color: var(--swt-color-text-extra); }
++.tools {
++  display: flex; flex-wrap: nowrap; align-items: center;
++  gap: var(--swt-space-size-8); margin-top: var(--swt-space-size-4);
++}
++.tool {
++  display: grid; place-items: center;
++  width: 28px; height: 28px; padding: 0; flex-shrink: 0;
++}
++.model-selector {
++  min-width: 100px; max-width: 180px; flex-shrink: 0;
++  font-size: var(--swt-font-size-small);
++}
++.counter {
++  flex: 1; text-align: right;
++  font-size: var(--swt-font-size-small);
++  color: var(--swt-color-text-extra);
++  white-space: nowrap;
++}
++.send {
++  width: 28px; height: 28px; max-width: 100%;
++  border-radius: var(--swt-radius-size-medium);
++  display: grid; place-items: center;
++  padding: 0; flex-shrink: 0;
++}
++.disclaimer {
++  text-align: center; color: var(--swt-color-text-extra);
++  font-size: var(--swt-font-size-small);
++  margin: var(--swt-space-size-4) 0 0;
++}
++.file-input { display: none; }
++.attachments {
++  display: flex; flex-wrap: wrap;
++  gap: var(--swt-space-size-4); margin-bottom: var(--swt-space-size-4);
++}
++.attachments span {
++  display: flex; align-items: center; gap: var(--swt-space-size-4);
++  background: var(--swt-color-bg-secondary);
++  border-radius: var(--swt-radius-size-normal);
++  padding: var(--swt-space-size-2) var(--swt-space-size-8);
++  font-size: var(--swt-font-size-small); max-width: 100%;
++  overflow-wrap: anywhere;
++}
++.attachments button {
++  cursor: pointer; font: inherit; background: transparent; border: 0;
++  color: var(--swt-color-text-secondary); display: grid; place-items: center;
++  width: 16px; height: 16px; padding: 0;
++}
++.attachments button:focus-visible,
++.suggestions button:focus-visible {
++  outline: 2px solid var(--swt-color-accent-normal); outline-offset: 2px;
++}
++.suggestions {
++  position: absolute; bottom: 100%; left: 0; width: 100%;
++  background: var(--swt-color-bg-primary);
++  border: 1px solid var(--page-border);
++  border-radius: var(--swt-radius-size-medium);
++  box-shadow: var(--swt-shadow1, 0 2px 8px rgba(0,0,0,.12));
++  padding: var(--swt-space-size-4); box-sizing: border-box; z-index: 5;
++}
++.suggest-title {
++  color: var(--swt-color-text-secondary);
++  font-size: var(--swt-font-size-small);
++  padding: var(--swt-space-size-4) var(--swt-space-size-8);
++}
++.suggestions button {
++  cursor: pointer; font: inherit; background: transparent; border: 0;
++  color: var(--swt-color-text-primary); display: flex; gap: var(--swt-space-size-8);
++  align-items: center; width: 100%; text-align: left;
++  padding: var(--swt-space-size-6) var(--swt-space-size-8);
++  border-radius: var(--swt-radius-size-normal);
++  font-size: var(--swt-font-size-small);
++}
++.suggestions .selected {
++  background: var(--swt-color-overlay-gray1-and-accent-normal-opacity10);
++  color: var(--swt-color-accent-normal);
++}
++</style>
++
+
+diff --git a/skills/gts-sweetui-coder/assets/examples/workbench-conversation/components/foundation/workbench-shell.vue b/skills/gts-sweetui-coder/assets/examples/workbench-conversation/components/foundation/workbench-shell.vue
+new file mode 100644
+--- /dev/null
++++ b/skills/gts-sweetui-coder/assets/examples/workbench-conversation/components/foundation/workbench-shell.vue
++<script setup>
++import { ref, computed } from 'vue'
++import { SweetInput, SweetButton, SweetIcon, SweetTooltip } from '@hw-seq/sweet-ui-base'
++const props = defineProps({
++  brand: String,
++  workspaceName: String,
++  menus: { type: Array, default: () => [] },
++  tabs: { type: Array, default: () => [] },
++  activeMenu: String,
++  activeTab: String,
++  labels: { type: Object, default: () => ({}) }
++})
++const emit = defineEmits(['select-menu', 'select-tab', 'close-tab', 'new-tab', 'sessions'])
++const expanded = ref(false)
++const query = ref('')
++const favoritesOnly = ref(false)
++const favorites = ref([])
++const labels = computed(() => ({
++  navigation: '主导航',
++  toggle: '展开或收起导航',
++  search: '搜索应用',
++  allApps: '全部应用',
++  myFavorites: '我的收藏',
++  empty: '暂无匹配应用',
++  tabs: '工作区',
++  close: '关闭',
++  newTab: '新建工作区',
++  sessions: '最近会话',
++  collapse: '收起导航',
++  expand: '展开导航',
++  ...props.labels
++}))
++const visibleMenus = computed(() =>
++  props.menus.filter(m =>
++    m.label.toLowerCase().includes(query.value.toLowerCase()) &&
++    (!favoritesOnly.value || favorites.value.includes(m.id))
++  )
++)
++function toggleFavorite(id) {
++  favorites.value = favorites.value.includes(id)
++    ? favorites.value.filter(x => x !== id)
++    : [...favorites.value, id]
++}
++</script>
++<template>
++  <div class="shell">
++    <header class="topnav">
++      <SweetButton text :aria-expanded="expanded" :aria-label="labels.toggle" @click="expanded = !expanded">
++        <SweetIcon icon-class="sweetui-icon-menu-l" :size="18" />
++      </SweetButton>
++      <span class="brand">{{ brand }}</span>
++      <span v-if="workspaceName" class="product">
++        <SweetIcon icon-class="sweetui-icon-dashboard-l" :size="14" />
++        {{ workspaceName }}
++      </span>
++      <div class="top-tools"><slot name="tools" /></div>
++    </header>
++    <div class="body">
++      <aside class="navigation" :class="{ expanded }" :aria-label="labels.navigation">
++        <div v-if="expanded" class="nav-search">
++          <div class="nav-filters">
++            <button type="button" :class="{ selected: !favoritesOnly }" @click="favoritesOnly = false">{{ labels.allApps }}</button>
++            <button type="button" :class="{ selected: favoritesOnly }" @click="favoritesOnly = true">{{ labels.myFavorites }}</button>
++          </div>
++          <SweetInput v-model="query" clearable :placeholder="labels.search" :aria-label="labels.search" size="small" />
++        </div>
++        <nav class="nav-list">
++          <div
++            v-for="item in visibleMenus" :key="item.id"
++            class="nav-row" :class="{ current: activeMenu === item.id }"
++          >
++            <SweetTooltip :content="item.label" placement="right" :disabled="expanded">
++              <button
++                type="button" class="nav-action"
++                :aria-label="item.label"
++                :aria-current="activeMenu === item.id ? 'page' : undefined"
++                @click="emit('select-menu', item.id)"
++              >
++                <span class="nav-symbol" :class="item.tone">
++                  <SweetIcon v-if="item.icon" :icon-class="item.icon" :size="18" />
++                  <span v-else class="initial">{{ item.label.slice(0, 1) }}</span>
++                </span>
++                <span v-if="expanded" class="nav-label">{{ item.label }}</span>
++              </button>
++            </SweetTooltip>
++            <button v-if="expanded" type="button" class="favorite" :aria-label="(favorites.includes(item.id) ? '取消收藏' : '收藏') + item.label" @click="toggleFavorite(item.id)">
++              <SweetIcon v-if="expanded" :icon-class="favorites.includes(item.id) ? 'sweetui-icon-favorite-f' : 'sweetui-icon-favorite-l'" :size="14" />
++            </button>
++          </div>
++          <p v-if="expanded && !visibleMenus.length" class="empty">{{ labels.empty }}</p>
++        </nav>
++        <button type="button" class="collapse-button" :aria-label="expanded ? labels.collapse : labels.expand" @click="expanded = !expanded">
++          <SweetIcon :icon-class="expanded ? 'sweetui-icon-arrow-left' : 'sweetui-icon-arrow-right'" :size="16" />
++          <span v-if="expanded">{{ labels.collapse }}</span>
++        </button>
++      </aside>
++      <main class="main">
++        <div class="tabbar">
++          <SweetButton text class="session-toggle" :aria-label="labels.sessions" @click="emit('sessions')">
++            <SweetIcon icon-class="sweetui-icon-nav-fold" :size="16" />
++          </SweetButton>
++          <nav class="tabs" :aria-label="labels.tabs">
++            <div
++              v-for="tab in tabs" :key="tab.id"
++              class="tab" :class="{ active: activeTab === tab.id }"
++            >
++              <button
++                type="button"
++                :title="tab.title"
++                @click="emit('select-tab', tab.id)"
++              >
++                <span class="status-dot" :class="tab.status" />
++                <span class="tab-title">{{ tab.title }}</span>
++              </button>
++              <SweetButton
++                v-if="tab.closable !== false" text
++                :aria-label="labels.close + ' ' + tab.title"
++                @click.stop="emit('close-tab', tab.id)"
++              >
++                <SweetIcon icon-class="sweetui-icon-close" :size="13" />
++              </SweetButton>
++            </div>
++          </nav>
++          <SweetButton text :aria-label="labels.newTab" @click="emit('new-tab')">
++            <SweetIcon icon-class="sweetui-icon-add-l" :size="17" />
++          </SweetButton>
++        </div>
++        <div class="content"><slot /></div>
++        <div v-if="!tabs.length" class="empty-workspace">
++          <SweetIcon icon-class="sweetui-icon-add-l" :size="32" />
++          <p>暂无工作区</p>
++          <SweetButton type="primary" @click="emit('new-tab')">{{ labels.newTab }}</SweetButton>
++        </div>
++      </main>
++    </div>
++  </div>
++</template>
++<style scoped>
++.shell {
++  height: 100%; min-height: 0; min-width: 0;
++  display: flex; flex-direction: column;
++  background: var(--swt-color-bg-primary);
++  color: var(--swt-color-text-primary);
++  --page-line: color-mix(in srgb, var(--swt-color-accent-normal) 10%, var(--swt-color-bg-primary));
++}
++.topnav {
++  height: 48px; display: flex; gap: var(--swt-space-size-12);
++  align-items: center; padding: 0 var(--swt-space-size-16) 0 var(--swt-space-size-8);
++  border-bottom: 1px solid var(--page-line); flex-shrink: 0;
++}
++.brand {
++  font-size: var(--swt-font-size-normal1);
++  font-weight: var(--swt-font-weight-bold);
++  color: var(--swt-color-accent-text-normal);
++  letter-spacing: .3px;
++  white-space: nowrap;
++}
++.product {
++  display: inline-flex; gap: var(--swt-space-size-8); align-items: center;
++  border-radius: var(--swt-radius-size-normal);
++  background: var(--swt-color-overlay-gray1-and-accent-normal-opacity10);
++  padding: var(--swt-space-size-4) var(--swt-space-size-12);
++  font-size: var(--swt-font-size-small);
++  font-weight: var(--swt-font-weight-bold);
++  color: var(--swt-color-accent-text-normal);
++  white-space: nowrap;
++}
++.top-tools { display: flex; align-items: center; margin-left: auto; gap: var(--swt-space-size-12); }
++
++.body { flex: 1; min-height: 0; display: flex; }
++
++.navigation {
++  width: 48px; flex-shrink: 0;
++  border-right: 1px solid var(--page-line);
++  display: flex; flex-direction: column; min-height: 0;
++  padding-top: var(--swt-space-size-8);
++  transition: width .2s ease;
++  overflow: hidden;
++}
++.navigation.expanded { width: 216px; max-width: 45%; }
++
++.nav-search { padding: var(--swt-space-size-8) var(--swt-space-size-12) var(--swt-space-size-16); }
++.nav-filters {
++  display: flex; gap: var(--swt-space-size-12); margin-bottom: var(--swt-space-size-12);
++  font-size: var(--swt-font-size-small);
++}
++.nav-filters button {
++  font: inherit; cursor: pointer; background: transparent; border: 0;
++  color: var(--swt-color-text-secondary);
++}
++.nav-filters .selected { color: var(--swt-color-accent-text-normal); font-weight: var(--swt-font-weight-bold); }
++
++.nav-list { overflow: auto; flex: 1; }
++
++.nav-row {
++  display: flex; align-items: center;
++  border-radius: var(--swt-radius-size-normal);
++  margin: 0 var(--swt-space-size-4) var(--swt-space-size-8);
++}
++.nav-row.current { background: var(--swt-color-overlay-gray1-and-accent-normal-opacity10); }
++
++.nav-action {
++  height: 40px; flex: 1; display: flex; align-items: center;
++  gap: var(--swt-space-size-12); padding: 0 var(--swt-space-size-8);
++  min-width: 0; cursor: pointer; font: inherit; color: inherit;
++  background: transparent; border: 0; text-align: left;
++}
++.nav-action:focus-visible { outline: 2px solid var(--swt-color-accent-focus); outline-offset: 2px; }
++.nav-symbol {
++  width: 24px; height: 24px; max-width: 100%;
++  border-radius: var(--swt-radius-size-normal);
++  display: grid; place-items: center;
++  color: var(--swt-color-accent-text-normal);
++  background: var(--swt-color-overlay-gray1-and-accent-normal-opacity10);
++  flex-shrink: 0;
++}
++.nav-symbol.green {
++  color: var(--swt-color-success-text-normal);
++  background: var(--swt-color-overlay-gray1-and-success-normal-opacity10, color-mix(in srgb, var(--swt-color-success) 12%, var(--swt-color-bg-primary)));
++}
++.nav-symbol.purple {
++  color: var(--swt-color-chart-3, var(--swt-color-accent-text-normal));
++  background: var(--swt-color-overlay-gray1-and-chart-3-opacity10, color-mix(in srgb, var(--swt-color-chart-3, var(--swt-color-accent-normal)) 12%, var(--swt-color-bg-primary)));
++}
++.nav-label {
++  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
++  font-size: var(--swt-font-size-small);
++}
++.favorite {
++  padding: var(--swt-space-size-8); cursor: pointer;
++  font: inherit; background: transparent; border: 0;
++  color: var(--swt-color-text-extra);
++}
++.favorite:hover { color: var(--swt-color-accent-text-normal); }
++
++.collapse-button {
++  height: 44px; display: flex; align-items: center;
++  gap: var(--swt-space-size-12); padding: 0 var(--swt-space-size-16);
++  color: var(--swt-color-text-secondary);
++  border-top: 1px solid var(--page-line);
++  cursor: pointer; font: inherit; background: transparent; border-left: 0; border-right: 0; border-bottom: 0;
++}
++
++.empty { padding: var(--swt-space-size-12); color: var(--swt-color-text-secondary); font-size: var(--swt-font-size-small); }
++.initial { min-width: 18px; text-align: center; }
++
++.main {
++  flex: 1; min-width: 0; min-height: 0;
++  display: flex; flex-direction: column;
++  position: relative;
++}
++.tabbar {
++  display: flex; align-items: center;
++  height: 48px; gap: var(--swt-space-size-8);
++  border-bottom: 1px solid var(--page-line);
++  padding: 0 var(--swt-space-size-8);
++  flex-shrink: 0;
++}
++.session-toggle {
++  border-right: 1px solid var(--page-line);
++  border-radius: 0;
++}
++.tabs {
++  display: flex; flex: 1; min-width: 0;
++  overflow: auto; gap: var(--swt-space-size-8);
++  scrollbar-width: thin;
++}
++.tab {
++  display: flex; align-items: center;
++  flex: 0 1 245px; min-width: 150px;
++  border-radius: var(--swt-radius-size-normal);
++  color: var(--swt-color-text-secondary);
++}
++.tab > button:first-child {
++  flex: 1; display: flex; align-items: center;
++  gap: var(--swt-space-size-8); min-width: 0;
++  padding: var(--swt-space-size-8) var(--swt-space-size-12);
++  cursor: pointer; font: inherit; color: inherit;
++  background: transparent; border: 0; text-align: left;
++}
++.tab.active {
++  background: var(--swt-color-overlay-gray1-and-accent-normal-opacity10);
++  color: var(--swt-color-accent-text-normal);
++}
++.tab.active > button:first-child { font-weight: var(--swt-font-weight-bold); }
++.tab-title {
++  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
++  font-size: var(--swt-font-size-small);
++}
++.status-dot {
++  width: 8px; height: 8px; border-radius: 50%;
++  border: 1.5px solid var(--swt-color-info, var(--swt-color-accent-normal));
++  flex-shrink: 0;
++}
++.status-dot.done {
++  border-color: var(--swt-color-success);
++  background: var(--swt-color-overlay-gray1-and-success-normal-opacity10, rgba(var(--swt-color-success-rgb, 0,168,112), 0.15));
++}
++.status-dot.pending { border-color: var(--swt-color-warning); }
++
++.content { flex: 1; min-height: 0; min-width: 0; position: relative; display: flex; overflow: hidden; }
++
++.empty-workspace {
++  position: absolute; inset: 0;
++  display: flex; flex-direction: column;
++  align-items: center; justify-content: center;
++  gap: var(--swt-space-size-12);
++  color: var(--swt-color-text-secondary);
++}
++.empty-workspace p { font-size: var(--swt-font-size-normal); margin: 0; }
++
++@media (max-width: 768px) {
++  .product { display: none; }
++  .navigation { width: 48px; }
++}
++</style>
++
+
+diff --git a/skills/gts-sweetui-coder/assets/examples/workbench-conversation/components/resource-workspace.vue b/skills/gts-sweetui-coder/assets/examples/workbench-conversation/components/resource-workspace.vue
+new file mode 100644
+--- /dev/null
++++ b/skills/gts-sweetui-coder/assets/examples/workbench-conversation/components/resource-workspace.vue
++<script setup>
++import { ref, computed, onMounted } from 'vue'
++import { SweetButton, SweetInput, SweetSelect, SweetOption, SweetTable, SweetTableColumn, SweetPagination, SweetDrawer, SweetDescriptions, SweetDescriptionsItem, SweetIcon, SweetAlert, SweetTag } from '@hw-seq/sweet-ui-base'
++import { getResources } from '../api/foundation.js'
++const records = ref([])
++const query = ref('')
++const status = ref('all')
++const applied = ref({ query: '', status: 'all' })
++const page = ref(1)
++const detail = ref(null)
++const loading = ref(false)
++const error = ref('')
++const filtered = computed(() => records.value.filter(r =>
++  (applied.value.status === 'all' || r.status === applied.value.status) &&
++  `${r.name} ${r.ip}`.toLowerCase().includes(applied.value.query.toLowerCase())
++))
++const paged = computed(() => filtered.value.slice((page.value - 1) * 8, page.value * 8))
++const stats = computed(() => [
++  { id: 'total', label: '纳管资源', value: records.value.length, unit: '台', icon: 'sweetui-icon-dashboard-l', tone: 'brand' },
++  { id: 'healthy', label: '运行正常', value: records.value.filter(r => r.status === '运行中').length, unit: '台', icon: 'sweetui-icon-success-l', tone: 'success' },
++  { id: 'attention', label: '需要关注', value: records.value.filter(r => r.status === '需关注').length, unit: '台', icon: 'sweetui-icon-warning-l', tone: 'alert' }
++])
++async function load() {
++  loading.value = true
++  try { records.value = await getResources(); error.value = '' }
++  catch { error.value = '资源加载失败，请重试' }
++  finally { loading.value = false }
++}
++onMounted(load)
++function search() { applied.value = { query: query.value, status: status.value }; page.value = 1 }
++function reset() { query.value = ''; status.value = 'all'; search() }
++const statusOptions = [
++  { value: 'all', label: '全部状态' },
++  { value: '运行中', label: '运行中' },
++  { value: '需关注', label: '需关注' }
++]
++</script>
++<template>
++  <section class="resources">
++    <header class="page-heading">
++      <div>
++        <div class="breadcrumb">基础设施 <SweetIcon icon-class="sweetui-icon-arrow-right" :size="12" /> 资源管理</div>
++        <h1>资源总览</h1>
++        <p>统一查看资源运行状态，快速定位需要关注的设备。</p>
++      </div>
++      <SweetButton :loading="loading" @click="load">
++        <SweetIcon icon-class="sweetui-icon-refresh-l" :size="14" />
++        刷新数据
++      </SweetButton>
++    </header>
++    <div class="summary-strip">
++      <div v-for="item in stats" :key="item.id" class="stat">
++        <span class="stat-icon" :class="item.tone">
++          <SweetIcon :icon-class="item.icon" :size="20" />
++        </span>
++        <div>
++          <span class="stat-label">{{ item.label }}</span>
++          <div><strong>{{ item.value }}</strong><span class="unit">{{ item.unit }}</span></div>
++        </div>
++      </div>
++      <span class="data-source">演示数据<br />更新于 09:42</span>
++    </div>
++    <div class="table-card">
++      <div class="table-title">
++        <h2>资源列表</h2>
++        <span>共 {{ records.length }} 台资源</span>
++      </div>
++      <div class="filters">
++        <label for="res-query">关键词</label>
++        <SweetInput id="res-query" v-model="query" clearable placeholder="资源名称 / IP 地址" class="query" size="small" @keyup.enter="search" />
++        <label for="res-status">运行状态</label>
++        <SweetSelect id="res-status" v-model="status" class="status-select" size="small">
++          <SweetOption v-for="opt in statusOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
++        </SweetSelect>
++        <SweetButton type="primary" size="small" @click="search">
++          <SweetIcon icon-class="sweetui-icon-search-l" :size="14" />
++          查询
++        </SweetButton>
++        <SweetButton size="small" @click="reset">重置</SweetButton>
++      </div>
++      <SweetAlert v-if="error" :title="error" type="error" :closable="false" show-icon>
++        <SweetButton size="small" @click="load">重试</SweetButton>
++      </SweetAlert>
++      <SweetTable v-else stripe :data="paged" size="small" empty-text="暂无匹配资源">
++        <SweetTableColumn prop="name" label="资源名称" min-width="220">
++          <template #default="scope">
++            <button type="button" class="resource-link" @click="detail = scope.row">
++              <SweetIcon icon-class="sweetui-icon-dashboard-l" :size="16" />
++              {{ scope.row.name }}
++            </button>
++          </template>
++        </SweetTableColumn>
++        <SweetTableColumn prop="ip" label="IP 地址" min-width="150" />
++        <SweetTableColumn prop="region" label="所属区域" min-width="120" />
++        <SweetTableColumn prop="status" label="运行状态" min-width="120">
++          <template #default="scope">
++            <span class="resource-status" :class="{ attention: scope.row.status === '需关注' }">
++              <i />{{ scope.row.status }}
++            </span>
++          </template>
++        </SweetTableColumn>
++        <SweetTableColumn prop="owner" label="负责团队" min-width="150" />
++        <SweetTableColumn prop="updated" label="最近更新" min-width="180" />
++        <SweetTableColumn label="操作" width="85">
++          <template #default="scope">
++            <SweetButton link type="primary" size="small" @click="detail = scope.row">详情</SweetButton>
++          </template>
++        </SweetTableColumn>
++      </SweetTable>
++      <footer class="table-foot">
++        <span>共 {{ filtered.length }} 条 · 每页 8 条</span>
++        <SweetPagination v-model:current-page="page" :page-size="8" :total="filtered.length" layout="prev, pager, next" background small :pager-count="5" />
++      </footer>
++    </div>
++    <p class="bottom-note">同一工作台骨架 · 不同业务装配 · 该示例不显示对话输入组件</p>
++    <SweetDrawer :model-value="!!detail" title="资源详情" size="420px" @update:model-value="detail = null">
++      <template v-if="detail">
++        <SweetDescriptions :column="1" border size="small">
++          <SweetDescriptionsItem v-for="field in [
++            { key: 'id', label: '资源 ID' },
++            { key: 'name', label: '名称' },
++            { key: 'ip', label: 'IP 地址' },
++            { key: 'region', label: '区域' },
++            { key: 'status', label: '状态' },
++            { key: 'owner', label: '负责团队' }
++          ]" :key="field.key" :label="field.label">
++            <SweetTag v-if="field.key === 'status'" :type="detail[field.key] === '需关注' ? 'warning' : 'success'" size="small">
++              {{ detail[field.key] }}
++            </SweetTag>
++            <template v-else>{{ detail[field.key] }}</template>
++          </SweetDescriptionsItem>
++        </SweetDescriptions>
++        <p class="drawer-note">仅供演示，未连接实际设备。</p>
++      </template>
++    </SweetDrawer>
++  </section>
++</template>
++<style scoped>
++.resources {
++  flex: 1; min-width: 0; overflow: auto;
++  padding: var(--swt-space-size-24);
++  background: var(--swt-color-bg-secondary);
++}
++.page-heading {
++  display: flex; justify-content: space-between; align-items: center;
++  margin-bottom: var(--swt-space-size-24);
++}
++.breadcrumb {
++  display: flex; gap: var(--swt-space-size-8); align-items: center;
++  color: var(--swt-color-text-secondary); font-size: var(--swt-font-size-small);
++}
++h1 { font-size: var(--swt-font-size-medium); margin: var(--swt-space-size-12) 0 var(--swt-space-size-8); }
++.page-heading p { margin: 0; color: var(--swt-color-text-secondary); font-size: var(--swt-font-size-small); }
++
++.summary-strip {
++  display: flex; flex-wrap: wrap; align-items: center;
++  background: var(--swt-color-bg-primary);
++  border: 1px solid var(--swt-color-dividing-line-primary);
++  border-radius: var(--swt-radius-size-big);
++  padding: var(--swt-space-size-20) var(--swt-space-size-24);
++  gap: var(--swt-space-size-24); margin-bottom: var(--swt-space-size-20);
++}
++.stat { display: flex; align-items: center; gap: var(--swt-space-size-16); flex: 1; min-width: 160px; }
++.stat-icon {
++  display: grid; place-items: center;
++  width: 44px; height: 44px;
++  background: var(--swt-color-overlay-gray1-and-accent-normal-opacity10);
++  color: var(--swt-color-accent-text-normal);
++  border-radius: var(--swt-radius-size-big);
++}
++.stat-icon.success {
++  background: var(--swt-color-overlay-gray1-and-success-normal-opacity10, rgba(var(--swt-color-success-rgb, 0,168,112), 0.1));
++  color: var(--swt-color-success);
++}
++.stat-icon.alert {
++  background: var(--swt-color-overlay-gray1-and-warning-normal-opacity10, rgba(var(--swt-color-warning-rgb, 230,162,60), 0.1));
++  color: var(--swt-color-warning);
++}
++.stat-label { font-size: var(--swt-font-size-small); color: var(--swt-color-text-secondary); }
++.stat strong { font-size: var(--swt-font-size-normal2); line-height: 1.2; font-weight: var(--swt-font-weight-bold); }
++.unit { font-size: var(--swt-font-size-small); color: var(--swt-color-text-secondary); margin-left: var(--swt-space-size-8); }
++.data-source { text-align: right; font-size: var(--swt-font-size-small); color: var(--swt-color-text-extra); }
++
++.table-card {
++  background: var(--swt-color-bg-primary);
++  border: 1px solid var(--swt-color-dividing-line-primary);
++  border-radius: var(--swt-radius-size-big);
++  padding: var(--swt-space-size-20) var(--swt-space-size-24);
++}
++.table-title {
++  display: flex; gap: var(--swt-space-size-12); align-items: center;
++  margin-bottom: var(--swt-space-size-20);
++}
++h2 { font-size: var(--swt-font-size-normal1); margin: 0; }
++.table-title span { color: var(--swt-color-text-secondary); font-size: var(--swt-font-size-small); }
++
++.filters {
++  display: flex; flex-wrap: wrap; align-items: center;
++  gap: var(--swt-space-size-12); margin-bottom: var(--swt-space-size-20);
++  font-size: var(--swt-font-size-small);
++}
++.filters label { color: var(--swt-color-text-secondary); white-space: nowrap; }
++.query { width: 260px; max-width: 100%; }
++.status-select { width: 150px; max-width: 100%; }
++
++.resource-link {
++  display: flex; align-items: center; gap: var(--swt-space-size-8);
++  border: 0; background: transparent; color: var(--swt-color-accent-text-normal);
++  cursor: pointer; font: inherit;
++}
++.resource-status {
++  display: inline-flex; align-items: center; gap: var(--swt-space-size-8);
++  color: var(--swt-color-success); font-size: var(--swt-font-size-small);
++}
++.resource-status i { width: 6px; height: 6px; background: currentColor; border-radius: 50%; }
++.resource-status.attention { color: var(--swt-color-warning); }
++
++.table-foot {
++  display: flex; justify-content: space-between; align-items: center;
++  gap: var(--swt-space-size-16); margin-top: var(--swt-space-size-20);
++}
++.table-foot > span, .bottom-note { font-size: var(--swt-font-size-small); color: var(--swt-color-text-secondary); }
++.bottom-note { text-align: center; margin: var(--swt-space-size-20) 0; }
++.drawer-note { color: var(--swt-color-text-secondary); font-size: var(--swt-font-size-small); margin-top: var(--swt-space-size-12); }
++</style>
++
+
+diff --git a/skills/gts-sweetui-coder/assets/examples/workbench-conversation/components/session-panel.vue b/skills/gts-sweetui-coder/assets/examples/workbench-conversation/components/session-panel.vue
+new file mode 100644
+--- /dev/null
++++ b/skills/gts-sweetui-coder/assets/examples/workbench-conversation/components/session-panel.vue
++<script setup>
++import { ref, onMounted, computed } from 'vue'
++import { SweetButton, SweetInput, SweetIcon } from '@hw-seq/sweet-ui-base'
++import { getSessions } from '../api/foundation.js'
++defineProps({ business: Boolean })
++defineEmits(['close', 'open', 'new'])
++const sessions = ref([])
++const query = ref('')
++const error = ref('')
++const filtered = computed(() => sessions.value.filter(x => x.title.includes(query.value)))
++async function load() {
++  try { sessions.value = await getSessions(); error.value = '' }
++  catch { error.value = '会话加载失败' }
++}
++onMounted(load)
++</script>
++<template>
++  <aside class="panel">
++    <header>
++      <strong>{{ business ? '工作区入口' : '最近会话' }}</strong>
++      <SweetButton text :aria-label="'关闭'" @click="$emit('close')">
++        <SweetIcon icon-class="sweetui-icon-close" :size="14" />
++      </SweetButton>
++    </header>
++    <div class="controls">
++      <SweetButton type="primary" size="small" @click="$emit('new')">
++        <SweetIcon icon-class="sweetui-icon-add-l" :size="14" />
++        {{ business ? '新建查询页' : '新建会话' }}
++      </SweetButton>
++      <SweetInput v-if="!business" v-model="query" clearable placeholder="搜索会话" aria-label="搜索会话" size="small" />
++    </div>
++    <div v-if="error" class="panel-error">
++      {{ error }}
++      <SweetButton size="small" @click="load">重试</SweetButton>
++    </div>
++    <template v-if="!business">
++      <button
++        v-for="item in filtered" :key="item.id"
++        type="button" class="session-item"
++        @click="$emit('open', item)"
++      >
++        <SweetIcon icon-class="sweetui-icon-message-l" :size="18" />
++        <span class="session-body">
++          <strong>{{ item.title }}</strong>
++          <small>{{ item.time }} · {{ item.status }}</small>
++        </span>
++      </button>
++      <p v-if="!filtered.length" class="empty">暂无匹配会话</p>
++    </template>
++    <p class="foot">{{ business ? '同一骨架，可装配不同业务内容。' : '演示会话 · 不连接生产数据' }}</p>
++  </aside>
++</template>
++<style scoped>
++.panel {
++  position: absolute; left: 0; top: 0; bottom: 0;
++  width: 336px; max-width: 100%; z-index: 20;
++  background: var(--swt-color-bg-secondary);
++  border-right: 1px solid var(--swt-color-dividing-line-primary);
++  box-shadow: var(--swt-shadow1, 0 2px 8px rgba(0,0,0,.12));
++  padding: var(--swt-space-size-20); box-sizing: border-box; overflow: auto;
++}
++.panel header {
++  display: flex; justify-content: space-between; align-items: center;
++  margin-bottom: var(--swt-space-size-20);
++}
++.panel header strong { font-size: var(--swt-font-size-normal); }
++.controls {
++  display: flex; flex-direction: column; gap: var(--swt-space-size-12);
++  margin-bottom: var(--swt-space-size-20);
++}
++.session-item {
++  display: flex; gap: var(--swt-space-size-12); text-align: left;
++  width: 100%; padding: var(--swt-space-size-16) var(--swt-space-size-8);
++  background: transparent; color: var(--swt-color-text-primary); border: 0;
++  border-bottom: 1px solid var(--swt-color-dividing-line-primary);
++  cursor: pointer; font: inherit;
++}
++.session-item:hover { background: var(--swt-color-overlay-gray1-and-accent-normal-opacity10); }
++.session-item .sweeticon { color: var(--swt-color-accent-text-normal); }
++.session-body { flex: 1; min-width: 0; }
++.session-body strong { font-size: var(--swt-font-size-small); display: block; }
++.session-body small { display: block; color: var(--swt-color-text-secondary); margin-top: var(--swt-space-size-4); }
++.panel-error { color: var(--swt-color-danger-text-normal); font-size: var(--swt-font-size-small); margin-bottom: var(--swt-space-size-12); }
++.empty { color: var(--swt-color-text-secondary); font-size: var(--swt-font-size-small); padding: var(--swt-space-size-12); }
++.foot {
++  font-size: var(--swt-font-size-small); color: var(--swt-color-text-secondary);
++  margin-top: var(--swt-space-size-24);
++}
++</style>
++
+
+diff --git a/skills/gts-sweetui-coder/references/assets/index.md b/skills/gts-sweetui-coder/references/assets/index.md
+new file mode 100644
+index 0000000..132a1d1
+--- /dev/null
++++ b/skills/gts-sweetui-coder/references/assets/index.md
+@@ -0,0 +1,28 @@
++# 璧勪骇绱㈠紩
++
++鍙鐢ㄥ熀纭€缁勪欢璧勪骇锛屼粎澶嶅埗鎵€闇€鍒扮洰鏍囬〉闈?`components/foundation/` 鐩綍銆?+
++## 澶嶅埗鍛戒护
++
++```bash
++node scripts/copy-foundation.mjs --dir <project> --page <PascalCasePage> --assets <id,id>
++```
++
++- `--check` 浠呮鏌ヤ笉鍐欏叆
++- 宸插瓨鍦ㄤ笖鏈慨鏀圭殑鍚屽悕鏂囦欢鑷姩璺宠繃锛涘凡淇敼鍒欐姤 CONFLICT
++
++## 鍙敤璧勪骇
++
++| ID | 鏂囦欢 | 鐢ㄩ€?|
++|---|---|---|
++| workbench-shell | workbench-shell.vue | 宸ヤ綔鍙版鏋讹細椤堕儴瀵艰埅銆佹敹灞曚晶鏍忋€佸伐浣滃尯椤电銆佺┖鎬?|
++| conversation-composer | conversation-composer.vue | 瀵硅瘽杈撳叆鍣細textarea + 妯″瀷閫夋嫨 + 闄勪欢 + @/ 寤鸿琛ュ叏 |
++
++鐙珛鍒楄〃/琛ㄥ崟涓嶈嚜鍔ㄥ宸ヤ綔鍙般€傚伐浣滃彴鎴栧鍚堝璇濊緭鍏ラ渶姹傝瀵瑰簲璧勪骇鏂囨。锛涗粎澶嶅埗鎵€闇€璧勪骇銆?+
++## 绀轰緥
++
++| 璺緞 | 璇存槑 |
++|---|---|
++| assets/examples/workbench-conversation/ | 宸ヤ綔鍙帮紜瀵硅瘽瀹屾暣缁勫悎锛氬鑸€佷細璇濋潰鏉裤€佸杞璇濄€佸垎鏋愮粨鏋滈潰鏉裤€佸叧鑱旇瘉鎹潰鏉裤€佽緭鍏ュ櫒 |
++| vendor/code-example/references/table-search-drawer/ | 鏌ヨ锛嬭鎯咃細鎼滅储琛ㄥ崟銆佹暟鎹〃鏍笺€佸垎椤点€佽鎯呮娊灞夛紝鍚?api/mock 鏈嶅姟鍒嗗眰 |
+diff --git a/skills/gts-sweetui-coder/scripts/copy-foundation.mjs b/skills/gts-sweetui-coder/scripts/copy-foundation.mjs
+new file mode 100644
+index 0000000..a227f24
+--- /dev/null
++++ b/skills/gts-sweetui-coder/scripts/copy-foundation.mjs
+@@ -0,0 +1,85 @@
++#!/usr/bin/env node
++import fs from 'node:fs';
++import path from 'node:path';
++import { fileURLToPath } from 'node:url';
++
++const catalog = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../assets/foundation');
++const assets = new Set(['workbench-shell', 'conversation-composer']);
++const canonical = value => value.replace(/\r\n/g, '\n');
++
++function fail(code, message) {
++  throw Object.assign(new Error(message), { code });
++}
++
++function noLinks(root, target) {
++  const relative = path.relative(root, target);
++  if (relative.startsWith('..') || path.isAbsolute(relative)) fail('PATH', 'Target escapes project');
++  let current = root;
++  for (const part of relative.split(path.sep).filter(Boolean)) {
++    current = path.join(current, part);
++    let stat;
++    try { stat = fs.lstatSync(current); }
++    catch (error) { if (error.code === 'ENOENT') continue; throw error; }
++    if (stat.isSymbolicLink()) fail('PATH', `Linked target is not allowed: ${current}`);
++  }
++}
++
++try {
++  const args = process.argv.slice(2);
++  const options = {};
++  for (let i = 0; i < args.length; i++) {
++    const name = args[i];
++    if (name === '--check') {
++      if (options.check) fail('ARGS', 'Duplicate --check');
++      options.check = true;
++    } else if (['--dir', '--page', '--assets'].includes(name)) {
++      if (options[name] || !args[i + 1] || args[i + 1].startsWith('--')) fail('ARGS', `Invalid ${name}`);
++      options[name] = args[++i];
++    } else fail('ARGS', `Unknown option: ${name}`);
++  }
++  if (!options['--dir'] || !options['--page'] || !options['--assets']) {
++    fail('ARGS', 'Usage: --dir <project> --page <PascalCasePage> --assets <id,id> [--check]');
++  }
++  const page = options['--page'];
++  if (!/^[A-Z][A-Za-z0-9]*$/.test(page)) fail('PAGE', 'Page must be an init-generated PascalCase name');
++  const project = fs.realpathSync(path.resolve(options['--dir']));
++  const pageDir = path.join(project, 'src/pages', page);
++  noLinks(project, pageDir);
++  if (!fs.existsSync(path.join(pageDir, 'index.vue'))) fail('PAGE', `Initialize page first: ${pageDir}`);
++  const selected = options['--assets'].split(',');
++  if (new Set(selected).size !== selected.length || selected.some(id => !id)) fail('ASSETS', 'Duplicate or empty asset ID');
++  const plan = selected.map(id => {
++    if (!assets.has(id)) fail('ASSETS', `Unknown asset: ${id}`);
++    const source = path.join(catalog, id + '.vue');
++    noLinks(catalog, source);
++    const bytes = fs.readFileSync(source);
++    const relative = `src/pages/${page}/components/foundation/${id}.vue`;
++    const destination = path.join(project, relative);
++    noLinks(project, destination);
++    const expected = canonical(bytes.toString('utf8'));
++    if (fs.existsSync(destination) && canonical(fs.readFileSync(destination, 'utf8')) !== expected) {
++      fail('CONFLICT', `Preserved modified or different file: ${destination}`);
++    }
++    return { id, destination, bytes, exists: fs.existsSync(destination) };
++  });
++
++  if (!options.check) {
++    for (const item of plan) {
++      if (!item.exists) {
++        fs.mkdirSync(path.dirname(item.destination), { recursive: true });
++        noLinks(project, item.destination);
++        fs.writeFileSync(item.destination, item.bytes, { flag: 'wx' });
++      }
++    }
++  }
++  console.log('RESULT: OK');
++  console.log('MODE: ' + (options.check ? 'check (no writes)' : 'copy'));
++  for (const item of plan) {
++    console.log(`${item.exists ? 'REUSED' : options.check ? 'PLANNED' : 'COPIED'}: ${item.id} -> ${item.destination}`);
++  }
++  console.log('NEXT: assemble props/emits/slots using SweetUI contracts, then build');
++} catch (error) {
++  console.error(`RESULT: FAIL | ${error.code || 'COPY'}: ${error.message}`);
++  console.error('HINT: Inspect the reported path/arguments. Existing source is never overwritten.');
++  process.exitCode = 1;
++}

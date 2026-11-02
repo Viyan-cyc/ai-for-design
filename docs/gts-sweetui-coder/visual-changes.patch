@@ -1,0 +1,86 @@
+# Visual Changes Patch Summary
+
+## Files Modified
+
+### 1. scripts/preview/src/assets/themes/var-ui-common.css
+**Root cause fix**: Added `--swt-font-family` composite variable.
+The original CSS defined `--swt-font-family-zh`, `--swt-font-family-en`, `--swt-font-family-other`
+individually, but the HTML body's `font-family` declaration referenced `var(--swt-font-family)`
+which was **undefined**, causing Arial fallback → serif rendering on Chinese systems.
+
+Add after `--swt-font-family-other:Roboto`:
+```
+--swt-font-family:Roboto,SourceHanSansCN-Regular,Microsoft YaHei,sans-serif
+```
+
+### 2. scripts/preview/index.gts.html
+Changed body font-family fallback from `Arial` to `Roboto`:
+```
+- font-family: var(--swt-font-family, Arial, 'Microsoft YaHei', sans-serif);
++ font-family: var(--swt-font-family, Roboto, 'Microsoft YaHei', sans-serif);
+```
+
+## Files Added
+
+### 3. assets/foundation/workbench-shell.vue (NEW)
+Workbench shell component with:
+- Top navigation bar (brand, workspace name, tools slot)
+- Collapsible sidebar (56px collapsed → 216px expanded) with animation
+- Menu items with icons, selected state, search filtering
+- Workspace tab bar with close/new buttons
+- Built-in empty state with "create workspace" button
+- Improved spacing, hover states, transition animation
+
+### 4. assets/foundation/conversation-composer.vue (NEW)
+Conversation input component with:
+- Textarea with compositionstart/end for IME handling
+- Max-width 720px, auto-centered
+- Model selector (SweetSelect size="small") with min-width 100px
+- Attach, send (32px→28px), stop buttons with consistent 28px sizing
+- @/ suggestions with keyboard navigation
+- File attachments display and removal
+- Focus ring and border animation
+- Character counter / busy indicator
+
+### 5. assets/examples/workbench-conversation/index.vue (NEW)
+Complete workbench + conversation demo with:
+- Two navigation menus (助手, 知识库)
+- Welcome area with suggested questions
+- User/assistant message display
+- References and commands for @/ suggestions
+- Workspace draft preserved across tab switches (v-show)
+- Local timer-based demo (no model, no upload)
+
+### 6. scripts/copy-foundation.mjs (NEW)
+Asset copy script for selective foundation component deployment.
+Usage: `node scripts/copy-foundation.mjs --dir <project> --page <Page> --assets workbench-shell,conversation-composer`
+
+### 7. references/assets/workbench-shell.md (NEW)
+### 8. references/assets/conversation-composer.md (NEW)
+### 9. references/assets/index.md (NEW)
+
+## Files Modified (existing)
+
+### 10. vendor/code-example/references/table-search-drawer/index.vue
+- Added page header with title and "新建任务" button
+- Changed background to var(--swt-color-bg-secondary) for depth
+- Added real filter logic on searchParams (keyword + type)
+- Expanded mock data to 10 rows
+- Flexible flex layout with gap
+
+### 11. vendor/code-example/references/table-search-drawer/components/search-form.vue
+- Removed deprecated `el-` prefixed styles
+- Used inline style for field widths (compatible with UMD runtime)
+- Added concrete type options matching mock data (Bug/Feature/Task)
+
+### 12. vendor/code-example/references/table-search-drawer/components/data-table.vue
+- Added SweetIcon import (was missing)
+- Table size="small" for better density
+- Name column with type icon prefix
+- Refined column widths (ID:60, status:90, value:80)
+
+### 13. vendor/code-example/references/table-search-drawer/components/detail-drawer.vue
+- Changed title to "任务详情"
+- SweetDescriptions size="small"
+- Added detail-actions section with Edit/Delete buttons (sweetui-icon-edit-l, sweetui-icon-delete-l)
+- Drawer width reduced from 480px to 420px

@@ -1,0 +1,11 @@
+--- a/assets/examples/workbench-conversation/index.vue
++++ b/output/sweetui-foundation-check/src/pages/SweetuiFoundationCheck/index.vue
+@@ -11,6 +11,8 @@
+ const menus=[{id:'assistant',label:'助手',icon:'sweetui-icon-menu-l'}]
+ const models=[{id:'demo',label:'本地演示'}]
++const references=[{id:'doc-api',label:'API文档'},{id:'doc-guide',label:'使用指南'}]
++const commands=[{id:'cmd-reset',label:'/reset',value:'/reset'},{id:'cmd-clear',label:'/clear',value:'/clear'}]
+ const states=ref({first:{draft:'',model:'demo',busy:false,notice:'',lastRequest:null}})
+@@ -27,1 +29,1 @@
+-        <ConversationComposer v-model="states[tab.id].draft" v-model:model="states[tab.id].model" :models="models" :busy="states[tab.id].busy" disclaimer="本地交互演示，不上传附件" @send="send(tab.id,$event)" @stop="stop(tab.id)" />
++        <ConversationComposer v-model="states[tab.id].draft" v-model:model="states[tab.id].model" :models="models" :references="references" :commands="commands" :busy="states[tab.id].busy" disclaimer="本地交互演示，不上传附件" @send="send(tab.id,$event)" @stop="stop(tab.id)" />
