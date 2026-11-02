@@ -30,7 +30,7 @@
 
 独立比较 scripts、assets、references、vendor 与来源摘要，保留这里列出的有意差异；不要把普通页面场景重新设为图表入口必读项。通用问题先在基座修复再同步；图表专属规则只留在本包。
 
-维护时运行适用的 verify-build.mjs、verify-theme.mjs、verify-fetch-icons.mjs、verify-foundation.mjs，检查完整分发包在其他目录能 ensure/init/build。图表场景还须实际浏览器检查；这些脚本不是每次生成页面的必跑项目。
+维护时运行适用的 verify-build.mjs、verify-theme.mjs、verify-fetch-icons.mjs，检查完整分发包在其他目录能 ensure/init/build。图表场景还须实际浏览器检查；这些脚本不是每次生成页面的必跑项目。
 
 快速同步依赖于 design/ 不作本地修补；不等于自动更新、免适配或免验证。SweetUI 另立后续规格，不在本包加入分支。
 
@@ -45,3 +45,7 @@
 新增验证表述边界：程序设置与真实输入分开、canvas 挂载与数据绘制分开、Tooltip 触发与视觉定位分开。Step 1–400、具体画布尺寸和滑杆步长不进入通用要求。
 
 本次只修改说明与版本，无运行脚本变更；保留已有浏览器回归。不声称已独立复验用户页面或其 batch/真实拖拽行为。后续具体页面按其需求验证。
+
+## 0.1.3 分发精简
+
+移除 assets、references/assets、通用 scenes/visual-recipes、copy-foundation 和 verify-foundation。此前资产复制描述仅属于历史版本。保留工程主题、EP组件资料和上游图表案例；源清单为历史快照，不应自动恢复已排除内容。

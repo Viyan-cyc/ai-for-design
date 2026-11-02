@@ -240,5 +240,13 @@
   "renamedVendorEntries": [
     "vendor/code-example/SKILL.md",
     "vendor/vue-skill/SKILL.md"
+  ],
+  "distributionExclusions": [
+    "assets/",
+    "references/assets/",
+    "references/design/scenes/",
+    "references/design/visual-recipes.md",
+    "scripts/copy-foundation.mjs",
+    "scripts/verify-foundation.mjs"
   ]
 }

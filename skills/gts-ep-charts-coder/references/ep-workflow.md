@@ -117,7 +117,7 @@ main.js、api 服务层示例、主题三件套、starter 页面）。
 
 ### ③ 写代码 —— 主战场
 
-**运行源码只写 `src/` 下**（可选资产脚本另在工程根写 `.gts-assets.json` 安装记录）：页面放 `src/pages/{Page}/index.vue`（一页一目录，子组件/样式放同目录），
+**运行源码只写 `src/` 下**：页面放 `src/pages/{Page}/index.vue`（一页一目录，子组件/样式放同目录），
 `App.vue` 修改挂载与需求明确的装配。主题 css（`src/assets/themes/`）与 `index.gts-ep.html` 是交付件骨架，
 不改不删；换肤按 `src/assets/themes/README.md` 协议追加。
 
@@ -367,7 +367,6 @@ build的编译/token错误在重试额度内修复，达到上限或提前停止
 
 ## 维护回归（仅修改skill时）
 
-维护候选资产或设计流程时，另外执行 `node scripts/verify-foundation.mjs`；普通页面不执行维护测试。
 
 修改主题状态模块时执行 `node scripts/verify-theme.mjs`；它只检查状态逻辑，不挂载页面，普通页面不执行。
 

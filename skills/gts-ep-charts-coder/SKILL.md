@@ -2,7 +2,7 @@
 name: gts-ep-charts-coder
 description: 在 Vue 3 + Element Plus 环境中按图表设计规范生成、修改图表及数据分析页面，交付标准源码与离线预览。用于 EP 图表选型、图表实现、数据或交互修改；普通无图表页面不使用此入口。
 metadata:
-  version: 0.1.2
+  version: 0.1.3
 ---
 
 # GTS EP 图表生成
