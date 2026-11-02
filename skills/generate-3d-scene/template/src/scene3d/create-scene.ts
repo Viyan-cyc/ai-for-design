@@ -26,6 +26,7 @@ export async function createScene3D(host: HTMLElement, options: Scene3DOptions =
     if (!response.ok) throw new Error(`场景配置加载失败: ${response.status}`);
     data = await response.json() as SceneData;
   }
+  if (data.map) throw new Error('地图能力未启用，请先运行 enable-map.mjs');
   const manifest = await loadAssetManifest(assetBaseUrl);
   const canvas = document.createElement('canvas');
   canvas.style.cssText = 'display:block;width:100%;height:100%;';

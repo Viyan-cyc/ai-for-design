@@ -56,6 +56,7 @@ function checked(event: Event): boolean { return (event.target as HTMLInputEleme
 <template>
   <section class="render-settings ed-sec" aria-label="渲染设置">
     <div class="ed-sec__t">画质与性能</div>
+    <p v-if="bridge.handle.viewMode === 'map'" class="hint">像素比作用于整个地图；阴影与曝光仅作用于三维模型。帧率上限限制模型动画主动请求的重绘，地图导航及瓦片更新由地图调度。统计不包含地图底图开销。</p>
     <div class="setting"><span class="ed-label">画质 <button class="help" aria-label="画质说明" :aria-expanded="help === 'quality'" @click="toggleHelp('quality')">?</button></span>
       <div class="presets" role="group" aria-label="画质档位">
         <button v-for="(label, key) in { fluent: '流畅', balanced: '均衡', fine: '精细' }" :key="key" class="ed-btn"
@@ -77,12 +78,12 @@ function checked(event: Event): boolean { return (event.target as HTMLInputEleme
       <label class="setting"><span>阴影算法<small>shadowMap.type</small></span><select :disabled="!config.shadowMapEnabled" :value="config.shadowMap" @change="apply({ shadowMap: ($event.target as HTMLSelectElement).value as RendererConfig['shadowMap'] })"><option v-for="type in ['Basic', 'PCF', 'PCFSoft', 'VSM']" :key="type">{{ type }}</option></select></label>
 
       <label class="setting"><span>抗锯齿<small>antialias · 重新打开后生效</small></span><input aria-label="抗锯齿" type="checkbox" :checked="config.antialias" @change="apply({ antialias: checked($event) })"></label>
-      <label class="setting"><span>大尺度深度精度<small>logarithmicDepthBuffer · 重新打开后生效</small></span><input aria-label="大尺度深度精度" type="checkbox" :checked="config.logarithmicDepthBuffer" @change="apply({ logarithmicDepthBuffer: checked($event) })"></label>
+      <label class="setting"><span>大尺度深度精度<small>logarithmicDepthBuffer · 重新打开后生效</small></span><input aria-label="大尺度深度精度" :disabled="bridge.handle.viewMode === 'map'" type="checkbox" :checked="config.logarithmicDepthBuffer" @change="apply({ logarithmicDepthBuffer: checked($event) })"></label>
 
       <p v-if="pending" class="pending" role="status">保存并回写工程后，重新打开更新后的场景生效。当前初始化值：抗锯齿 {{ engine.initialOptions.antialias ? '开启' : '关闭' }}；对数深度 {{ engine.initialOptions.logarithmicDepthBuffer ? '开启' : '关闭' }}。</p>
       <label class="setting"><span>色调映射</span><select :value="config.toneMapping" @change="apply({ toneMapping: ($event.target as HTMLSelectElement).value as RendererConfig['toneMapping'] })"><option v-for="type in ['NoToneMapping', 'Linear', 'Reinhard', 'Cineon', 'ACESFilmic', 'AgX', 'Neutral']" :key="type">{{ type }}</option></select></label>
       <label class="setting"><span>曝光</span><input type="number" min="0.01" step="0.05" :value="config.exposure" @change="number('exposure', $event)"></label>
-      <details class="runtime"><summary><span class="chevron">›</span>当前运行参数</summary><p>设备像素比：{{ deviceRatio }} · 实际倍率：{{ engine.renderer.getPixelRatio() }}</p><p>绘制分辨率：{{ actual }}</p><p>实际 MSAA：{{ engine.renderer.getContext().getContextAttributes()?.antialias ? '开启' : '关闭' }}</p><p>对数深度：{{ engine.initialOptions.logarithmicDepthBuffer ? '开启' : '关闭' }}</p>      <p v-for="light in lightSizes.filter(l => l.castShadow)" :key="light.id" class="hint">{{ light.id }}：{{ light.shadowMapSize ?? 512 }} × {{ light.shadowMapSize ?? 512 }}（{{ config.shadowMapEnabled ? '已启用' : '全局阴影已关闭' }}）</p></details>
+      <details class="runtime"><summary><span class="chevron">›</span>当前运行参数</summary><p>设备像素比：{{ deviceRatio }} · 实际倍率：{{ bridge.handle.viewMode === 'map' ? config.pixelRatio : engine.renderer.getPixelRatio() }}</p><p>绘制分辨率：{{ actual }}</p><p>实际 MSAA：{{ engine.renderer.getContext().getContextAttributes()?.antialias ? '开启' : '关闭' }}</p><p>对数深度：{{ engine.initialOptions.logarithmicDepthBuffer ? '开启' : '关闭' }}</p>      <p v-for="light in lightSizes.filter(l => l.castShadow)" :key="light.id" class="hint">{{ light.id }}：{{ light.shadowMapSize ?? 512 }} × {{ light.shadowMapSize ?? 512 }}（{{ config.shadowMapEnabled ? '已启用' : '全局阴影已关闭' }}）</p></details>
     </details>
     <p v-if="error" role="alert" class="error">{{ error }}</p>
   </section>

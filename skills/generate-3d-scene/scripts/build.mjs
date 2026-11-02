@@ -80,6 +80,8 @@ export const ALLOWED_CORE_ENTRIES = new Set([
  */
 export const BARE_IMPORT_PREFIXES = [
   'vue',
+  'maplibre-gl',
+  '@turf/turf',
   'three',
   'three/examples/jsm/',
   'three/addons/',
@@ -356,6 +358,9 @@ export const checkProject = (dir, opts = {}) => {
       errors.push(`public/scene3d/scene-data.json 解析失败：${err.message}`);
     }
     if (data) {
+      if (data.map && !existsSync(join(srcDir, 'scene3d/map/create-map-scene.ts'))) {
+        errors.push('地图配置存在但地图扩展未启用。HINT: 运行 enable-map.mjs <工程目录>，安装依赖后重建');
+      }
       // 6a. 场景 schema（P2.3/V08 + P2-R3）：确定性结构错误硬失败。
       //     工厂注册表从工程自身 src/scene3d/scene-profile.ts 提取（单一来源）：
       //     未注册分组的节点引擎建树会静默跳过——在构建期就硬失败。

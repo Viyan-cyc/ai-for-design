@@ -29,15 +29,17 @@ export class RendererEngine {
   private shadowProgramsDirty = false;
   readonly initialOptions: { antialias: boolean; logarithmicDepthBuffer: boolean };
 
-  constructor(canvas: HTMLCanvasElement, config: RendererConfig) {
+  constructor(canvas: HTMLCanvasElement, config: RendererConfig, private external?: { context: WebGL2RenderingContext; resize: (ratio: number) => void }) {
     this.config = normalizeRenderer(config);
     this.initialOptions = { antialias: this.config.antialias!, logarithmicDepthBuffer: this.config.logarithmicDepthBuffer! };
     this.renderer = new THREE.WebGLRenderer({
       canvas,
+      ...(external ? { context: external.context } : {}),
       ...this.initialOptions,
       alpha: true,
       powerPreference: 'default',
     });
+    if (external) this.renderer.autoClear = false;
     this.renderer.toneMapping = toneMappingMap[config.toneMapping] ?? THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = config.exposure;
     this.renderer.shadowMap.enabled = config.shadowMapEnabled;
@@ -52,6 +54,10 @@ export class RendererEngine {
     // 0 宽高（容器被移动/隐藏的中间态）回退全屏，避免 0 尺寸渲染
     const width = parent?.clientWidth || window.innerWidth;
     const height = parent?.clientHeight || window.innerHeight;
+    if (this.external) {
+      this.external.resize(this.config.pixelRatio ?? 1);
+      return { width: canvas.clientWidth, height: canvas.clientHeight };
+    }
     this.renderer.setPixelRatio(this.config.pixelRatio ?? 1);
     this.renderer.setSize(width, height, false);
     return { width, height };
@@ -99,6 +105,11 @@ export class RendererEngine {
 
   /** 每帧渲染 */
   render(scene: THREE.Scene, camera: THREE.Camera): void {
+    if (this.external) {
+      this.renderer.resetState();
+      const canvas = this.renderer.domElement;
+      this.renderer.setViewport(0, 0, canvas.width, canvas.height);
+    }
     // Shadow enable/type changes alter shader sampler declarations. Updating the
     // shadow map alone leaves cached material programs using the old sampler type.
     if (this.shadowProgramsDirty) {

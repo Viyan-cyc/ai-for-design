@@ -214,7 +214,7 @@ export type TypedSceneNode = SceneNode & { type: string };
 
 /** 保留 key：不作为 type 分组解析 */
 export const RESERVED_KEYS = new Set([
-  'version', 'meta', 'scene', 'camera', 'lights', 'controls', 'renderer', 'remove',
+  'version', 'meta', 'map', 'scene', 'camera', 'lights', 'controls', 'renderer', 'remove',
   '__visuals', '__materialLib',
 ]);
 

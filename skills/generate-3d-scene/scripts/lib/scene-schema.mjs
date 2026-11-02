@@ -13,7 +13,7 @@
  */
 
 const RESERVED_KEYS = new Set([
-  'version', 'meta', 'scene', 'camera', 'lights', 'controls', 'renderer', 'remove',
+  'version', 'meta', 'map', 'scene', 'camera', 'lights', 'controls', 'renderer', 'remove',
   '__visuals', '__materialLib',
 ]);
 
@@ -42,6 +42,14 @@ export const validateSceneData = (data, registry = {}) => {
   }
   if (data.lights !== undefined && !Array.isArray(data.lights)) {
     errors.push({ path: 'lights', code: 'bad-lights', message: 'lights 必须是数组' });
+  }
+
+  if (data.map !== undefined) {
+    const map = data.map;
+    if (!map || typeof map !== 'object' || Array.isArray(map) || typeof map.styleUrl !== 'string' || !map.styleUrl.trim()
+      || !Array.isArray(map.origin) || map.origin.length !== 2 || !map.origin.every(isFiniteNumber)
+      || Math.abs(map.origin[0]) > 180 || Math.abs(map.origin[1]) > 85)
+      errors.push({ path: 'map', code: 'bad-map', message: '地图需要 styleUrl 与有效经纬度 origin' });
   }
 
   // 业务分组收集

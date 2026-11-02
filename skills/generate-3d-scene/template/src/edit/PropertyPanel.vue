@@ -699,6 +699,17 @@ const bboxText = computed(() => {
 
 // ---- Tab 页签：物体页（选中相关）/ 场景页（全局配置） ----
 const activeTab = ref<'object' | 'scene'>('scene');
+watch(() => state.value.selectedSurface, id => { if (id) activeTab.value = 'object'; });
+const surface = computed(() => { void state.value; return props.bridge.handle.surfaces?.list().find(item => item.id === state.value.selectedSurface); });
+const surfaceShadow = computed(() => { void state.value; return props.bridge.handle.surfaces?.list().find(item => item.id === `${state.value.selectedSurface}:shadow`); });
+const updateSurfaceShadow = (visible: boolean): void => {
+  const id = surfaceShadow.value?.id;
+  if (id) props.bridge.commit('建筑投影', () => props.bridge.handle.surfaces?.update(id, { visible }));
+};
+const updateSurface = (patch: { color?: string; visible?: boolean }): void => {
+  const id = state.value.selectedSurface;
+  if (id) props.bridge.commitLive(`整体外观:${id}`, () => props.bridge.handle.surfaces?.update(id, patch));
+};
 const selectLight = async (id: string): Promise<void> => {
   if (!lights.value.some((light) => light.id === id)) {
     return;
@@ -713,7 +724,7 @@ defineExpose({ selectLight });
 
 /** 选中物体自动切物体页；选中清空自动回场景页（用户手动切页后不强制跳，直到选中态再次变化） */
 watch(selectionCount, (n) => {
-  activeTab.value = n > 0 ? 'object' : 'scene';
+  activeTab.value = n > 0 || state.value.selectedSurface ? 'object' : 'scene';
 }, { immediate: true });
 
 // ---- 材质浮动面板（⊞ 材质素材 / ⚙ 编辑材质球 / 点条目编辑 inline）----
@@ -832,8 +843,18 @@ const modalPos = computed(() => defaultDockPos(editSlot.value, PANEL_W));
 
     <!-- ═══ 物体页（选中相关） ═══ -->
     <template v-if="activeTab === 'object'">
+      <section v-if="surface" class="ed-sec">
+        <div class="ed-sec__t">{{ surface.name }}</div>
+        <p v-if="surface.locked" class="ed-label">对象已锁定，请在模型列表解锁后修改。</p>
+        <fieldset :disabled="surface.locked" class="pp__editable">
+        <label class="ed-row"><input type="checkbox" :checked="surface.visible" @change="updateSurface({ visible: ($event.target as HTMLInputElement).checked })"> 显示</label>
+        <label v-if="surface.colorEditable !== false" class="ed-row">颜色 <input type="color" :value="surface.color" @input="updateSurface({ color: ($event.target as HTMLInputElement).value })" @change="bridge.endLiveEdit()" @blur="bridge.endLiveEdit()"></label>
+        <label v-if="surfaceShadow" class="ed-row"><input type="checkbox" :checked="surfaceShadow.visible" :disabled="!surface.visible" @change="updateSurfaceShadow(($event.target as HTMLInputElement).checked)"> 显示投影</label>
+        </fieldset>
+        <p class="ed-label">统一调整该类内容的外观。位置与形状由地理数据决定。</p>
+      </section>
       <div
-        v-if="selectionCount === 0"
+        v-else-if="selectionCount === 0"
         class="pp__empty"
       >
         未选中物体（点击视口或物体树）
@@ -1166,7 +1187,7 @@ const modalPos = computed(() => defaultDockPos(editSlot.value, PANEL_W));
     <!-- ═══ 场景页（全局配置） ═══ -->
     <template v-else>
       <RenderSettings :bridge="bridge" />
-      <section class="ed-sec">
+      <section v-if="bridge.handle.viewMode !== 'map'" class="ed-sec">
         <div class="ed-sec__t">场景风格</div>
         <p class="ed-label">替换灯光、背景与曝光，保留模型材质；可撤销。</p>
         <div style="display: flex; flex-wrap: wrap; gap: 5px">
@@ -1174,7 +1195,7 @@ const modalPos = computed(() => defaultDockPos(editSlot.value, PANEL_W));
         </div>
       </section>
       <!-- 场景环境 -->
-      <div class="ed-sec">
+      <div v-if="bridge.handle.viewMode !== 'map'" class="ed-sec">
         <div class="ed-sec__t">
           环境
         </div>
@@ -1540,7 +1561,7 @@ const modalPos = computed(() => defaultDockPos(editSlot.value, PANEL_W));
       </div>
 
       <!-- 相机 -->
-      <div class="ed-sec">
+      <div v-if="bridge.handle.viewMode !== 'map'" class="ed-sec">
         <div class="ed-sec__t">
           相机
         </div>
@@ -1652,7 +1673,7 @@ const modalPos = computed(() => defaultDockPos(editSlot.value, PANEL_W));
       </div>
 
       <!-- 控制器 -->
-      <div class="ed-sec">
+      <div v-if="bridge.handle.viewMode !== 'map'" class="ed-sec">
         <div class="ed-sec__t">
           控制器
         </div>

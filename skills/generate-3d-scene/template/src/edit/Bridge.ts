@@ -28,6 +28,7 @@ export interface EditorState {
 
   /** 选中物体 id 列表（有序，末位=基准） */
   selection: string[];
+  selectedSurface: string | null;
 
   /** 选中的子网格槽位（GLB 内部 mesh；null = 无——属性面板据此显示子网格信息） */
   selectedSlot: { nodeId: string; slotKey: string } | null;
@@ -51,6 +52,12 @@ export class Bridge {
   readonly handle: SceneHandle;
 
   private selection: string[] = [];
+  private surface: string | null = null;
+
+  selectSurface(id: string): void {
+    if (!this.handle.surfaces?.list().some(item => item.id === id)) return;
+    this.endLiveEdit(); this.selection = []; this.slot = null; this.surface = id; this.emit();
+  }
 
   private undoStack: Snapshot[] = [];
 
@@ -100,6 +107,7 @@ export class Bridge {
   getState(): EditorState {
     return {
       selection: [...this.selection],
+      selectedSurface: this.surface,
       selectedSlot: this.slot ? { ...this.slot } : null,
       undoDepth: this.undoStack.length,
       redoDepth: this.redoStack.length,
@@ -147,6 +155,7 @@ export class Bridge {
 
   /** 点选（无修饰键=重置为单选；Shift=切换累计；基准=最后选中的；再点已选中者保持选中——取消走点空白/ESC） */
   select(id: string, additive: boolean): void {
+    this.surface = null;
     this.endLiveEdit();
     this.slot = null;
     if (!additive) {
@@ -165,6 +174,7 @@ export class Bridge {
 
   /** 选中子网格槽位（树点 mesh 行；选中父物体 + 记录槽位——属性面板据此显示该 mesh 信息） */
   selectSlot(nodeId: string, slotKey: string): void {
+    this.surface = null;
     this.endLiveEdit();
     this.selection = [nodeId];
     this.slot = { nodeId, slotKey };
@@ -187,6 +197,7 @@ export class Bridge {
 
   /** 点空白/ESC 清空 */
   clearSelection(): void {
+    this.surface = null;
     this.endLiveEdit();
     this.selection = [];
     this.slot = null;

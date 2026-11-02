@@ -170,11 +170,13 @@ function exampleText(comment) {
   return codeParts.join('\n') || textParts.join('\n') || null;
 }
 
-const top = td.children || [];
+// Multiple entry points are emitted as modules; flatten only module containers.
+const top = (td.children || []).flatMap(c => c.kind === 2 ? (c.children || []) : [c]);
 const classes = top.filter((c) => c.kind === KIND.CLASS);
 const sources = classes.map((c) => {
   const ctor = (c.children || []).find((m) => m.kind === KIND.CONSTRUCTOR);
-  const ctorSig = ctor && ctor.signatures && ctor.signatures[0];
+  const create = (c.children || []).find(m => m.name === 'create' && m.flags?.isStatic);
+  const ctorSig = ctor?.signatures?.[0] ?? create?.signatures?.[0];
   // options 接口名 = ctor 首参 type 里剥泛型后匹配的 interface
   const ctorParamType = ctorSig && ctorSig.parameters && ctorSig.parameters[0]
     && ctorSig.parameters[0].type;
@@ -211,7 +213,7 @@ if (missing.length) {
 // ── importPath 推断：barrel 分析（core/heat/material/... 哪个 index.ts 导出它）──
 // 子域入口优先于根入口（tree-shaking 最优）；根 index 的 export * 链同样能命中，
 // 但只作兜底——所以 BARRELS 把 index 排最后。
-const BARRELS = ['core', 'heat', 'material', 'utils', 'helper', 'graph',
+const BARRELS = ['labels', 'map', 'core', 'heat', 'material', 'utils', 'helper', 'graph',
   'controls', 'camera', 'interactive', 'animation', 'loader', 'index'];
 
 // 解析单个 barrel 文件：返回 { named:Set<string>, stars:string[]（相对目录） }

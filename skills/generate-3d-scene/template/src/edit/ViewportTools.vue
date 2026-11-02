@@ -33,12 +33,40 @@ const toggleGrid = (): void => {
   gridVisible.value = !gridVisible.value;
   grid.visible = gridVisible.value;
 };
-const isometric = (): void => {
-  const { camera, controlsEngine } = props.bridge.handle.internals;
-  const target = controlsEngine.controls.target.clone();
-  const distance = Math.max(1, camera.position.distanceTo(target));
-  const position = target.clone().add(new THREE.Vector3(1, 1, 1).normalize().multiplyScalar(distance));
-  props.bridge.commit('等角观察', () => props.bridge.handle.update({ camera: { position: position.toArray(), lookAt: target.toArray() } }));
+const setView = (top: boolean): void => {
+  const handle = props.bridge.handle;
+  props.bridge.commit(top ? '俯视' : '鸟瞰', () => {
+    const data = handle.serialize();
+    if (handle.viewMode === 'map') {
+      const map = data.map as Record<string, unknown>;
+      handle.update({ map: { ...map, view: top ? '2d' : '3d', pitch: Number(map.pitch) || 45 } });
+      return;
+    }
+    const { camera, controlsEngine } = handle.internals;
+    const target = controlsEngine.controls.target.clone();
+    const distance = Math.max(1, camera.position.distanceTo(target));
+    const direction = top ? new THREE.Vector3(0, 1, 0.0001) : new THREE.Vector3(1, 1, 1).normalize();
+    const position = target.clone().add(direction.multiplyScalar(distance));
+    handle.update({ camera: { position: position.toArray(), lookAt: target.toArray() } });
+  });
+};
+const setTheme = (theme: 'light' | 'dark'): void => {
+  const handle = props.bridge.handle;
+  props.bridge.commit(theme === 'light' ? '浅色外观' : '深色外观', () => {
+    const data = handle.serialize();
+    if (handle.viewMode === 'map') {
+      handle.update({ map: { ...(data.map as Record<string, unknown>), theme } });
+    } else {
+      const color = theme === 'light' ? '#eef0f3' : '#202733';
+      handle.update({ scene: { ...data.scene, background: color, fog: data.scene.fog ? { ...data.scene.fog, color } : null } });
+    }
+  });
+};
+const themeSelected = (theme: string): boolean => {
+  void state.value;
+  const data = props.bridge.handle.serialize();
+  return props.bridge.handle.viewMode === 'map' ? (data.map as Record<string, unknown>).theme === theme
+    : data.scene.background === (theme === 'light' ? '#eef0f3' : '#202733');
 };
 const frameSelection = (): void => {
   const id = props.bridge.anchorId;
@@ -58,7 +86,9 @@ onBeforeUnmount(() => {
 <template>
   <nav class="viewport-tools" aria-label="视口快捷操作">
     <button class="ed-btn" :disabled="!state.selection.length" title="聚焦当前选中对象（F）" @click="frameSelection">聚焦</button>
-    <button class="ed-btn" title="从 XYZ 等角方向观察，保留当前投影类型" @click="isometric">等角</button>
+    <button class="ed-btn" title="从上方观察，保留当前投影类型" @click="setView(true)">俯视</button>
+    <button class="ed-btn" title="倾斜观察场景" @click="setView(false)">鸟瞰</button>
+    <button v-for="theme in (['light', 'dark'] as const)" :key="theme" class="ed-btn" :class="{ 'ed-btn--active': themeSelected(theme) }" :aria-pressed="themeSelected(theme)" title="切换场景外观，保留模型材质" @click="setTheme(theme)">{{ theme === 'light' ? '浅色' : '深色' }}</button>
     <button class="ed-btn" :class="{ 'ed-btn--active': gridVisible }" :aria-pressed="gridVisible" title="显示或隐藏编辑辅助网格" @click="toggleGrid">网格</button>
     <button class="ed-btn" :aria-pressed="state.transformSpace === 'local'" title="切换变换手柄的世界／局部坐标；缩放沿局部轴" @click="props.bridge.toggleTransformSpace()">{{ state.transformSpace === 'world' ? '世界坐标' : '局部坐标' }}</button>
     <button class="ed-btn" :aria-pressed="focused" title="收起两侧面板，保留视口工具" @click="emit('toggle-focus')">{{ focused ? '退出专注' : '专注显示' }}</button>

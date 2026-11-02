@@ -44,6 +44,13 @@ import {
 
 /** 对外 Handle API（edit 外壳只允许经此触达 core——build 铁律 2） */
 export interface SceneHandle {
+  /** Geographic hosts own camera/background and expose their controls separately. */
+  viewMode?: 'map';
+  /** Aggregate content owned by a renderer; never fake Object3Ds. */
+  surfaces?: {
+    list(): Array<{ id: string; name: string; parentId?: string; colorEditable?: boolean; locked?: boolean; color: string; visible: boolean }>;
+    update(id: string, patch: { color?: string; visible?: boolean; locked?: boolean }): void;
+  };
   /**
    * 增量更新（v3 统一语义）：喂整份 = 建场景；喂片段 = 增量。
    * remove 先行 → 每节点存在即 update / 不存在即 create → params 整块替换 → 不 diff。
@@ -201,6 +208,11 @@ const toGroups = (source: SceneData | TreeSceneFragment): Array<[string, SceneNo
 
 /** createScene 第四参（P2.1）：建树前的业务装配钩子 */
 export interface SceneOptions {
+  externalView?: {
+    context: WebGL2RenderingContext;
+    resize: (ratio: number) => void;
+    requestFrame: () => void;
+  };
   cardContext?: import('vue').AppContext;
   assetBaseUrl?: string;
   assetManifest?: import('./asset-manifest').AssetManifest;
@@ -242,7 +254,7 @@ export const createScene = async (
   };
   try {
     // 依赖先创建、后释放；场景实例必须先于资产缓存释放。
-    const rendererEngine = own(new RendererEngine(canvas, data.renderer));
+    const rendererEngine = own(new RendererEngine(canvas, data.renderer, options.externalView));
     const assetEngine = own(new AssetEngine(`${options.assetBaseUrl ?? 'scene3d/'}assets/draco/`));
     if (options.assetManifest)
       bindAssetManifest(assetEngine, options.assetManifest, options.assetBaseUrl ?? 'scene3d/');
@@ -257,6 +269,7 @@ export const createScene = async (
       new LightEngine(sceneEngine.scene, data.lights, rendererEngine.getConfig().shadowMapSize),
     );
     const controlsEngine = own(new ControlsEngine(cameraEngine.camera, canvas, data.controls));
+    if (options.externalView) controlsEngine.controls.disconnect();
     // 子网格槽位层：SceneEngine 查资产报告（逐 mesh 清单）用
     sceneEngine.assetReportProvider = (assetId) => assetEngine.getReport(assetId);
 
@@ -330,6 +343,7 @@ export const createScene = async (
         controlsEngine,
         () => sceneEngine.scene,
         () => cameraEngine.camera,
+        options.externalView?.requestFrame,
       ),
     );
     renderLoop.onFrame(() => cardSystem.updateProjection(), false);

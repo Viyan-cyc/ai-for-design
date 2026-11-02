@@ -177,3 +177,49 @@ onBeforeUnmount(() => { active = false; scene?.dispose(); });
 ### 开发工作区与交付目录
 
 CLI `node scripts/init.mjs <用户项目目录>` 的参数是最终交付目录，不是开发目录。脚本在用户主目录 `.scene3d/workspaces/` 创建独立工程，输出 WORKSPACE_PATH 和 DELIVERY_PATH。所有源码编辑、模型注入、临时查询文件及其他工程脚本使用 WORKSPACE_PATH，不在用户项目目录初始化源码或安装依赖。统一 build-offline 支持传 WORKSPACE_PATH 或原交付路径；成功返回最终 HTML_PATH。用户项目根目录仅有 index.3d.html、preview/、source/，不再有 delivery/、offline/、node_modules。交付时链接 HTML_PATH。同机后续修改继续使用原工作区；跨电脑使用 source 作为完整工程。旧工程不会自动移动或删除；旧工程无交付配置时仍保留 delivery 输出兼容。
+
+## 可选地理地图工程
+
+只有启用了地图扩展的工程才包含 `src/scene3d/map` 与 MapLibre/Turf 依赖。Three 固定 0.185.1。普通三维工程不需要安装它们。
+
+- 地图服务、经纬度原点、视角、主题配置在 `public/scene3d/scene-data.json` 的 `map`；模型仍是原有分组，数据与卡片仍从 `src/business` 接入。
+- `origin` 使用 WGS84 经纬度。模型 position 使用相对原点的米，X 东、Y 上、Z 南；资产默认正面为 +Z。地图适配不自动把整个地球转成平面场景，不支持地形高度贴合。
+- `@a3d/a3d-components/map` 的 `MapRuntime` 负责 MapLibre 生命周期、局部坐标、相机与重绘；`create-map-scene.ts` 负责接入引擎、拾取、编辑和保存；`map-experience.js` 保留来源地图的主题、建筑与标签算法。不要在业务层再建立独立相机循环。
+- 地图风格源当前按 OpenMapTiles 的 building 数据层适配。更换服务需核对矢量字段、字体、sprite、跨域和版权；运行仍需要访问地图服务。交付 HTML 不是离线瓦片包。
+- 模型的灯光/阴影与底图的建筑投影分别控制。对数深度关闭以共享地图深度缓冲。统计只包含 Three 图层；地图导航不受模型动画帧率上限约束。
+- `handle.serialize()` 包含地图状态，`handle.update({map: 完整地图配置})` 恢复视角/主题；更换 styleUrl 或 origin 需 dispose 后重新创建。`handle.dispose()` 同时清理地图和模型资源。
+
+底图建筑不是可逐栋编辑的业务资产。散点和交通热力通过 map.overlays 配置，与 Three 模型共用同一场景。
+
+
+地图整体编辑通过可选 `SceneHandle.surfaces.list/update` 能力接入既有模型列表。`map.surfaces` 保存建筑、道路、水面、地面、绿地的颜色/显隐覆盖，不创建伪 Three 节点。所有修改经 Bridge.commit，随场景保存、撤销和恢复；更换地图数据规范时需适配类别识别。底部俯视/鸟瞰、浅色/深色入口适用于普通三维和地图，普通场景深浅只改背景/雾，不覆盖业务模型材质。
+
+
+### 通用组件与升级边界
+
+- 固定屏幕尺寸标签从 `@a3d/a3d-components/labels` 导入 `createScreenLabel` 或 `ScreenLabel`，默认 180×48 CSS 像素，不随距离变大。文字、贴图、锚点和深度测试可配置；实体标牌仍按世界尺寸制作。
+- `/labels` 仅运行依赖 Three；`/map` 单独依赖 MapLibre，不从组件库根入口导出。普通工程无需地图依赖。GSAP、CSG、BVH 是可选 peer，使用对应组件时才安装。
+- 标签独立使用时调用 `dispose()`，内部生成的贴图随标签释放，外部贴图由调用者释放。挂入本模板受管理的节点后由 SceneEngine 统一释放，不再手动重复释放或将同一外部贴图跨引擎共享。
+- 新地图工程由 `enable-map.mjs` 准备组件包依赖。升级已有工程时保留 `src/business` 和本场景 handler，更新匹配版本的组件包与地图适配文件，再安装依赖并构建。旧标签从 scene-core/handlers 导入的，改为从 `/labels` 导入；不要只覆盖 package.json 或只复制一份 adapter。
+- 本次不自动升级旧业务工程。组件库实现只有一份，模板不复制其源码；生产 tgz 是构建产物。
+
+地图启用脚本将组件包按内容摘要命名。升级后运行普通 npm install 即更新依赖路径与 lockfile，不复用同名旧包。标签支持 clone/copy/Group.clone：材质独立，内部生成贴图独立释放，外部贴图继续由调用者拥有。
+
+如果升级组件时 Vite 开发服务正在运行，安装后停止服务，再用 `npm run dev -- --force` 重启，避免优化缓存仍引用旧导出。生产构建会重新打包；不要把开发缓存问题通过复制旧 bundle 绕过。
+
+### 地图业务叠加层
+
+`map.overlays` 是完整数组。散点形态为 `{id, kind:'scatter', options:{tone:'blue'}, data:[{id,lng,lat,properties}], card:{type:'device'}}`；热力为 `{id,kind:'heat',options:{valueRange:[0,100]},data:[{id,lng,lat,value}]}`。每层可设置 name/visible/locked。经纬度为 WGS84，id 稳定且唯一，数值范围由业务定义，空数据不会回填演示数据。
+
+业务 adapter 读取 `handle.serialize().map`，替换相应层 data 后通过 `handle.update({map})` 更新；保留其他层和视角。同样的完整配置可用于恢复。整体层在模型列表支持显隐、锁定及保存撤销，散点还可调统一颜色。热力五级阈值/色带参数在 options 配置，不对应普通 PBR 材质。
+
+点位 `card.type` 查外部 cards 注册表；选中单点时挂载一张 Vue 卡片，props 合并 card.props、点位 properties 和 id/lng/lat，隐藏或删除后卸载。卡片和数据接入继续放 src/business。聚合不是单个业务对象，不自动弹一个成员的卡片。
+
+底层 `/map` 导出 MapScatterLayer、MapHeatLayer，提供 setData/setOptions/dispose；模板 map-overlays.ts 管理注册、序列化和生命周期。无需在业务层再次建立这些组件。散点尺寸固定 CSS px；热力采用原生单层强光晕表达式、固定数值标尺和屏幕核，不是米制物理测量。普通工程不引入这些能力。
+
+
+地图热力 options.displayMode 默认 transparent：零密度透明，缺省 blankThreshold=0.02；reference 保留来源的全域低值底色。没有模式但已显式保存 blankThreshold=0 的历史配置按 reference 迁移，其他显式阈值保留；完全缺省采用新透明默认，serialize 保存确定的模式。transparent 的显式 blankThreshold 必须为有限数且大于 0.0001。无数据、缺测与实测低值不能混为一谈，业务请求失败仍由业务层表达。
+
+散点在导航结束及视口尺寸变化时按邻近点与实际投影聚合，消除相邻分箱造成的分裂，并合并重叠图钉；成员/计数保留，位置为成员加权地理中心，不人为挪位。导航中间帧可能临时重叠，达到 maxClusterZoom 后按配置显示独立点，不承诺重合单点能完全分开。主题/DPR不用于改变成员关系。
+
+地图叠加层整批更新会先校验完整热力色带与配置，成功后才提交保存快照。无效配置直接抛错且不修改旧层；运行期创建失败会尝试恢复旧层及快照，调用方应捕获错误，不能把失败当作已保存。持续资源故障导致恢复也失败时，会报告原错误和恢复错误。

@@ -33,6 +33,7 @@ export class RenderLoop {
     private controlsEngine: ControlsEngine,
     private getScene: () => THREE.Scene,
     private getCamera: () => THREE.Camera,
+    private externalRequest?: () => void,
   ) {
     this.resizeObserver = new ResizeObserver(() => {
       const size = this.rendererEngine.applySize();
@@ -67,6 +68,7 @@ export class RenderLoop {
   }
   invalidate = (): void => {
     this.dirty = true;
+    if (this.externalRequest) { if (this.running && !document.hidden) this.externalRequest(); return; }
     if (!this.running || this.inTick || this.rafId || document.hidden) return;
     // Resuming an idle scene must not advance an animation by the entire idle duration.
     const now = performance.now();
@@ -84,16 +86,16 @@ export class RenderLoop {
     if (!this.running || document.hidden) return;
     const limit = this.rendererEngine.getConfig().maxFps ?? 60;
     const interval = limit > 0 ? 1000 / limit : 0;
-    if (interval && now + 0.5 < this.deadline) {
+    if (!this.externalRequest && interval && now + 0.5 < this.deadline) {
       this.rafId = requestAnimationFrame(this.tick); return;
     }
-    const delta = Math.max(0, (now - this.lastTime) / 1000);
+    const delta = Math.min(0.1, Math.max(0, (now - this.lastTime) / 1000));
     this.lastTime = now; this.elapsed += delta;
     this.deadline = interval ? (this.deadline > 0 && now - this.deadline < interval
       ? this.deadline + interval : now + interval) : now;
     this.dirty = false; this.inTick = true;
     try {
-      this.controlsEngine.update(delta);
+      if (!this.externalRequest) this.controlsEngine.update(delta);
       for (const { cb } of [...this.callbacks]) cb(delta, this.elapsed);
       const renderer = this.rendererEngine.renderer;
       renderer.info.autoReset = false;
@@ -105,15 +107,23 @@ export class RenderLoop {
       this.trim(now);
       for (const cb of [...this.afterFrameCallbacks]) cb(delta, this.elapsed);
     } finally { this.inTick = false; }
-    if (this.running && (this.dirty || this.continuous())) this.rafId = requestAnimationFrame(this.tick);
+    if (this.running && (this.dirty || this.continuous())) {
+      if (this.externalRequest) this.externalRequest();
+      else this.rafId = requestAnimationFrame(this.tick);
+    }
   };
+  /** Called by a host-owned renderer (e.g. a geographic map custom layer). */
+  drawExternal(now = performance.now()): void {
+    if (!this.externalRequest) throw new Error('No external frame driver');
+    this.tick(now);
+  }
   configurationChanged(): void {
     this.deadline = 0; this.frameTimes = []; this.sampleStart = performance.now();
     this.invalidate();
   }
   start(): void {
     if (this.running) return;
-    this.running = true; this.sampleStart = performance.now(); this.invalidate();
+    this.running = true; this.lastTime = this.sampleStart = performance.now(); this.invalidate();
   }
   stop(): void { this.running = false; cancelAnimationFrame(this.rafId); this.rafId = 0; }
   private trim(now: number): void {
@@ -123,7 +133,7 @@ export class RenderLoop {
     const now = performance.now(); this.trim(now);
     return { fps: this.frameTimes.length, calls: this.calls, triangles: this.triangles,
       elapsed: this.elapsed, paused: document.hidden || !this.running,
-      idle: !this.rafId && !this.inTick && !this.continuous(),
+      idle: !this.inTick && !this.continuous() && (this.externalRequest ? now - this.lastTime > 250 : !this.rafId),
       sampling: now - this.sampleStart < 1000, maxFps: this.rendererEngine.getConfig().maxFps ?? 60 };
   }
   dispose(): void {

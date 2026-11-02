@@ -9,6 +9,7 @@
  * 搜索：id 子串不区分大小写；命中 + 祖先链自动展开；清空恢复全树；无结果空态。
  */
 import { computed, onMounted, ref } from 'vue';
+import VisibilityIcon from './VisibilityIcon.vue';
 import type { Bridge } from './Bridge';
 import type { VisualOverride } from '../scene3d/scene-core/index';
 import { RESERVED_KEYS, type SceneNode, type MeshSpecEntry } from '../scene3d/scene-core/types';
@@ -51,7 +52,13 @@ interface Row {
 }
 
 const query = ref('');
+const changeSurface = (id: string, patch: { visible?: boolean; locked?: boolean }): void => {
+  props.bridge.commit('地图对象属性', () => props.bridge.handle.surfaces?.update(id, patch));
+};
+const surfaceId = ref<string | null>(null);
+const surfaces = ref(props.bridge.handle.surfaces?.list() ?? []);
 const selected = ref<string[]>([]);
+const selectedSlot = ref<{ nodeId: string; slotKey: string } | null>(null);
 
 /** 折叠集：分组根用 `g:<key>`，节点用 `<id>` */
 const collapsed = ref<Set<string>>(new Set());
@@ -76,6 +83,9 @@ onMounted(() => {
   refresh();
   props.bridge.onState((s) => {
     selected.value = s.selection;
+    selectedSlot.value = s.selectedSlot;
+    surfaceId.value = s.selectedSurface;
+    surfaces.value = props.bridge.handle.surfaces?.list() ?? [];
     refresh();
   });
 });
@@ -263,7 +273,7 @@ const rows = computed<Row[]>(() => {
             collapsed: false,
             inheritedHidden: inheritedHidden || selfHidden,
             slotKey: m.key,
-            slotName: m.name,
+            slotName: m.name?.trim() || m.key.split('/').filter(Boolean).pop() || '未命名网格',
             slotVisible: slotVisuals[m.key]?.visible !== false,
             meshExpanded: false,
           });
@@ -331,7 +341,8 @@ const subMeshesOf = (id: string): MeshSpecEntry[] => {
   if (cached) {
     return cached;
   }
-  const list = props.bridge.handle.internals.sceneEngine.listSubMeshes(id);
+  // Empty key represents the root mesh itself, already edited through its parent row.
+  const list = props.bridge.handle.internals.sceneEngine.listSubMeshes(id).filter(mesh => mesh.key.trim().length > 0);
   if (list.length > 0) {
     meshCache.set(id, list);
   }
@@ -368,9 +379,9 @@ const onSelectSlot = (nodeId: string, slotKey: string): void => {
 };
 
 /** mesh 行选中态：bridge.selectedSlot 匹配该槽位 */
-const isSlotActive = (slotKey: string): boolean => {
-  const s = props.bridge.selectedSlot;
-  return !!s && s.slotKey === slotKey;
+const isSlotActive = (nodeId: string, slotKey: string): boolean => {
+  const s = selectedSlot.value;
+  return !!s && s.nodeId === nodeId && s.slotKey === slotKey;
 };
 
 const onSelect = (id: string, ev: MouseEvent): void => {
@@ -424,8 +435,6 @@ const GROUP_ICON: Record<string, string> = {
 const iconOf = (key: string): string => ICONS[GROUP_ICON[key] ?? 'box'] ?? DEFAULT_ICON;
 
 /** 行内按钮图标路径（长路径置此，模板行保持短） */
-const EYE_ON = 'M1.5 8s2.4-4 6.5-4 6.5 4 6.5 4-2.4 4-6.5 4S1.5 8 1.5 8z';
-const EYE_OFF = 'M3 3l10 10M6.6 6.8A3 3 0 0 0 8 11c1.2 0 2.3-.6 3-1.5M2 8s2.4-4 6.5-4c1 0 1.9.3 2.7.7M13.6 6.3C14.1 7 14.5 8 14.5 8s-2.4 4-6.5 4c-.5 0-1-.1-1.4-.2';
 const LOCK_ON = 'M5 7V5.5a3 3 0 0 1 6 0V7M3.5 7h9a.5.5 0 0 1 .5.5v4a.5.5 0 0 1-.5.5h-9a.5.5 0 0 1-.5-.5v-4a.5.5 0 0 1 .5-.5z';
 const LOCK_OFF = 'M5 7V5.5a3 3 0 0 1 5.8-.9M3.5 7h9a.5.5 0 0 1 .5.5v4a.5.5 0 0 1-.5.5h-9a.5.5 0 0 1-.5-.5v-4a.5.5 0 0 1 .5-.5z';
 </script>
@@ -442,8 +451,23 @@ const LOCK_OFF = 'M5 7V5.5a3 3 0 0 1 5.8-.9M3.5 7h9a.5.5 0 0 1 .5.5v4a.5.5 0 0 1
       >
     </div>
 
+    <div v-if="surfaces.length" class="outline__surfaces">
+      <div v-for="item in surfaces.filter(item => !item.parentId && item.name.includes(query))" :key="item.id"
+        role="button" tabindex="0" class="outline__item outline__surface" :class="{ 'outline__item--active': surfaceId === item.id }"
+        :aria-pressed="surfaceId === item.id" @click="bridge.selectSurface(item.id)" @keydown.enter.self="bridge.selectSurface(item.id)" @keydown.space.self.prevent="bridge.selectSurface(item.id)">
+        <span class="outline__chev outline__chev--empty" aria-hidden="true" />
+        <svg class="outline__icon" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2 14 5 8 8 2 5Z M2 8l6 3 6-3 M2 11l6 3 6-3" fill="none" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round" /></svg>
+        <span class="outline__id">{{ item.name }}</span>
+        <button type="button" class="outline__act" :class="{ 'outline__act--off': !item.visible }" :title="item.visible ? '隐藏' : '显示'" :disabled="item.locked" @click.stop="changeSurface(item.id, { visible: !item.visible })">
+          <VisibilityIcon :visible="item.visible" />
+        </button>
+        <button type="button" class="outline__act" :class="{ 'outline__act--on': item.locked }" :title="item.locked ? '解锁' : '锁定'" @click.stop="changeSurface(item.id, { locked: !item.locked })">
+          <svg viewBox="0 0 16 16"><path :d="item.locked ? LOCK_ON : LOCK_OFF" fill="none" stroke="currentColor" stroke-width="1.1" /></svg>
+        </button>
+      </div>
+    </div>
     <div
-      v-if="empty"
+      v-if="empty && !surfaces.some(item => !item.parentId && item.name.includes(query))"
       data-tree-empty
       class="outline__empty"
     >
@@ -456,7 +480,7 @@ const LOCK_OFF = 'M5 7V5.5a3 3 0 0 1 5.8-.9M3.5 7h9a.5.5 0 0 1 .5.5v4a.5.5 0 0 1
     >
       <template
         v-for="row in rows"
-        :key="row.kind === 'group' ? `g:${row.key}` : row.id"
+        :key="row.kind === 'group' ? `g:${row.key}` : row.kind === 'mesh' ? `m:${row.id}:${row.slotKey || row.slotName}` : `n:${row.id}`"
       >
         <li
           v-if="row.kind === 'group'"
@@ -496,7 +520,7 @@ const LOCK_OFF = 'M5 7V5.5a3 3 0 0 1 5.8-.9M3.5 7h9a.5.5 0 0 1 .5.5v4a.5.5 0 0 1
           :data-tree-node="row.id"
           :data-tree-parent="row.parentId"
           :data-tree-depth="row.depth"
-          :class="{ 'outline__item--active': selected.includes(row.id) }"
+          :class="{ 'outline__item--active': selected.includes(row.id) && selectedSlot?.nodeId !== row.id }"
           :style="{ paddingLeft: `${8 + row.depth * 14}px` }"
           class="outline__item"
           @click.stop="onSelect(row.id, $event)"
@@ -544,32 +568,7 @@ const LOCK_OFF = 'M5 7V5.5a3 3 0 0 1 5.8-.9M3.5 7h9a.5.5 0 0 1 .5.5v4a.5.5 0 0 1
             type="button"
             @click.stop="toggleVisible(row.id)"
           >
-            <svg
-              v-if="isVisible(row.id)"
-              viewBox="0 0 16 16"
-            ><path
-              :d="EYE_ON"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.1"
-            /><circle
-              cx="8"
-              cy="8"
-              r="1.8"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.1"
-            /></svg>
-            <svg
-              v-else
-              viewBox="0 0 16 16"
-            ><path
-              :d="EYE_OFF"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.1"
-              stroke-linecap="round"
-            /></svg>
+            <VisibilityIcon :visible="isVisible(row.id)" />
           </button>
 
           <button
@@ -611,7 +610,7 @@ const LOCK_OFF = 'M5 7V5.5a3 3 0 0 1 5.8-.9M3.5 7h9a.5.5 0 0 1 .5.5v4a.5.5 0 0 1
           :data-tree-mesh-node="row.id"
           :style="{ paddingLeft: `${8 + row.depth * 14}px` }"
           class="outline__item outline__item--mesh"
-          :class="{ 'outline__item--meshgroup': !row.slotKey, 'outline__item--active': row.slotKey && isSlotActive(row.slotKey) }"
+          :class="{ 'outline__item--meshgroup': !row.slotKey, 'outline__item--active': row.slotKey && isSlotActive(row.id, row.slotKey) }"
           :title="row.slotKey ? `模型内部节点 · ${row.slotKey}` : '模型内部容器'"
           @click.stop="row.slotKey && onSelectSlot(row.id, row.slotKey)"
         >
@@ -636,25 +635,7 @@ const LOCK_OFF = 'M5 7V5.5a3 3 0 0 1 5.8-.9M3.5 7h9a.5.5 0 0 1 .5.5v4a.5.5 0 0 1
             type="button"
             @click.stop="toggleSlotVisible(row.id, row.slotKey)"
           >
-            <svg
-              v-if="row.slotVisible"
-              viewBox="0 0 16 16"
-            ><path
-              :d="EYE_ON"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.1"
-            /></svg>
-            <svg
-              v-else
-              viewBox="0 0 16 16"
-            ><path
-              :d="EYE_OFF"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.1"
-              stroke-linecap="round"
-            /></svg>
+            <VisibilityIcon :visible="row.slotVisible" />
           </button>
         </li>
       </template>
@@ -663,6 +644,11 @@ const LOCK_OFF = 'M5 7V5.5a3 3 0 0 1 5.8-.9M3.5 7h9a.5.5 0 0 1 .5.5v4a.5.5 0 0 1
 </template>
 
 <style scoped>
+.outline__surfaces { padding: 0 6px; flex-shrink: 0; }
+.outline__surface { box-sizing: border-box; width: 100%; font: inherit; color: inherit; }
+.outline__surface:focus-visible { outline: 1px solid var(--ed-accent); outline-offset: -1px; }
+.outline__surface:focus-within .outline__act { opacity: 1; }
+
 .outline {
   display: flex;
   flex-direction: column;

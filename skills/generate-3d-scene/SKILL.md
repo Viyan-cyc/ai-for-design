@@ -47,16 +47,20 @@ version: 0.1.0
 - 独立编排对象保留独立节点；稳定 snake_case 子网格名决定编辑槽位。不要为了合批牺牲用户要求的编辑粒度。
 - 代码建模直接写 handler，不生成 GLB 脚本。模型入库校验属于另行请求的维护任务。
 
+## 地理地图（按需）
+
+明确需要真实地理底图时，读取 references/map.md 并启用可选地图扩展；示意园区不自动启用。地图与三维模型在同一场景，Three 固定 0.185.1。地图服务在内网可访问，使用实际配置；不要求离线瓦片包。需要散点聚合或交通热力时再读 references/map-overlays.md，使用 map.overlays 接入，不默认添加演示点或独立面板。
+
 ## 数据与修改边界
 
 - 统一右手坐标系、+Y 向上、+Z 为资产正面、长度单位米；相机局部 -Z 观察方向不变。资产制作与校验约定见 model-spec.md。
 
-- scene-data 的舞台区：scene/camera/lights/controls/renderer；业务区：type 分组数组。
+- scene-data 的舞台区：scene/camera/lights/controls/renderer，可选 map；业务区：type 分组数组。
 - 节点字段：id、parentId、position、rotation、scale、params、card。params 放业务/结构参数；材质颜色、贴图等默认外观写在 handler，编辑覆盖由视觉层保存。
 - 业务代码固定放 `src/scene3d/scene/handlers`，配色放 `src/scene3d/scene/appearance.ts`，卡片放 `src/business/cards`；`src/scene3d/scene-profile.ts` 建树前统一登记 3D 工厂；Vue 卡片从外部 cards 参数传入。`src/business/data/{types,adapter,connect}.ts` 是二开数据入口，按当前业务定义字段和响应，默认不联网。scene3d 包不依赖 business/boot/App/edit；core 不依赖场景实现；生成时不修改核心引擎、编辑器或构建脚本。
 - 空工程已删除示例业务/卡片并裁剪导出。生成工程是修改依据，不能用 template 的 demo 文件整份覆盖。
 - core 不依赖 edit；edit 经 SceneHandle 公开入口访问 core。蒙皮模型沿用内建加载和编辑限制，不自行烘焙或克隆。
-- 运行资源离线，不使用 CDN 或 fetch 本地文件。动态资源登记 public/scene3d/offline-resources.json；已有资源由构建收集。
+- 应用代码与三维模型资源离线，不使用 CDN 或 fetch 本地文件。启用地理地图时，地图瓦片/字体/sprite 通过配置的地图服务访问，不能称为断网地图。动态资源登记 public/scene3d/offline-resources.json；已有资源由构建收集。
 - 用户要求实时状态接入时，按需提供生产数据到 update 片段的映射示例；纯展示不额外实现 MQTT/轮询。
 
 ## 验证失败与重试上限

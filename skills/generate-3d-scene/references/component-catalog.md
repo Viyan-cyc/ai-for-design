@@ -1,6 +1,6 @@
 # 3D 组件目录（a3d-components）
 
-> 版本：0.1.0 ｜ 生成：2026-10-09（sync-components.mjs 自动生成，勿手改）
+> 版本：0.1.0 ｜ 生成：2026-10-31（sync-components.mjs 自动生成，勿手改）
 
 从场景需求出发查本表选组件；确定用哪个后，读 `component-docs/<Name>.md` 学 options，再 import 使用。
 
@@ -29,9 +29,13 @@
 | **GizmoHelper** | GizmoHelper —— 视口导航 Gizmo（Viewport Gizmo）容器 | `'@a3d/a3d-components/helper'` | [GizmoHelper.md](component-docs/GizmoHelper.md) |
 | **GizmoViewport** | GizmoViewport —— 三轴视口指示器（GizmoHelper 的默认内容），仿 **ThreeOrbitControlsGizmo** | `'@a3d/a3d-components/helper'` | [GizmoViewport.md](component-docs/GizmoViewport.md) |
 | **InteractiveManager** | Centralized raycaster-based interaction system | `'@a3d/a3d-components/interactive'` | [InteractiveManager.md](component-docs/InteractiveManager.md) |
+| **ScreenLabel** | Fixed CSS-pixel label for perspective, orthographic and shared map cameras | `'@a3d/a3d-components/labels'` | [ScreenLabel.md](component-docs/ScreenLabel.md) |
 | **AssetCache** | AssetCache —— 模型与贴图的按需加载 / 内存缓存组件 | `'@a3d/a3d-components/loader'` | [AssetCache.md](component-docs/AssetCache.md) |
 | **MaterialManager** | Interface for components that support resource cleanup | `'@a3d/a3d-components/material'` | [MaterialManager.md](component-docs/MaterialManager.md) |
 | **MeshReflectorMaterial** | MeshReflectorMaterial — a **planar reflection material** for Three | `'@a3d/a3d-components/material'` | [MeshReflectorMaterial.md](component-docs/MeshReflectorMaterial.md) |
+| **MapHeatLayer** | Native single heat surface | `'@a3d/a3d-components/map'` | [MapHeatLayer.md](component-docs/MapHeatLayer.md) |
+| **MapRuntime** | Optional MapLibre host for a shared-context Three scene | `'@a3d/a3d-components/map'` | [MapRuntime.md](component-docs/MapRuntime.md) |
+| **MapScatterLayer** | One transparent canvas, driven by the host's render events; sizes are CSS pixels | `'@a3d/a3d-components/map'` | [MapScatterLayer.md](component-docs/MapScatterLayer.md) |
 
 ## 使用纪律
 
