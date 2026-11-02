@@ -6,7 +6,7 @@
 
 使用 scripts/designer-assets.mjs search 或 search-assets.mjs 批量检索。检索服务配置（endpoint、filters、token）内置于 skill，无需外部配置文件或环境变量。
 
-响应 not_configured、请求失败、无结果分别解释；允许几何降级，用户要求特定模型不可替代时明确阻塞。仅检索缺少的对象，不循环换词穷搜。返回候选不是选型结论，不能把封箱机当机柜。
+选材及降级条件见 [主入口](../SKILL.md)「选材与复用」，结果解析见本页「检索输出与失败状态」。用户要求特定模型不可替代时，检索失败或无匹配应明确阻塞。
 
 ## 上传包：页面更新与完整模型包交付
 
@@ -32,9 +32,7 @@
 - `--review` 旧清单先验证原包身份与版本，只迁移经过校验的名称/描述/选择意图，不把其中的技术通过状态当作新包检查结果。
 - 命令输出变化摘要（如"1 项未变化、1 项更新、1 项新增"）并列出删除项；生成 preview 页面后用户在同一清单页一次处理并导出。
 
-技术状态与语义状态分开；导入不会修好坏文件。修改模型文件后拒绝沿用旧确认，应重新 receive 新版本。仅改名称/选择不需要重新加载模型。跨会话持久使用依赖宿主的项目/个人目录授权；未提供时只承诺当前项目可复用。
-
-技术状态与语义状态分开；confirm 不会修好坏文件（该命令保留给维护场景；上传包的正式确认走 import-delivery）。修改文件后拒绝沿用旧确认，应重新 receive 新版本。跨会话持久使用依赖宿主的项目/个人目录授权；未提供时只承诺当前项目可复用。
+技术状态与语义状态分开；导入或 confirm 不会修好坏文件（confirm 仅保留给维护场景，上传包正式确认走 import-delivery）。修改模型文件后拒绝沿用旧确认，应重新 receive 新版本或按上文 update-package 处理；仅改名称不需要重新加载模型。跨会话持久使用依赖宿主的项目/个人目录授权；未提供时只承诺当前项目可复用。
 
 ## 使用与内网补缺
 
@@ -42,7 +40,7 @@
 
 初始化空工程后执行 `inject <资产包目录> --project <工程> [--ids id1,id2]`，不传 ids 使用全部已确认可用项；结果返回内建 asset 分组的 params.assetId。业务节点继续独立设置位置/缩放。也支持 init --asset-package <目录> --assets <ids或all>，正常仍推荐先建空工程再注入。
 
-检索：`search --queries <内部查询数组文件> --config <外部配置>`。固定来源按管理员配置，不把示例分组写死。响应中 file URL 仅用于受控下载，不嵌入运行页面。
+检索：`search --queries <内部查询数组文件>`，使用内置 serviceConfig；当前 CLI 不读取 --config，不要传入该参数期待覆盖。固定来源按管理员配置，不把示例分组写死。响应中 file URL 仅用于受控下载，不嵌入运行页面。
 
 选中类别匹配的库候选后，将完整候选 JSON 输入 `download <candidate.json> --out <新目录>`，随后直接 `inject <目录> --project <工程目录>`，使用返回的 assetId 构建场景。检索库是已审核可用模型来源，不再执行 preview → import-check → accept-remote，不要求浏览器、技术报告或设计师再次确认。下载器仍收集 GLB/glTF 依赖并重写本地 URI；实际下载或文件解析失败时报告具体原因并降级。不得把未运行浏览器当作模型不可用。旧工作区中已经下载的 remote 包也可直接 inject；accept-remote 仅保留兼容入口。上传模型包仍保留原有检查与用户确认流程。
 
@@ -75,3 +73,12 @@
 检查结果来自浏览器观测，Agent 导入重新验证身份、摘要、规则、边界值与 PNG，不增加默认审美或浏览器重验。含相机/灯光、坐标违规的资产可查看但不能交付；超预算明确接受后可交付并携带绑定内容、规则、档位和测量的记录。旧 JSON 草稿仅作兼容导入，不授予使用权限。
 
 更新失败时即使显示旧预览也会阻止最终下载，必须重新更新或明确恢复。HTML 不自动保存到宿主；用户需回传完整 ZIP。macOS 实测尚未完成，普通现代浏览器需支持 WebGL、Web Crypto 和 DecompressionStream(deflate-raw)。
+
+
+### 检索输出与失败状态
+
+search-assets --brief精简候选的ID、名称、类别、尺寸、单位、三角形数和兼容状态；未知值为null/unknown/unverified。远端额外保留origin、remoteId、entryUrl和清洗后的libraryMetadata，候选仍可直接交给download，不需再次检索。去掉--brief可查看详细结果；asset-info仅查询本地旧索引。
+
+远端保留{status,results:[{query,status,assets,error?}]}结构，逐项status为ok/empty/error，总status可为ok/partial/error/not_configured。退出0表示成功且有候选；3表示全部查询成功但无候选；2表示错误（包括部分失败）。收到2仍应读取JSON里的成功项，失败项标为检索失败，不能解释为库中无匹配。传输/顶层响应错误沿用stderr报错与退出2。本地--lib保持原数组/批量结果结构和0/3/2退出语义。
+
+两个公开检索入口search-assets与designer-assets search共用0/3/2退出契约。designer-assets search额外的ok表示全部查询是否成功：有结果ok=true/exit0，成功但空ok=true/exit3，错误或部分失败ok=false/exit2；部分失败仍保留成功候选。其他designer-assets子命令的错误退出码保持1。

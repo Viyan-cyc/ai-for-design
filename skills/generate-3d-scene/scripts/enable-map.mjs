@@ -21,7 +21,7 @@ const componentPackage = sourcePackage.replace(/\.tgz$/, `-${digest}.tgz`);
 mkdirSync(join(workspace, 'vendor'), { recursive: true });
 cpSync(join(skill, 'vendor', sourcePackage), join(workspace, 'vendor', componentPackage));
 const entry = join(workspace, 'src/scene3d/create-scene.ts');
-let code = readFileSync(entry, 'utf8').replace("  if (data.map) throw new Error('地图能力未启用，请先运行 enable-map.mjs');\n", '');
+let code = readFileSync(entry, 'utf8').replace(/^[ \t]*if \(data\.map\) throw new Error\('地图能力未启用，请先运行 enable-map\.mjs'\);\r?\n/gm, '');
 if (!code.includes('createMapScene')) {
   const marker = "  const canvas = document.createElement('canvas');";
   if (!code.includes(marker)) throw new Error('create-scene.ts 已变更，请按 references/map.md 手动接入，未覆盖业务代码');

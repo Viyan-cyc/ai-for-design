@@ -4,10 +4,9 @@
 
 ## 环境与工程
 
-- `node scripts/ensure-env.mjs`：每个会话检查一次；失败执行 HINT 的 setup 命令。
+- 初始化和环境检查顺序见 [主入口](../SKILL.md)「默认生成路径」；本节仅补充环境边界。
 - 没有 Node：Windows 用 `powershell -ExecutionPolicy Bypass -File "<skill>/scripts/install/install.ps1"`；macOS 用 `bash "<skill>/scripts/install/install.sh"`。下载和 npm 源策略与 EP 相同。
 - 依赖安装在外部环境；`SCENE3D_ENV_DIR` 可指定位置。不要在 skill/template 中执行 npm install。
-- `node scripts/init.mjs <工程> --profile empty --assets referenced --deps shared --defer-build`。
 - 空工程默认不登记示例业务。先创建工程，再写自定义 handler、scene-profile 和 scene-data；不要把尚未注册的自定义分组通过 init 的 --scene 提前传入。
 - 自定义依赖/组件工程使用独立依赖；不要在连接共享 node_modules 的工程执行 npm install。需要独立依赖时初始化使用 --deps copy 或 --deps install。
 
@@ -18,6 +17,8 @@
 1. `public/scene3d/scene-data.json`：保留舞台配置，填写业务分组数组。
 2. `src/scene3d/scene-profile.ts`：工厂只在 BUSINESS_REGISTRARS 登记一次；卡片在外部 `src/business/cards/index.ts` 登记，由应用传入。
 3. 新建 handler；材质默认值在代码中。内建 asset/图元足够时不新增 handler。
+
+业务 handler 放 `src/scene3d/scene/handlers`，默认外观放 `src/scene3d/scene/appearance.ts`；数据接入放 `src/business/data/{types,adapter,connect}.ts`，默认不联网。scene3d 不依赖 business/boot/App/edit，core 不依赖场景实现或 edit；编辑器通过 SceneHandle 公开入口访问 core。Vue 卡片从外部 cards 参数传入。
 
 通常不修改 scene-core/index.ts、handlers/index.ts、引擎、编辑器或构建脚本。业务 handler 在 scene-profile 直接导入，不需要新增 barrel 导出。
 
@@ -42,10 +43,10 @@ blocks: ({ sceneEngine }) => registerBlockHandler(sceneEngine),
 - params 承载业务/结构参数；颜色、贴图、roughness 等外观写代码，用户编辑由已有视觉层保存。
 - handler create 返回 Object3D；参照样例调用 applyTransform，不在子网格重复乘节点变换。
 - update 返回 `updated` 表示已原地更新；结构变化返回 `rebuild`。引擎负责几何与材质资源释放；自建计时器、帧监听等在 dispose 中解除。
-- 子网格命名稳定、同父级唯一，用 snake_case；材质/局部变换编辑依赖名称路径。
+- 子网格命名稳定、同父级唯一并符合下方「组合体命名与结束顺序」字符约束。新代码推荐 snake_case，不为风格统一重命名既有槽位；材质/局部变换编辑依赖名称路径。
 - 每个需单独编排的对象保留独立节点 ID；不为了减少 draw call 擅自合并成不可单独编辑的实例。
 - GLB 业务工厂使用 makeAssetNodeFactory；禁止另写加载、蒙皮克隆和异步过期处理。具体签名只查 handlers/registry.ts 的该导出。
-- 帧回调 `(delta: number, elapsed: number) => void`；只使用 delta 时可省略 elapsed。onFrame 返回取消订阅函数。
+- RenderLoop 的 onFrame/onAfterFrame 回调为 `(delta: number, elapsed: number, simulationDelta: number) => void`；允许只接收前一或两个参数。delta 为活动帧间实际秒数，elapsed 累计活动时间，按需休眠、停止及后台停留不计入。simulationDelta 为 `Math.min(delta, 0.1)`。动画使用 delta，不能用限幅步长推进需要保持真实速度的动画；物理积分需要自行子步计算。onFrame 返回取消订阅函数。业务工厂的动画适配器仍只传 delta。
 - SceneHandle 从 `scene-core` 公开入口导入。update 缺失字段不变、params 整块替换、remove 先执行。编辑器不深层导入 engine。
 - 普通场景不必创建业务卡片；需要时查 scene-engineering.md 的 card 小节。
 
@@ -88,10 +89,7 @@ update 仅在 params 改变时调用；transform 更新由引擎完成。返回 
 
 ## 资产与布局
 
-- 默认必须先执行主要对象的批量检索，再编写未匹配对象的几何 handler。仅用户明确要求纯几何/不用模型库时跳过；低多边形、工业风格和速度要求不能作为跳过理由。已确认上传包覆盖的对象不重复查库，地面/墙体/标线等基础结构可直接几何。
-- 将缺少的对象类别写入 UTF-8 文件，执行 `node scripts/search-assets.mjs --batch <查询文件> --brief --json`；同类实例仅查一次。依据候选名称/用途选型，不仅看分数；匹配的库模型直接下载注入，无合适候选或请求失败才降级。未调用不得说未命中，请求失败不得说库里没有。不循环改词穷搜。
-- 用户上传包按 designer-assets.md 接收检查并确认；库模型直接下载注入，不要求浏览器报告；无包时直接检索，纯几何跳过。PowerShell 查询文件使用 UTF-8。
-- 默认检索来自内网，不再读取 skill 内置模型。文件及依赖物化到工程，运行时离线。未配置检索时如实提示并按需求几何降级。
+- 选材顺序、批量检索与降级条件统一见 [主入口](../SKILL.md)「选材与复用」；资产命令和结果状态见 [designer-assets.md](designer-assets.md)。运行时加载失败不等于自动生成替代模型。
 - 具体尺寸和编辑限制读取模型包 list/package.json，单位未确认时不得宣称为真实米制。向量分数不是匹配正确率。
 - `layout-nodes.mjs <patterns.json> <groups.json>` 展开阵列、堆叠或沿直线排列；将结果分组合并进 scene-data，保留舞台配置。例如：
 
@@ -111,17 +109,11 @@ variants:[{params,...}] 按 variantAxis:'x'|'y'|'z'|'index' 循环分配；默�
 
 可复制 `scripts/scaffolds/layout-recipe.json` 到工程 `src/layout-recipe.json`，运行 `node scripts/generate-layout.mjs`，输出 public/layout-groups.generated.json。生成器与输入随源码交付；默认输出独立分组文件，并拒绝覆盖输入配方和 public/scene3d/scene-data.json；不要将自定义输出指向编辑器保存文件。首次生成时合并分组，后续重新生成先明确要替换的节点范围，保留人工编辑。
 
-## 一次统一构建
+## 构建与排障入口
 
-完成全部源码和资源后运行 `node scripts/build-offline.mjs <工程>`。静态、类型、资源、打包顺序执行；失败停止后续阶段，不另加一次 typecheck。
+统一构建命令、覆盖边界和修复额度以 [主入口](../SKILL.md)「默认生成路径」「验证失败与重试上限」为准。修改后的构建触发条件与定向诊断见 [scene-workflow.md](scene-workflow.md)。TypeScript incremental 缓存在工程 .cache，不删除缓存、不只检查单文件或用正则模拟类型检查。
 
-RESULT: OK 后交付 index.3d.html 链接并停止。TIMING 是脚本统计，不是新的门禁；不因性能 WARN、未截图或主观美观重跑。失败最多两轮集中修复。
-
-TypeScript 已显式启用 incremental，缓存位于各工程 .cache；不删除缓存，不只检查单文件，不用正则模拟类型检查。GLSL/几何/材质等运行源码变化必须重新构建预览，不能交付旧包；纯说明文档改动无需构建。成功后不主动开启复核循环，但已明确发现的实际功能错误应修复并重建。
-
-调试器排障：`node scripts/ensure-env.mjs --diagnose` 仅输出是否检测到调试注入，不打印完整环境变量。若出现 Waiting for the debugger to disconnect，关闭宿主终端的自动附加后比较同一命令耗时；不要全局清空 NODE_OPTIONS。需要测编译器本身时在工程运行 `node node_modules/vue-tsc/bin/vue-tsc.js -b --extendedDiagnostics`，只用于诊断，不加入正常生成步骤。
-
-PowerShell 文本读写显式指定 UTF-8，优先宿主编辑工具；不因终端乱码改写整个源文件。调试器反复打印等待信息时检查宿主调试注入，不静默修改全局 NODE_OPTIONS。
+PowerShell 文本读写显式使用 UTF-8，优先宿主编辑工具；不因终端乱码改写整个源文件。
 
 ## 按需求选择已有实现
 
@@ -139,7 +131,7 @@ PowerShell 文本读写显式指定 UTF-8，优先宿主编辑工具；不因终
 
 布局合并可复制 scripts/scaffolds/compose-scene.mjs 到工程 scripts。舞台与不规则节点存 scenes/stage.json，配方存 src/layout-recipe.json；脚本输出独立候选 scenes/scene.generated.json，检查节点范围后再用于首次 scene-data，不自动覆盖编辑存档。
 
-保存文件只保证导入保存时使用的同一预览；源码变化重新构建后可能因 sourceId 不同而拒绝旧存档。资产检索未命中时可几何降级，运行时加载失败不等于自动生成替代模型。
+编辑保存与旧存档兼容规则见 [scene-workflow.md](scene-workflow.md)「编辑结果回写」。
 
 ## 统一坐标约定
 
@@ -148,10 +140,7 @@ PowerShell 文本读写显式指定 UTF-8，优先宿主编辑工具；不因终
 
 ### 组合体命名与结束顺序
 同一 builder 内 mesh/batchSlot 名称唯一，格式为字母或下划线开头，后接大小写字母、数字、下划线或连字符；保持大小写与原名，不自动改名。斜线保留给槽位路径。循环中的独立零件用稳定业务索引或 neg_z/pos_z 等方向名，建议不用随布局变化的坐标作为标识；连字符合法，小数点不允许。整体编辑的重复零件在循环外创建一次 batchSlot，循环内 add。所有槽位（包括文字）添加完成后最后调用一次 finish，再 applyTransform 和 return。
-统一构建增加组合体源码检查：直接调用的字面量名称、明确数组循环中的固定名称、直接语句 finish 后调用，以及能证明的同批次不同 new 材质实例、明确多次循环中的内联 new 材质。它不是运行验证，不覆盖别名、跨函数、条件路径和所有动态表达式；不能据此声称全部 handler 已运行成功。
-
-统一 build-offline 另执行一次 Node 同步装配检查：按实际 scene-data 调用真实工厂，辅助函数和动态循环中的上述错误也能在执行到时捕获。独立进程限时 30 秒，多个独立节点错误集中报告，按统一两轮修复重跑上限处理。Canvas、异步资产加载、动画、WebGL 和交互不在覆盖范围；partial/UNCHECKED 如实保留，不能拿占位对象当模型加载成功，也不能要求视觉验收。不要自动重命名 slot 或合并本应独立编辑的零件来隐藏错误。
-
+组合体源码检查能发现直接字面量名称、明确数组循环中的固定名称、直接 finish 后调用，以及可证明的同批次不同 new 材质实例；不覆盖别名、跨函数、条件路径和所有动态表达式。同步装配与源码检查的覆盖不同，统一构建边界见主入口。不要自动重命名 slot 或合并本应独立编辑的零件来隐藏错误。
 
 ### 渲染性能配置（run/edit 共用）
 

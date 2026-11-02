@@ -14,7 +14,7 @@
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { serviceConfig, searchRemote } from './lib/asset-service.mjs';
+import { serviceConfig, searchRemote, remoteExitCode } from './lib/asset-service.mjs';
 import { rank, DEFAULT_LIB } from './build-search-index.mjs';
 const USAGE = `用法: node search-assets.mjs <query> [选项]
        node search-assets.mjs --batch <queries.txt> [选项]
@@ -24,10 +24,10 @@ const USAGE = `用法: node search-assets.mjs <query> [选项]
   --lib <dir>          显式外部旧式资产库；默认使用配置的内网检索
   --batch <file>       批量检索：每行一个查询（# 注释行跳过），逐查询输出
   --json               仅输出 JSON（批量模式输出数组，逐项含 query 字段）
-  --brief              Compact candidate summaries; asset-info provides full details
+  --brief              精简候选（保留远端下载字段）；去掉 --brief 查看详情，asset-info 仅用于本地索引
   --help
 
-退出码: 0 有结果 / 3 无结果 / 2 错误`;
+退出码: 0 有结果 / 3 全部成功但无结果 / 2 错误（含部分失败，仍保留成功候选）`;
 
 const parseArgs = (argv) => {
   const opts = { top: 5, query: '' };
@@ -65,18 +65,28 @@ export const loadIndex = (libDir) => {
   return { indexPath, index: JSON.parse(readFileSync(indexPath, 'utf8')) };
 };
 
+/** Same compact fields for both sources; retain remote download identity. */
+export function summarizeCandidate(doc) {
+  const metadata = doc.libraryMetadata ?? doc;
+  const box = metadata.bbox;
+  const size = box?.size ?? (box?.min && box?.max ? box.max.map((v, i) => v - box.min[i]) : null);
+  return {
+    id: doc.id, name: doc.name || 'unknown', score: Number.isFinite(doc.score) ? Number(doc.score.toFixed(3)) : null,
+    category: doc.category || 'unknown',
+    size: Array.isArray(size) && size.length === 3 && size.every(Number.isFinite) ? size.map(v => Number(v.toPrecision(4))) : null,
+    triangles: Number.isFinite(metadata.triangles) ? metadata.triangles : null,
+    units: metadata.units ?? 'unverified', compatibility: doc.compatibility?.status ?? 'unknown',
+    ...(doc.origin === 'remote' ? { origin: doc.origin, remoteId: doc.remoteId, entryUrl: doc.entryUrl, libraryMetadata: doc.libraryMetadata } : {}),
+  };
+}
+export { remoteExitCode } from './lib/asset-service.mjs';
+
 /** query → 检索结果条目（含 score）。 */
 export const searchAssets = (index, query, top = 5, brief = false) => {
   const byId = new Map(index.docs.map((d) => [d.id, d]));
   return rank(index, query, top).map((r) => {
     const doc = byId.get(r.id) ?? {};
-    if (brief) return {
-      id: r.id, name: doc.name ?? '', score: Number(r.score.toFixed(3)),
-      category: doc.category ?? '',
-      size: doc.bbox?.size?.map((n) => Number(n.toPrecision(4))) ?? null,
-      triangles: doc.triangles ?? null, units: doc.units ?? 'unverified',
-      compatibility: doc.compatibility?.status ?? 'unknown',
-    };
+    if (brief) return summarizeCandidate({ ...doc, id: r.id, score: r.score });
     return {
       id: r.id,
       name: doc.name ?? '',
@@ -101,8 +111,9 @@ const main = async () => {
     if (!queries.length || queries.some(q=>!q)) throw new Error("Query required");
     const config = serviceConfig();
     const result = await searchRemote(queries, {...config, topK: process.argv.includes("--top") ? opts.top : (config.topK ?? opts.top)});
+    if (opts.brief) for (const row of result.results) row.assets = row.assets.map(summarizeCandidate);
     console.log(JSON.stringify(result));
-    if (result.status !== "ok" || result.results.every(r=>!r.assets.length)) process.exitCode=3;
+    process.exitCode = remoteExitCode(result);
     return;
   }
   if (opts.help || (!opts.query && !opts.batch)) {

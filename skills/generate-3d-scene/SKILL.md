@@ -1,7 +1,8 @@
 ---
 name: generate-3d-scene
 description: 根据文字或截图需求生成可二次开发的 Vue 3 + Three.js 3D 场景，优先使用用户上传包和内网模型，未命中复用组件或几何拼装。交付可离线打开的 index.3d.html 与配套资源，支持材质、贴图、拖拽布局及保存导入。
-version: 0.1.0
+metadata:
+  version: "0.1.0"
 ---
 
 # generate-3d-scene
@@ -10,32 +11,32 @@ version: 0.1.0
 
 ## 意图分流
 
-先判断用户这轮要的是“接收/检查模型包”还是“生成场景”。上传模型包只是提供资产，不是生成场景的授权，也不等于授权公共上传。
+先区分接收模型、新建场景和修改已有场景。上传模型只是提供资产，不代表生成场景或公共上传授权。
 
-- 只上传 ZIP＋“这是我们公司的机房模型”/“检查这些模型能不能用”：接收并生成模型清单页（index.3d-model 卡片）交付给用户；用户在页面更新模型、确认名称/用途/方向/尺寸及性能预算，全部通过后把下载的完整 models.3d.zip 发回对话，Agent 导入后回复“模型包已准备好，之后可以告诉我要设计什么场景”并停止。不初始化场景工程、不运行 build-offline、不调用检索、不自动入库、不索要设计参数。
-- ZIP＋“用这些模型设计一个双排机房”：记录已有场景需求，先完成检查与确认；用户确认后直接继续该需求，不重复追问“要设计什么”。
-- 已确认包＋“现在做个双排机房”：复用未变更的检查结果直接生成，不重跑已成功的检查。
-- 无 ZIP 的场景需求：先批量检索主要对象，再使用匹配模型；没有合适候选或检索服务失败时才对相应对象几何降级。不要求用户上传模型。
-- 用户明确要求“纯几何体”“不要使用模型库”：跳过检索，直接组件/几何建模。“低多边形”“工业风格”“数据可视化”“快速生成”均不代表纯几何授权。
-
-只有用途确实无法判断时才简短澄清一句，不能用一串参数问题挡住模型检查。
+- 只检查上传包：按 [designer-assets.md](references/designer-assets.md) 接收、交付模型清单页、等待回传并导入；成功后回复准备好并停止，不初始化场景、检索或自动入库。
+- 上传包附带场景需求：完成资产确认后继续已提出的需求，不重复询问。
+- 新建场景：走下方默认生成路径与选材规则。已确认且内容未变的资产复用检查结果。
+- 修改已有场景或回传编辑结果：先读 [scene-workflow.md](references/scene-workflow.md)，定位现有工作工程，按变化范围操作。
+- 只有用途确实无法判断时才简短澄清，不用一串参数问题阻塞资产接收。
 
 ## 默认生成路径
 
 1. 读 `references/generation-contract.md`，再读 `references/scene-design-examples/README.md`，读取共享规范与命中的领域方案。普通生成不通读引擎、编辑器、材质系统或构建脚本。
 2. 会话首次运行 `node scripts/ensure-env.mjs`；缺环境按 HINT 安装。无 Node 时按速查中的 install 脚本处理。依赖位于外部环境，不在 skill/template 安装。
-3. 上传包可选：无包时直接内网检索；有包时按 references/designer-assets.md 全量接收并生成单页模型清单（index.3d-model 卡片），名称自动预填、用户在页面检查、反复更新模型、命名、确认正面/尺寸及性能预算；默认全部使用，全部就绪后下载 models.3d.zip（内含模型和清单）。Agent 执行 import-delivery <原包目录> <回传ZIP> --out <新目录> 校验并导入，优先使用该包模型，缺项才查库。仅检查而本轮无场景需求时，导入成功后回复准备好并停止；重复收到同一清单不重复生成场景。优先在页面“更新模型”；用户另传完整新包时才用 update-package 保留填写内容（见 designer-assets.md）。明确纯几何时跳过检索。未命中及时降级，不循环穷搜。
-4. `node scripts/init.mjs <工程目录> --profile empty --assets referenced --deps shared --defer-build`。模型确认后用 designer-assets inject 注入资源，或 --asset-package 指定已确认资产包；skill 不携带模型库。需组件时加 --with-components，由 init 准备独立依赖。
+3. 按下方「选材与复用」选择资源；上传包的接收、更新与导入命令见 [designer-assets.md](references/designer-assets.md)，仅在涉及资产操作时读取。
+4. `node scripts/init.mjs <交付目录> --profile empty --assets referenced --deps shared --defer-build`。模型确认后用 designer-assets inject 注入资源，或 --asset-package 指定已确认资产包；skill 不携带模型库。需组件时加 --with-components，由 init 准备独立依赖。
 5. 读取生成工程现状，局部修改业务 handler、scene-profile 的注册项和 scene-data。设计相机、光照、材质与布局；不要从 demo 模板覆盖现有文件。
-6. `node scripts/build-offline.mjs <工程目录>`。一次执行静态契约、Node 同步装配检查、类型检查、资源检查和离线打包。成功直接交付并停止。
+6. `node scripts/build-offline.mjs <WORKSPACE_PATH>`。一次执行静态契约、Node 同步装配检查、类型检查、资源检查和离线打包，前置失败不执行后续依赖阶段。工程自身 npm run build:offline 仅提供编译打包，默认生成使用此统一入口。成功直接交付并停止；TIMING 与非阻塞性能 WARN 不是新门禁。
 
 场景构建后不追加 typecheck、普通 build、lint、浏览器、截图、性能采样、验证报告或审美修复。模型接收的固定缩略图/加载检查与整包确认属于资产阶段，不是场景复核。真实错误按下文处理；未经运行不能声称已验证渲染或交互。
 
-装配检查用实际 scene-data 执行工厂注册与同步节点创建，捕获 Duplicate slot、提前 finish、材质实例冲突等代码错误；不是浏览器运行或视觉验收。ASSEMBLY 的 partial / UNCHECKED 表示 Canvas、异步模型等未覆盖，不要求因此打开浏览器、重检库模型或改用几何体。RUNTIME: not-run 表示没有验证渲染与交互。页面好不好看、交互是否好用由用户评价，Agent 不自行做视觉检查或审美修复。
+装配检查在独立进程中用真实 Three.js、SceneEngine 与实际 scene-data 执行工厂注册和同步节点创建，限时 30 秒；超时或检查脚本失败按阻塞处理。它不创建 WebGL、不模拟 DOM、不执行动画帧或联网加载模型。捕获 Duplicate slot、提前 finish、材质实例冲突等代码错误；不是浏览器运行或视觉验收。ASSEMBLY 的 partial / UNCHECKED 表示 Canvas、异步模型等未覆盖，不要求因此打开浏览器、重检库模型或改用几何体。RUNTIME: not-run 表示没有验证渲染与交互。页面好不好看、交互是否好用由用户评价，Agent 不自行做视觉检查或审美修复。
 
 ## 选材与复用
 
 已确认用户模型包 → 内网合适模型 → 匹配的现成组件 → 复用 procedural 或自定义几何。
+
+用户明确要求“纯几何体”或“不使用模型库”时跳过检索；低多边形、工业风格、数据可视化与快速生成不表示纯几何授权。无上传包也可直接生成，不要求用户先上传。
 
 - 开始编写主要业务对象的几何 handler 前，先从需求提取对象类别（如叉车、货架、集装箱），扣除已确认上传包中已匹配的类别，将剩余类别写入 UTF-8 查询文件，一次执行 `node scripts/search-assets.mjs --batch <查询文件> --brief --json`。不同数量/位置的同类对象不重复查询；无需用户提醒或批准检索。
 - 根据实际返回候选的名称、用途和模型信息判断匹配；匹配的库模型直接下载并注入，不重复检查。向量分数高不等于类别正确。没有合适候选才使用组件/几何；请求失败允许降级，但必须说明“检索失败”，不能说“库中没有”。未执行检索不得声称“未命中”。
@@ -44,7 +45,7 @@ version: 0.1.0
 - 检索库只存已审核可用模型。候选类别匹配后直接 download → inject 并在场景使用；不执行 preview/import-check/accept-remote，不要求浏览器报告或用户确认。不得因缺少检查报告改用几何体；只有无合适候选或实际下载/依赖解析失败才降级并说明原因。
 - 普通 GLB 用内建 asset 分组。自定义加载行为使用 makeAssetNodeFactory，不另写异步加载/克隆/过期处理。
 - 组件按用途和编辑粒度选择，见速查的复用表；不要求每次遍历组件目录。
-- 独立编排对象保留独立节点；稳定 snake_case 子网格名决定编辑槽位。不要为了合批牺牲用户要求的编辑粒度。
+- 节点与槽位的编辑粒度、稳定命名约束见生成契约「类型、生命周期与编辑」与「组合体命名与结束顺序」。
 - 代码建模直接写 handler，不生成 GLB 脚本。模型入库校验属于另行请求的维护任务。
 
 ## 地理地图（按需）
@@ -53,15 +54,9 @@ version: 0.1.0
 
 ## 数据与修改边界
 
-- 统一右手坐标系、+Y 向上、+Z 为资产正面、长度单位米；相机局部 -Z 观察方向不变。资产制作与校验约定见 model-spec.md。
+工程目录、数据字段、坐标和依赖方向以 [generation-contract.md](references/generation-contract.md) 为准。读取生成工程现状后局部修改；不得用 demo 覆盖用户源码、布局、槽位或已保存外观。生成时不修改核心引擎、编辑器、构建与校验脚本。
 
-- scene-data 的舞台区：scene/camera/lights/controls/renderer，可选 map；业务区：type 分组数组。
-- 节点字段：id、parentId、position、rotation、scale、params、card。params 放业务/结构参数；材质颜色、贴图等默认外观写在 handler，编辑覆盖由视觉层保存。
-- 业务代码固定放 `src/scene3d/scene/handlers`，配色放 `src/scene3d/scene/appearance.ts`，卡片放 `src/business/cards`；`src/scene3d/scene-profile.ts` 建树前统一登记 3D 工厂；Vue 卡片从外部 cards 参数传入。`src/business/data/{types,adapter,connect}.ts` 是二开数据入口，按当前业务定义字段和响应，默认不联网。scene3d 包不依赖 business/boot/App/edit；core 不依赖场景实现；生成时不修改核心引擎、编辑器或构建脚本。
-- 空工程已删除示例业务/卡片并裁剪导出。生成工程是修改依据，不能用 template 的 demo 文件整份覆盖。
-- core 不依赖 edit；edit 经 SceneHandle 公开入口访问 core。蒙皮模型沿用内建加载和编辑限制，不自行烘焙或克隆。
-- 应用代码与三维模型资源离线，不使用 CDN 或 fetch 本地文件。启用地理地图时，地图瓦片/字体/sprite 通过配置的地图服务访问，不能称为断网地图。动态资源登记 public/scene3d/offline-resources.json；已有资源由构建收集。
-- 用户要求实时状态接入时，按需提供生产数据到 update 片段的映射示例；纯展示不额外实现 MQTT/轮询。
+应用代码与模型资源离线，不使用 CDN 或 fetch 本地文件；地图联网资源例外见 map.md。动态资源登记 public/scene3d/offline-resources.json。用户要求实时数据时才提供业务映射，纯展示不额外实现 MQTT/轮询。
 
 ## 验证失败与重试上限
 
@@ -74,9 +69,9 @@ version: 0.1.0
 
 ## 交付与保存
 
-成功给出构建返回 HTML_PATH 的可点击绝对路径，说明双击打开与进入编辑；交付目录根部仅 index.3d.html、preview/（运行资源）、source/（完整二开工程）。移动预览需携带 preview/；二开取 source/。工作区中的 node_modules、缓存、检索临时文件不交付。source/ 是构建快照，用户修改后应将其作为新的工作工程，不要在重建旧工程时覆盖用户改动。保存不触发下载：开发模式写回工程 public/scene3d/scene-data.json；离线模式点击「保存」复制 scene3d-changes 修改文本，用户粘贴给 Agent 后回写；剪贴板不可用时显示文本框供手动复制。复制不表示源码已保存，不清除未保存状态。Agent 核对 sourceId 与对应工程，并逐项比较 before；有冲突先处理冲突，不覆盖其他修改。path 为路径数组，缺少 after 表示删除，数组整体替换；保留图片 data URI 或落盘后更新引用。回写后重新构建离线页面。
+成功给出构建返回 HTML_PATH 的可点击绝对路径，说明双击打开与进入编辑。目录及源码快照规则见下方「开发工作区与交付目录」。交付时不默认启动服务、输出第二份工程或报告。
 
-保存写回场景数据，不改业务 handler 或原 HTML；更新离线产物需重新构建。退出编辑进入当前场景预览，保留内存中的修改并支持返回编辑；退出不等于保存。不承诺构建通过等于绝不白屏，也不把未经目检的效果称为视觉验收通过。
+编辑结果回写与离线/开发模式保存差异见 [scene-workflow.md](references/scene-workflow.md)「编辑结果回写」。保存与退出编辑不是同一操作；未经运行不能声称渲染、交互或视觉验收通过。
 
 ## 按需阅读
 
@@ -85,7 +80,7 @@ version: 0.1.0
 | 上传模型包、内网模型和入库 ZIP | references/designer-assets.md |
 | 场景风格、构图与领域布局 | references/scene-design-examples/README.md → 共享规范＋命中领域 |
 | 普通生成、接口和样例 | references/generation-contract.md |
-| 默认流程的补充说明 | references/scene-workflow.md |
+| 修改已有场景、编辑结果回写、定向诊断 | references/scene-workflow.md |
 | 自定义轮廓与精细建模 | references/modeling-channels.md |
 | 已选中组件 | references/component-catalog.md → 对应 component-docs 文件 |
 | 生产数据接入或架构排障 | references/scene-engineering.md |
@@ -98,8 +93,8 @@ version: 0.1.0
 不要为让场景通过而修改 skill 的校验脚本。
 
 
-生成场景默认使用流畅画质（实际 pixelRatio=1、阴影关闭、阴影分辨率512），60帧上限、按需渲染。保留编辑器的画质档位与高级参数；不得在业务代码中覆盖这些统一配置或新增独立循环。动画/异步变化接线与完整参数见 references/generation-contract.md「渲染性能配置」。
+默认画质、限帧与动画接线以生成契约「渲染性能配置」为准，保留编辑器的统一配置入口。
 
 ### 开发工作区与交付目录
 
-CLI `node scripts/init.mjs <用户项目目录>` 的参数是最终交付目录，不是开发目录。脚本在用户主目录 `.scene3d/workspaces/` 创建独立工程，输出 WORKSPACE_PATH 和 DELIVERY_PATH。所有源码编辑、模型注入、临时查询文件及其他工程脚本使用 WORKSPACE_PATH，不在用户项目目录初始化源码或安装依赖。统一 build-offline 支持传 WORKSPACE_PATH 或原交付路径；成功返回最终 HTML_PATH。用户项目根目录仅有 index.3d.html、preview/、source/，不再有 delivery/、offline/、node_modules。交付时链接 HTML_PATH。同机后续修改继续使用原工作区；跨电脑使用 source 作为完整工程。旧工程不会自动移动或删除；旧工程无交付配置时仍保留 delivery 输出兼容。
+CLI `node scripts/init.mjs <用户项目目录>` 的参数是最终交付目录，不是开发目录。脚本在用户主目录 `.scene3d/workspaces/` 创建独立工程，输出 WORKSPACE_PATH 和 DELIVERY_PATH。所有源码编辑、模型注入、临时查询文件及其他工程脚本使用 WORKSPACE_PATH，不在用户项目目录初始化源码或安装依赖。统一 build-offline 支持传 WORKSPACE_PATH 或原交付路径；成功返回最终 HTML_PATH。用户项目根目录仅有 index.3d.html、preview/、source/，不再有 delivery/、offline/、node_modules。移动预览需携带 preview/；二开取 source/，不交付依赖、缓存或临时查询文件。source/ 是构建快照；用户改过该快照后，将它作为新的工作工程，不用旧工作区重建覆盖。交付时链接 HTML_PATH。同机后续修改沿用仍为最新源码的工作区；跨电脑使用 source 作为完整工程。旧工程不会自动移动或删除；旧工程无交付配置时仍保留 delivery 输出兼容。

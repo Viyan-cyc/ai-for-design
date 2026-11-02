@@ -37,6 +37,16 @@ export function packageDelivery(root) {
         filter: path => !relative(root, path).split(sep).some(part => excluded.has(part)),
       });
     }
+    // Official layout regeneration needs its input, not demos or prior candidates.
+    const stageInput = join(root, 'scenes/stage.json');
+    if (existsSync(join(root, 'scripts/compose-scene.mjs'))) {
+      for (const input of ['scenes/stage.json', 'src/layout-recipe.json', 'scripts/layout.mjs'])
+        if (!existsSync(join(root, input))) throw new Error(`布局生成源码缺少 ${input}`);
+    }
+    if (existsSync(stageInput)) {
+      mkdirSync(join(stage, 'source/scenes'), { recursive: true });
+      cpSync(stageInput, join(stage, 'source/scenes/stage.json'));
+    }
     // Local package dependencies must remain installable after moving source/.
     const pkg = JSON.parse(readFileSync(join(stage, 'source/package.json'), 'utf8'));
     for (const value of Object.values({ ...pkg.dependencies, ...pkg.devDependencies })) {

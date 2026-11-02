@@ -94,6 +94,9 @@ boot 注册释放函数，handle.dispose() 自动调用；额外请求用 AbortC
 业务 handler 用 create/update/dispose。状态变化原地修改，几何/资产结构变化返回 rebuild；不得每条消息重新加载 GLB。
 GLB 使用公共 makeAssetNodeFactory；动画使用 onFrame 的 delta 和退订函数。按需渲染依靠引擎更新通知，不要为数据刷新开启永久渲染。
 
+RenderLoop 的 onFrame/onAfterFrame 依次提供 `delta`、`elapsed`、`simulationDelta`（单位秒）。前两项表示活动帧间真实时间和累计活动时间；按需休眠、stop/start 和后台停留时间不计入。低帧率或活动期间的主线程长阻塞不会再把 delta 截为 0.1，因此动画速度不随帧率降低。旧的一、二参数回调仍可使用；业务工厂动画适配器仍只传 delta。
+若旧代码依赖 delta 不超过 0.1，应显式使用第三参数 simulationDelta，或在需要保持完整模拟时间时自行子步积分；不要用限幅值驱动普通位移或旋转动画。地图由宿主调度，使用同一时间契约，不另开 requestAnimationFrame。
+
 scene-data.json 包括业务/布局以及合法舞台设置；设备材质默认值在业务代码中。编辑外观在 __visuals、共享材质在 __materialLib。
 引擎在节点更新/重建后重放编辑视觉层；GLB 异步加载也走统一重放。编写业务 handler 应沿用该流程，不绕过或清空视觉覆盖。
 仅按需 strip-edit 导出时，外观编译至 src/scene3d/scene/generated/appearance.ts，去除编辑器；TRANSCRIPTION.md 是自动转换摘要。编译文件不要手改，改编辑源后重新导出。
@@ -172,7 +175,7 @@ onBeforeUnmount(() => { active = false; scene?.dispose(); });
 
 ## 交付目录
 
-打开 delivery/index.3d.html 预览，preview/ 是其必需运行资源。source/ 是完整源码快照，包含 src、public、依赖清单、配置、构建脚本及必要 vendor 包；进入 source 后安装依赖即可开发。不要只复制 src/public 当作独立工程。工作区的 node_modules、缓存和中间产物不进入交付。修改 source 后以它作为新工作工程；不要再用旧工作区重建覆盖修改。
+打开交付根目录 index.3d.html 预览（旧工程兼容输出可能位于 delivery/），preview/ 是其必需运行资源。source/ 是完整源码快照，包含 src、public、依赖清单、配置、构建脚本及必要 vendor 包；进入 source 后安装依赖即可开发。不要只复制 src/public 当作独立工程。工作区的 node_modules、缓存和中间产物不进入交付。修改 source 后以它作为新工作工程；不要再用旧工作区重建覆盖修改。
 
 ### 开发工作区与交付目录
 
@@ -223,3 +226,12 @@ CLI `node scripts/init.mjs <用户项目目录>` 的参数是最终交付目录�
 散点在导航结束及视口尺寸变化时按邻近点与实际投影聚合，消除相邻分箱造成的分裂，并合并重叠图钉；成员/计数保留，位置为成员加权地理中心，不人为挪位。导航中间帧可能临时重叠，达到 maxClusterZoom 后按配置显示独立点，不承诺重合单点能完全分开。主题/DPR不用于改变成员关系。
 
 地图叠加层整批更新会先校验完整热力色带与配置，成功后才提交保存快照。无效配置直接抛错且不修改旧层；运行期创建失败会尝试恢复旧层及快照，调用方应捕获错误，不能把失败当作已保存。持续资源故障导致恢复也失败时，会报告原错误和恢复错误。
+
+
+### 独立源码安装与地图服务验收
+
+复制完整source目录到新位置后，运行npm ci，再运行npm run dev或npm run build:offline。安装需要可用的npm源或完整缓存；vendor中的组件包已经随源码携带，但不代表全部npm依赖均已离线打包。独立源码未带原工作区交付配置时，重新构建输出到delivery/index.3d.html。
+
+内网验收顺序：先确认样式JSON可访问，再检查其中的source/tiles、glyphs、sprite及其相对地址、鉴权、跨域和版权要求；用已知坐标核对定位，再验证模型、叠加层数据、显隐与保存恢复。浏览器file协议的Origin可能为null，服务需允许实际运行方式；遇到拒绝应改用受支持的HTTP部署，不宣称双击一定适用于所有地图服务。生产空数据不自动回填示例。
+
+性能测量应分别记录像素比、窗口尺寸、点数、建筑/模型量、设备与地图服务。空闲重绘、聚合CPU耗时、数据提交与异步完成、导航帧间隔是不同指标。Three统计不包含底图全部开销；本地空白底图的成绩不能代表城市瓦片、建筑投影和网络加载性能。

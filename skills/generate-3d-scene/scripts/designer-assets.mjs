@@ -5,7 +5,7 @@ import { previewPackage } from './lib/asset-preview.mjs';
 import { generateIntakePage, importReview } from './lib/intake-page.mjs';
 import {importDelivery} from './lib/delivery-import.mjs';
 import { updatePackage } from './lib/package-update.mjs';
-import { serviceConfig, searchRemote, downloadCandidate } from './lib/asset-service.mjs';
+import { serviceConfig, searchRemote, downloadCandidate, remoteExitCode } from './lib/asset-service.mjs';
 const [command,...args]=process.argv.slice(2);
 const opts={},pos=[];
 for(let i=0;i<args.length;i++) {if(args[i].startsWith('--')){const key=args[i].slice(2);if(['allow-partial','all','headless','retry-failed','confirm-front','confirm-scale'].includes(key))opts[key]=true;else {if(!args[i+1]||args[i+1].startsWith('--'))throw new Error(`Missing --${key} value`);opts[key]=args[++i];}}else pos.push(args[i]);}
@@ -40,5 +40,6 @@ try {
  case 'upload':result=await uploadAdapter(need(pos[0],'zip'),opts.target?readJSON(opts.target):{},{});break;
  default:throw new Error('Commands: import-delivery, receive, update-package, preview, import-review, import-check, list, describe, confirm, accept-remote, inject, search, download, export, upload');
  }
- console.log(JSON.stringify({ok:true,...(Array.isArray(result)?{assets:result}:result)},null,2));
-}catch(e){console.error(JSON.stringify({ok:false,error:e.message}));process.exitCode=1;}
+ if(command==='search') process.exitCode=remoteExitCode(result);
+ console.log(JSON.stringify({ok:command==='search'?process.exitCode!==2:true,...(Array.isArray(result)?{assets:result}:result)},null,2));
+}catch(e){console.error(JSON.stringify({ok:false,error:e.message}));process.exitCode=command==='search'?2:1;}

@@ -3,7 +3,8 @@ import type { RendererEngine } from './RendererEngine';
 import type { ControlsEngine } from './ControlsEngine';
 import { onResourcesChanged } from '../render-invalidation';
 
-export type FrameCallback = (delta: number, elapsed: number) => void;
+/** Active time in seconds; simulationDelta is capped at 0.1 for bounded-step consumers. */
+export type FrameCallback = (delta: number, elapsed: number, simulationDelta: number) => void;
 export interface FrameStats {
   fps: number; calls: number; triangles: number; elapsed: number;
   idle: boolean; paused: boolean; sampling: boolean; maxFps: number;
@@ -19,6 +20,7 @@ export class RenderLoop {
   private inTick = false;
   private dirty = true;
   private lastTime = 0;
+  private clockActive = false;
   private deadline = 0;
   private elapsed = 0;
   private sampleStart = performance.now();
@@ -68,17 +70,21 @@ export class RenderLoop {
   }
   invalidate = (): void => {
     this.dirty = true;
-    if (this.externalRequest) { if (this.running && !document.hidden) this.externalRequest(); return; }
-    if (!this.running || this.inTick || this.rafId || document.hidden) return;
-    // Resuming an idle scene must not advance an animation by the entire idle duration.
-    const now = performance.now();
-    if (now - this.lastTime > 1000) { this.frameTimes = []; this.sampleStart = now; }
-    this.lastTime = now;
+    if (!this.running || document.hidden) return;
+    if (!this.clockActive) {
+      const now = performance.now();
+      if (now - this.lastTime > 1000) { this.frameTimes = []; this.sampleStart = now; }
+      this.lastTime = now;
+      this.clockActive = true;
+    }
+    if (this.externalRequest) { this.externalRequest(); return; }
+    if (this.inTick || this.rafId) return;
     this.rafId = requestAnimationFrame(this.tick);
   };
   private visibilityChanged = (): void => {
     cancelAnimationFrame(this.rafId); this.rafId = 0;
     this.frameTimes = []; this.sampleStart = performance.now(); this.deadline = 0;
+    this.clockActive = false;
     if (!document.hidden) this.invalidate();
   };
   private tick = (now: number): void => {
@@ -89,14 +95,17 @@ export class RenderLoop {
     if (!this.externalRequest && interval && now + 0.5 < this.deadline) {
       this.rafId = requestAnimationFrame(this.tick); return;
     }
-    const delta = Math.min(0.1, Math.max(0, (now - this.lastTime) / 1000));
+    // A host may draw without invalidate after sleeping. Do not charge that gap.
+    const delta = this.clockActive ? Math.max(0, (now - this.lastTime) / 1000) : 0;
+    const simulationDelta = Math.min(0.1, delta);
+    this.clockActive = true;
     this.lastTime = now; this.elapsed += delta;
     this.deadline = interval ? (this.deadline > 0 && now - this.deadline < interval
       ? this.deadline + interval : now + interval) : now;
     this.dirty = false; this.inTick = true;
     try {
       if (!this.externalRequest) this.controlsEngine.update(delta);
-      for (const { cb } of [...this.callbacks]) cb(delta, this.elapsed);
+      for (const { cb } of [...this.callbacks]) cb(delta, this.elapsed, simulationDelta);
       const renderer = this.rendererEngine.renderer;
       renderer.info.autoReset = false;
       renderer.info.reset();
@@ -105,11 +114,13 @@ export class RenderLoop {
       this.calls = renderer.info.render.calls;
       this.triangles = renderer.info.render.triangles;
       this.trim(now);
-      for (const cb of [...this.afterFrameCallbacks]) cb(delta, this.elapsed);
+      for (const cb of [...this.afterFrameCallbacks]) cb(delta, this.elapsed, simulationDelta);
     } finally { this.inTick = false; }
     if (this.running && (this.dirty || this.continuous())) {
       if (this.externalRequest) this.externalRequest();
       else this.rafId = requestAnimationFrame(this.tick);
+    } else {
+      this.clockActive = false;
     }
   };
   /** Called by a host-owned renderer (e.g. a geographic map custom layer). */
@@ -125,7 +136,7 @@ export class RenderLoop {
     if (this.running) return;
     this.running = true; this.lastTime = this.sampleStart = performance.now(); this.invalidate();
   }
-  stop(): void { this.running = false; cancelAnimationFrame(this.rafId); this.rafId = 0; }
+  stop(): void { this.running = false; this.clockActive = false; cancelAnimationFrame(this.rafId); this.rafId = 0; }
   private trim(now: number): void {
     while (this.frameTimes.length && now - this.frameTimes[0]! >= 1000) this.frameTimes.shift();
   }

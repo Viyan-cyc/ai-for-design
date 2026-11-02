@@ -22,3 +22,11 @@ targetPitch, adjust, mix, vecSource, materialBuildingColor, buildingDepthPalette
 
 
 P2修正：来源heat-profile.js保持不变，MapHeatLayer在外围提供transparent/reference策略；只有原参考默认仍要求26停靠点。散点从单格分箱改为邻近连通与导航结束后的投影碰撞合并，属于本组件新增实现，不称为原skill已提供的算法。维护热力样例改用原499条固定点及transformDemoRecords一次映射，生产不自动回填。
+
+
+## 2026-11-02 覆盖与取舍
+
+- 已迁入：地图主题/普通建筑/投影/视角与缩放规则；散点图钉、稳定ID、聚合、固定尺寸和样式；原生热力profile和更新清理。具体来源见上文，不等于所有原规范已实现。
+- 适配替代：原页面布局与React/DCLogic由现有编辑器替代；独立localStorage改为场景配置；生产空数据不填模拟数据；普通业务热力默认透明、保留reference模式。
+- 未迁入且本期不阻塞：管辖范围裁切/外围样式、固定城市导航/特定地标资产、无地图散点宿主、系统主题自动跟随、专属键盘访问、聚合平滑拆合、独立PNG导出与精确逐级羽化自定义渲染。
+- 待验收：真实内网地图资源、file协议地图服务兼容、完整城市负载性能。P3优先生成与交付可靠性，不为全量复制增加功能。

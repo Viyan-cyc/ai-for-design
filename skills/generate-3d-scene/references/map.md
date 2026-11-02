@@ -1,10 +1,10 @@
-# 地理地图与三维模型（P1）
+# 地理地图与三维模型
 
 仅真实地理地图需求读取本文件。普通仓库、工厂、机房和示意园区沿用普通三维流程，不安装地图依赖。
 
 ## 启用
 
-1. `node scripts/init.mjs <交付目录> --deps copy --defer-build`，使用返回的 WORKSPACE_PATH 编辑。
+1. `node scripts/init.mjs <交付目录> --profile empty --assets referenced --deps copy --defer-build`，使用返回的 WORKSPACE_PATH 编辑。
 2. `node scripts/enable-map.mjs <交付目录>`。在工作区运行 `npm install`（内网用已有 npm 源）。Three 固定 0.185.1，MapLibre 5.24.0，Turf 7.2.0。
 3. 在 `public/scene3d/scene-data.json` 增加 map。原 scene/camera/lights/controls/renderer 保留，模型仍用现有 asset 或业务分组。
 
@@ -61,3 +61,10 @@
 
 
 运行边界：`@a3d/a3d-components/map` 提供 MapRuntime（生命周期、坐标、相机同步、重绘）；扩展中的 create-map-scene 保留编辑/保存适配，map-experience 保留地图主题算法。不要在生成 handler 中再建 MapLibre 宿主。普通场景使用标签时初始化加 `--with-components`，仅从 `/labels` 导入，无需启用地图。
+
+
+## 地点与资源选择
+
+城市名称用于确定地理范围，不意味着凭空生成真实建筑。使用用户已配置的地图服务与可靠的中心坐标；行政区范围不明确但不影响示意浏览时说明采用的中心与视距。建筑轮廓/高度取决于地图数据覆盖，不将估算高度或程序模型宣称为真实还原。GCJ-02/BD-09业务坐标需在业务adapter显式转换为宿主采用的WGS84，不能直接混用。
+
+需要地图散点/热力时使用map.overlays；普通室内温度或设备点位不能直接调用依赖MapLibre宿主的叠加层。没有真实记录时保持空数据；用户明确要求演示才添加标记为模拟的数据。不要因为提到园区、建筑或热力就自动加载地图。

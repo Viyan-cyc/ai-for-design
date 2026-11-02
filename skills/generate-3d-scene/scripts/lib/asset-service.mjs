@@ -42,19 +42,25 @@ async function bytes(response,max=limits.fileBytes) {
 const firstNonEmpty = (...values) => values.find(v=>typeof v==='string'&&v.trim())?.trim();
 
 export async function searchRemote(queries,cfg) {
- if(!cfg?.endpoint)return {status:'not_configured',results:queries.map(query=>({query,assets:[]}))};
+ if(!cfg?.endpoint)return {status:'not_configured',results:queries.map(query=>({query,status:'error',error:'Service not configured',assets:[]}))};
  if(!Array.isArray(queries)||queries.some(q=>typeof q!=='string'))throw new Error('queries must be strings');
  const {response}=await request(cfg.endpoint,cfg,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:'file',queries,top_k:cfg.topK??5,...(cfg.filters?{filters:cfg.filters}:{})})});
  const body=JSON.parse((await bytes(response,4*1024*1024)).toString('utf8'));
  if(!Array.isArray(body.results)||body.results.length!==queries.length)throw new Error('Unexpected search response');
- return {status:'ok',results:body.results.map((group,i)=>{
+ const results=body.results.map((group,i)=>{
+  try {
+  if(group?.error || ['error','failed'].includes(group?.status))throw new Error('Search query failed');
   const items=Array.isArray(group)?group:group.files;if(!Array.isArray(items))throw new Error('Unexpected search group');
   // Match the browser request: filters are sent to the service, not reapplied locally.
   // Returned group/source IDs may differ; do not silently discard those models.
-  const seen=new Set();return {query:queries[i],assets:items.filter(r=>r.file_path&&(/^(glb|gltf)$/i.test(r.file_type??'')||/\.(glb|gltf)$/i.test(new URL(r.file_path).pathname))).filter(r=>{const key=r.raw_data?.content_hash??r.id??r.file_path;if(seen.has(key))return false;seen.add(key);return true;}).map(r=>({id:`remote_${r.id}`,origin:'remote',remoteId:r.id,name:firstNonEmpty(r.name,r.chineseName,r.file_name)??'未命名模型',description:r.description??'',tags:r.tags??[],entryUrl:r.file_path,thumbnailUrl:r.thumbnail_path??null,score:r.score,sourceId:r.source_id,groupId:r.group_id,technicalStatus:'not_downloaded',
+  const seen=new Set();const assets=items.filter(r=>r.file_path&&(/^(glb|gltf)$/i.test(r.file_type??'')||/\.(glb|gltf)$/i.test(new URL(r.file_path).pathname))).filter(r=>{const key=r.raw_data?.content_hash??r.id??r.file_path;if(seen.has(key))return false;seen.add(key);return true;}).map(r=>({id:`remote_${r.id}`,origin:'remote',remoteId:r.id,name:firstNonEmpty(r.name,r.chineseName,r.file_name)??'未命名模型',description:r.description??'',category:typeof r.category==='string'?r.category:null,tags:r.tags??[],entryUrl:r.file_path,thumbnailUrl:r.thumbnail_path??null,score:r.score,sourceId:r.source_id,groupId:r.group_id,technicalStatus:'not_downloaded',
    // Library metadata is a candidate hint (spec §4.1): pass through valid raw_data, never fabricate.
-   libraryMetadata:sanitizeLibraryMetadata(r.raw_data)}))};
- })};
+   libraryMetadata:sanitizeLibraryMetadata(r.raw_data)}));
+  return {query:queries[i],status:assets.length?'ok':'empty',assets};
+  } catch { return {query:queries[i],status:'error',error:'Invalid or failed search group',assets:[]}; }
+ });
+ const failed=results.filter(r=>r.status==='error').length;
+ return {status:failed===results.length?'error':failed?'partial':'ok',results};
 }
 
 /** Whitelisted raw_data passthrough; unknown/malformed values are dropped, missing stays null. */
@@ -101,4 +107,9 @@ export async function downloadCandidate(candidate,out,cfg) {
   a.libraryMetadata=candidate.libraryMetadata??null;
   atomicJSON(resolve(out,'package.json'),pkg);return pkg;
  }finally{rmSync(temp,{recursive:true,force:true});}
+}
+
+export function remoteExitCode(result) {
+  if (result.status !== 'ok' || result.results.some(row => row.status === 'error')) return 2;
+  return result.results.some(row => row.assets.length) ? 0 : 3;
 }
