@@ -1,7 +1,8 @@
 <script setup>
-import { ref, onUnmounted } from 'vue'
+const emit = defineEmits(['send', 'stop'])
+import { ref } from 'vue'
 import { SweetButton } from '@hw-seq/sweet-ui-base'
-import WorkbenchShell from './components/foundation/workbench-shell.vue'
+import WorkbenchShell from './workbench-shell.vue'
 import ConversationComposer from './components/foundation/conversation-composer.vue'
 const tabs=ref([{id:'first',title:'工作区 1'}])
 const active=ref('first')
@@ -10,13 +11,11 @@ const sessions=ref(false)
 const menus=[{id:'assistant',label:'助手',icon:'sweetui-icon-menu-l'}]
 const models=[{id:'demo',label:'本地演示'}]
 const states=ref({first:{draft:'',model:'demo',busy:false,notice:'',lastRequest:null}})
-const timers=new Map()
 let serial=1
 function add(){const id='workspace-'+(++serial);tabs.value.push({id,title:'工作区 '+serial});states.value[id]={draft:'',model:'demo',busy:false,notice:'',lastRequest:null};active.value=id}
-function stop(id){clearTimeout(timers.get(id));timers.delete(id);states.value[id].busy=false;states.value[id].notice='已停止演示任务'}
+function stop(id){emit('stop',id);states.value[id].busy=false}
 function close(id){const i=tabs.value.findIndex(x=>x.id===id);stop(id);tabs.value.splice(i,1);delete states.value[id];if(active.value===id)active.value=tabs.value[Math.min(i,tabs.value.length-1)]?.id||''}
-function send(id,request){states.value[id].lastRequest=request;states.value[id].busy=true;states.value[id].notice='本地定时演示，不调用模型、不上传附件';timers.set(id,setTimeout(()=>{states.value[id].busy=false;states.value[id].notice='演示完成：'+request.text;timers.delete(id)},800))}
-onUnmounted(()=>{for(const timer of timers.values())clearTimeout(timer)})
+function send(id,request){emit('send',{workspaceId:id,...request});states.value[id].lastRequest=request;states.value[id].notice=request.text}
 </script>
 <template>
   <div class="page">

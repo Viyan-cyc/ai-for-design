@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const catalog = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../assets/foundation');
+const catalog = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const assets = new Set(['workbench-shell', 'conversation-composer']);
 const canonical = value => value.replace(/\r\n/g, '\n');
 
@@ -52,7 +52,7 @@ try {
   // Validate the entire selection before creating directories or files.
   const plan = selected.map(id => {
     if (!assets.has(id)) fail('ASSETS', `Unknown asset: ${id}`);
-    const source = path.join(catalog, id + '.vue');
+    const source = path.join(catalog, id === 'workbench-shell' ? 'patterns/workbench/workbench-shell.vue' : 'components/conversation-composer.vue');
     noLinks(catalog, source);
     const bytes = fs.readFileSync(source);
     const relative = `src/pages/${page}/components/foundation/${id}.vue`;

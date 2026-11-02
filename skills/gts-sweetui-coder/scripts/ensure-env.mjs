@@ -42,7 +42,7 @@ try {
   fail("ENV_CONFIG_BROKEN", `读不了 references/env-config.json: ${e.message}`, "确认 skill 组装完整")
 }
 
-// ---------- 0. skill 组装检查（vendor 占位在则提示，不阻塞——vendor 是参考资料）----------
+// Environment location.
 
 function envDir(override) {
   if (override) return path.resolve(override)

@@ -57,7 +57,7 @@ try {
   })
   for(const name of ['form-dialog','content-grid','search-detail'])ok('example compiles: '+name,()=>{
     const r=run('init.mjs',[temp,name]);assert.equal(r.code,0,r.text)
-    const dest=path.join(temp,name),pageName=name.split('-').map(s=>s[0].toUpperCase()+s.slice(1)).join(''),source=path.join(skill,'vendor/code-example/references',name)
+    const dest=path.join(temp,name),pageName=name.split('-').map(s=>s[0].toUpperCase()+s.slice(1)).join(''),source=path.join(skill,'patterns',name)
     fs.copyFileSync(path.join(source,'index.vue'),path.join(dest,'src/pages',pageName,'index.vue'))
     fs.cpSync(path.join(source,'components'),path.join(dest,'src/pages',pageName,'components'),{recursive:true})
     if(fs.existsSync(path.join(source,'api')))fs.cpSync(path.join(source,'api'),path.join(dest,'src/api'),{recursive:true})
@@ -68,14 +68,15 @@ try {
     assert.equal(run('init.mjs',[temp,'foundation-page']).code,0)
     const args=['--dir',project,'--page','FoundationPage','--assets','workbench-shell,conversation-composer']
     const dest=path.join(project,'src/pages/FoundationPage/components/foundation')
-    let result=run('copy-foundation.mjs',[...args,'--check']);assert.equal(result.code,0,result.text);assert.ok(!fs.existsSync(dest))
-    result=run('copy-foundation.mjs',args);assert.equal(result.code,0,result.text)
-    result=run('copy-foundation.mjs',args);assert.equal(result.code,0,result.text)
-    fs.copyFileSync(path.join(skill,'assets/examples/workbench-conversation/index.vue'),path.join(project,'src/pages/FoundationPage/index.vue'))
+    let result=run('copy-components.mjs',[...args,'--check']);assert.equal(result.code,0,result.text);assert.ok(!fs.existsSync(dest))
+    result=run('copy-components.mjs',args);assert.equal(result.code,0,result.text)
+    result=run('copy-components.mjs',args);assert.equal(result.code,0,result.text)
+    fs.copyFileSync(path.join(skill,'patterns/workbench/index.vue'),path.join(project,'src/pages/FoundationPage/index.vue'))
+    fs.copyFileSync(path.join(skill,'patterns/workbench/workbench-shell.vue'),path.join(project,'src/pages/FoundationPage/workbench-shell.vue'))
     check(project)
     assert.ok(!fs.existsSync(path.join(project,'.gts-assets.json')))
     const file=path.join(dest,'workbench-shell.vue');fs.appendFileSync(file,'\n<!-- edited -->')
-    const edited=fs.readFileSync(file,'utf8');result=run('copy-foundation.mjs',args);assert.equal(result.code,1);assert.match(result.text,/CONFLICT/);assert.equal(fs.readFileSync(file,'utf8'),edited)
+    const edited=fs.readFileSync(file,'utf8');result=run('copy-components.mjs',args);assert.equal(result.code,1);assert.match(result.text,/CONFLICT/);assert.equal(fs.readFileSync(file,'utf8'),edited)
   })
   ok('absolute source asset URLs resolve relative to project',()=>{
     const asset=path.join(root,'src/assets/sample.svg');fs.writeFileSync(asset,'<svg xmlns="http://www.w3.org/2000/svg"></svg>')
@@ -178,7 +179,7 @@ try {
   })
   assert.equal(typeof runtime.installRuntime,'function');count++;console.log('PASS: actual loader resolves runtime ESM exports (no private component mount)')
   ok('composer handles IME, line breaks, busy state, attachments and suggestions',()=>{
-    const source=fs.readFileSync(path.join(skill,'assets/foundation/conversation-composer.vue'),'utf8').split('<script setup>')[1].split('</script>')[0].replace(/^import .*$/gm,'')
+    const source=fs.readFileSync(path.join(skill,'components/conversation-composer.vue'),'utf8').split('<script setup>')[1].split('</script>')[0].replace(/^import .*$/gm,'')
     const props=context.Vue.reactive({modelValue:'hello',model:'demo',models:[],references:[{id:'doc',label:'Doc'}],commands:[],labels:{},busy:false})
     const events=[]
     const api=new Function('ref','computed','watch','nextTick','defineProps','defineEmits',source+'\nreturn {keydown,send,attach,attachments,composing,choose}')(

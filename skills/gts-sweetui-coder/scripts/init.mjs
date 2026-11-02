@@ -14,7 +14,7 @@ try {
   for (const name of ['src', 'public', 'index.gts.html']) fs.cpSync(path.join(preview,name),path.join(root,name),{recursive:true})
   const target = path.join(root,'src/pages',page)
   fs.mkdirSync(path.join(target,'components'),{recursive:true})
-  fs.copyFileSync(path.join(scripts,'../vendor/vue-skill/templates/Page.vue'),path.join(target,'index.vue'))
+  fs.copyFileSync(path.join(scripts,'../scripts/preview/page.vue'),path.join(target,'index.vue'))
   fs.writeFileSync(path.join(root,'src/App.vue'),'<script setup>\nimport Page from '+JSON.stringify('./pages/'+page+'/index.vue')+'\n</script>\n<template><Page /></template>\n')
   const result=refresh(root); if(!result.ok) throw Error(result.reason)
   console.log('RESULT: OK\nHTML_PATH: '+path.join(root,'index.gts.html')+'\nSRC_DIR: '+path.join(root,'src')+'\nPAGE: '+page+'\nVALIDATION: not-built')
