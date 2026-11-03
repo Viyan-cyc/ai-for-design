@@ -1,0 +1,1 @@
+export async function getChartData(){return {categories:["A","B","C"],values:[12,23,18]}}

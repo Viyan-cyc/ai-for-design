@@ -137,3 +137,15 @@
 .el-textarea.is-disabled .el-textarea__inner {
   color: var(--color-text-disabled);
 }
+
+/* Table stripe is a persistent row background; hover is a distinct interaction state. */
+.el-table {
+  --el-table-row-hover-bg-color: var(--color-hover);
+}
+.el-table--striped .el-table__body tr.el-table__row--striped td.el-table__cell {
+  background: var(--color-table-zebra);
+}
+.el-table .el-table__body tr.hover-row > td.el-table__cell,
+.el-table .el-table__body tr:hover > td.el-table__cell {
+  background: var(--color-hover);
+}

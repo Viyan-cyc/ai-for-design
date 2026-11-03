@@ -1,14 +1,14 @@
 # 按需能力接入参考（国际化 / 主题切换 UI）
 
-> 受众：执行 gts-ep-coder 的 AI。本文档是"用户明确要求切换功能时"的实现参考，
-> **默认工程不含任何切换 UI**（见 SKILL.md「国际化：按需启用」「主题切换：机制常驻，UI 按需」）。
+> 受众：执行 gts-ep-charts-coder 的 AI。本文档是"用户明确要求切换功能时"的实现参考，
+> **默认工程不含任何切换 UI**（仅用户要求时接入）。
 > 此处提供安装与状态装配参考；真实运行只按实际验收记录声明。**UI 形态（图标/下拉/菜单项……）按用户描述调整**，
 > 不要照抄本文当作唯一形态。
 
 ## 通用前提
 
 - 需要主题切换时，将 `scripts/preview/theme-scaffold/index.js` 复制为工程 `src/theme/index.js`（已有文件先检查，保留业务修改）。仅在 App.vue 创建一次 `createThemeState()`，通过 props/emits 或 provide/inject 传给导航与图表，不在每个控件各建状态。
-- 内置主题名为 `default`/`dark`；模块校验传入名称、过滤非法存储值，并派生 `isDark`。新增皮肤加载完成后可用 `names` 注册名称；`isDark` 仅表示内置 dark，不把所有自定义皮肤视为深色。图表响应 `theme` 变化后重读 GTS 配色，组件颜色仍由 token 与桥接负责。
+- 内置主题名为 `default`/`dark`；模块校验传入名称、过滤非法存储值，并派生 `isDark`。新增皮肤加载完成后可用 `names` 注册名称；`isDark` 仅表示内置 dark，不把所有自定义皮肤视为深色。图表响应 `theme` 变化后重读图表适配层，EP 控件颜色仍由 token 与桥接负责。图表值以 design/ 所选规范为准；没有暗色定义时，暗色值标为本次设计建议，不声称规范合规。
 - i18n 装配素材：`scripts/preview/i18n-scaffold/`（接线复用；两语言词典按业务同步更新）。
 - 预览加载器已就绪：`index.gts-ep.html` 的 moduleCache 已映射 `vue-i18n` 与 EP locale 子路径，
   接入后预览直接生效，**无需改预览加载器**。

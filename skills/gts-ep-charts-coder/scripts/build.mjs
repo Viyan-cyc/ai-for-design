@@ -84,6 +84,12 @@ async function build(){
       }else if(/\.m?js$/.test(file))ast=sfc.babelParse(source,{sourceType:'module'}).program.body;
       else if(/\.(css|less)$/.test(file)){
         const css=file.endsWith('.less')?(await less.render(source,{filename:file})).css:source;postcss.parse(css,{from:file});cssResources(css,file);runtimeSources[k]=previewCSS(css,file);tokenSource(source,k);
+        if(k.startsWith('/src/assets/charts/')){
+          const chartCSS=postcss.parse(css,{from:file});
+          chartCSS.walkRules(rule=>{if(!rule.selector.split(',').every(s=>/^\.[a-zA-Z_][\w-]*$/.test(s.trim())))fail(k+': chart token scope must be a container class');});
+          chartCSS.walkAtRules(()=>fail(k+': chart tokens must not contain at-rules'));
+          chartCSS.walkDecls(d=>{if(d.parent.type!=='rule')fail(k+': chart token must be inside a container class');if(!/^--page-chart-[a-z0-9-]+$/.test(d.prop))fail(k+': chart token requires --page-chart-: '+d.prop);});
+        }
         for(const m of source.matchAll(/(--[a-z][a-z0-9-]*)\s*:/g)){defined.add(m[1]);if(m[1].startsWith('--el-'))epVars.add(m[1]);}
       }else if(file.endsWith('.json'))JSON.parse(source);
       const rec={file,k,ast,deps:dependencies(ast),exports:new Set(file.endsWith('.vue')?['default']:file.endsWith('.json')?['default']:[])};
