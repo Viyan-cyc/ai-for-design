@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, readdirSync, existsSync, rmSync } from 'node:fs';
+import { cpSync, mkdtempSync, mkdirSync, writeFileSync, readFileSync, readdirSync, existsSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { execFileSync } from 'node:child_process';
@@ -29,7 +29,9 @@ try {
   for (const [dest,source] of [['compose-scene.mjs','scripts/scaffolds/compose-scene.mjs'],['layout.mjs','template/scripts/layout.mjs']])
     put('scripts/'+dest,readFileSync(resolve('skills/generate-3d-scene',source),'utf8'));
   packageDelivery(root);
-  const delivered=join(root,'delivery/source');
+  // Exercise second development on a separate copy; generated files are user changes.
+  const delivered=join(root,'independent-source');
+  cpSync(join(root,'delivery/source'), delivered, {recursive:true});
   assert.ok(existsSync(join(delivered,'scenes/stage.json')));
   assert.ok(!existsSync(join(delivered,'scenes/demo.json')));
   execFileSync(process.execPath,['scripts/compose-scene.mjs'],{cwd:delivered});

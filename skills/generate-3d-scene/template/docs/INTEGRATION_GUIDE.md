@@ -177,6 +177,10 @@ onBeforeUnmount(() => { active = false; scene?.dispose(); });
 
 打开交付根目录 index.3d.html 预览（旧工程兼容输出可能位于 delivery/），preview/ 是其必需运行资源。source/ 是完整源码快照，包含 src、public、依赖清单、配置、构建脚本及必要 vendor 包；进入 source 后安装依赖即可开发。不要只复制 src/public 当作独立工程。工作区的 node_modules、缓存和中间产物不进入交付。修改 source 后以它作为新工作工程；不要再用旧工作区重建覆盖修改。
 
+重复发布按 `preview/.scene3d-delivery-baseline.json`（version=2，scope=delivery）的上次成功交付清单和内容哈希检查整个交付目录：根目录、preview、source 的文件及目录新增、修改或删除都会拒绝发布，报告冲突路径并保留旧交付。基线文件本身不做自哈希，单独校验格式与版本。仅工作区更新、旧交付未变时可正常发布。
+
+缺失、损坏或不支持的基线，以及只有旧 `.scene3d-source-baseline.json` 的交付，均不能自动认领为可覆盖内容。保留旧目录、选择新交付目标，或将已修改 source 作为工作工程重新构建；不要编辑基线或删除用户文件绕过保护。基线随交付一起发布。这不是整个开发工作区的备份，也不提供任意并发写入或断电的事务保证。
+
 ### 开发工作区与交付目录
 
 CLI `node scripts/init.mjs <用户项目目录>` 的参数是最终交付目录，不是开发目录。脚本在用户主目录 `.scene3d/workspaces/` 创建独立工程，输出 WORKSPACE_PATH 和 DELIVERY_PATH。所有源码编辑、模型注入、临时查询文件及其他工程脚本使用 WORKSPACE_PATH，不在用户项目目录初始化源码或安装依赖。统一 build-offline 支持传 WORKSPACE_PATH 或原交付路径；成功返回最终 HTML_PATH。用户项目根目录仅有 index.3d.html、preview/、source/，不再有 delivery/、offline/、node_modules。交付时链接 HTML_PATH。同机后续修改继续使用原工作区；跨电脑使用 source 作为完整工程。旧工程不会自动移动或删除；旧工程无交付配置时仍保留 delivery 输出兼容。

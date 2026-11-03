@@ -247,14 +247,35 @@ export function selected(dir,ids) {
 export function inject(dir,project,ids) {
  outsideSkill(project);
  const assets=selected(dir,ids), target=resolve(project,'public/scene3d/assets'), manifestPath=resolve(target,'asset-manifest.json');
+ const checkTarget = path => {
+  for(let p=resolve(path);;p=dirname(p)) {
+   let stat;try{stat=lstatSync(p);}catch(e){if(e.code!=='ENOENT')throw e;}
+   if(stat?.isSymbolicLink() || (p!==resolve(path)&&stat&&!stat.isDirectory()))throw new Error(`Asset injection unsafe path: ${p}`);
+   if(p===dirname(p))break;
+  }
+ };
+ checkTarget(manifestPath);
  const manifest=existsSync(manifestPath)?readJSON(manifestPath):{};
+ if(manifest===null || typeof manifest!=='object' || Array.isArray(manifest))throw new Error('Invalid asset manifest: expected an object mapping');
+ const pending=new Map();
  for(const a of assets) {
   const key=`models/packages/${a.id}_${a.contentHash.slice(0,12)}`;
   if(manifest[a.id] && manifest[a.id].model!==key+'/'+a.entry)throw new Error(`Asset ID conflict: ${a.id}`);
-  for(const f of a.files){const to=safePath(target,key+'/'+f);mkdirSync(dirname(to),{recursive:true});writeFileSync(to,readFileSync(safePath(resolve(dir,'files'),f)));}
-  manifest[a.id]={model:key+'/'+a.entry,format:extname(a.entry).slice(1).toLowerCase()};
+  for(const f of a.files){
+   const to=safePath(target,key+'/'+f);checkTarget(to);
+   const data=readFileSync(safePath(resolve(dir,'files'),f));
+   if(existsSync(to)) {
+    if(!lstatSync(to).isFile() || !readFileSync(to).equals(data))throw new Error(`Asset injection conflict: ${to}`);
+   } else {
+    if(pending.has(to)&&!pending.get(to).equals(data))throw new Error(`Asset injection conflict: ${to}`);
+    pending.set(to,data);
+   }
+  }
+  // Preserve user metadata on existing compatible manifest entries.
+  if(!manifest[a.id])manifest[a.id]={model:key+'/'+a.entry,format:extname(a.entry).slice(1).toLowerCase()};
  }
- atomicJSON(manifestPath,manifest);return assets.map(a=>({id:a.id,name:a.name,group:'asset',params:{assetId:a.id}}));
+ for(const [to,data] of pending){mkdirSync(dirname(to),{recursive:true});writeFileSync(to,data,{flag:'wx'});}
+ if(!existsSync(manifestPath)||JSON.stringify(readJSON(manifestPath))!==JSON.stringify(manifest))atomicJSON(manifestPath,manifest);return assets.map(a=>({id:a.id,name:a.name,group:'asset',params:{assetId:a.id}}));
 }
 export function exportPackage(dir,out,config) {
  outsideSkill(out);

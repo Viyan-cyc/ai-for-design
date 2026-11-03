@@ -82,3 +82,7 @@ search-assets --brief精简候选的ID、名称、类别、尺寸、单位、三
 远端保留{status,results:[{query,status,assets,error?}]}结构，逐项status为ok/empty/error，总status可为ok/partial/error/not_configured。退出0表示成功且有候选；3表示全部查询成功但无候选；2表示错误（包括部分失败）。收到2仍应读取JSON里的成功项，失败项标为检索失败，不能解释为库中无匹配。传输/顶层响应错误沿用stderr报错与退出2。本地--lib保持原数组/批量结果结构和0/3/2退出语义。
 
 两个公开检索入口search-assets与designer-assets search共用0/3/2退出契约。designer-assets search额外的ok表示全部查询是否成功：有结果ok=true/exit0，成功但空ok=true/exit3，错误或部分失败ok=false/exit2；部分失败仍保留成功候选。其他designer-assets子命令的错误退出码保持1。
+
+### 重复注入保护
+
+inject 在写入前检查全部选中资产的模型、贴图和依赖目标，以及 manifest 与目标父路径。已有文件内容相同则复用，不同则报告 Asset injection conflict 并拒绝；拒绝时不写入其他待创建文件或 manifest。链接或非目录父路径拒绝。已有兼容 manifest 条目的用户元数据保留。需要更新时保留用户文件并明确迁移，不强制覆盖。此预检不承诺并发修改、磁盘故障或断电时的事务回滚。
