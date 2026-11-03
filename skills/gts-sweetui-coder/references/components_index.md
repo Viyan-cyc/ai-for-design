@@ -15,6 +15,7 @@
 
 |图标|[用法](../components/SweetIcon.md)|
 |消息、确认与通知|[用法](../components/SweetFeedback.md)|
+|下拉菜单 SweetDropdown / SweetDropdownMenu / SweetDropdownItem|[用法](../components/SweetDropdown.md)|
 
 更多组件名称定向搜索 scripts/verify/whitelists/sweetui-exports.json。名称存在只代表可导入，不代表任意 API 用法都已验证；高级组件在实际需求出现时查安装包对应文档。
 

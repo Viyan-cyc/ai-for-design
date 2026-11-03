@@ -43,7 +43,7 @@ HTML/截图还原读 [参考还原](references/design/reference-reconstruction.m
 - 使用普通 scoped CSS；使用已验证的官方样式入口及必要依赖，避免重复加载或重建等价主题样式；组件状态交给原生主题，页面不重绘整套组件状态色。页面 CSS 变量从目录选，局部变量用 --page-*。
 - brand 是品牌色，accent 是强调色，不把所有主操作强制改成红色。
 - 主题仅 uDesign2.2-light / uDesign2.2-dark，共享 theme.js 负责真实 selector 映射。默认不显示切换 UI。
-- 页面只调用 src/api/ 的 Promise 服务，mock 放 src/api/mock/；页面不直接引用 mock。UI 配置可放局部组件。
+- 页面只调用返回 Promise 的服务；页面专用服务可放 src/pages/{PAGE}/api/，跨页面服务放 src/api/，mock 放对应 api/mock/；页面不直接引用 mock。UI 配置可放局部组件。
 - runtime.js、theme.js、i18n/index.js 是共享接线。业务页面不要另写预览专用初始化；国际化通过公共接口接入。
 - 示例不等于完整产品；表单提交、查询、重置、分页等交互要真实生效。
 - 代码规则不增加机器风格门禁。build 负责真实编译、导入、资源和名称检查；无法静态确定的动态图标不能宣称已验证。

@@ -60,7 +60,7 @@ try {
     const dest=path.join(temp,name),pageName=name.split('-').map(s=>s[0].toUpperCase()+s.slice(1)).join(''),source=path.join(skill,'patterns',name)
     fs.copyFileSync(path.join(source,'index.vue'),path.join(dest,'src/pages',pageName,'index.vue'))
     fs.cpSync(path.join(source,'components'),path.join(dest,'src/pages',pageName,'components'),{recursive:true})
-    if(fs.existsSync(path.join(source,'api')))fs.cpSync(path.join(source,'api'),path.join(dest,'src/api'),{recursive:true})
+    if(fs.existsSync(path.join(source,'api')))fs.cpSync(path.join(source,'api'),path.join(dest, name === 'search-detail' ? 'src/pages/'+pageName+'/api' : 'src/api'),{recursive:true})
     check(dest)
   })
   ok('foundation copy is selective, repeatable and protects edited assets',()=>{
@@ -73,6 +73,7 @@ try {
     result=run('copy-components.mjs',args);assert.equal(result.code,0,result.text)
     fs.copyFileSync(path.join(skill,'patterns/workbench/index.vue'),path.join(project,'src/pages/FoundationPage/index.vue'))
     fs.copyFileSync(path.join(skill,'patterns/workbench/workbench-shell.vue'),path.join(project,'src/pages/FoundationPage/workbench-shell.vue'))
+    for (const dir of ['components','api']) fs.cpSync(path.join(skill,'patterns/workbench',dir),path.join(project,'src/pages/FoundationPage',dir),{recursive:true})
     check(project)
     assert.ok(!fs.existsSync(path.join(project,'.gts-assets.json')))
     const file=path.join(dest,'workbench-shell.vue');fs.appendFileSync(file,'\n<!-- edited -->')
@@ -268,6 +269,25 @@ try {
     assert.equal((main.match(/import .*\.css/g)||[]).length,1)
     const language=fs.readFileSync(path.join(scripts,'preview/src/i18n/index.js'),'utf8')
     assert.ok(!/revision|pending/.test(language))
+  })
+
+  ok('preview table adaptation has required declarations and known token references',()=>{
+    const css=fs.readFileSync(path.join(scripts,'preview/src/assets/theme-adapter.css'),'utf8')
+    const html=fs.readFileSync(path.join(scripts,'preview/index.gts.html'),'utf8')
+    assert.ok(!html.includes('--swt-table-'),'no duplicate preview adaptation')
+    assert.ok(fs.readFileSync(path.join(scripts,'preview/src/runtime.js'),'utf8').includes("import './assets/theme-adapter.css'"))
+    const known=new Set(JSON.parse(fs.readFileSync(path.join(scripts,'verify/whitelists/sweetui-tokens.json'),'utf8')).map(t=>t.name))
+    const blocks=[css]
+    assert.ok(blocks.length,'table adaptation must exist')
+    for(const css of blocks){
+      const defined=new Set([...css.matchAll(/(--[\w-]+)\s*:/g)].map(m=>m[1]))
+      for(const m of css.matchAll(/var\(\s*(--[\w-]+)/g)) assert.ok(known.has(m[1])||defined.has(m[1]),'unknown adaptation token: '+m[1])
+      for(const rule of css.matchAll(/[^{}]+\{([^{}]+)\}/g)){
+        const declarations=Object.fromEntries([...rule[1].matchAll(/(--[\w-]+)\s*:\s*([^;]+)/g)].map(m=>[m[1],m[2].trim()]))
+        // Static contract only: resolved colors and visual contrast require browser acceptance.
+        for(const name of ['--swt-table-th','--swt-table-striped','--swt-table-row-hover-bg-color','--swt-table-current-row-bg-color']) assert.ok(declarations[name], 'missing table adaptation declaration: '+name)
+      }
+    }
   })
 
   console.log('RESULT: OK\nTESTS: '+count+'\nPRIVATE_RUNTIME: not-tested')

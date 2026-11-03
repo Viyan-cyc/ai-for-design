@@ -115,7 +115,7 @@ async function build(){
       }else if(/\.m?js$/.test(file))ast=sfc.babelParse(source,{sourceType:'module'}).program.body;
       else if(/\.css$/.test(file)){
         const css=source;postcss.parse(css,{from:file});cssResources(css,file);runtimeSources[k]=previewCSS(css,file);tokenSource(source,k);
-        for(const m of source.matchAll(/(--[A-Za-z][A-Za-z0-9-]*)\s*:/g)){if(m[1].startsWith('--page-'))defined.add(m[1]);else fail(k+': local custom property requires --page-: '+m[1]);}
+        for(const m of source.matchAll(/(--[A-Za-z][A-Za-z0-9-]*)\s*:/g)){if(m[1].startsWith('--page-') || (k === '/src/assets/theme-adapter.css' && source === fs.readFileSync(path.join(scripts,'preview/src/assets/theme-adapter.css'),'utf8')))defined.add(m[1]);else fail(k+': local custom property requires --page-: '+m[1]);}
       }else if(file.endsWith('.json')){
         const data=JSON.parse(source);
         function strings(value){if(typeof value==='string')tokenSource(value,k);else if(Array.isArray(value))value.forEach(strings);else if(value&&typeof value==='object')Object.values(value).forEach(strings);}

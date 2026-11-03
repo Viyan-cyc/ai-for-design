@@ -11,7 +11,7 @@
 |select-menu / select-tab / close-tab|发送对应 ID，父级维护状态|
 |new-tab / sessions|父级实现新增及会话区显隐；无功能时不要假装成功|
 |tools / default slot|工具与业务内容，不自动增加主题/语言按钮|
-|labels|可响应式覆盖 navigation/toggle/search/empty/tabs/close/newTab/sessions，启用国际化时由父级 computed 使用公共 t.value 生成|
+|labels|可响应式覆盖 navigation/toggle/search/empty/tabs/close/newTab/sessions/favorites/allApps/collapse/expand，启用国际化时由父级 computed 使用公共 t.value 生成|
 
-内部只管理收展和搜索，不持有业务记录。关闭活动工作区后父级选择相邻项；关闭全部提供可操作空态。要保留输入用 v-show 或已有缓存策略，不用切换时重建整页。业务异步任务和清理由父级负责。
+内部管理导航收展、搜索及本实例的收藏筛选，不持有业务记录。关闭活动工作区后父级选择相邻项；关闭全部提供可操作空态。要保留输入用 v-show 或已有缓存策略，不用切换时重建整页。业务异步任务和清理由父级负责。
 默认收起导航 56px、展开 216px 是此资产的布局选择，不是 SweetUI 官方尺寸要求。不同参考骨架不要强套。

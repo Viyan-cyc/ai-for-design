@@ -1,4 +1,5 @@
 import './assets/base.css'
+import './assets/theme-adapter.css'
 import SweetUI from '@hw-seq/sweet-ui-base'
 import { installTheme } from './theme.js'
 import { installI18n } from './i18n/index.js'
