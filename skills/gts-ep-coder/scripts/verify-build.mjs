@@ -68,6 +68,14 @@ try{
     assert(fs.existsSync(path.join(project,'index.gts-ep.html')));
     assert.equal(fs.readFileSync(legacy,'utf8'),'legacy entry retained');
   });
+  test('rejected build preserves existing preview artifacts',()=>{
+    const html=path.join(project,'index.gts-ep.html'),data=path.join(project,'preview-data.js');
+    const beforeHTML=fs.readFileSync(html),beforeData=fs.readFileSync(data);
+    const marker='<!-- existing preview -->\n'+beforeHTML.toString();fs.writeFileSync(html,marker);
+    fixture(vue("import {MissingExport} from 'vue';const title=MissingExport"));
+    try{const p=run('build.mjs',['--dir',project]);assert.equal(p.status,1,p.text);assert.match(p.text,/has no export/);assert.equal(fs.readFileSync(html,'utf8'),marker);assert.deepEqual(fs.readFileSync(data),beforeData);}
+    finally{fs.writeFileSync(html,beforeHTML);fixture(vue());}
+  });
   check('extensionless JS',vue("import {value} from '../../api/portal';const title=value"),0,{'api/portal.js':'export const value=1'});
   await test('published resolver matches loader',()=>{const ctx={window:{}};vm.runInNewContext(fs.readFileSync(path.join(project,'preview-data.js'),'utf8'),ctx);assert.equal(ctx.window.__UX_RESOLVE_SOURCE__('/src/api/portal','/src/App.vue',ctx.window.__UX_PROTO_SRC__),'/src/api/portal.js');const html=fs.readFileSync(path.join(project,'index.gts-ep.html'),'utf8');const fragment=html.split('getFile: function (path) {')[1].split('                handleModule:')[0].trim().replace(/,$/,'');const fn=vm.runInNewContext('(function(path){'+fragment+')',{window:ctx.window,SRC:ctx.window.__UX_PROTO_SRC__,ASSET_EXT:[],Promise,Error});return fn('/src/api/portal').then(r=>assert.equal(r.type,'.mjs'));});
   check('directory index',vue("import {value} from '../../api/portal';const title=value"),0,{'api/portal/index.js':'export const value=1'});

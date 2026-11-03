@@ -13,8 +13,6 @@ async function build(){
   if(i<0||!args[i+1]||args[i+1].startsWith('-'))throw Error('Usage: node build.mjs --dir "<project>"');
   const root=path.resolve(args[i+1]),src=path.join(root,'src');
   if(!fs.existsSync(src))throw Error('src folder not found: '+src);
-  // The loader is a fixed skill asset, not a business file. Sync it for existing projects too.
-  fs.copyFileSync(path.join(scripts,'preview/index.gts-ep.html'),path.join(root,'index.gts-ep.html'));
   const req=compilerRequire(),sfc=req('@vue/compiler-sfc'),less=req('less'),postcss=req('postcss');
   const files=walkFiles(src),key=f=>'/src/'+path.relative(src,f).split(path.sep).join('/');
   const byKey=Object.fromEntries(files.map(f=>[key(f),f]));
@@ -35,7 +33,7 @@ async function build(){
     ast.walkDecls(d=>{d.value=d.value.replace(/url\(\s*["']?([^"')]+)["']?\s*\)/g,(all,url)=>{if(/^(data:|https?:|blob:|#|\/\/)/i.test(url))return all;const clean=url.split(/[?#]/)[0],suffix=url.slice(clean.length),target=path.resolve(path.dirname(file),decodeURIComponent(clean));return 'url("./'+encodeURI(path.relative(root,target).split(path.sep).join('/'))+suffix+'")';});});
     return ast.toString();
   }
-  const html=fs.readFileSync(path.join(root,'index.gts-ep.html'),'utf8');
+  const html=fs.readFileSync(path.join(scripts,'preview/index.gts-ep.html'),'utf8');
   for(const m of html.matchAll(/<(?:script|link)\b[^>]*(?:src|href)=["']([^"']+)["']/g))if(m[1]!=='./preview-data.js')localResource(m[1],path.join(root,'index.gts-ep.html'));
   for(const f of walkFiles(path.join(root,'public')).filter(f=>f.endsWith('.css')))try{cssResources(fs.readFileSync(f,'utf8'),f);}catch(e){fail(f+': CSS '+e.message);}
   // Read actual shipped UMD exports in a DOM-free context, not a browser/render test.
@@ -108,6 +106,8 @@ async function build(){
   for(const [text,label]of tokenTexts)for(const m of text.matchAll(/var\(\s*(--[a-z][a-z0-9-]*)\s*([,)])/g)){const name=m[1];if(defined.has(name)||epVars.has(name))continue;const message=label+': unknown token '+name;if(m[2]===','&&name==='--ux-mix-base')continue;(m[2]===','?warn:fail)(message);}
   for(const message of warnings)console.log('WARN: '+message);
   if(errors.size){console.log('RESULT: FAIL | '+errors.size+' error(s)');for(const message of errors)console.log('ERROR: '+message);process.exitCode=1;return;}
+  // The loader is a fixed skill asset, not a business file. Sync it for existing projects too.
+  fs.copyFileSync(path.join(scripts,'preview/index.gts-ep.html'),path.join(root,'index.gts-ep.html'));
   const result=refresh(root,runtimeSources);if(!result.ok)throw Error(result.reason);
   console.log('RESULT: OK\nHTML_PATH: '+path.join(root,'index.gts-ep.html')+'\nPAGES: '+pages.length+'\nRUNTIME: not-run');
 }

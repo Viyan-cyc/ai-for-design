@@ -35,7 +35,7 @@ metadata:
                                                 └── build 验证未过 ─┘  最多2轮修复重跑
 ```
 
-> 页面首次使用图标或图标引用集合变化时执行 fetch-icons；只改数据/样式不重复执行，无图标可直接 build。
+> 图标阶段的执行条件与回退规则见③.5。
 > build失败按“验证失败与重试上限”集中修复；若修复改变图标引用，再执行③.5。
 
 脚本都在本 skill 的 `scripts/` 下，**除 ⓪ 的安装脚本外都要 node 才能跑**。
@@ -153,10 +153,8 @@ main.js、api 服务层示例、主题文件、starter 页面）。
 
 #### 数据走服务层（src/api/）
 
-- 业务记录、统计值、图表数据经 `src/api/{模块}.js` 的语义化函数（返回 Promise）获取，**页面不直接 import
-  mock 数据文件**（它们放 `src/api/mock/`，只被 api 层消费）。starter 的 `api/demo.js` 是样例。菜单/栏目结构、按钮配置与枚举映射是UI配置，可在组件内声明；包含业务记录时仍走服务层。
-- 对接真实后端 = 改 `api/` 实现（换 fetch/axios），页面零改动——这是服务层存在的意义。
-- 新增接口按同样式扩展：每个业务模块一个 `api/{模块}.js`，mock 数据沉到 `api/mock/`。
+业务数据、UI配置、服务与mock的归属遵循代码规则第五、十三节。
+
 - 交付卫生：完成页面和服务源码替换、业务不再引用starter后，在最终build前运行
   `node scripts/cleanup-starter.mjs --dir "<工程目录>"` 清理预置的 `api/demo.js` 与 `api/mock/demo-data.js`。
   脚本仅删除仍为starter原样的文件，已改造内容WARN保留；安全规则不变，不手动删用户文件。
@@ -209,7 +207,6 @@ IconPlus API（探测即取配置，再 `getIconInfo → getIcon×2` 并行拉�
 **重跑是增量的**：图标名对应的双文件（`.light.svg` + `.dark.svg`）已落盘即跳过网络、文件原封
 不动——已确认的图标不会被后续轮次改写；只检索新出现的名字。
 
-- **执行时机**：首次有图标或图标引用集合变化时，在 ④ build 前执行
 - 页面照常写 `import { Search } from '@element-plus/icons-vue'`，
   fetch-icons负责检索并接到本地统一图标入口；命中用公司图标，未命中仍用EP
 - **默认 base-url**：`https://octo.hdesign.huawei.com`（可通过 `--base-url` 覆盖）
@@ -234,21 +231,18 @@ build 用真实 `@vue/compiler-sfc` 编译 Vue SFC，检查 CSS/Less、导入导
 
 - `RESULT: OK` → 拿 `HTML_PATH` 走第 ⑤ 步。构建输出 `index.gts-ep.html`；旧工程中已有的其他HTML不自动删除，交付以本次 `HTML_PATH` 为准
 - `RESULT: FAIL |` → 读每条 `ERROR:`（含 `file:line`），改代码，**再跑一次 build**。
-  代码问题在重试额度内集中修复；达到上限或提前停止时如实报告未通过
+  处理规则统一见“验证失败与重试上限”
 - `WARN: ...`（token 有 fallback 但未定义、样式内出现 hex 等）→ **必须处理**，
   不因为 `RESULT: OK` 就当作做完了
 - 另：修改 `src/` 后预览 HTML 不会自动更新，完成本轮源码修改后重跑build刷新 `preview-data.js`；仅README等非运行文档修改不需要
 
-> 编译失败 ≠ 报告用户。`verify` 的编译错误、白名单错误、token 违规都是你自己的代码问题，
-> 按提示在重试额度内修复；达到上限或提前停止时报告未通过。**环境类失败**（装不上、compiler加载不了）按HINT处理或报告阻塞。
-
 最终build前按code-rules最后一节完成一次自查并直接修正偏差，不新增检查命令或报告。
 
-build同步固定预览加载器，使已有工程使用当前解析规则；业务src不因此重写。源码映射仅在检查通过后刷新。共享工具池新增Less校验依赖，ensure提示过期时按HINT更新一次。
+build检查通过后同步固定预览加载器并刷新源码映射，使已有工程使用当前解析规则；检查失败保留已有预览文件，业务src不因此重写。写文件失败仍可能导致部分更新，不提供事务回滚保证。共享工具池新增Less校验依赖，ensure提示过期时按HINT更新一次。
 
 ### ⑤ 交付 —— 不能省
 
-build 返回 `RESULT: OK` 之后，必须向用户交付预览页面的可点击链接，页面效果由用户预览确认：
+完成源码自查、处理构建 WARN 且 build 返回 `RESULT: OK` 后，交付预览页面的可点击链接。准确说明验证范围，未运行浏览器时说明浏览器运行未验证；页面效果由用户预览确认：
 
 ```
 预览：<HTML_PATH 的绝对路径>（双击用浏览器打开）
@@ -257,16 +251,16 @@ build 返回 `RESULT: OK` 之后，必须向用户交付预览页面的可点击
 **预览路径必须输出为 artifact 链接**（不是纯文本），让用户可直接点击打开。源码在 `<SRC_DIR>` 下，
 无需作为链接输出。
 
-**这一步没做，整件事就不算完成**，和 build 不通过是同等级别的未完成。
+必要检查未通过或未交付链接时，按验证规则报告未完成。
 
 ---
 
 ## 硬约束
 
-### 0. 绝不删除用户磁盘上的任何东西 —— 这条没有例外
+### 0. 用户文件与安全清理边界
 
-**禁止执行任何删除命令**：`Remove-Item` / `rm` / `rmdir` / `del` / `git clean`，不论加什么参数、
-不论那个目录看起来多像垃圾残留。清理是 skill 脚本自己的职责，不是你的。
+代理不执行任意删除命令：`Remove-Item` / `rm` / `rmdir` / `del` / `git clean`，不论加什么参数、
+不论那个目录看起来多像垃圾残留。预置样例只由 `cleanup-starter.mjs` 检查后清理：原样且没有保留源码引用的候选文件可删除；已修改、符号链接、仍被引用或无法安全判断的文件保留。
 
 目录名乱码极可能是正常中文目录——编码显示问题从来不是删除的理由。建目录/复制失败时原样报告，
 让用户自己看。同理禁止：`sudo`（agent 没有交互通道，会静默挂住）、改用户机器的全局配置
@@ -299,11 +293,6 @@ build的编译/token错误在重试额度内修复，达到上限或提前停止
 - 生成"看起来像"的纯 HTML/静态图代替 .vue 源码（交付物是能拷进真实工程的组件代码）
 - 手工改 `node_modules` 或绕过 `npm ci` 去凑依赖
 
-### 1. build 不通过就不算做完
-
-**这是最重要的一条。** 不允许在 `build.mjs` 没有 `RESULT: OK` 的情况下告诉用户"做好了"。
-按前述验证额度修复；未通过时如实报告剩余错误。
-
 ### 2. 业务源码与固定骨架边界
 
 | 允许 | 路径 |
@@ -315,38 +304,9 @@ build的编译/token错误在重试额度内修复，达到上限或提前停止
 
 换肤需求走 `src/assets/themes/README.md` 协议**追加**皮肤文件，不动既有 base.less、bridge.less、default.less 和 dark.less。
 
-### 3. 页面代码规范（design-language）
+### 3. 页面代码规范
 
-- **样式一律 `<style scoped lang="less">`**；禁止 `:root` / `html` / `body` / `[data-theme]` 选择器（build 会拒）。
-- **所有颜色走 token**：`var(--color-brand)` 这类规范名；页面局部派生值用 `--page-*` 前缀定义；页面不得定义 `--el-*`，已有运行时变量可引用。
-  页面里不写 hex 色值；build对硬编码hex给出WARN，按前述要求处理。名称检查不验证每处CSS继承/作用域，局部 `--page-*` 定义必须覆盖其使用位置。
-- **标准交互控件优先使用 Element Plus**，组件模板标签一律 **PascalCase**（`<ElTable>`），模板里用到的每个
-  组件、`ElMessage` 等命令式 API、vue 的 API（`ref`/`reactive`/…）**每个文件各自 import**——
-  当前 build 会检查静态组件标签的绑定与导入导出；通过不代表所有运行时引用均正确。编译宏（`defineProps` 等）不用 import。
-- 图标从 `@element-plus/icons-vue` 导入（如 `import { Search } from '@element-plus/icons-vue'`）。
-  EP 图标是**无宽高的裸 svg**，直接放模板里 font-size 控不住尺寸（会撑到 200px+）：
-  - 裸 svg 图标必须包进 `<ElIcon :size="N">` 或显式写 `width`/`height`；
-  - 组件自带包装（如 ElButton 的 `:icon` prop、ElMessage 的 icon 选项）不必再包；
-  - 引用 svg 文件用 `<ElIcon><img …/></ElIcon>` 模式。
-- 间距/圆角/字号/投影等同样用 token：`var(--space-size-16)`、`var(--radius-size-normal)`、
-  `var(--shadow-1)`。
-- 组件状态（悬停/聚焦/禁用/加载）由 Element Plus + 桥接层自动获得，页面不重绘状态色。
-- 页面布局与展示区域可用语义化 HTML 和 GTS token；标准按钮、表单控件和表格优先用 EP。没有合适组件承载的自定义交互区域可组合 EP 与原生元素，并实现必要的键盘、焦点和状态行为；复用资产时保留其已有实现。业务页面不覆盖 EP 内部主题样式。
-- **自适应纪律**：布局容器禁写死总宽（内容流式，控件固有定宽配 `max-width: 100%` 兜底）；
-  字体禁用 vw/vh 视口缩放；多卡片用响应式栅格（细则见 code-rules 第十二节）。
-  build 会对 `zoom` 与 font-size vw/vh 出 WARN。
-- token 名称与用途见 `references/token-catalog.md`，样式协议见 `references/design-language.md`；组件/导出/图标白名单见
-  `scripts/verify/whitelists/*.json`（EP 2.13.5：118 组件 / 534 导出 / 293 图标）。
-
-#### UMD 运行时已知坑（预览跑 UMD、真实工程跑构建工具，行为有差异——按下面写法写两边都稳）
-
-1. **跨组件命令式调用不用 `defineExpose` 方法**：模板 ref + `defineExpose` 暴露的方法在预览
-   运行时下会报 "is not a function"。改用 **prop 信号 + 子组件 watch**：父组件递增一个计数
-   prop，子组件 `watch` 它执行动作。
-2. **ElPagination 分页状态用 ref 绑定**：静态 `:current-page="1"` 在运行时下组件可能静默
-   不渲染。写法：`v-model:current-page`（或 `:current-page` 绑 ref）+ `@current-change`。
-3. **中文 jumper 自组**：EP jumper 在运行时下显示英文 "Go to"。需要中文"前往 X 页"时不用
-   jumper，自组 ElInput + 按钮，配合规则 2 的 `@current-change`。
+编码与交付自查统一遵循 `references/code-rules.md`；token 名称见 `references/token-catalog.md`，设计协议见 `references/design-language.md`，组件/导出/图标名称按需查白名单。
 
 ### 4. 参考代码
 
@@ -358,7 +318,7 @@ references 保存规则；components 保存控件与用法；patterns 保存组�
 
 - 装环境时：说在准备环境、需要几分钟，不要贴命令和路径
 - 修复过程中不逐条播报编译错误；通过、达到上限或提前停止时统一说明结果
-- 做完时：给出预览 HTML 路径（双击即开），源码路径无需作为链接输出
+- 完成时按⑤交付；未通过时按统一验证规则说明剩余问题。
 
 ## 已知边界
 
