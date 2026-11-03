@@ -1,16 +1,10 @@
-# 内网准备、验收与纯净交付
+# SweetUI 运行资源维护
 
-仅在首次安装或更新库版本时执行；普通页面复用准备好的包，不重复提取或调查依赖。
+本文用于用户明确要求的 skill 运行资源准备、修复或升级，会更新 skill 内的索引及随包运行资源。普通页面的编译环境准备与运行资源缺失处理遵循 SKILL.md 的生成流程。
 
-## 路径
+## 输入与操作目录
 
-- 唯一可修改的新包：D:\project\gts\ai-for-design\skills\gts-sweetui-coder1
-- 原有包只读保留：D:\project\gts\ai-for-design\skills\gts-sweetui-coder
-- 不修改 EP：D:\project\gts\ai-for-design\skills\gts-ep-coder
-- SweetUI npm：D:\project\gts\ai-for-design\node_modules\@hw-seq\sweet-ui-base
-- SweetUI 源码（必要时定向查 API）：C:\Users\c00426332\Desktop\xiaoyi\octo\sweetui\SweetUIBase-master\SweetUIBase-master
-- 验收项目：D:\project\gts\ai-for-design\output\sweetui-acceptance
-- 验收报告与回传资料：D:\project\gts\ai-for-design\output\sweetui-coder-handoff
+在明确指定的待维护 skill 根目录执行命令。准备目标版本的 npm 包目录、含兼容 xss.js 和 lodash.min.js 的资源目录，以及隔离验收输出目录。开始前确认目标 skill、目标版本及本次操作所需的真实输入目录；缺少输入时报告缺口，不推测路径或补造资源。下列占位路径应替换为实际绝对路径。
 
 ## 依据与资源职责
 
@@ -35,38 +29,65 @@ SweetUI 的版本、导出、组件 API、token 名称和值、图标、主题�
 
 prepare-runtime 当前只支持上述完整 CSS 布局。文件缺失或预检失败表示需要调查来源或适配脚本，不代表组件库不能使用。核实后同步准备脚本、提取器、预览和工程入口及相关测试；不单纯关闭检查。找不到资源时不能把当前代码当作兜底真值，不能凭空补造 token、图标或主题。无法确认的项目记录缺口。
 
-## 首次准备
+## 维护步骤
 
-将收到的新包放到 gts-sweetui-coder1，SKILL.md 的 name 仍为 gts-sweetui-coder。原有 gts-sweetui-coder 只读保留，直接检查其成功预览接线，仅将确认兼容当前 npm 的必要资源复制到新包，不创建中间备份目录。按新包绝对路径执行，避免同名 skill 自动选到旧包。验证通过后由用户自行替换正式目录，本轮不自动替换。报告和采集资料放在 skill 外。
+### 1. 检查编译环境
 
-先确认旧包 scripts/preview/public/library 中实际存在所需的 xss.js、lodash.min.js，并核实与当前 UMD 依赖兼容；下方 --from 指向该目录。若实际位置不同，定位后使用真实目录，不创建假文件迁就命令。
+在目标 skill 根目录检查环境；仅缺 Node 时先运行 scripts/install/install.ps1 或 install.sh。
 
 ~~~powershell
-Set-Location 'D:\project\gts\ai-for-design\skills\gts-sweetui-coder1'
-node scripts/setup-env.mjs
+Set-Location '<skill目录>'
 node scripts/ensure-env.mjs
+~~~
 
-node scripts/gen-whitelists.mjs --package 'D:\project\gts\ai-for-design\node_modules\@hw-seq\sweet-ui-base'
-node scripts/gen-tokens.mjs --extract --package 'D:\project\gts\ai-for-design\node_modules\@hw-seq\sweet-ui-base'
+环境缺失或过期时，按 HINT 执行 setup-env 或安装脚本，再检查一次。setup-env 安装到共享环境，不把 node_modules 放进 skill；环境已就绪时跳过安装。
 
-node scripts/prepare-runtime.mjs --package 'D:\project\gts\ai-for-design\node_modules\@hw-seq\sweet-ui-base' --from 'D:\project\gts\ai-for-design\skills\gts-sweetui-coder\scripts\preview\public\library'
-node scripts/prepare-runtime.mjs --package 'D:\project\gts\ai-for-design\node_modules\@hw-seq\sweet-ui-base' --from 'D:\project\gts\ai-for-design\skills\gts-sweetui-coder\scripts\preview\public\library' --check
+### 2. 准备本次涉及的索引与运行资源
+
+首次完整准备时执行以下适用项；修复或升级时按实际受影响的资源选择，保持对应索引与运行资源一致。
+
+- 导出或图标索引需要生成、更新时：
+
+~~~powershell
+node scripts/gen-whitelists.mjs --package '<SweetUI npm包目录>'
+~~~
+
+- token 索引及目录需要生成、更新时：
+
+~~~powershell
+node scripts/gen-tokens.mjs --extract --package '<SweetUI npm包目录>'
+~~~
+
+- 随包运行资源需要准备、更新时：确认依赖目录中存在真实 xss.js、lodash.min.js，并核实与目标 UMD 兼容；`--from` 指向该目录。
+
+~~~powershell
+node scripts/prepare-runtime.mjs --package '<SweetUI npm包目录>' --from '<兼容依赖资源目录>'
+~~~
+
+### 3. 核对与回归
+
+运行资源或任一索引变更后，使用生成索引的同一来源 npm 包及经确认兼容的依赖目录，执行 prepare-runtime --check 和 check-runtime，核对随包运行资源与来源一致。导出/图标索引变更另执行 gen-whitelists --check；token 变更另执行 gen-tokens --check。首次完整准备执行全部检查。
+
+检查发现资源不一致时，仅在已授权维护范围内同步受影响资源并重新核对；缺少真实来源或修复需要扩大范围时，报告差异与阻塞，不将检查通过改为跳过检查。检查本身不要求重新复制或下载资源。
+
+资源或索引变更后运行 verify-build；隔离替身回归不替代上述真实来源核对，浏览器验收另见下一节。
+
+~~~powershell
+node scripts/prepare-runtime.mjs --package '<SweetUI npm包目录>' --from '<兼容依赖资源目录>' --check
 node scripts/check-runtime.mjs
-
-node scripts/gen-whitelists.mjs --package 'D:\project\gts\ai-for-design\node_modules\@hw-seq\sweet-ui-base' --check
-node scripts/gen-tokens.mjs --package 'D:\project\gts\ai-for-design\node_modules\@hw-seq\sweet-ui-base' --check
+node scripts/gen-whitelists.mjs --package '<SweetUI npm包目录>' --check
+node scripts/gen-tokens.mjs --package '<SweetUI npm包目录>' --check
 node scripts/verify-build.mjs
 ~~~
 
-setup-env 安装到共享环境，不把 node_modules 放进 skill。仅缺 Node 时运行 scripts/install/install.ps1 或 install.sh。
 目标版本为 SweetUI 5.7.0。提取失败时检查真实路径、选择器、导出结构和错误，不手工凑数量、不按命名规律补名称。
 上述命令适用于当前布局；若真实布局不同，先完成有依据的最小适配，再执行对应命令并记录差异。prepare-runtime --check 当前验证直接复制资源的字节与来源一致；必要转换应验证转换依据和产物，不能伪报原样一致。check-runtime 验证文件及 XSS/lodash 别名。它们均不等于浏览器运行通过。
 
 ## 运行验收
 
 ~~~powershell
-node scripts/init.mjs 'D:\project\gts\ai-for-design\output' 'sweetui-acceptance'
-node scripts/build.mjs --dir 'D:\project\gts\ai-for-design\output\sweetui-acceptance'
+node scripts/init.mjs '<隔离输出目录>' 'sweetui-acceptance'
+node scripts/build.mjs --dir '<隔离输出目录>\sweetui-acceptance'
 ~~~
 
 已有验收项目原地修改，不覆盖用户文件；确认其接线已经同步最新版。每次源码修改后重新 build。只读 --source-only 不能代替正式构建。
@@ -81,26 +102,8 @@ node scripts/build.mjs --dir 'D:\project\gts\ai-for-design\output\sweetui-accept
 
 语言取词与组件状态依赖原生能力；in-place mutation + delegatingI18n 方案经单元测试验证旧/新消费者响应性和同语言环境 early-exit，但模拟测试不替代真实 SweetUI 浏览器验证。若浏览器中失败，先查原生初始化、词典合并和版本；有复现证据才做必要修复，不预先增加请求队列、强制重排或另一套主题/翻译系统。
 
-## 最终包清理
+## 维护记录
 
-只清理确认无引用、无加载依赖的文件：
-- 删除旧版 dt-ui、Less 资源/接线、旧查询工具及失效索引。
-- 清理与官方资源重复的自建主题及无用途的兼容层；必要适配按实际引用和运行证据保留，不按文件名判定多余。
-- 优先保留官方资源原名，不无故改写或复制整套 npm 工程；必要转换记录来源、原因和可复现步骤。
-- 不保留旧包副本、采集原文、截图、日志、验收工程、review_report、临时脚本或 node_modules。
-- 保留实际运行资源、自动索引与提取器、构建/环境脚本及其依赖清单、有引用的规则和示例。不能把必要维护工具当作无用文件删除。
-- 不因原生 CSS 内含其他主题而剪裁官方文件；应用只允许指定的浅深主题。
+记录实际版本、资源来源、执行命令与通过/失败/未验证状态。直接复制资源核对来源与产物哈希；必要转换记录原因和可复现步骤；自建接线记录依据。报告和验收产物放在 skill 外。
 
-清理后复查所有文件引用并重新执行数据/资源核对与回归，实际打开最终包新生成的页面。不要依据清理前旧页面的成功结果宣布新包通过。
-
-## 回传
-
-回传目录放在 skill 外，至少提供：
-- acceptance-report.md：实际版本、来源路径、执行命令、通过/失败/未验证、运行观察和剩余项。
-- data-diff.md：自动索引变化及脚本统计，区分组件与 API。
-- resource-manifest.json：最终运行资源相对路径、来源路径及 SHA-256，区分直接复制、转换和自建接线；转换记录原因/命令及源文件和产物哈希，自建接线注明依据，不要求两者哈希一致。
-- cleanup-report.md：删除/保留的主要文件及理由；是否存在重复 CSS/字体加载。
-- 最终 sweetui-exports.json、sweetui-icons.json、sweetui-tokens.json。
-- changes.patch：仅本轮相对收到的新包的文本改动；若无改动明确说明。不能导出补丁时提供改动清单和对应完整文本文件。
-
-不要求回传 UMD、字体或整个代码工程。大 JSON 可按完整条目分片，附合并说明，不能截断。关键结果及时持久化，未执行的检查写“未验证”。
+资源调整只涉及确认无引用、无加载依赖的内容，保留必要适配、提取器和依赖清单；不裁剪官方 CSS 中其他主题。修改后复查引用、运行相关回归并验证新生成的预览，不沿用旧页面成功作为新包运行证据。

@@ -16,7 +16,7 @@ version: 0.5.2
 4. **自查与构建**：按代码规则做一次交付自查，执行 node scripts/cleanup-starter.mjs --dir "<工程目录>"，再执行 node scripts/build.mjs --dir "<工程目录>"。源码最后修改后必须重新 build。
 5. **交付**：构建通过立即给出 HTML 和源码的可点击绝对路径。准确说明验证范围；未执行浏览器时写“构建通过，浏览器运行未验证”。不主动打开浏览器、截图或增加多视口流程。
 
-脚本优先看 RESULT 和 HINT。运行库由维护者一次准备，普通页面不逐次调查 npm 包或运行库。缺资源时按 [运行准备](references/runtime-setup.md) 处理，不能用占位库或静态 HTML 冒充完成。
+脚本优先看 RESULT 和 HINT。普通页面任务复用随包运行资源；构建报告运行库缺失或损坏时，说明具体缺失项或错误并停止交付，交由维护者修复，不用占位库或静态 HTML 冒充完成。编译环境缺失或过期仍按第1步的 ensure-env 指引处理。
 
 ## 设计路径
 
@@ -56,4 +56,4 @@ HTML/截图还原读 [参考还原](references/design/reference-reconstruction.m
 
 ## 维护
 
-私有资源补齐、原生名称核对及内网一次性运行验收见 [runtime-setup](references/runtime-setup.md)。不要把维护调查变成每页的前置步骤。
+仅在用户明确要求准备、修复或升级本 skill 的运行资源时，读取 [运行资源维护](references/runtime-setup.md)。普通页面任务不进入此流程。
