@@ -1,0 +1,2 @@
+:root{--swt-table-th:var(--swt-color-gray2);--swt-table-striped:var(--swt-table-th);--swt-table-row-hover-bg-color:var(--swt-color-gray3);--swt-table-current-row-bg-color:var(--swt-color-accent-normal-opacity20)}
+body[theme='uDesign2.2-dark'],body[theme="GTS UDesign（默认风格）-dark"]{--swt-table-th:var(--swt-color-gray3);--swt-table-striped:var(--swt-color-overlay-gray1-and-gray12-opacity5);--swt-table-row-hover-bg-color:var(--swt-color-overlay-gray1-and-gray12-opacity10);--swt-table-current-row-bg-color:var(--swt-color-accent-normal-opacity20)}
