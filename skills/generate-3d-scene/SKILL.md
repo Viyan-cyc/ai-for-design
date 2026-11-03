@@ -69,7 +69,7 @@ metadata:
 
 ## 交付与保存
 
-成功给出构建返回 HTML_PATH 的可点击绝对路径，说明双击打开与进入编辑。目录及源码快照规则见下方「开发工作区与交付目录」。交付时不默认启动服务、输出第二份工程或报告。
+成功给出构建返回 HTML_PATH 的可点击绝对路径，说明双击打开与进入编辑。目录及源码规则见下方「开发工作区与交付目录」。交付时不默认启动服务、输出第二份工程或报告。
 
 编辑结果回写与离线/开发模式保存差异见 [scene-workflow.md](references/scene-workflow.md)「编辑结果回写」。保存与退出编辑不是同一操作；未经运行不能声称渲染、交互或视觉验收通过。
 
@@ -97,4 +97,8 @@ metadata:
 
 ### 开发工作区与交付目录
 
-CLI `node scripts/init.mjs <用户项目目录>` 的参数是最终交付目录，不是开发目录。脚本在用户主目录 `.scene3d/workspaces/` 创建独立工程，输出 WORKSPACE_PATH 和 DELIVERY_PATH。所有源码编辑、模型注入、临时查询文件及其他工程脚本使用 WORKSPACE_PATH，不在用户项目目录初始化源码或安装依赖。统一 build-offline 支持传 WORKSPACE_PATH 或原交付路径；成功返回最终 HTML_PATH。用户项目根目录仅有 index.3d.html、preview/、source/，不再有 delivery/、offline/、node_modules。移动预览需携带 preview/；二开取 source/，不交付依赖、缓存或临时查询文件。source/ 是构建快照；用户改过该快照后，将它作为新的工作工程，不用旧工作区重建覆盖。交付时链接 HTML_PATH。同机后续修改沿用仍为最新源码的工作区；跨电脑使用 source 作为完整工程。旧工程不会自动移动或删除；旧工程无交付配置时仍保留 delivery 输出兼容。
+项目源码位于 `<项目>/source/`，init 返回的 WORKSPACE_PATH 指向该目录。源码修改、资产注入和扩展启用均在此进行。后续修改沿用当前工程和预览入口；构建更新同项目的 `index.3d.html` 与 `preview/` 中登记的产物，其余文件保持原样。
+
+
+
+预览基线只登记工具生成的 HTML 和运行资源；附件与历史文件不归构建管理。单独移动源码时放在新项目的 source 目录，构建输出到该项目根部。

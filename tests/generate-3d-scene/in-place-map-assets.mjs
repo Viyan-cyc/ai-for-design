@@ -1,0 +1,46 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import {tmpdir} from 'node:os';
+import {join,resolve} from 'node:path';
+import {spawnSync} from 'node:child_process';
+import {createServer} from 'node:http';
+import {initProject} from '../../skills/generate-3d-scene/scripts/init.mjs';
+import {downloadCandidate} from '../../skills/generate-3d-scene/scripts/lib/asset-service.mjs';
+const skill=resolve('skills/generate-3d-scene'),root=fs.mkdtempSync(join(tmpdir(),'scene-combined-')),project=join(root,'project'),source=join(project,'source');
+const modules=process.env.SCENE3D_TEST_MAP_MODULES;
+assert(modules && fs.existsSync(join(modules,'maplibre-gl')), 'Set SCENE3D_TEST_MAP_MODULES to existing map dependencies');
+function run(script,args=[],ok=true){const r=spawnSync(process.execPath,[join(skill,'scripts',script),...args],{encoding:'utf8',timeout:180000,maxBuffer:8*1024*1024});assert.equal(r.status===0,ok,r.stdout+r.stderr);return r;}
+const server=createServer((req,res)=>res.end(JSON.stringify({asset:{version:'2.0'},scenes:[{nodes:[]}],scene:0})));
+await new Promise(r=>server.listen(0,'127.0.0.1',r));
+try {
+ const help=run('init.mjs',['--help']);assert(!help.stdout.includes('--force'));
+ const unknown=run('init.mjs',[project,'--force'],false);assert.match(unknown.stderr,/未知选项/);assert(!fs.existsSync(project));
+ run('init.mjs',[project,'--deps','skip','--defer-build']);
+ const original=fs.readFileSync(join(source,'package.json'));
+ run('init.mjs',[project,'--force'],false);
+ assert.equal(initProject(source,{force:true,deps:'skip'}).ok,false);
+ assert.deepEqual(fs.readFileSync(join(source,'package.json')),original);
+ const origin=`http://127.0.0.1:${server.address().port}`,pkg=join(root,'asset');
+ await downloadCandidate({remoteId:'sample',name:'sample',entryUrl:origin+'/model.gltf'},pkg,{endpoint:origin,allowedOrigins:[origin]});
+ run('designer-assets.mjs',['inject',pkg,'--project',source]);
+ run('enable-map.mjs',[project]);
+ fs.cpSync(resolve(modules),join(source,'node_modules'),{recursive:true,dereference:true});
+ const scenePath=join(source,'public/scene3d/scene-data.json'),scene=JSON.parse(fs.readFileSync(scenePath));
+ scene.map={styleUrl:origin+'/style.json',origin:[114.06,22.54],center:[114.06,22.54],zoom:16,pitch:45,bearing:0,theme:'light',view:'3d'};
+ fs.writeFileSync(scenePath,JSON.stringify(scene));
+ run('build-offline.mjs',[project]);
+ const preview=fs.readFileSync(join(project,'preview/scene-data.js'));
+ scene.map.bearing=30;fs.writeFileSync(scenePath,JSON.stringify(scene));
+ fs.writeFileSync(join(project,'user-notes.txt'),'KEEP');
+ run('designer-assets.mjs',['inject',pkg,'--project',source]);run('enable-map.mjs',[source]);
+ run('build-offline.mjs',[source]);
+ assert(fs.existsSync(join(project,'index.3d.html')));
+ assert(!fs.readFileSync(join(project,'preview/scene-data.js')).equals(preview));
+ assert.match(fs.readFileSync(join(project,'preview/scene-data.js'),'utf8'), /"bearing":30/);
+ assert.equal(fs.readFileSync(join(project,'user-notes.txt'),'utf8'),'KEEP');
+ assert.equal(JSON.parse(fs.readFileSync(scenePath)).map.bearing,30);
+ const manifest=JSON.parse(fs.readFileSync(join(source,'public/scene3d/assets/asset-manifest.json'))),model=join(source,'public/scene3d/assets',Object.values(manifest)[0].model);
+ fs.appendFileSync(model,'\nUSER_EDIT');run('designer-assets.mjs',['inject',pkg,'--project',source],false);assert(fs.readFileSync(model,'utf8').endsWith('USER_EDIT'));
+ const adapter=join(source,'src/scene3d/map/create-map-scene.ts');fs.appendFileSync(adapter,'\n// USER_EDIT');run('enable-map.mjs',[project],false);assert(fs.readFileSync(adapter,'utf8').endsWith('USER_EDIT'));
+ console.log('PASS init contract; inject/map/build/edit/rebuild in one project; repeat operations; user file and conflict preservation. Existing dependencies only; no browser/service validation.');
+}finally{await new Promise(r=>server.close(r));assert(root.startsWith(join(tmpdir(),'scene-combined-')));fs.rmSync(root,{recursive:true,force:true});}

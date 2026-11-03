@@ -388,7 +388,7 @@ rmSync(join(F('stripped'), 'src', 'edit'), { recursive: true, force: true });
 }
 {
   const r = run('init.mjs', [F('init-ok')], false);
-  check('init: 目标非空且无 --force 拒绝', r.ok && /已存在且非空/.test(r.out), `status=${r.status}`);
+  check('init: 目标非空拒绝', r.ok && /非空/.test(r.out), `status=${r.status}`);
 }
 {
   const out = F('init-demo');
@@ -604,7 +604,7 @@ if (withBuild) {
   writeFileSync(sceneFile, JSON.stringify(sceneData, null, 2));
   const { initProject } = await import('../../skills/generate-3d-scene/scripts/init.mjs');
   const proj = F('fx-gltf-e2e');
-  const rInit = initProject(proj, { name: 'gltf-e2e', scene: sceneFile, assetsRoot: fakeLib, force: true });
+  const rInit = initProject(proj, { name: 'gltf-e2e', scene: sceneFile, assetsRoot: fakeLib });
   const projManifestPath = join(proj, 'public', 'scene3d', 'assets', 'asset-manifest.json');
   const projManifest = existsSync(projManifestPath) ? JSON.parse(readFileSync(projManifestPath, 'utf8')) : null;
   check(
@@ -636,7 +636,7 @@ if (withBuild) {
 
   // 负例：删掉 trees 注册条目（scene-data 仍用 trees 分组）→ build FAIL（旧实现 PASS）
   const neg = F('fx-rr1-unregistered');
-  initProject(neg, { name: 'rr1-neg', profile: 'demo', force: true });
+  initProject(neg, { name: 'rr1-neg', profile: 'demo' });
   const negProfile = join(neg, 'src', 'scene3d', 'scene-profile.ts');
   writeFileSync(negProfile, readFileSync(negProfile, 'utf8')
     .replace(/\r?\n\s*trees: \(\{ sceneEngine \}\) => registerTreeHandler\(sceneEngine\),/, ''));
@@ -649,7 +649,7 @@ if (withBuild) {
 
   // 正例：真实新增业务分组（登记条目 + 注册实现 + 数据）→ build PASS
   const pos = F('fx-rr1-newfactory');
-  initProject(pos, { name: 'rr1-pos', profile: 'demo', force: true });
+  initProject(pos, { name: 'rr1-pos', profile: 'demo' });
   const posProfile = join(pos, 'src', 'scene3d', 'scene-profile.ts');
   writeFileSync(posProfile, readFileSync(posProfile, 'utf8').replace(
     'coderacks: ({ sceneEngine }) => registerRackHandler(sceneEngine),',
@@ -723,7 +723,7 @@ if (withBuild) {
 {
   const { initProject } = await import('../../skills/generate-3d-scene/scripts/init.mjs');
   const out = F('fx-rr2-builtin-only');
-  initProject(out, { name: 'rr2-builtin', force: true });
+  initProject(out, { name: 'rr2-builtin' });
   // 清空业务登记表（empty profile 场景只有 Box 地面等内建分组）
   const profilePath = join(out, 'src', 'scene3d', 'scene-profile.ts');
   writeFileSync(profilePath, readFileSync(profilePath, 'utf8').replace(
@@ -784,7 +784,7 @@ if (withBuild) {
   const sceneFile = join(lib, 'scene.json');
   writeFileSync(sceneFile, JSON.stringify(scene, null, 2));
   const proj = F('fx-rr3-proj');
-  const rInit = initProject(proj, { name: 'rr3', scene: sceneFile, assetsRoot: lib, force: true });
+  const rInit = initProject(proj, { name: 'rr3', scene: sceneFile, assetsRoot: lib });
   const rBuild = run('build.mjs', [proj], true);
   check(
     'P2-RR3: 编码 URI（data%20mesh.bin / 非 ASCII 贴图名）init→build PASS',

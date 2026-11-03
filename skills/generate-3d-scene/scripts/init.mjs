@@ -19,7 +19,7 @@
  * CLI：
  *   node init.mjs <target-dir> [--name <proj-name>] [--profile empty|demo] [--scene <file>]
  *        [--assets referenced|all|<id,id>] [--with-components [--components-version <ver>]]
- *        [--deps shared|skip|copy|install] [--force] [--json]
+ *        [--deps shared|skip|copy|install] [--json]
  *   退出码：0 成功 / 1 校验失败 / 2 用法错误
  */
 import { readFileSync, writeFileSync, existsSync, mkdirSync, cpSync, readdirSync, rmSync, realpathSync, symlinkSync } from 'node:fs';
@@ -27,7 +27,6 @@ import { join, resolve, basename, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import { inject } from './lib/designer-assets.mjs';
-import { workspaceFor } from './lib/workspace.mjs';
 import { checkProject } from './build.mjs';
 import { checkEnvironment, npmEntry } from './lib/environment.mjs';
 import { buildAssetCatalog, resolveAsset, referencedAssetIds } from './lib/asset-catalog.mjs';
@@ -117,7 +116,7 @@ const toSlug = (s) => s
 /**
  * 初始化工程。
  * @param {string} target 目标目录
- * @param {object} opts { name, profile, scene, assets, withComponents, componentsVersion, deps, force }
+ * @param {object} opts { name, profile, scene, assets, withComponents, componentsVersion, deps }
  */
 export const initProject = (target, opts = {}) => {
   const started = performance.now();
@@ -137,10 +136,7 @@ export const initProject = (target, opts = {}) => {
   }
   timings.environment = Math.round(performance.now() - started);
   if (existsSync(out) && readdirSync(out).length > 0) {
-    if (!opts.force) {
-      return { ok: false, out, errors: [`目标目录已存在且非空（用 --force 覆盖）：${out}`], warnings };
-    }
-    rmSync(out, { recursive: true, force: true });
+    return { ok: false, out, errors: [`目标目录已存在且非空，请继续修改已有工程：${out}`], warnings };
   }
   mkdirSync(out, { recursive: true });
 
@@ -419,7 +415,6 @@ const USAGE = `用法: node init.mjs <target-dir> [选项]
   --deps copy              从共享环境复制独立 node_modules（兼容选项）并跑 npm run build
   --deps install           npm install（--registry 或环境变量 SCENE3D_REGISTRY）并跑 npm run build
   --validate preview       场景 schema 校验档位（默认 preview；standard 同级严格；off 跳过）
-  --force                  目标目录非空时覆盖
   --json / --quiet`;
 
 const parseArgs = (argv) => {
@@ -450,8 +445,6 @@ const parseArgs = (argv) => {
       opts.deps = next();
     } else if (a === '--validate') {
       opts.validate = next();
-    } else if (a === '--force') {
-      opts.force = true;
     } else if (a === '--json') {
       opts.json = true;
     } else if (a === '--quiet') {
@@ -481,14 +474,13 @@ const main = () => {
     process.exit(opts.help ? 0 : 2);
   }
   const deliveryPath = resolve(positional[0]);
-  if (existsSync(deliveryPath) && readdirSync(deliveryPath).length && !existsSync(join(deliveryPath, 'preview/.scene3d-delivery'))) {
-    console.error('目标交付目录非空且不是本工具的交付目录，请使用新的项目目录；不会覆盖旧工程。');
+  if (existsSync(deliveryPath) && readdirSync(deliveryPath).length) {
+    console.error('目标项目目录非空；修改已有项目请直接使用其中的 source，不要重新初始化。');
     process.exit(1);
   }
-  const workspace = workspaceFor(deliveryPath);
+  const workspace = join(deliveryPath, 'source');
   const result = initProject(workspace, { ...opts, name: opts.name ?? basename(deliveryPath) });
   result.deliveryPath = deliveryPath;
-  if (result.ok) writeFileSync(join(workspace, '.scene3d-delivery.json'), JSON.stringify({ output: deliveryPath }, null, 2));
   if (opts.json) {
     console.log(JSON.stringify(result, null, 2));
   } else if (!opts.quiet) {

@@ -12,7 +12,7 @@ npm run preview
 ```
 
 内网使用组织配置的 npm 源。生成时可能使用共享依赖链接，下载的源码在另一台机器上需要重新 npm install。
-`npm run build` 执行 TypeScript 检查与 Vite 构建。完整工程还支持 `npm run build:offline`，生成 `delivery/index.3d.html` 与配套资源；剥离编辑器的工程仅保留普通开发/构建入口。
+`npm run build` 执行 TypeScript 检查与 Vite 构建。完整工程还支持 `npm run build:offline`，更新项目根目录的 `index.3d.html` 与 preview 资源；剥离编辑器的工程仅保留普通开发/构建入口。
 
 ## 修改位置
 
@@ -175,15 +175,14 @@ onBeforeUnmount(() => { active = false; scene?.dispose(); });
 
 ## 交付目录
 
-打开交付根目录 index.3d.html 预览（旧工程兼容输出可能位于 delivery/），preview/ 是其必需运行资源。source/ 是完整源码快照，包含 src、public、依赖清单、配置、构建脚本及必要 vendor 包；进入 source 后安装依赖即可开发。不要只复制 src/public 当作独立工程。工作区的 node_modules、缓存和中间产物不进入交付。修改 source 后以它作为新工作工程；不要再用旧工作区重建覆盖修改。
+打开项目根目录 index.3d.html 预览，preview/ 是运行资源，source/ 是唯一开发源码。开发时直接修改 source 并构建，构建只更新预览。
 
-重复发布按 `preview/.scene3d-delivery-baseline.json`（version=2，scope=delivery）的上次成功交付清单和内容哈希检查整个交付目录：根目录、preview、source 的文件及目录新增、修改或删除都会拒绝发布，报告冲突路径并保留旧交付。基线文件本身不做自哈希，单独校验格式与版本。仅工作区更新、旧交付未变时可正常发布。
-
-缺失、损坏或不支持的基线，以及只有旧 `.scene3d-source-baseline.json` 的交付，均不能自动认领为可覆盖内容。保留旧目录、选择新交付目标，或将已修改 source 作为工作工程重新构建；不要编辑基线或删除用户文件绕过保护。基线随交付一起发布。这不是整个开发工作区的备份，也不提供任意并发写入或断电的事务保证。
 
 ### 开发工作区与交付目录
 
-CLI `node scripts/init.mjs <用户项目目录>` 的参数是最终交付目录，不是开发目录。脚本在用户主目录 `.scene3d/workspaces/` 创建独立工程，输出 WORKSPACE_PATH 和 DELIVERY_PATH。所有源码编辑、模型注入、临时查询文件及其他工程脚本使用 WORKSPACE_PATH，不在用户项目目录初始化源码或安装依赖。统一 build-offline 支持传 WORKSPACE_PATH 或原交付路径；成功返回最终 HTML_PATH。用户项目根目录仅有 index.3d.html、preview/、source/，不再有 delivery/、offline/、node_modules。交付时链接 HTML_PATH。同机后续修改继续使用原工作区；跨电脑使用 source 作为完整工程。旧工程不会自动移动或删除；旧工程无交付配置时仍保留 delivery 输出兼容。
+项目源码位于 `<项目>/source/`，init 返回的 WORKSPACE_PATH 指向该目录。源码修改、资产注入和扩展启用均在此进行。后续修改沿用当前工程和预览入口；构建更新同项目的 `index.3d.html` 与 `preview/` 中登记的产物，其余文件保持原样。
+
+
 
 ## 可选地理地图工程
 
@@ -234,8 +233,10 @@ CLI `node scripts/init.mjs <用户项目目录>` 的参数是最终交付目录�
 
 ### 独立源码安装与地图服务验收
 
-复制完整source目录到新位置后，运行npm ci，再运行npm run dev或npm run build:offline。安装需要可用的npm源或完整缓存；vendor中的组件包已经随源码携带，但不代表全部npm依赖均已离线打包。独立源码未带原工作区交付配置时，重新构建输出到delivery/index.3d.html。
+复制完整source目录到新位置后，运行npm ci，再运行npm run dev或npm run build:offline。安装需要可用的npm源或完整缓存；vendor中的组件包已经随源码携带，但不代表全部npm依赖均已离线打包。将源码保留在新项目的 source 子目录，重新构建更新父目录的 index.3d.html。
 
 内网验收顺序：先确认样式JSON可访问，再检查其中的source/tiles、glyphs、sprite及其相对地址、鉴权、跨域和版权要求；用已知坐标核对定位，再验证模型、叠加层数据、显隐与保存恢复。浏览器file协议的Origin可能为null，服务需允许实际运行方式；遇到拒绝应改用受支持的HTTP部署，不宣称双击一定适用于所有地图服务。生产空数据不自动回填示例。
 
 性能测量应分别记录像素比、窗口尺寸、点数、建筑/模型量、设备与地图服务。空闲重绘、聚合CPU耗时、数据提交与异步完成、导航帧间隔是不同指标。Three统计不包含底图全部开销；本地空白底图的成绩不能代表城市瓦片、建筑投影和网络加载性能。
+
+预览基线只登记工具生成的 HTML 和运行资源；附件与历史文件不归构建管理。单独移动源码时放在新项目的 source 目录，构建输出到该项目根部。
