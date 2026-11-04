@@ -1,15 +1,15 @@
 import maplibregl from 'maplibre-gl';
-import { MapRuntime } from '@a3d/a3d-components/map';
+import { MapRuntime, MapPresentation, validateLayerMapping, type MapLayerRule } from '@a3d/a3d-components/map';
 export { localToMercator } from '@a3d/a3d-components/map';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import * as THREE from 'three';
 import { createScene, type SceneHandle, type SceneOptions } from '../scene-core/createScene';
 import type { SceneData } from '../scene-core/types';
 import type { Component } from 'vue';
-import { MapExperience } from './map-experience.js';
 import { MapOverlays, type MapOverlayConfig } from './map-overlays';
 
 export interface MapConfig {
+  layerMapping?: MapLayerRule[];
   overlays?: MapOverlayConfig[];
   styleUrl: string;
   origin: [number, number];
@@ -24,6 +24,7 @@ export interface MapConfig {
 
 export function validateMapConfig(value: unknown): asserts value is MapConfig {
   const config = value as MapConfig;
+  validateLayerMapping(config?.layerMapping);
   if (!config || typeof config.styleUrl !== 'string' || !config.styleUrl.trim()
       || !Array.isArray(config.origin) || config.origin.length !== 2
       || !config.origin.every(Number.isFinite) || Math.abs(config.origin[0]) > 180 || Math.abs(config.origin[1]) > 85)
@@ -46,6 +47,13 @@ export function validateMapConfig(value: unknown): asserts value is MapConfig {
     if (config[key] !== undefined && !Number.isFinite(config[key])) throw new Error(`地图 ${key} 必须为有限数值`);
 }
 
+function presentationOverrides(surfaces: MapConfig['surfaces']) {
+  return Object.fromEntries(Object.entries(surfaces ?? {}).map(([id, value]) => [id, {
+    ...(value.color !== undefined ? { color: value.color } : {}),
+    ...(value.visible !== undefined ? { visible: value.visible } : {}),
+  }]));
+}
+
 export async function createMapScene(host: HTMLElement, data: SceneData, cards: Record<string, Component>, options: SceneOptions): Promise<SceneHandle> {
   validateMapConfig(data.map);
   const config = structuredClone(data.map);
@@ -57,7 +65,7 @@ export async function createMapScene(host: HTMLElement, data: SceneData, cards: 
     getMaxFps: () => handle?.internals.rendererEngine.getConfig().maxFps ?? data.renderer.maxFps ?? 60,
   });
   const { map, container, basis } = runtime;
-  let experience: MapExperience | undefined;
+  let experience: MapPresentation | undefined;
   let disposed = false;
   let overlays: MapOverlays | undefined;
 
@@ -67,7 +75,7 @@ export async function createMapScene(host: HTMLElement, data: SceneData, cards: 
     try { overlays?.dispose(); } finally { try { experience?.dispose(); } finally { runtime.dispose(); } }
   };
   try {
-    experience = new MapExperience(map, { themeMode: config.theme ?? 'light', viewMode: config.view ?? '3d', pitch: config.pitch ?? 45 });
+    experience = new MapPresentation(map, { theme: config.theme, view: config.view, pitch: config.pitch, layerMapping: config.layerMapping, overrides: presentationOverrides(config.surfaces) });
     const sceneData = structuredClone(data);
     // Log depth cannot share MapLibre's standard depth buffer.
     sceneData.renderer.logarithmicDepthBuffer = false;
@@ -85,8 +93,8 @@ export async function createMapScene(host: HTMLElement, data: SceneData, cards: 
     overlays.replace(config.overlays ?? []);
     const originalSerialize = handle.serialize.bind(handle);
     handle.serialize = () => ({ ...originalSerialize(), camera: structuredClone(data.camera), map: {
-      ...config, overlays: overlays!.snapshot(), center: map.getCenter().toArray(), zoom: map.getZoom(), pitch: experience!.state.viewMode === '2d' ? experience!.state.pitch : map.getPitch(), bearing: map.getBearing(),
-      theme: experience!.state.themeMode, view: experience!.state.viewMode,
+      ...config, overlays: overlays!.snapshot(), center: map.getCenter().toArray(), zoom: map.getZoom(), pitch: experience!.getState().view === '2d' ? experience!.getState().pitch : map.getPitch(), bearing: map.getBearing(),
+      theme: experience!.getState().theme, view: experience!.getState().view,
     } });
     const originalUpdate = handle.update.bind(handle);
     handle.update = fragment => {
@@ -95,11 +103,10 @@ export async function createMapScene(host: HTMLElement, data: SceneData, cards: 
         validateMapConfig(next);
         if (next.styleUrl !== config.styleUrl || JSON.stringify(next.origin) !== JSON.stringify(config.origin))
           throw new Error('更换地图服务或坐标原点需要重新创建场景');
+        if (JSON.stringify(next.layerMapping) !== JSON.stringify(config.layerMapping)) throw new Error('更换地图图层映射需要重新创建场景');
         overlays!.replace(next.overlays ?? []);
         overlays!.setTheme(next.theme ?? 'light');
-        experience!.applyThemeMode(next.theme ?? 'light');
-        experience!.state.viewMode = next.view ?? '3d';
-        if (next.view !== '2d') experience!.state.pitch = next.pitch ?? 45;
+        experience!.applyState({ theme: next.theme ?? 'light', view: next.view ?? '3d', pitch: next.pitch ?? 45, overrides: presentationOverrides(next.surfaces) });
         map.jumpTo({ center: next.center ?? config.origin, zoom: next.zoom ?? 16, pitch: next.view === '2d' ? 0 : next.pitch ?? 45, bearing: next.bearing ?? 0 });
       }
       const { camera: _camera, controls: _controls, map: _map, ...rest } = fragment;
@@ -125,54 +132,7 @@ export async function createMapScene(host: HTMLElement, data: SceneData, cards: 
     };
     const names: Record<string, string> = { building: '建筑', road: '道路', water: '水面', ground: '地面', greenery: '绿地' };
     let surfaceOverrides = structuredClone(config.surfaces ?? {});
-    const hidden = new Map<string, 'visible' | 'none'>();
-    const category = (layer: { id: string; type: string; 'source-layer'?: string }): string | undefined => {
-      if (layer.id.startsWith('a3d_heat_')) return;
-      const id = layer.id.toLowerCase(), source = layer['source-layer'] ?? '';
-      if (layer.type === 'custom' || layer.type === 'symbol') return;
-      if (id.startsWith('sh-shadow')) return 'building';
-      if (source === 'building' || id.includes('building')) return 'building';
-      if (/water|river|ocean|canal/.test(id + ' ' + source)) return 'water';
-      if (/park|grass|wood|forest|landcover/.test(id + ' ' + source)) return 'greenery';
-      if (/road|highway|bridge|tunnel|transportation/.test(id + ' ' + source)) return 'road';
-      if (layer.type === 'background' || /landuse|land/.test(source)) return 'ground';
-    };
-    const part = (layer: { id: string; type: string }) => layer.id.startsWith('sh-shadow') ? 'shadow'
-      : layer.type === 'fill-extrusion' ? 'volume' : layer.type === 'background' ? 'base'
-      : layer.type === 'line' && /casing|outline|border/.test(layer.id) ? 'edge' : 'area';
-    const partNames: Record<string, string> = { volume: '立体建筑', area: '主体', edge: '边线', shadow: '投影', base: '背景地面' };
-    const entries = () => Object.entries(names).flatMap(([id, name]) => {
-      const layers = (map.getStyle().layers ?? []).filter(layer => category(layer) === id);
-      if (!layers.length) return [];
-      const value = (key: string, parentId?: string) => ({ id: key, name: parentId ? (key.endsWith(':area') ? `${name}主体` : partNames[key.split(':')[1]!]!) : name, parentId,
-        colorEditable: !key.endsWith(':shadow'),
-        locked: surfaceOverrides[id]?.locked === true || surfaceOverrides[key]?.locked === true,
-        visible: surfaceOverrides[id]?.visible !== false && surfaceOverrides[key]?.visible !== false,
-        color: surfaceOverrides[key]?.color ?? surfaceOverrides[id]?.color ?? String(experience!.state[id] ?? '#a5bfaa') });
-      return [value(id), ...Array.from(new Set(layers.map(part))).map(kind => value(`${id}:${kind}`, id))];
-    });
-    let applying = false;
-    const applySurfaces = () => {
-      if (applying || disposed) return;
-      applying = true;
-      try {
-        for (const layer of map.getStyle().layers ?? []) {
-          const key = category(layer); if (!key) continue;
-          const parent = surfaceOverrides[key];
-          const child = surfaceOverrides[`${key}:${part(layer)}`];
-          const patch = { color: child?.color ?? parent?.color, visible: parent?.visible !== false && child?.visible !== false };
-          if (patch?.visible === false) {
-            if (!hidden.has(layer.id)) hidden.set(layer.id, (map.getLayoutProperty(layer.id, 'visibility') ?? 'visible') as 'visible' | 'none');
-            if (map.getLayoutProperty(layer.id, 'visibility') !== 'none') map.setLayoutProperty(layer.id, 'visibility', 'none');
-          } else if (hidden.has(layer.id)) {
-            map.setLayoutProperty(layer.id, 'visibility', hidden.get(layer.id)); hidden.delete(layer.id);
-          }
-          const property = ({ fill: 'fill-color', line: 'line-color', background: 'background-color', 'fill-extrusion': 'fill-extrusion-color' } as Record<string, string>)[layer.type];
-          if (!layer.id.startsWith('sh-shadow') && patch?.color && property && map.getPaintProperty(layer.id, property) !== patch.color) map.setPaintProperty(layer.id, property, patch.color);
-        }
-      } finally { applying = false; }
-    };
-    map.on('styledata', applySurfaces);
+    const entries = () => experience!.listSurfaces().map(item => ({ ...item, name: (item.parentId ? (item.id.endsWith(':shadow') ? '投影' : names[item.parentId]) : names[item.id]) ?? item.id, locked: surfaceOverrides[item.parentId ?? item.id]?.locked === true || surfaceOverrides[item.id]?.locked === true }));
     const serializeMap = handle.serialize.bind(handle);
     handle.serialize = () => {
       const value = serializeMap();
@@ -188,7 +148,7 @@ export async function createMapScene(host: HTMLElement, data: SceneData, cards: 
       }
       const result = updateMap(fragment);
       if (fragment.map) surfaceOverrides = structuredClone((fragment.map as MapConfig).surfaces ?? {});
-      applySurfaces(); return result;
+      return result;
     };
     handle.surfaces = {
       list: () => [...entries(), ...overlays!.entries()],
@@ -210,11 +170,11 @@ export async function createMapScene(host: HTMLElement, data: SceneData, cards: 
         validateMapConfig(next);
         // Color drags update only paint/visibility, never camera or the full theme.
         surfaceOverrides = structuredClone(next.surfaces ?? {});
-        applySurfaces();
+        experience!.updateSurface(id, Object.fromEntries(Object.entries(patch).filter(([key, value]) => key !== 'locked' && value !== undefined)));
         map.triggerRepaint();
       },
     };
-    applySurfaces();
+
     const resourceError = document.createElement('div');
     resourceError.setAttribute('role', 'status');
     resourceError.style.cssText = 'position:absolute;bottom:32px;left:12px;max-width:360px;padding:10px;background:#fff7ed;color:#9a3412;font:13px sans-serif;display:none;';

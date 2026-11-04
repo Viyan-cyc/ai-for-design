@@ -30,3 +30,7 @@ P2修正：来源heat-profile.js保持不变，MapHeatLayer在外围提供transp
 - 适配替代：原页面布局与React/DCLogic由现有编辑器替代；独立localStorage改为场景配置；生产空数据不填模拟数据；普通业务热力默认透明、保留reference模式。
 - 未迁入且本期不阻塞：管辖范围裁切/外围样式、固定城市导航/特定地标资产、无地图散点宿主、系统主题自动跟随、专属键盘访问、聚合平滑拆合、独立PNG导出与精确逐级羽化自定义渲染。
 - 待验收：真实内网地图资源、file协议地图服务兼容、完整城市负载性能。P3优先生成与交付可靠性，不为全量复制增加功能。
+
+## 主题组件归属（2026-11-04）
+
+现行实现位于 `D:/cyc/project/octo/test/3d-components/src/map/map-experience.js`，作为 `MapPresentation` 内部引擎；skill 不再保留该实现副本。主题默认值与建筑生长算法保持原值，组件包装层负责覆盖优先级、资源归属、样式重载与释放。编辑和保存转换仍在 skill 的 create-map-scene.ts。普通 Three 入口不导入地图模块。

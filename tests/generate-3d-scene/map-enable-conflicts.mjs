@@ -3,7 +3,7 @@ import {mkdtempSync,cpSync,readFileSync,writeFileSync,readdirSync,rmSync} from '
 import {tmpdir} from 'node:os';
 import {join,resolve} from 'node:path';
 import {spawnSync} from 'node:child_process';
-const skill=resolve('skills/generate-3d-scene'), root=mkdtempSync(join(tmpdir(),'map-conflict-'));
+const skill=resolve('skills/generate-3d-scene'), root=join(mkdtempSync(join(tmpdir(),'map-conflict-')),'source');
 const snap=()=>Object.fromEntries(readdirSync(root,{recursive:true,withFileTypes:true}).filter(x=>x.isFile()).map(x=>{const p=join(x.parentPath??x.path,x.name);return [p,readFileSync(p).toString('base64')];}));
 const run=()=>spawnSync(process.execPath,[join(skill,'scripts/enable-map.mjs'),root],{encoding:'utf8'});
 try {

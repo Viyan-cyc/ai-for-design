@@ -5,7 +5,7 @@ import {execFileSync} from 'node:child_process';
 import assert from 'node:assert/strict';
 const skill=resolve('skills/generate-3d-scene');
 for(const newline of ['\n','\r\n']) {
- const root=mkdtempSync(join(tmpdir(),'map-enable-newline-'));
+ const root=join(mkdtempSync(join(tmpdir(),'map-enable-newline-')),'source');
  mkdirSync(join(root,'src/scene3d'),{recursive:true});
  const entry=join(root,'src/scene3d/create-scene.ts');
  writeFileSync(entry,readFileSync(join(skill,'template/src/scene3d/create-scene.ts'),'utf8').replace(/\r?\n/g,newline));

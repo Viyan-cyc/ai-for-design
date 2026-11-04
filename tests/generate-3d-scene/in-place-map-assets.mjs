@@ -24,7 +24,11 @@ try {
  await downloadCandidate({remoteId:'sample',name:'sample',entryUrl:origin+'/model.gltf'},pkg,{endpoint:origin,allowedOrigins:[origin]});
  run('designer-assets.mjs',['inject',pkg,'--project',source]);
  run('enable-map.mjs',[project]);
- fs.cpSync(resolve(modules),join(source,'node_modules'),{recursive:true,dereference:true});
+ fs.cpSync(resolve(modules),join(source,'node_modules'),{recursive:true,dereference:true,filter:p=>p!==join(resolve(modules),'@a3d','a3d-components')});
+ const installed=join(source,'node_modules/@a3d/a3d-components');fs.mkdirSync(installed,{recursive:true});
+ const archive=fs.readdirSync(join(skill,'vendor')).find(n=>n.endsWith('.tgz'));
+ const unpack=spawnSync('tar',['-xzf',join(skill,'vendor',archive),'--strip-components','1','-C',installed],{encoding:'utf8'});assert.equal(unpack.status,0,unpack.stderr);
+ assert.match(fs.readFileSync(join(installed,'dist/es/map.js'),'utf8'),/MapPresentation/);
  const scenePath=join(source,'public/scene3d/scene-data.json'),scene=JSON.parse(fs.readFileSync(scenePath));
  scene.map={styleUrl:origin+'/style.json',origin:[114.06,22.54],center:[114.06,22.54],zoom:16,pitch:45,bearing:0,theme:'light',view:'3d'};
  fs.writeFileSync(scenePath,JSON.stringify(scene));

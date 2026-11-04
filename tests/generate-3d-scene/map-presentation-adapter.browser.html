@@ -1,0 +1,32 @@
+<!doctype html><meta charset="utf-8"><title>Map editor adapter acceptance</title><div id="host" style="height:400px"></div><pre id="result">RUNNING</pre>
+<script type="module">
+import {createScene3D} from '/src/scene3d/create-scene';
+import {Bridge} from '/src/edit/Bridge';
+import {SaveService} from '/src/edit/SaveService';
+const out=document.querySelector('#result');let handle;
+const check=(v,m)=>{if(!v)throw Error(m);out.textContent+='\nPASS '+m;};
+try {
+ const data=await fetch('/scene3d/scene-data.json').then(r=>r.json());
+ data.map={styleUrl:'https://tiles.openfreemap.org/styles/liberty',origin:[114.06,22.54],zoom:16,pitch:45,theme:'light',view:'3d',surfaces:{water:{color:'#abcdee',locked:true},'building:shadow':{visible:false}}};
+ handle=await createScene3D(document.querySelector('#host'),{data});
+ check(handle.surfaces.list().filter(s=>!s.parentId).length===5,'five parent categories');
+ let refused=false;try{handle.surfaces.update('water',{color:'#112233'});}catch{refused=true;}check(refused,'locked surface rejects edit');
+ handle.surfaces.update('water',{locked:false});
+ const bridge=new Bridge(handle),save=new SaveService(handle,bridge);
+ bridge.commit('water color',()=>handle.surfaces.update('water',{color:'#112233'}));
+ bridge.undo();check(handle.serialize().map.surfaces.water.color==='#abcdee','editor undo restores color');
+ bridge.redo();check(handle.serialize().map.surfaces.water.color==='#112233','editor redo restores color');
+ const before=handle.serialize();handle.update({map:{...before.map,theme:'dark'}});
+ check(handle.serialize().map.theme==='dark'&&handle.serialize().map.surfaces.water.color==='#112233','theme update preserves override');
+ handle.update({map:before.map});check(handle.serialize().map.theme==='light','full snapshot undo');
+ handle.surfaces.update('water',{locked:true});
+ await save.save();check(save.status.value==='已保存到源码','real SaveService writes source');
+ const saved=await fetch('/scene3d/scene-data.json').then(r=>r.json());
+ check(saved.map.surfaces.water.color===save.encode().map.surfaces.water.color,'saved file matches encoded appearance');
+ save.dispose();handle.dispose();handle=await createScene3D(document.querySelector('#host'),{data:saved});
+ const restored=handle.serialize().map;
+ check(restored.surfaces.water.locked===true&&restored.surfaces.water.color==='#112233'&&restored.surfaces['building:shadow'].visible===false,'serialized state recreates color, lock, projection');
+ check(restored.theme==='light'&&restored.view==='3d','serialized theme/view restored');
+ out.textContent+='\nALL PASS';
+}catch(e){out.textContent+='\nFAIL '+e.stack;}finally{handle?.dispose();}
+</script>

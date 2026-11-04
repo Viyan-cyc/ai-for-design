@@ -190,7 +190,7 @@ onBeforeUnmount(() => { active = false; scene?.dispose(); });
 
 - 地图服务、经纬度原点、视角、主题配置在 `public/scene3d/scene-data.json` 的 `map`；模型仍是原有分组，数据与卡片仍从 `src/business` 接入。
 - `origin` 使用 WGS84 经纬度。模型 position 使用相对原点的米，X 东、Y 上、Z 南；资产默认正面为 +Z。地图适配不自动把整个地球转成平面场景，不支持地形高度贴合。
-- `@a3d/a3d-components/map` 的 `MapRuntime` 负责 MapLibre 生命周期、局部坐标、相机与重绘；`create-map-scene.ts` 负责接入引擎、拾取、编辑和保存；`map-experience.js` 保留来源地图的主题、建筑与标签算法。不要在业务层再建立独立相机循环。
+- `@a3d/a3d-components/map` 的 `MapRuntime` 负责 MapLibre 生命周期、局部坐标、相机与重绘；`create-map-scene.ts` 负责接入引擎、拾取、编辑和保存；`MapPresentation` 组件管理地图主题、整体外观及建筑与标签算法；扩展仅转换配置与编辑接口。不要在业务层再建立独立相机循环。
 - 地图风格源当前按 OpenMapTiles 的 building 数据层适配。更换服务需核对矢量字段、字体、sprite、跨域和版权；运行仍需要访问地图服务。交付 HTML 不是离线瓦片包。
 - 模型的灯光/阴影与底图的建筑投影分别控制。对数深度关闭以共享地图深度缓冲。统计只包含 Three 图层；地图导航不受模型动画帧率上限约束。
 - `handle.serialize()` 包含地图状态，`handle.update({map: 完整地图配置})` 恢复视角/主题；更换 styleUrl 或 origin 需 dispose 后重新创建。`handle.dispose()` 同时清理地图和模型资源。

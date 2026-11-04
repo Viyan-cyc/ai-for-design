@@ -60,7 +60,7 @@
 固定屏幕尺寸的信息标签使用 `createScreenLabel`（从 `@a3d/a3d-components/labels` 导入；初始化使用 `--with-components`，地图启用时自动准备组件包），传 text 或 texture、widthPx、heightPx，再设置 position 并添加至场景节点。默认 180×48 CSS 像素，底部中点为锚点；普通透视、正交及地图共享相机共用。不要在生成 handler 中重复实现尺寸换算。实体标牌仍按世界尺寸建模。
 
 
-运行边界：`@a3d/a3d-components/map` 提供 MapRuntime（生命周期、坐标、相机同步、重绘）；扩展中的 create-map-scene 保留编辑/保存适配，map-experience 保留地图主题算法。不要在生成 handler 中再建 MapLibre 宿主。普通场景使用标签时初始化加 `--with-components`，仅从 `/labels` 导入，无需启用地图。
+运行边界：`@a3d/a3d-components/map` 提供 MapRuntime（生命周期、坐标、相机同步、重绘）与 MapPresentation（主题、整体外观、建筑与标注算法）；扩展中的 create-map-scene 负责编辑/保存适配。不要在生成 handler 中再建 MapLibre 宿主。普通场景使用标签时初始化加 `--with-components`，仅从 `/labels` 导入，无需启用地图。
 
 
 ## 地点与资源选择
@@ -74,3 +74,7 @@
 enable-map 在写入前预检全部扩展文件及组件包：相同内容复用，缺失文件待创建，同名不同内容或链接目标拒绝并报告路径。存在冲突时不会修改源码、注册入口、package.json 或 vendor，不输出 MAP_ENABLED。升级模板与用户二开都可能产生冲突，应保留修改后手动迁移，不提供强制覆盖。该预检不承诺磁盘故障或并发写入时的完整事务回滚。
 
 写入前还检查注册入口 create-scene.ts、package.json、扩展及组件包目标的父路径，拒绝符号链接和目录 junction，包含工作区及其祖先路径。文件链接测试若因系统权限无法创建，必须标记未执行，不视为通过。
+
+### 外观组件
+
+`MapPresentation` 管理主题与五类整体外观；`map.surfaces` 的 color/visible 转给组件，locked 留在编辑适配层。主题切换保留显式覆盖，全量恢复可清除覆盖。`map.layerMapping` 为可选规则数组，每项 category 配合 layerIds/sourceLayers/types，条件取交集；提供时仅调整明确映射的颜色与显隐，不启用 OpenMapTiles 专用建筑算法。更换映射需重新创建场景。模型树继续展示五类整体条目，投影由右侧属性控制。详见 [MapPresentation](component-docs/MapPresentation.md)。

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {validateSceneData} from '../../skills/generate-3d-scene/scripts/lib/scene-schema.mjs';
 const source=readFileSync('D:/cyc/project/octo/gts/map/map-experience-v297/assets/上海地图-v2.97-基线-v2.1/上海地图-v2.97-参数锁定-v2.1.dc.html','utf8');
-const target=readFileSync('skills/generate-3d-scene/extensions/map/src/scene3d/map/map-experience.js','utf8');
+const target=readFileSync(process.env.SCENE3D_COMPONENT_SOURCE || 'D:/cyc/project/octo/test/3d-components/src/map/map-experience.js','utf8');
 function method(code,name) {
  const start=code.indexOf('  '+name+'(');assert.ok(start>=0,name);
  const end=code.indexOf('\n  }',start)+4;
