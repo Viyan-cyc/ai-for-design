@@ -1,0 +1,217 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "chart-capabilities-v1.5.0",
+  "generated": "2026-11-04",
+  "source": "@hw-dtn/dt-ui@1.5.0 + @hw-seq/sweet-ui-base@5.7.0",
+  "runtimeValidated": true,
+  "engines": {
+    "echarts": { "version": "6.1.0", "nature": "2D charting", "bundledInUmd": true },
+    "three": { "version": "0.185.1", "nature": "3D rendering (WebGL)", "bundledInUmd": true },
+    "antv-g6": { "version": "5.1.1", "nature": "Graph/topology", "bundledInUmd": false },
+    "svg-native": { "version": "n/a", "nature": "Pure SVG bezier" },
+    "css-native": { "version": "n/a", "nature": "Pure CSS/HTML horizontal bar" }
+  },
+  "components": [
+    {
+      "name": "DtChart",
+      "exportName": "DtChart",
+      "engine": "echarts",
+      "nature": "General-purpose ECharts wrapper (2D)",
+      "vueComponent": true,
+      "themeAware": true,
+      "sourcePath": "es/components/chart/index.vue.mjs",
+      "runtimeValidated": true,
+      "validatedSeries": ["line", "bar", "pie", "gauge"],
+      "runtimeNotes": "Theme prop validator has bug — see package-runtime.md section 9. Requires showTheme=true + theme prop for themed init. Fallback i18n injection needed before mount.",
+      "description": "Wraps echarts.init() + setOption. Supports all echarts series types. Uses echarts.registerTheme for theme.",
+      "echartsSeriesTypes": [
+        "line", "bar", "pie", "scatter", "effectScatter", "radar", "tree",
+        "treemap", "sunburst", "boxplot", "candlestick", "heatmap", "map",
+        "parallel", "lines", "graph", "sankey", "funnel", "gauge",
+        "pictorialBar", "themeRiver", "custom", "liquidfill (plugin)"
+      ]
+    },
+    {
+      "name": "BarChart",
+      "exportName": "BarChart",
+      "engine": "three",
+      "nature": "3D bar chart (class-based, not Vue)",
+      "vueComponent": false,
+      "themeAware": true,
+      "sourcePath": "es/components/bar-chart/index.mjs",
+      "runtimeValidated": false,
+      "description": "Three.js-based 3D bar chart class. Constructor(dom, data, config). Has setTheme(light|dark).",
+      "api": {
+        "constructor": "new BarChart(dom, data, config)",
+        "methods": ["update", "resize", "setTheme", "getTheme", "resetCamera", "zoomIn", "zoomOut", "select", "deselect", "destroy", "trackCardPosition", "untrackCardPosition", "clearTrackedPositions", "getRenderer", "getBarChart3D"],
+        "events": ["click", "hover", "dblclick", "select", "updatePosition"]
+      }
+    },
+    {
+      "name": "DtBarChartThree",
+      "exportName": "DtBarChartThree",
+      "engine": "three",
+      "nature": "3D bar chart (Vue wrapper)",
+      "vueComponent": true,
+      "themeAware": true,
+      "sourcePath": "es/components/bar-chart-three/bar-chart-3d.vue.mjs",
+      "runtimeValidated": false,
+      "runtimeNotes": "OVERWRITES window.onresize on mount, sets null on unmount. Will conflict with other resize listeners.",
+      "description": "Vue wrapper for 3D bar chart. Props: options, theme (default 'dark'). Emits: page-change, after-bar-click, bar-mouse-hover.",
+      "dependencies": ["three", "@hw-seq/sweet-ui-base (SweetInputNumber)"]
+    },
+    {
+      "name": "DtTopoThree",
+      "exportName": "DtTopoThree",
+      "engine": "three",
+      "nature": "3D topology visualization",
+      "vueComponent": true,
+      "themeAware": false,
+      "sourcePath": "es/components/topo-three/topo-three.vue.mjs",
+      "runtimeValidated": false,
+      "runtimeNotes": "Requires ~8MB external resources (glb models, Draco WASM, bg images). Not tested without these assets.",
+      "description": "Three.js-based 3D device topology. Props: options, useSuper. Emits: loaded, click-model, hover-model.",
+      "dependencies": ["three"],
+      "externalResources": [
+        "3D model .glb files (~50-650KB each, ~2MB total: npu-*.glb, server-*.glb, leaf-*.glb, spine-*.glb, roce-*.glb)",
+        "Draco WASM decoder (~478KB .wasm + ~719KB .js × 2 versions)",
+        "Background images (bg-light-*.png ~3.2MB, bg-dark-*.png ~1.7MB)"
+      ]
+    },
+    {
+      "name": "DtClusterTopo",
+      "exportName": "DtClusterTopo",
+      "engine": "antv-g6",
+      "nature": "2D cluster topology graph",
+      "vueComponent": true,
+      "themeAware": false,
+      "sourcePath": "es/components/cluster-topo/cluster-topo.vue.mjs",
+      "runtimeValidated": false,
+      "description": "G6-based 2D topology. Props: data, tooltipContent, clickMenus, topoNEStyle. Emits: click-menu, selected-change.",
+      "dependencies": ["@antv/g6 5.x", "lodash"]
+    },
+    {
+      "name": "DtRelationTopo",
+      "exportName": "DtRelationTopo",
+      "engine": "antv-g6",
+      "nature": "2D relation/causality topology",
+      "vueComponent": true,
+      "themeAware": false,
+      "sourcePath": "es/components/relation-topo/relation-topo.vue.mjs",
+      "runtimeValidated": false,
+      "description": "G6-based relation graph. Props: nodeId, etc. Emits: various topo events.",
+      "dependencies": ["@antv/g6 5.x"]
+    },
+    {
+      "name": "DtInferTopo",
+      "exportName": "DtInferTopo",
+      "engine": "antv-g6",
+      "nature": "2D inference topology graph",
+      "vueComponent": true,
+      "themeAware": false,
+      "sourcePath": "es/components/infer-topo/infer-topo.vue.mjs",
+      "runtimeValidated": false,
+      "description": "G6-based inference topology. Uses InferGraph, PolyBox custom node.",
+      "dependencies": ["@antv/g6 5.x"]
+    },
+    {
+      "name": "DtPointBezier",
+      "exportName": "DtPointBezier",
+      "engine": "svg-native",
+      "nature": "SVG Bezier curve relation editor",
+      "vueComponent": true,
+      "themeAware": false,
+      "sourcePath": "es/components/point-bezier/point-bezier.vue.mjs",
+      "runtimeValidated": true,
+      "runtimeNotes": "Uses resolveDirective('click-outside') — requires manual vClickOutside registration if not using app.use(SweetUI).",
+      "description": "SVG Bezier relation between trigger/target points. Props: relation, triggerData, targetData, fill, stroke, strokeWidth.",
+      "dependencies": []
+    },
+    {
+      "name": "DtCustomBarChart",
+      "exportName": "DtCustomBarChart",
+      "engine": "css-native",
+      "nature": "Pure CSS/HTML horizontal bar chart",
+      "vueComponent": true,
+      "themeAware": false,
+      "sourcePath": "es/components/custom-bar-chart/CustomBarChart.vue2.mjs",
+      "runtimeValidated": true,
+      "description": "CSS horizontal bar chart. Props: option (yData, seriesData, xMax).",
+      "dependencies": []
+    },
+    {
+      "name": "DtDashboardDesigner",
+      "exportName": "DtDashboardDesigner",
+      "engine": "css-native",
+      "nature": "Dashboard layout designer",
+      "vueComponent": true,
+      "themeAware": false,
+      "sourcePath": "es/components/dashboard-designer/designer.vue.mjs",
+      "runtimeValidated": false,
+      "runtimeNotes": "Uses inject('sweetI18n') extensively. Requires i18n provide.",
+      "description": "Drag-and-drop dashboard designer with grid system.",
+      "dependencies": ["@hw-seq/sweet-ui-base", "lodash"]
+    },
+    {
+      "name": "DtDashboardRenderer",
+      "exportName": "DtDashboardRenderer",
+      "engine": "css-native",
+      "nature": "Dashboard renderer (no-design mode)",
+      "vueComponent": true,
+      "themeAware": false,
+      "sourcePath": "es/components/dashboard-designer/renderer.vue.mjs",
+      "runtimeValidated": false,
+      "description": "Render-only mode of dashboard layout.",
+      "dependencies": []
+    }
+  ],
+  "sweetUiBaseChartComponents": {
+    "note": "These are in @hw-seq/sweet-ui-base (not dt-ui). Listed for completeness. Available when sweet-ui-base is installed.",
+    "components": [
+      "SweetLineChart", "SweetBarChart", "SweetPieChart", "SweetAreaChart",
+      "SweetRadarChart", "SweetGaugeChart", "SweetBubbleChart", "SweetBoxplotChart",
+      "SweetBarlineChart", "SweetHorBarChart", "SweetRadialBarChart",
+      "SweetLiquidfillChart", "SweetMapChart", "SweetScoreCard", "SweetScoreCardGroup"
+    ],
+    "engine": "echarts",
+    "themeAware": true
+  },
+  "runtimeIssues": {
+    "dualSweetUiBase": {
+      "severity": "critical",
+      "status": "resolved",
+      "description": "dt-ui nests sweet-ui-base 5.6.5 causing dual Vue instances",
+      "fix": "resolve.dedupe + remove nested copy + clear vite cache"
+    },
+    "sweetI18nInjection": {
+      "severity": "critical",
+      "status": "resolved",
+      "description": "inject('sweetI18n') fails without provide before mount",
+      "fix": "app.provide('sweetI18n', (key) => key) before app.use(DtUI)"
+    },
+    "clickOutsideDirective": {
+      "severity": "medium",
+      "status": "resolved",
+      "description": "resolveDirective('click-outside') fails when SweetUI installer not used",
+      "fix": "app.directive('click-outside', vClickOutside) manually"
+    },
+    "themeValidatorBug": {
+      "severity": "low",
+      "status": "workaround",
+      "description": "[\"\", Object.keys(THEME_MAP)].includes(val) creates nested array, never validates",
+      "fix": "Runtime patch: c.props.theme.validator = (val) => val === '' || Object.keys(THEME_MAP).includes(val)"
+    },
+    "pluginMustBeFunction": {
+      "severity": "low",
+      "status": "known",
+      "description": "An entry in dt-ui Components array lacks install method",
+      "fix": "None — dt-ui library bug, non-breaking"
+    },
+    "windowOnresizeOverwrite": {
+      "severity": "medium",
+      "status": "known",
+      "description": "DtBarChartThree overwrites window.onresize, sets null on unmount",
+      "fix": "Avoid DtBarChartThree alongside other resize listeners, or use addEventListener"
+    }
+  }
+}

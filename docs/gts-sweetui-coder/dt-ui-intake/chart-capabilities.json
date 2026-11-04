@@ -1,0 +1,241 @@
+{
+  "meta": {
+    "generated": "2026-11-03",
+    "source": "node_modules/@hw-dtn/dt-ui@1.4.1 (actual install)",
+    "note": "仅记录包内实际导出及可识别的组件。不凭名称猜能力，不手填总数量。"
+  },
+  "chartComponents": [
+    {
+      "name": "DtChart",
+      "exportName": "DtChart",
+      "category": "2D-echarts",
+      "purpose": "ECharts 2D 通用图表容器，通过 options prop 传入 ECharts option 对象渲染任意 2D 图表",
+      "publicEntry": "es/components/chart/index.mjs",
+      "renderer": "echarts 6.1.0",
+      "dataFormat": {
+        "description": "标准 ECharts option 对象；支持 timeline 模式（baseOption + options 数组）",
+        "referenceFile": "es/components/chart/index.vue.mjs:19-21 (props.options)"
+      },
+      "themeSupport": true,
+      "themeKeys": ["light", "dark", "black", "hDesign1.1-light", "hDesign1.1-dark"],
+      "extraPluginOrResource": null,
+      "isExported": true,
+      "hasDocs": false,
+      "hasBeenRun": false,
+      "notes": "DtChart 本身不限定图表类型，折线/柱状/饼图/散点/雷达/地图等均由 ECharts option 控制。formatter 等函数配置完全支持。"
+    },
+    {
+      "name": "BarChart",
+      "exportName": "BarChart (default export from bar-chart)",
+      "category": "3D-Three.js-class",
+      "purpose": "3D 柱状图（class API，非 Vue 组件），基于 Three.js 渲染的 3D 柱状图，支持选择、悬停、相机控制、BoxViewHelper",
+      "publicEntry": "es/components/bar-chart/index.mjs",
+      "renderer": "three.js 0.183.0",
+      "dataFormat": {
+        "description": "构造函数 new BarChart(dom, data[], config?)。data 为扁平数组，config 含 xAxis/yAxis/zAxis/statusMap/bar/selectType/selectable",
+        "referenceFile": "es/components/bar-chart/index.mjs:31-53 (defaultConfig), :61 (constructor)"
+      },
+      "themeSupport": true,
+      "themeKeys": ["light", "dark"],
+      "extraPluginOrResource": null,
+      "isExported": true,
+      "hasDocs": false,
+      "hasBeenRun": false,
+      "notes": "纯 class，不依赖 Vue 响应式，不通过 withInstall 包装。事件通过 EventEmitter：click/hover/dblclick/select/updatePosition"
+    },
+    {
+      "name": "DtBarChartThree",
+      "exportName": "DtBarChartThree",
+      "category": "3D-Three.js-vue",
+      "purpose": "3D 柱状图（Vue 组件封装），基于 Three.js 渲染，含分页、阈值平面/线、工具栏、tooltip",
+      "publicEntry": "es/components/bar-chart-three/index.mjs",
+      "renderer": "three.js 0.183.0 (WebGLRenderer + CSS3DRenderer)",
+      "dataFormat": {
+        "description": "options prop，结构含 data/pageInfo/threshold/tooltip/topTool/xAxis/yAxis/zAxis/toolbar/quadrant/adaptiveAxis/fov 等",
+        "referenceFile": "es/components/bar-chart-three/bar-chart-3d.vue.mjs:31-39 (props), bar-chart-three/utils/constants.mjs (getBarOptions)"
+      },
+      "themeSupport": true,
+      "themeKeys": ["dark", "light (implied by getBarOptions, not fully verified)"],
+      "extraPluginOrResource": null,
+      "isExported": true,
+      "hasDocs": false,
+      "hasBeenRun": false,
+      "notes": "使用 SweetInputNumber (@hw-seq/sweet-ui-base) 做分页控件。主题通过 options.theme prop 传入，默认 'dark'。"
+    },
+    {
+      "name": "DtCustomBarChart",
+      "exportName": "DtCustomBarChart",
+      "category": "2D-CSS-bar",
+      "purpose": "纯 CSS+HTML 横向条形图（非 Canvas/WebGL），支持渐变填充、发光点、tooltip",
+      "publicEntry": "es/components/custom-bar-chart/index.mjs",
+      "renderer": "DOM (no canvas)",
+      "dataFormat": {
+        "description": "option prop，结构含 yData/series(barStyle.gradient/label/glow)/xAxis/splitLine/tooltip(formatter 支持)",
+        "referenceFile": "es/components/custom-bar-chart/CustomBarChart.vue2.mjs:13-16 (props), utils/option-util.mjs"
+      },
+      "themeSupport": false,
+      "themeKeys": [],
+      "extraPluginOrResource": null,
+      "isExported": true,
+      "hasDocs": false,
+      "hasBeenRun": false,
+      "notes": "不支持 echarts 主题，配色通过 option 传入或 CSS 变量 (--cb-bar-gradient-from 等)"
+    },
+    {
+      "name": "DtPointBezier",
+      "exportName": "DtPointBezier",
+      "category": "2D-SVG-bezier",
+      "purpose": "SVG 贝塞尔曲线连线组件，用于展示触发端→目标端的映射关系，支持拖拽创建连线",
+      "publicEntry": "es/components/point-bezier/index.mjs",
+      "renderer": "SVG",
+      "dataFormat": {
+        "description": "triggerData/targetData (Array, 含 id/label/isShow) + relation (Array, 含 start/end/color/width/dasharray)",
+        "referenceFile": "es/components/point-bezier/point-bezier.vue.mjs:6-34 (props)"
+      },
+      "themeSupport": false,
+      "themeKeys": [],
+      "extraPluginOrResource": null,
+      "isExported": true,
+      "hasDocs": false,
+      "hasBeenRun": false,
+      "notes": "非图表组件，是可视化连线编辑器。使用 Options API 定义。"
+    },
+    {
+      "name": "DtDashboardDesigner",
+      "exportName": "DtDashboardDesigner",
+      "category": "dashboard-designer",
+      "purpose": "仪表盘设计器，用于拖拽编排卡片布局，设计态组件",
+      "publicEntry": "es/components/dashboard-designer/index.mjs",
+      "renderer": "DOM (grid layout)",
+      "dataFormat": {
+        "description": "schema (String|Object) + materialData (Array) + materialRequest (String|Function) + gridConfig + designMode + pageAttrs",
+        "referenceFile": "es/components/dashboard-designer/props/designer.mjs"
+      },
+      "themeSupport": false,
+      "themeKeys": [],
+      "extraPluginOrResource": "materialRequest URL for external card components",
+      "isExported": true,
+      "hasDocs": false,
+      "hasBeenRun": false,
+      "notes": "不直接渲染图表，是编排容器。内部卡片可包含 DtChart。"
+    },
+    {
+      "name": "DtDashboardRenderer",
+      "exportName": "DtDashboardRenderer",
+      "category": "dashboard-renderer",
+      "purpose": "仪表盘渲染器，运行态组件，根据 schema 渲染编排好的卡片布局",
+      "publicEntry": "es/components/dashboard-designer/index.mjs (withNoopInstall)",
+      "renderer": "DOM (grid layout)",
+      "dataFormat": {
+        "description": "schema (String|Object, required) + data/options + materialRequest + designMode + gridConfig",
+        "referenceFile": "es/components/dashboard-designer/props/renderer.mjs"
+      },
+      "themeSupport": false,
+      "themeKeys": [],
+      "extraPluginOrResource": "materialRequest URL",
+      "isExported": true,
+      "hasDocs": false,
+      "hasBeenRun": false,
+      "notes": "render en mode page/card/template。支持子 slot 递归渲染。"
+    },
+    {
+      "name": "DtTimeLineControl",
+      "exportName": "DtTimeLineControl",
+      "category": "timeline-control",
+      "purpose": "时间轴控制器，支持播放/暂停/快进/快退、时间粒度切换、时间片选择、事件点标记",
+      "publicEntry": "es/components/time-line-control/index.mjs",
+      "renderer": "Canvas (2D timeline) + DOM (controls)",
+      "dataFormat": {
+        "description": "startTime/endTime (Date), timeGranularity/playTimeGranularity (String), eventData (Array with .time), styleData (Array with .time/.color)",
+        "referenceFile": "es/components/time-line-control/time-line-control.vue.mjs:47-149 (props)"
+      },
+      "themeSupport": false,
+      "themeKeys": [],
+      "extraPluginOrResource": null,
+      "isExported": true,
+      "hasDocs": false,
+      "hasBeenRun": false,
+      "notes": "使用 Canvas API 自绘时间轴，非 echarts 图表。"
+    }
+  ],
+  "topoComponents": [
+    {
+      "name": "DtClusterTopo",
+      "exportName": "DtClusterTopo",
+      "category": "2D-topo-g6",
+      "purpose": "集群拓扑图，基于 @antv/g6 渲染集群网络拓扑",
+      "publicEntry": "es/components/cluster-topo/index.mjs",
+      "renderer": "@antv/g6 5.1.1",
+      "isExported": true,
+      "hasDocs": false,
+      "hasBeenRun": false,
+      "notes": "非图表，是拓扑图组件"
+    },
+    {
+      "name": "DtRelationTopo",
+      "exportName": "DtRelationTopo",
+      "category": "2D-topo-g6",
+      "purpose": "关系拓扑图",
+      "publicEntry": "es/components/relation-topo/index.mjs",
+      "renderer": "@antv/g6 5.1.1",
+      "isExported": true,
+      "hasDocs": false,
+      "hasBeenRun": false,
+      "notes": "非图表"
+    },
+    {
+      "name": "DtInferTopo",
+      "exportName": "DtInferTopo",
+      "category": "2D-topo-g6",
+      "purpose": "推理拓扑图，含层次分组、告警状态、右键菜单",
+      "publicEntry": "es/components/infer-topo/index.mjs",
+      "renderer": "@antv/g6 5.1.1",
+      "isExported": true,
+      "hasDocs": false,
+      "hasBeenRun": false,
+      "notes": "非图表"
+    },
+    {
+      "name": "DtTopoThree",
+      "exportName": "DtTopoThree",
+      "category": "3D-topo-three",
+      "purpose": "3D 拓扑图，基于 Three.js 渲染，支持设备/线路/面板的 3D 可视化",
+      "publicEntry": "es/components/topo-three/index.mjs",
+      "renderer": "three.js 0.183.0",
+      "isExported": true,
+      "hasDocs": false,
+      "hasBeenRun": false,
+      "notes": "非图表。props: useSuper (Boolean), options (Object)。emits: loaded/click-model/hover-model"
+    }
+  ],
+  "supportingExports": [
+    {
+      "name": "chartTheme",
+      "exportName": "chartTheme",
+      "purpose": "ECharts 主题对象集合，包含 light/dark/black/hDesign1.1-light/hDesign1.1-dark 五套",
+      "publicEntry": "es/constants/chart-theme/index.mjs"
+    },
+    {
+      "name": "$echartsUtils / echartsUtils",
+      "exportName": "$echartsUtils, echartsUtils",
+      "purpose": "echarts 工具子集封装（color/format/graphic/helper/matrix/number/util/vector/connect/disconnect），通过 provide/inject 注入",
+      "publicEntry": "es/utils/charts-utils.mjs"
+    },
+    {
+      "name": "setTheme",
+      "exportName": "setTheme (dt-ui)",
+      "purpose": "dt-ui 主题切换函数，委托 sweet-ui-base 的 setTheme，并更新 dt-ui 自己的 themeInfo reactive",
+      "publicEntry": "es/theme/theme.mjs"
+    }
+  ],
+  "completenessNote": {
+    "totalExportedChartComponents": 8,
+    "totalExportedTopoComponents": 4,
+    "totalSupportingExports": 3,
+    "allFromPackageExports": true,
+    "verifiedByReadingSource": true,
+    "actuallyRunInBrowser": false,
+    "missingTypeDeclarations": true,
+    "missingDocumentation": true
+  }
+}
