@@ -151,15 +151,17 @@ GTS 有规范但 EP 无原生对应，需在项目中封装公共组件：
 
 ## 图表
 
+先读 [VChart 公共契约](../components/VChart.md)，再按需求读取 [类型配置](../components/VChart-options.md) 的一个相关小节；不全量加载图表资料。
+
 Element Plus 无内置图表，使用 ECharts + vue-echarts + GTS 图表配色 Token：
 
 - 组件引入：`import VChart from 'vue-echarts'`，模板用 `<VChart :option="..." autoresize />`。
-- 配色**运行时读取 Token**（不写 hex，换肤自动跟随）：
+- 配色**运行时读取 Token**（不写 hex）：挂载且主题生效后读取；主题变化时必须重新调用并更新 option，一次读取不会自动跟随换肤。监听与清理见 [公共契约](../components/VChart.md) 和 mixed-chart 示例。
 
 ```js
 const readToken = (name) =>
   getComputedStyle(document.documentElement).getPropertyValue(name).trim()
-const chartColors = ['--color-chart-1','--color-chart-2','--color-chart-3',
+const readChartColors = () => ['--color-chart-1','--color-chart-2','--color-chart-3',
   '--color-chart-4','--color-chart-5','--color-chart-6'].map(readToken).filter(Boolean)
 ```
 

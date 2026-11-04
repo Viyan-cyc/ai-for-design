@@ -69,3 +69,30 @@ Plan-Execution Diff：无范围偏离；本轮修改前未另行持久化小修�
 
 实施记录：SweetUI 将 HTML 表格变量迁入 src/assets/theme-adapter.css，由 runtime.js 共用；build 仅允许与随包模板完全一致的该文件定义公共变量，不放宽普通页面检查。补 npm 接入与各模式装配表。EP 仅清理空路径、旧 select 描述与服务目录口径。SweetUI 32 项检查通过，私有 npm 视觉待内网确认；未提交。
 
+
+## EP 图表按需参考补齐（2026-11-03）
+用户授权：仅 EP，保留 vue-echarts；补公共生命周期/尺寸契约及按类型配置参考，不新增库或包装组件。验证本地链接、既有回归；浏览器不自动执行。
+
+实施：新增 components/VChart.md 和 VChart-options.md，组件索引按需路由；未改运行依赖、组件实现和 SweetUI。EP 回归 42 项通过，差异检查通过；新增片段为配置参考，未执行浏览器图表验收。
+
+
+## EP 图表参考 review_execute（2026-11-03）
+范围：新增 VChart.md、VChart-options.md 及组件索引路由。只读源码审查。
+
+|轴|结论|证据|
+|---|---|---|
+|目标|PARTIAL|按需入口与公共契约已补齐，存在配置与文字承诺不一致|
+|实现一致性|PASS|未新增运行库或包装组件，未改 SweetUI|
+|质量|PARTIAL|本地链接全部存在，工作区和暂存区差异检查通过；两项问题待修|
+
+P2：VChart-options.md 饼图片段未处理全零，包内 echarts.min.js 默认 stillShowZeroSum:true，与“不伪造占比”要求相冲突。建议全零时展示无有效数据状态；片段显式 stillShowZeroSum:false，标签按空态策略处理。
+P2：references/components_index.md 配色说明写“换肤自动跟随”，示例仅一次读取 chartColors，缺少主题变化触发。应明确挂载后及主题变化重新读取，链接公共契约，避免照抄静态数组。此项是旧文案残留，但本轮新增入口仍会读到。
+Overall Verdict：需小修后通过。不要求重构。此前42项回归只证明原有静态构建/加载检查，不覆盖新增 Markdown 配置行为；本轮没有重复运行无关回归，也未浏览器验证。Plan-Execution Diff：范围一致，配置边界遗漏。此次只回写记录，未改代码、未提交。
+
+### EP 图表参考两项修复（2026-11-03）
+用户授权后：饼图片段增加 stillShowZeroSum:false，要求空/全零时显示无有效数据状态且不渲染饼图与占比标签；组件索引改为 readChartColors 函数，明确挂载后及主题变化时重新读取并更新 option。两项定向文本检查与 diff --check 通过。未改运行代码或 SweetUI；未重复无关回归，未执行浏览器验证，未提交。上述两项审查问题关闭。
+
+
+### EP 图表参考最终复审（2026-11-03）
+review_execute 范围：两项文档修复。目标 PASS：全零空态与主题重读要求明确；实现一致性 PASS：stillShowZeroSum:false 与页面空态配合，readChartColors 为函数且说明调用时机；质量 PASS（文档范围）：入口与说明一致，工作区及暂存区 diff --check 通过。无新增阻塞。未改运行实现，沿用此前42项静态回归结果，不声称浏览器验证。Plan-Execution Diff：无；只更新审查记录，未提交。
+
