@@ -13,15 +13,16 @@
 - Skill：`D:/cyc/project/octo/gts/test/ep-coder/skills/generate-3d-scene`
 - 组件库：`D:/cyc/project/octo/test/3d-components`
 
-## 2. 实施前依据
+## 2. 当前实现
 
-- 组件库 `src/map/index.ts` 已导出 MapRuntime、MapScatterLayer、MapHeatLayer；`src/labels` 提供 ScreenLabel。
-- Skill `extensions/map/src/scene3d/map/map-experience.js` 与 `.d.ts` 提供 MapExperience，包含主题、视图模式及建筑表现逻辑。
-- 同目录 `create-map-scene.ts` 创建 MapExperience；其 `category`、`part`、`entries`、`applySurfaces` 实现分类、旧子项、显隐和颜色覆盖，并通过 `handle.surfaces` 接入编辑器。
-- 当前 `map.surfaces` 存储 color、visible、locked，兼容 `building:shadow` 等子项；父项修改会清除对应旧子项覆盖。
-- 当前 serialize/update 负责将地图视角、主题和外观映射到 SceneData。地图服务和原点改变仍要求重建。
+- 组件库 `src/map/index.ts` 导出 MapRuntime、MapPresentation、MapScatterLayer、MapHeatLayer；`src/labels` 提供 ScreenLabel。
+- 组件库 `src/map/MapPresentation.ts` 对外提供主题、整体外观、状态快照及恢复接口，管理图层分类、用户覆盖、样式重载和资源释放。
+- 组件库 `src/map/map-experience.js` 与 `.d.ts` 是 MapPresentation 的内部实现，保留主题、视图模式及建筑表现算法。
+- Skill `extensions/map/src/scene3d/map/create-map-scene.ts` 创建 MapPresentation，负责配置转换、名称与锁定状态、编辑接口及序列化/恢复适配，通过 `handle.surfaces` 接入编辑器。
+- `map.surfaces` 存储 color、visible、locked；color/visible 交给表现组件，locked 保留在 Skill 适配层。兼容 `building:shadow` 等子项，父项修改清除对应子项覆盖，投影显隐保持独立。
+- 适配层的 serialize/update 将地图视角、主题和外观映射到 SceneData。地图服务、坐标原点或图层映射改变时需重新创建场景。
 
-实施已盘点图层、事件、定时任务和资源所有权；迁移后的路径与验证结果见第 10 节。
+具体实施与验证结果见第 10 节。
 
 ## 3. 职责划分
 

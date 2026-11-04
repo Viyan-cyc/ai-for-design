@@ -96,3 +96,11 @@ Overall Verdict：需小修后通过。不要求重构。此前42项回归只证
 ### EP 图表参考最终复审（2026-11-03）
 review_execute 范围：两项文档修复。目标 PASS：全零空态与主题重读要求明确；实现一致性 PASS：stillShowZeroSum:false 与页面空态配合，readChartColors 为函数且说明调用时机；质量 PASS（文档范围）：入口与说明一致，工作区及暂存区 diff --check 通过。无新增阻塞。未改运行实现，沿用此前42项静态回归结果，不声称浏览器验证。Plan-Execution Diff：无；只更新审查记录，未提交。
 
+
+## 三个 skill 单预览交付 review_execute（2026-11-04）
+
+范围：EP、SweetUI、generate-3d-scene 的 SKILL.md 交付说明。
+目标 PASS：统一采用 ict-coder 的 artifact type="text/link" 格式；默认只展示预览链接，源码与资源继续保留，用户明确要求时可提供其他链接。
+实现一致性 PASS：保留各自 index.gts-ep.html、index.gts.html、index.3d.html 命名，使用构建返回路径；没有修改构建、源码输出或验证失败处理。
+质量 PASS（文档范围）：检查实际差异、相关引用及构建路径输出，git diff --check 通过；无阻塞问题。仅文档修改，不重复运行构建测试。
+Plan-Execution Diff：无。运行边界：未在 Octo 验证卡片展示；该规则控制模型回复，不保证抑制宿主自动扫描文件生成的卡片。未提交。
