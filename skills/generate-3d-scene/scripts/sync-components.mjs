@@ -344,7 +344,7 @@ catalogLines.push('');
 catalogLines.push('## 使用纪律');
 catalogLines.push('');
 catalogLines.push('- 产物工程通过 `vendor/a3d-*.tgz`（file: 依赖）安装本库；未来发 npm 后改 registry 版本号。');
-catalogLines.push('- options 全表见各组件用法页；类型细节可查产物工程 `node_modules/@a3d/a3d-components/dist/es/*.d.ts`（逃生口，默认不读）。');
+catalogLines.push('- options 全表见各组件用法页；类型细节可查外部依赖环境中的 `node_modules/@a3d/a3d-components/dist/es/*.d.ts`（逃生口，默认不读）。');
 catalogLines.push('- 组件持续更新由源仓维护；升级 = 源仓重跑 sync 脚本 + 交付工程换 tgz 版本。');
 writeFileSync(CATALOG_MD, catalogLines.join('\n'), 'utf8');
 console.log(`[catalog] ${relative(SKILL_ROOT, CATALOG_MD)}`);

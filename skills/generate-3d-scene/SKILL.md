@@ -22,11 +22,11 @@ metadata:
 ## 默认生成路径
 
 1. 读 `references/generation-contract.md`，再读 `references/scene-design-examples/README.md`，读取共享规范与命中的领域方案。普通生成不通读引擎、编辑器、材质系统或构建脚本。
-2. 会话首次运行 `node scripts/ensure-env.mjs`；缺环境按 HINT 安装。无 Node 时按速查中的 install 脚本处理。依赖位于外部环境，不在 skill/template 安装。
+2. 会话首次运行 `node scripts/ensure-env.mjs`；缺环境按 HINT 安装。无 Node 时按速查中的 install 脚本处理。依赖位于外部环境，生成项目中不创建 node_modules。
 3. 按下方「选材与复用」选择资源；上传包的接收、更新与导入命令见 [designer-assets.md](references/designer-assets.md)，仅在涉及资产操作时读取。
-4. `node scripts/init.mjs <交付目录> --profile empty --assets referenced --deps shared --defer-build`。模型确认后用 designer-assets inject 注入资源，或 --asset-package 指定已确认资产包；skill 不携带模型库。需组件时加 --with-components，由 init 准备独立依赖。
+4. `node scripts/init.mjs <交付目录> --profile empty --assets referenced --deps external --defer-build`。模型确认后用 designer-assets inject 注入资源，或 --asset-package 指定已确认资产包；skill 不携带模型库。需组件时加 --with-components，由 init 在工程外准备依赖。
 5. 读取生成工程现状，局部修改业务 handler、scene-profile 的注册项和 scene-data。设计相机、光照、材质与布局；不要从 demo 模板覆盖现有文件。
-6. `node scripts/build-offline.mjs <WORKSPACE_PATH>`。一次执行静态契约、Node 同步装配检查、类型检查、资源检查和离线打包，前置失败不执行后续依赖阶段。工程自身 npm run build:offline 仅提供编译打包，默认生成使用此统一入口。成功直接交付并停止；TIMING 与非阻塞性能 WARN 不是新门禁。
+6. `node scripts/build-offline.mjs <WORKSPACE_PATH>`。一次执行静态契约、Node 同步装配检查、类型检查、资源检查和离线打包，前置失败不执行后续依赖阶段。编译使用工程外临时输入，结束后清理；项目仅保留源码与预览。工程自身 npm run build:offline 供开发者安装依赖后使用，默认生成使用此统一入口。成功直接交付并停止；TIMING 与非阻塞性能 WARN 不是新门禁。
 
 场景构建后不追加 typecheck、普通 build、lint、浏览器、截图、性能采样、验证报告或审美修复。模型接收的固定缩略图/加载检查与整包确认属于资产阶段，不是场景复核。真实错误按下文处理；未经运行不能声称已验证渲染或交互。
 

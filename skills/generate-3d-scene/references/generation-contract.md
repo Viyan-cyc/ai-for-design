@@ -8,7 +8,7 @@
 - 没有 Node：Windows 用 `powershell -ExecutionPolicy Bypass -File "<skill>/scripts/install/install.ps1"`；macOS 用 `bash "<skill>/scripts/install/install.sh"`。下载和 npm 源策略与 EP 相同。
 - 依赖安装在外部环境；`SCENE3D_ENV_DIR` 可指定位置。不要在 skill/template 中执行 npm install。
 - 空工程默认不登记示例业务。先创建工程，再写自定义 handler、scene-profile 和 scene-data；不要把尚未注册的自定义分组通过 init 的 --scene 提前传入。
-- 自定义依赖/组件工程使用独立依赖；不要在连接共享 node_modules 的工程执行 npm install。需要独立依赖时初始化使用 --deps copy 或 --deps install。
+- 自定义依赖与组件包由统一构建入口按 package.json、lockfile 和本地包内容在工程外准备；source 保留依赖清单与 vendor 包，便于独立二开。
 
 初始化后的工程是修改依据：empty 会裁剪示例导入与卡片，不能用 template 中的 demo 同名文件覆盖。先读目标现状，只局部修改。
 
@@ -124,7 +124,7 @@ PowerShell 文本读写显式使用 UTF-8，优先宿主编辑工具；不因终
 | 机柜/车辆/人物 | procedural/rack、car、worker 按需复用；样例的历史 bodyColor 参数仅兼容旧数据，新代码通过外观层编辑颜色 |
 | 仓储货架整体展示 | 组件 Rack；框架/层板是 InstancedMesh，不承诺单根立柱独立编排，先确认编辑粒度 |
 | 二维热力覆盖 | 组件 HeatMap 输出 CanvasTexture；不是三维体积温度场 |
-| 墙体 | 按需查组件 Wall；组件需 --with-components 和独立依赖 |
+| 墙体 | 按需查组件 Wall；组件需 --with-components |
 | 独立零件材质编辑 | composite-handler，稳定槽位；不同业务对象使用独立节点 |
 
 只读命中项对应文档，不遍历所有实现。组件存在不等于符合需求；编辑粒度或离线资源不符时直接用几何组合。

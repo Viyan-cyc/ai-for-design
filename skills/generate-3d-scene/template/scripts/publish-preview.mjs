@@ -2,6 +2,7 @@ import {existsSync,lstatSync,readdirSync,readFileSync,writeFileSync,mkdirSync,un
 import {resolve,join,dirname,relative} from 'node:path';
 import {createHash,randomUUID} from 'node:crypto';
 const manifestName='preview/.scene3d-preview-baseline.json';
+export const externalInputVersion = 1;
 const hash=data=>createHash('sha256').update(data).digest('hex');
 function safe(path) {
  for(let p=resolve(path);;p=dirname(p)) {
@@ -10,9 +11,9 @@ function safe(path) {
   if(p===dirname(p))break;
  }
 }
-export function publishPreview(root,out) {
+export function publishPreview(root,out,offline=join(root,'offline')) {
  if(resolve(root)!==resolve(out,'source'))throw new Error('原位发布要求工程位于交付目录 source');
- const files=new Map(),offline=join(root,'offline');
+ const files=new Map();
  function walk(dir) {
   for(const name of readdirSync(dir)) {
    const path=join(dir,name),st=lstatSync(path),key=relative(offline,path).replaceAll('\\','/');

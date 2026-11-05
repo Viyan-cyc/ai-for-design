@@ -25,6 +25,8 @@
 
 在当前项目的 `source/` 中修改，构建更新同一个 `index.3d.html`。构建依据产物清单更新预览文件，其余文件保持原样。检测到已有产物被改动或输出路径冲突时，停止发布并报告具体路径，由用户决定如何处理。
 
+旧工程收到构建脚本版本提示时，将当前模板的 scripts/build-offline.mjs 与 scripts/publish-preview.mjs 更新合入 source/scripts，保留用户定制后继续在原项目构建。旧 node_modules、缓存及产物不会被自动删除。
+
 ## 编辑结果回写
 
 - 开发模式保存直接写回工程 `public/scene3d/scene-data.json`。
@@ -36,7 +38,7 @@
 ## 定向诊断与按需交付
 
 - 白屏、交互错误或卡顿：围绕报告的问题诊断，不默认追加全套浏览器、截图或性能采样。
-- 调试注入：`node scripts/ensure-env.mjs --diagnose` 只报告是否检测到注入。若出现 Waiting for the debugger to disconnect，关闭宿主终端自动附加后比较同一命令，不全局清空 NODE_OPTIONS。必要时在工程运行 `node node_modules/vue-tsc/bin/vue-tsc.js -b --extendedDiagnostics`，不加入正常生成路径。
-- 用户要求服务联调/指定端口：工程中运行 npm run dev，保留已有贴图上传能力。
+- 调试注入：`node scripts/ensure-env.mjs --diagnose` 只报告是否检测到注入。若出现 Waiting for the debugger to disconnect，关闭宿主终端自动附加后比较同一命令，不全局清空 NODE_OPTIONS。类型检查由统一构建入口在工程外执行。
+- 用户明确要求开发服务联调：在 source 执行 npm ci 后运行 npm run dev，保留贴图上传能力。这是开发者安装流程，会产生本机 node_modules；默认生成预览使用统一离线构建。
 - 用户要求无编辑器源码：使用 scripts/strip-edit.mjs；自动剥离并编译已保存外观，TRANSCRIPTION.md 是自动摘要，无需人工转录。源码包不等于已部署网站。
 - 用户要求部署：按目标环境构建，普通网页构建使用 npm run build。上述操作均非默认生成步骤。

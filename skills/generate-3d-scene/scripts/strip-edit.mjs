@@ -330,7 +330,10 @@ export const stripEdit = async (srcProject, outDir, opts = {}) => {
     } else {
       try {
         const { buildRuntimeSlotKeys } = await import('./lib/runtime-slots.mjs');
-        runtimeSlotKeys = await buildRuntimeSlotKeys(src, snapshot);
+        const { prepareProjectEnvironment, createBuildInput } = await import('./lib/project-environment.mjs');
+        const input = createBuildInput(src, prepareProjectEnvironment(src));
+        try { runtimeSlotKeys = await buildRuntimeSlotKeys(input.source, snapshot); }
+        finally { input.dispose(); }
       } catch (err) {
         runtimeSlotKeys = null; // 校验器对 slots 报「无法验证：无运行时清单」
         if (process.env.SCENE3D_STRIP_DEBUG) {

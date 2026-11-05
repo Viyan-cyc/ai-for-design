@@ -416,12 +416,13 @@ rmSync(join(F('stripped'), 'src', 'edit'), { recursive: true, force: true });
   );
 }
 
-/* ── 端到端（--with-build）：小写盘符 spawn + 首次 npm run build ───────────── */
+/* ── 端到端（--with-build）：小写盘符 + 外部构建 ───────────── */
 if (withBuild) {
   const out = F('lc-init').replace(/^([A-Za-z]):/, (m, d) => `${d.toLowerCase()}:`);
-  const r = run('init.mjs', [out, '--name', 'lower-case', '--deps', 'copy'], true);
-  const built = existsSync(join(F('lc-init'), 'dist', 'index.html'));
-  check('init: 小写盘符目标 + --deps copy 端到端构建 PASS', r.ok && built && /npm run build: PASS/.test(r.out), `status=${r.status}`);
+  const r = run('init.mjs', [out, '--name', 'lower-case', '--deps', 'external'], true);
+  const build = r.ok ? run('build-offline.mjs', [out], true) : r;
+  const built = existsSync(join(F('lc-init'), 'index.3d.html'));
+  check('init: 小写盘符目标 + 外部构建 PASS', r.ok && build.ok && built, `status=${build.status}`);
 }
 
 /* ── 消费端加载门禁（validate-model 内嵌 three GLTFLoader 真实 parse）──────── */

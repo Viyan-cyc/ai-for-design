@@ -5,13 +5,13 @@
 需要 Node.js 和 npm。在项目根目录执行：
 
 ```sh
-npm install
+npm ci
 npm run dev
 npm run build
 npm run preview
 ```
 
-内网使用组织配置的 npm 源。生成时可能使用共享依赖链接，下载的源码在另一台机器上需要重新 npm install。
+内网使用组织配置的 npm 源。生成流程在工程外准备依赖与临时编译输入，不把 node_modules、缓存或 offline 中间目录放入交付项目。开发者拿到源码后运行 npm ci 安装本机依赖；该开发安装产生的 node_modules 不需要随项目交付。
 `npm run build` 执行 TypeScript 检查与 Vite 构建。完整工程还支持 `npm run build:offline`，更新项目根目录的 `index.3d.html` 与 preview 资源；剥离编辑器的工程仅保留普通开发/构建入口。
 
 ## 修改位置
@@ -209,7 +209,7 @@ onBeforeUnmount(() => { active = false; scene?.dispose(); });
 - 新地图工程由 `enable-map.mjs` 准备组件包依赖。升级已有工程时保留 `src/business` 和本场景 handler，更新匹配版本的组件包与地图适配文件，再安装依赖并构建。旧标签从 scene-core/handlers 导入的，改为从 `/labels` 导入；不要只覆盖 package.json 或只复制一份 adapter。
 - 本次不自动升级旧业务工程。组件库实现只有一份，模板不复制其源码；生产 tgz 是构建产物。
 
-地图启用脚本将组件包按内容摘要命名。升级后运行普通 npm install 即更新依赖路径与 lockfile，不复用同名旧包。标签支持 clone/copy/Group.clone：材质独立，内部生成贴图独立释放，外部贴图继续由调用者拥有。
+地图启用脚本将组件包按内容摘要命名。使用 skill 时由统一构建自动更新外部依赖和 lockfile；独立开发时运行 npm install 更新依赖，不复用同名旧包。标签支持 clone/copy/Group.clone：材质独立，内部生成贴图独立释放，外部贴图继续由调用者拥有。
 
 如果升级组件时 Vite 开发服务正在运行，安装后停止服务，再用 `npm run dev -- --force` 重启，避免优化缓存仍引用旧导出。生产构建会重新打包；不要把开发缓存问题通过复制旧 bundle 绕过。
 

@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { cpSync, existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { resolveWorkspace } from './lib/workspace.mjs';
@@ -21,9 +21,6 @@ function rejectLinkedPath(destination) {
   }
 }
 for (const path of ['src/scene3d/create-scene.ts', 'package.json', 'vendor']) rejectLinkedPath(join(workspace, path));
-const deps = join(workspace, 'node_modules');
-if (existsSync(deps) && (lstatSync(deps).isSymbolicLink() || resolve(realpathSync(deps)).toLowerCase() !== resolve(deps).toLowerCase()))
-  throw new Error('HINT: 地图工程需要独立依赖。请初始化时使用 --deps copy；不要向共享 node_modules 安装地图依赖。');
 const skill = dirname(dirname(fileURLToPath(import.meta.url)));
 // Map runtime is distributed through the same production component package.
 const packages = readdirSync(join(skill, 'vendor')).filter(name => /^a3d-a3d-components-.*\.tgz$/.test(name));
@@ -79,4 +76,4 @@ for (const [source, destination] of pending) {
 if (readFileSync(entry, 'utf8') !== code) writeFileSync(entry, code);
 const packageText = JSON.stringify(pkg, null, 2) + '\n';
 if (readFileSync(packagePath, 'utf8') !== packageText) writeFileSync(packagePath, packageText);
-console.log(`MAP_ENABLED: ${workspace}\nHINT: 在该工作区运行 npm install，然后按 references/map.md 设置 scene-data.json 的 map 字段。若升级时开发服务器正在运行，停止它并用 npm run dev -- --force 重启，清除旧组件预构建缓存。`);
+console.log(`MAP_ENABLED: ${workspace}\nHINT: 按 references/map.md 设置 scene-data.json 的 map 字段，然后运行 skill 的 build-offline.mjs；依赖将在工程外自动准备。`);

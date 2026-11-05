@@ -30,7 +30,7 @@ skill 不携带业务模型。上传 ZIP 不需要 manifest；系统关联模型
 
 ## 环境与维护
 
-依赖清单位于 template/package.json，依赖安装在外部共享环境。运行 scripts/ensure-env.mjs，按 HINT 安装。组件按需使用独立依赖。
+依赖清单位于 template/package.json，依赖安装在外部共享环境。运行 scripts/ensure-env.mjs，按 HINT 安装。组件依赖同样在工程外按配置准备。
 
 
 

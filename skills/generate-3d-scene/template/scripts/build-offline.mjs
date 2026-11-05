@@ -155,8 +155,8 @@ try {
   stage = undefined;
   if (backup) rmSync(backup, { recursive: true });
   timed('publish');
-  const deliveryHtml = packageDelivery(root);
-  console.log(`RESULT: OK\nHTML_PATH: ${deliveryHtml}`);
+  const deliveryHtml = process.env.SCENE3D_BUILD_ONLY === '1' ? out : packageDelivery(root);
+  console.log(process.env.SCENE3D_BUILD_ONLY === '1' ? `BUILD_COMPLETE: ${out}` : `RESULT: OK\nHTML_PATH: ${deliveryHtml}`);
   console.log(`PASS ${deliveryHtml} (${Object.keys(resources).length} resources)`);
 } catch (error) {
   console.error(`构建未通过：${error.message}`);

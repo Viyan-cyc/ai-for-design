@@ -6,9 +6,8 @@ import {spawnSync} from 'node:child_process';
 import {createServer} from 'node:http';
 import {initProject} from '../../skills/generate-3d-scene/scripts/init.mjs';
 import {downloadCandidate} from '../../skills/generate-3d-scene/scripts/lib/asset-service.mjs';
+import {checkEnvironment,npmEntry} from '../../skills/generate-3d-scene/scripts/lib/environment.mjs';
 const skill=resolve('skills/generate-3d-scene'),root=fs.mkdtempSync(join(tmpdir(),'scene-combined-')),project=join(root,'project'),source=join(project,'source');
-const modules=process.env.SCENE3D_TEST_MAP_MODULES;
-assert(modules && fs.existsSync(join(modules,'maplibre-gl')), 'Set SCENE3D_TEST_MAP_MODULES to existing map dependencies');
 function run(script,args=[],ok=true){const r=spawnSync(process.execPath,[join(skill,'scripts',script),...args],{encoding:'utf8',timeout:180000,maxBuffer:8*1024*1024});assert.equal(r.status===0,ok,r.stdout+r.stderr);return r;}
 const server=createServer((req,res)=>res.end(JSON.stringify({asset:{version:'2.0'},scenes:[{nodes:[]}],scene:0})));
 await new Promise(r=>server.listen(0,'127.0.0.1',r));
@@ -24,11 +23,6 @@ try {
  await downloadCandidate({remoteId:'sample',name:'sample',entryUrl:origin+'/model.gltf'},pkg,{endpoint:origin,allowedOrigins:[origin]});
  run('designer-assets.mjs',['inject',pkg,'--project',source]);
  run('enable-map.mjs',[project]);
- fs.cpSync(resolve(modules),join(source,'node_modules'),{recursive:true,dereference:true,filter:p=>p!==join(resolve(modules),'@a3d','a3d-components')});
- const installed=join(source,'node_modules/@a3d/a3d-components');fs.mkdirSync(installed,{recursive:true});
- const archive=fs.readdirSync(join(skill,'vendor')).find(n=>n.endsWith('.tgz'));
- const unpack=spawnSync('tar',['-xzf',join(skill,'vendor',archive),'--strip-components','1','-C',installed],{encoding:'utf8'});assert.equal(unpack.status,0,unpack.stderr);
- assert.match(fs.readFileSync(join(installed,'dist/es/map.js'),'utf8'),/MapPresentation/);
  const scenePath=join(source,'public/scene3d/scene-data.json'),scene=JSON.parse(fs.readFileSync(scenePath));
  scene.map={styleUrl:origin+'/style.json',origin:[114.06,22.54],center:[114.06,22.54],zoom:16,pitch:45,bearing:0,theme:'light',view:'3d'};
  fs.writeFileSync(scenePath,JSON.stringify(scene));
@@ -43,8 +37,15 @@ try {
  assert.match(fs.readFileSync(join(project,'preview/scene-data.js'),'utf8'), /"bearing":30/);
  assert.equal(fs.readFileSync(join(project,'user-notes.txt'),'utf8'),'KEEP');
  assert.equal(JSON.parse(fs.readFileSync(scenePath)).map.bearing,30);
+ const moved=join(root,'developer/source');fs.cpSync(source,moved,{recursive:true});
+ const env=checkEnvironment();
+ for(const args of [[npmEntry(env.node),'ci','--offline','--no-audit','--no-fund'],[join(moved,'scripts/build-offline.mjs')]]) {
+  const r=spawnSync(env.node,args,{cwd:moved,encoding:'utf8',timeout:180000,maxBuffer:8*1024*1024});assert.equal(r.status,0,r.stdout+r.stderr);
+ }
+ assert(fs.existsSync(join(root,'developer/index.3d.html')));
  const manifest=JSON.parse(fs.readFileSync(join(source,'public/scene3d/assets/asset-manifest.json'))),model=join(source,'public/scene3d/assets',Object.values(manifest)[0].model);
  fs.appendFileSync(model,'\nUSER_EDIT');run('designer-assets.mjs',['inject',pkg,'--project',source],false);assert(fs.readFileSync(model,'utf8').endsWith('USER_EDIT'));
  const adapter=join(source,'src/scene3d/map/create-map-scene.ts');fs.appendFileSync(adapter,'\n// USER_EDIT');run('enable-map.mjs',[project],false);assert(fs.readFileSync(adapter,'utf8').endsWith('USER_EDIT'));
- console.log('PASS init contract; inject/map/build/edit/rebuild in one project; repeat operations; user file and conflict preservation. Existing dependencies only; no browser/service validation.');
+ for(const name of ['node_modules','.cache','offline']) assert(!fs.existsSync(join(source,name)));
+ console.log('PASS init contract; inject/map/build/edit/rebuild; moved map source npm ci --offline and standalone build; user file and conflict preservation. No browser/service validation.');
 }finally{await new Promise(r=>server.close(r));assert(root.startsWith(join(tmpdir(),'scene-combined-')));fs.rmSync(root,{recursive:true,force:true});}

@@ -14,21 +14,22 @@
  *      （glTF 多文件整目录、多状态贴图集），按场景引用（默认）/全部/指定 id
  *   ⑤ --with-components：拷 vendor/*.tgz 进产物工程 + package.json 写 file: 依赖
  *      （多 tgz 时 --components-version 显式选择；缺省报错列出可选版本，不猜字典序）
- *   ⑥ 首次构建校验：跑 build.mjs 结构门禁（必须 PASS）；--deps 可选装依赖并跑 npm run build
+ *   ⑥ 首次构建校验：跑 build.mjs 结构门禁，外部准备依赖，场景完成后统一离线构建
  *
  * CLI：
  *   node init.mjs <target-dir> [--name <proj-name>] [--profile empty|demo] [--scene <file>]
  *        [--assets referenced|all|<id,id>] [--with-components [--components-version <ver>]]
- *        [--deps shared|skip|copy|install] [--json]
+ *        [--deps external|skip] [--json]
  *   退出码：0 成功 / 1 校验失败 / 2 用法错误
  */
-import { readFileSync, writeFileSync, existsSync, mkdirSync, cpSync, readdirSync, rmSync, realpathSync, symlinkSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, mkdirSync, cpSync, readdirSync, rmSync } from 'node:fs';
 import { join, resolve, basename, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import { inject } from './lib/designer-assets.mjs';
 import { checkProject } from './build.mjs';
-import { checkEnvironment, npmEntry } from './lib/environment.mjs';
+import { checkEnvironment } from './lib/environment.mjs';
+import { prepareProjectEnvironment } from './lib/project-environment.mjs';
 import { buildAssetCatalog, resolveAsset, referencedAssetIds } from './lib/asset-catalog.mjs';
 import { validateSceneData, factoryRegistryFromProfile } from './lib/scene-schema.mjs';
 
@@ -78,25 +79,6 @@ const pruneUnreferencedModels = (out, data) => {
   return { removed, kept };
 };
 
-/**
- * 子进程 cwd 规范形：Windows 上把盘符/目录名整成磁盘上的真实大小写。
- * 手打的 `d:\...` 会原样成为子进程 cwd，Vite 的 html-proxy 键与解析出的 id 前缀
- * 因此不一致，构建报 `Could not load <abs>/index.html?html-proxy&index=0.js`
- * （bash 自己的 cd 会规范化，所以人手跑没事，只有本脚本 spawn 时踩）。
- */
-const spawnCwd = (p) => {
-  if (process.platform !== 'win32') {
-    return p;
-  }
-  try {
-    // UNC 网络盘（\\server\share\…）的 native 形是 \\?\UNC\server\share\…，
-    // 剥 \\?\ 后要还原 \\ 前缀，否则 npm 拿到非法路径
-    return realpathSync.native(p).replace(/^\\\\\?\\UNC\\/, '\\\\').replace(/^\\\\\?\\/, '');
-  } catch {
-    return p.replace(/^([a-z]):/, (m, d) => `${d.toUpperCase()}:`);
-  }
-};
-
 const GITIGNORE = `node_modules/
 .cache/
 offline/
@@ -124,8 +106,8 @@ export const initProject = (target, opts = {}) => {
   const out = resolve(target);
   const errors = [];
   const warnings = [];
-  const deps = opts.deps ?? 'shared';
-  if (!['shared', 'copy', 'install', 'skip'].includes(deps)) return { ok: false, out, errors: [`Unknown deps mode: ${deps}`], warnings };
+  const deps = opts.deps ?? 'external';
+  if (!['external', 'skip'].includes(deps)) return { ok: false, out, errors: [`Unknown deps mode: ${deps}`], warnings };
   let env;
   try { env = checkEnvironment(); }
   catch (e) { return { ok: false, out, errors: [`${e.code}: ${e.message}`, `HINT: ${e.hint}`], warnings }; }
@@ -345,33 +327,15 @@ export const initProject = (target, opts = {}) => {
   /* ⑥ 首次构建校验（结构门禁） */
   const check = checkProject(out);
 
-  /* ⑥b 可选装依赖并跑 npm run build */
+  /* ⑥b 工程外依赖准备与可选离线构建 */
   timings.scaffold = Math.round(performance.now() - started) - timings.environment;
   const depsStarted = performance.now();
   let buildRun = null;
-  const cwd = spawnCwd(out);
   if (deps !== 'skip') {
     try {
-      if (deps === 'install' || components.included || deps === 'copy') {
-        // Component projects own their dependency tree; never npm-install into a shared link.
-        const CACHE = new Set(['.tmp', '.vite', '.vite-temp', '.package-lock.json']);
-        if (deps !== 'install') cpSync(env.modules, join(out, 'node_modules'), { recursive: true, filter: (s) => !CACHE.has(basename(s)) });
-        if (deps === 'install' || components.included) {
-          const args = [components.included ? 'install' : 'ci', '--no-audit', '--no-fund', '--registry', env.registry];
-          const r = spawnSync(env.node, [npmEntry(env.node), ...args], { cwd, stdio: 'inherit' });
-          if (r.status !== 0) throw new Error(`Dependency installation failed: ${r.error?.message ?? r.status}`);
-          if (components.included) {
-            const lock = JSON.parse(readFileSync(join(out, 'package-lock.json'), 'utf8'));
-            if (!existsSync(join(out, 'node_modules/@a3d/a3d-components')) || !lock.packages?.['']?.dependencies?.['@a3d/a3d-components']) {
-              throw new Error('Component install or lock synchronization failed');
-            }
-          }
-        }
-      } else {
-        symlinkSync(env.modules, join(out, 'node_modules'), process.platform === 'win32' ? 'junction' : 'dir');
-      }
-      if (!(opts.deferBuild ?? deps === 'shared')) {
-        const r = spawnSync(env.node, [npmEntry(env.node), 'run', 'build'], { cwd, stdio: 'inherit' });
+      prepareProjectEnvironment(out, env);
+      if (opts.deferBuild === false) {
+        const r = spawnSync(env.node, [join(SKILL_ROOT, 'scripts/build-offline.mjs'), out], { stdio: 'inherit' });
         buildRun = { ok: r.status === 0, status: r.status };
       }
     } catch (e) { errors.push(e.message); }
@@ -409,11 +373,9 @@ const USAGE = `用法: node init.mjs <target-dir> [选项]
   --assets id1,id2         注入指定资产
   --with-components        注入 3d-components（vendor tgz + file: 依赖）
   --components-version <v> 多 tgz 时显式选择版本（含 v 的文件名须唯一匹配）
-  --deps shared            连接外部共享依赖（默认）；组件工程使用独立依赖
+  --deps external          在工程外准备依赖（默认）
   --deps skip              只做结构门禁
-  --defer-build            安装依赖后暂不编译，待场景完成后统一离线构建
-  --deps copy              从共享环境复制独立 node_modules（兼容选项）并跑 npm run build
-  --deps install           npm install（--registry 或环境变量 SCENE3D_REGISTRY）并跑 npm run build
+  --defer-build            场景完成后统一离线构建（默认）
   --validate preview       场景 schema 校验档位（默认 preview；standard 同级严格；off 跳过）
   --json / --quiet`;
 
@@ -496,7 +458,7 @@ const main = () => {
       console.log(`  组件库: ${result.components.tgz}`);
     }
     if (result.buildRun) {
-      console.log(`  npm run build: ${result.buildRun.ok ? 'PASS' : 'FAIL'}`);
+      console.log(`  offline build: ${result.buildRun.ok ? 'PASS' : 'FAIL'}`);
     }
     for (const e of result.errors) {
       console.log(`  ✗ ${e}`);
