@@ -1,15 +1,15 @@
-# gts-ep-charts-coder 集成方案
+# gts-charts-coder 集成方案
 
 状态：第二轮精简与维护适配已实施，验证结果见下；浏览器与视觉交互验收待完成。
 
 ## 第一轮实施记录（历史，第二轮变更见下）
 
-- 新入口位于 `skills/gts-ep-charts-coder/SKILL.md`，直接读取设计公共入口；原始两个 skill 未修改。
+- 新入口位于 `skills/gts-charts-coder/SKILL.md`，直接读取设计公共入口；原始两个 skill 未修改。
 - 第一轮工程 scripts、references、components 独立复制；未复制页面 patterns。第二轮已移除 components 与无关 references。设计发布内容原样放入 design/，不包含 .git。
 - 图表适配层为 `src/assets/charts/*.css`，仅允许容器 class 下的 `--page-chart-*` 声明。build 增加范围检查，不修改原工程的 token 检查。
-- 来源及逐文件 SHA-256 记录在 `docs/gts-ep-charts-coder/upstream-sources.json`。`node tools/gts-ep-charts-coder/check-upstream.mjs` 检查内嵌快照；加 `--source <设计发布目录>` 只读比较新版，输出增删改，不自动覆盖。
+- 来源及逐文件 SHA-256 记录在 `docs/gts-charts-coder/upstream-sources.json`。`node tools/gts-charts-coder/check-upstream.mjs` 检查内嵌快照；加 `--source <设计发布目录>` 只读比较新版，输出增删改，不自动覆盖。
 - 工程回归 `scripts/verify-build.mjs`：41 项通过。
-- 图表集成回归 `tests/gts-ep-charts-coder/integration.mjs`：审查后 10 项通过，包括柱图、平行坐标静态构建，以及非法作用域、容器外声明、EP 变量覆盖、未映射模块、未知 token、缺失资源拒绝和同步参数检查。
+- 图表集成回归 `tests/gts-charts-coder/integration.mjs`：审查后 10 项通过，包括柱图、平行坐标静态构建，以及非法作用域、容器外声明、EP 变量覆盖、未映射模块、未知 token、缺失资源拒绝和同步参数检查。
 - 图表测试 fixture 是编译能力用例，不是视觉规范 golden example。复杂图表实际交互和视觉合规尚未验证。
 - 当前浏览器工具拒绝 file:// 协议，未打开离线预览，未执行视觉、resize、Tooltip 或图片导出验收。不得将上述静态测试称为端到端验收。
 - 后续发布前完成浏览器验收及真实设计任务效果评估；自动写入式同步暂未实现，当前提供只读差异检查。
@@ -32,7 +32,7 @@
 
 实施后运行初始化、构建回归、图表正负用例、双来源差异与全包引用检查，并更新实际结果。精简只针对本次新 skill，不改原始来源。
 
-新建 `skills/gts-ep-charts-coder/`，组合图表设计专家的方法与规范，以及 gts-ep-coder 的工程生成、编译检查和离线预览能力。用户只调用一个 skill。
+新建 `skills/gts-charts-coder/`，组合图表设计专家的方法与规范，以及 gts-ep-coder 的工程生成、编译检查和离线预览能力。用户只调用一个 skill。
 
 - 设计来源：`D:/cyc/project/octo/gts/test/charts/chart-design-expert`，当前内嵌版本 0.8.2，来源 commit 6ba51139f8bc3eaba95ac98373a21c3dff2cfe17（初始接入为 0.6.15）。
 - 工程来源：本仓库 `skills/gts-ep-coder/`，当前入口版本 0.3.0-rc.1。
@@ -58,7 +58,7 @@
 ## 3. 包结构与设计接入
 
 ```text
-skills/gts-ep-charts-coder/
+skills/gts-charts-coder/
   SKILL.md
   design/                    # 设计包原始发布内容
   scripts/                   # 工程脚本及其依赖的预览、模板资源
@@ -117,7 +117,7 @@ build 输出 `RUNTIME: not-run`，没有挂载业务页面。`RESULT: OK` 不能
 
 默认交付预览链接，必要说明写在回复中；工程交接文档仅在用户要求时生成。此处采用宿主交付方式，规则集中维护在 SKILL.md 的交付步骤。预览依赖和脚手架通用说明随工程保留。
 
-来源基线放在 docs/gts-ep-charts-coder/，检查工具放在 tools/gts-ep-charts-coder/；两者服务于仓库维护，不随运行 skill 分发。
+来源基线放在 docs/gts-charts-coder/，检查工具放在 tools/gts-charts-coder/；两者服务于仓库维护，不随运行 skill 分发。
 
 ## 6. 上游同步
 
@@ -156,17 +156,17 @@ build 输出 `RUNTIME: not-run`，没有挂载业务页面。`RESULT: OK` 不能
 
 ```bash
 # 检查包内快照（不写入）
-node tools/gts-ep-charts-coder/check-upstream.mjs
-node tools/gts-ep-charts-coder/check-upstream.mjs --kind engineering
-node tools/gts-ep-charts-coder/check-package.mjs
+node tools/gts-charts-coder/check-upstream.mjs
+node tools/gts-charts-coder/check-upstream.mjs --kind engineering
+node tools/gts-charts-coder/check-package.mjs
 
 # 比较新的来源（不写入；输出 ADDED/REMOVED/CHANGED）
-node tools/gts-ep-charts-coder/check-upstream.mjs --kind design --source "<设计发布目录>"
-node tools/gts-ep-charts-coder/check-upstream.mjs --kind engineering --source "<gts-ep-coder目录>"
+node tools/gts-charts-coder/check-upstream.mjs --kind design --source "<设计发布目录>"
+node tools/gts-charts-coder/check-upstream.mjs --kind engineering --source "<gts-ep-coder目录>"
 
 # 完成同步、审查和回归后，显式接受新基线
-node tools/gts-ep-charts-coder/check-upstream.mjs --kind design --source "<设计发布目录>" --record --version "<版本>" --commit "<可核实的commit>"
-node tools/gts-ep-charts-coder/check-upstream.mjs --kind engineering --source "<gts-ep-coder目录>" --record --version "<版本>"
+node tools/gts-charts-coder/check-upstream.mjs --kind design --source "<设计发布目录>" --record --version "<版本>" --commit "<可核实的commit>"
+node tools/gts-charts-coder/check-upstream.mjs --kind engineering --source "<gts-ep-coder目录>" --record --version "<版本>"
 ```
 
 commit 不可核实时省略。记录工程基线会生成 unchanged/adapted/excluded 分类、新增文件表和内嵌文件哈希；该操作是维护者接受变化，不是自动证明变更正确。设计记录要求 design/ 与指定源内容一致。工程代码和适配仍由维护者审查合入，不自动覆盖本地修改。
@@ -211,3 +211,10 @@ Plan-Execution Diff：实际先写入新设计基线，再完成所有回归，�
 验证复核：本轮重跑设计源对比、内嵌设计/工程快照和全包检查均通过；工程脚本未变，沿用本次升级执行阶段成功的20/41/15项回归证据，不为文档自审重复执行全部构建。
 
 Next Action / Resume：可继续使用更新后的知识包；发布效果验收按 acceptance.md 执行。若需要独立 reviewer，将本节、升级计划、design/ 与发布commit的差异及对应测试入口一并交接。
+
+
+## 2026-11-05 名称统一
+
+用户授权将 skill 标识及仓库 skills、docs、tools、tests 下对应目录统一为 gts-charts-coder。同步内部引用与内嵌工程快照；工程来源仍为 gts-ep-coder，设计来源及版本不变。仓库根目录 ep-coder 保持原名。
+
+重命名验证：skills/docs/tools/tests 范围未检出旧标识引用；全包83份Markdown、设计与工程快照、skill格式以及15项集成检查通过。

@@ -5,10 +5,10 @@ import assert from 'node:assert/strict';
 import {fileURLToPath} from 'node:url';
 import {spawnSync} from 'node:child_process';
 const here=path.dirname(fileURLToPath(import.meta.url));
-const scripts=path.resolve(here,'../../skills/gts-ep-charts-coder/scripts');
+const scripts=path.resolve(here,'../../skills/gts-charts-coder/scripts');
 const work=fs.mkdtempSync(path.join(os.tmpdir(),'ep-charts-check-'));
 const project=path.join(work,'charts-check');
-function run(name,args){const p=spawnSync(process.execPath,[path.join(name.startsWith('check-')?path.resolve(here,'../../tools/gts-ep-charts-coder'):scripts,name),...args],{encoding:'utf8',timeout:30000});return {code:p.status,text:p.stdout+p.stderr};}
+function run(name,args){const p=spawnSync(process.execPath,[path.join(name.startsWith('check-')?path.resolve(here,'../../tools/gts-charts-coder'):scripts,name),...args],{encoding:'utf8',timeout:30000});return {code:p.status,text:p.stdout+p.stderr};}
 assert.equal(run('init.mjs',[work,'charts-check']).code,0);
 const initialPage=fs.readFileSync(path.join(project,'src/pages/ChartsCheck/index.vue'),'utf8');
 assert.match(initialPage,/echarts\.init/);

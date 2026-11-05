@@ -14,7 +14,7 @@
 
 用户已提出 100/500 上限，并以“plan approved”批准本计划的硬门禁、计数口径和适用范围。
 
-In Scope：仅 skills/gts-ep-charts-coder 的生成约束、业务源文件规模检查、build 接入、维护测试和来源基线。
+In Scope：仅 skills/gts-charts-coder 的生成约束、业务源文件规模检查、build 接入、维护测试和来源基线。
 Out of Scope：修改 gts-ep-coder 或 ict-coder；修改设计包原文；自动重构用户已有工程；限制 skill 自身脚本或第三方运行库；新增格式化器或浏览器验收要求。
 
 完成契约：正常格式的生成业务源文件不超过 500 行，函数不超过 100 行；边界值通过、超出失败；诊断包含源文件、起始行、实测值和上限；build 失败时不刷新 preview-data.js；合法工程与已有门禁继续工作。
@@ -26,11 +26,11 @@ Out of Scope：修改 gts-ep-coder 或 ict-coder；修改设计包原文；自�
 - skills/gts-ep-coder/references/code-rules.md §5.6：按职责预先拆分；800 行是审视阈值，允许合理例外，明确禁止压缩换行规避。
 - skills/gts-ep-coder/SKILL.md：编码前读规则、交付前自查；这些要求不新增机器门禁。
 - 用户给出的 ict-coder 本地包：未发现 100/500 或明确行数门禁。此结论限于已检查版本。
-- skills/gts-ep-charts-coder/scripts/build.mjs：遍历 src，已有 SFC、Babel AST 和 CSS/Less 检查，统一汇总 ERROR，通过后 refresh。
+- skills/gts-charts-coder/scripts/build.mjs：遍历 src，已有 SFC、Babel AST 和 CSS/Less 检查，统一汇总 ERROR，通过后 refresh。
 - scripts/source-tools.mjs（同 skill）：compilerRequire、visitAST 等已有工具；复用现有 compiler，不新增依赖。
-- skills/gts-ep-charts-coder/SKILL.md、references/chart-host.md：生成入口及工程约束落点。
-- tests/gts-ep-charts-coder/integration.mjs：现有集成检查。
-- tools/gts-ep-charts-coder/check-package.mjs、check-upstream.mjs：维护检查；docs/gts-ep-charts-coder/upstream-sources.json 为基线。
+- skills/gts-charts-coder/SKILL.md、references/chart-host.md：生成入口及工程约束落点。
+- tests/gts-charts-coder/integration.mjs：现有集成检查。
+- tools/gts-charts-coder/check-package.mjs、check-upstream.mjs：维护检查；docs/gts-charts-coder/upstream-sources.json 为基线。
 
 使用快速流；代码范围已熟悉，上述索引替代另建 codemap/context bundle。Innovate 跳过：复用现有 AST 和 build 错误通道即可，无需引入另一套 lint 框架。
 
@@ -77,15 +77,15 @@ SFC 的普通 script 与 script setup 分别解析原始块内容，再按块在
 
 | 路径 | 变更 |
 | --- | --- |
-| skills/gts-ep-charts-coder/references/chart-host.md | 集中定义 100/500、拆分及排版规则 |
-| skills/gts-ep-charts-coder/SKILL.md | 必要时仅引用宿主规则，不重复大段约束 |
-| skills/gts-ep-charts-coder/scripts/source-size.mjs | 新增纯计数与 AST 检查模块 |
-| skills/gts-ep-charts-coder/scripts/build.mjs | 接入范围判定及错误收集 |
-| skills/gts-ep-charts-coder/scripts/init.mjs | 将现有压缩的示例输出排版为可读源码，保持行为 |
-| tests/gts-ep-charts-coder/source-size.mjs | 新增计数、范围与 build 负用例 |
-| tests/gts-ep-charts-coder/integration.mjs | 按需要接入新增检查，保持原有用例 |
-| docs/gts-ep-charts-coder/upstream-sources.json | 验证后更新工程内嵌快照，不变更设计快照 |
-| docs/gts-ep-charts-coder/source-size-limits-spec.md | 本 spec，回写实际结果和偏差 |
+| skills/gts-charts-coder/references/chart-host.md | 集中定义 100/500、拆分及排版规则 |
+| skills/gts-charts-coder/SKILL.md | 必要时仅引用宿主规则，不重复大段约束 |
+| skills/gts-charts-coder/scripts/source-size.mjs | 新增纯计数与 AST 检查模块 |
+| skills/gts-charts-coder/scripts/build.mjs | 接入范围判定及错误收集 |
+| skills/gts-charts-coder/scripts/init.mjs | 将现有压缩的示例输出排版为可读源码，保持行为 |
+| tests/gts-charts-coder/source-size.mjs | 新增计数、范围与 build 负用例 |
+| tests/gts-charts-coder/integration.mjs | 按需要接入新增检查，保持原有用例 |
+| docs/gts-charts-coder/upstream-sources.json | 验证后更新工程内嵌快照，不变更设计快照 |
+| docs/gts-charts-coder/source-size-limits-spec.md | 本 spec，回写实际结果和偏差 |
 
 ### Proposed Signatures（JS，类型用于契约说明）
 
@@ -124,9 +124,9 @@ SFC 的普通 script 与 script setup 分别解析原始块内容，再按块在
 
 实际验证（2026-11-04）：
 
-- node tests/gts-ep-charts-coder/source-size.mjs：20 组通过；包括函数类型与边界、换行口径、SFC 原始行号、setup 顶层、范围、错误汇总和失败预览保护。
-- node skills/gts-ep-charts-coder/scripts/verify-build.mjs：41 项通过。
-- node tests/gts-ep-charts-coder/integration.mjs：15 项通过。
+- node tests/gts-charts-coder/source-size.mjs：20 组通过；包括函数类型与边界、换行口径、SFC 原始行号、setup 顶层、范围、错误汇总和失败预览保护。
+- node skills/gts-charts-coder/scripts/verify-build.mjs：41 项通过。
+- node tests/gts-charts-coder/integration.mjs：15 项通过。
 - 内嵌工程快照、设计快照、全包 79 份 Markdown 检查与 skill 格式校验通过。
 - 源 gts-ep-coder 与旧来源基线存在变化：SKILL、code-rules、build、verify-build 等；这是外部来源漂移，未同步，本轮保留差异提示。
 

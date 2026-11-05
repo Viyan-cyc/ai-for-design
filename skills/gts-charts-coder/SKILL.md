@@ -1,11 +1,11 @@
 ---
-name: gts-ep-charts-coder
+name: gts-charts-coder
 description: 根据需求设计、生成或修改 Vue 3 + ECharts 图表原型，遵循图表设计专家规范，通过 EP 工程编译检查交付源码与离线预览。适用于图表分析、可视化与图表交互修改；普通无图表业务页面使用页面生成 skill。
 metadata:
   version: 0.1.0
 ---
 
-# gts-ep-charts-coder
+# gts-charts-coder
 
 先读取 [图表公共入口](design/01-router/design-entry.md)，按其路由加载本次需要的方法、视觉规范和验收要求。不要全量读取设计库。
 

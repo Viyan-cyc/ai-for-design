@@ -4,8 +4,8 @@ import os from 'node:os';
 import path from 'node:path';
 import {spawnSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
-import {countPhysicalLines,checkFileLength,checkFunctionLengths,shouldCheckSourceSize} from '../../skills/gts-ep-charts-coder/scripts/source-size.mjs';
-import {compilerRequire} from '../../skills/gts-ep-charts-coder/scripts/source-tools.mjs';
+import {countPhysicalLines,checkFileLength,checkFunctionLengths,shouldCheckSourceSize} from '../../skills/gts-charts-coder/scripts/source-size.mjs';
+import {compilerRequire} from '../../skills/gts-charts-coder/scripts/source-tools.mjs';
 const sfc=compilerRequire()('@vue/compiler-sfc');
 let checks=0;
 function test(name,fn){fn();checks++;console.log('PASS: '+name);}
@@ -38,7 +38,7 @@ test('scope and immutable templates',()=>{
  for(const file of ['assets/icons/entry.js','README.md','image.png'])assert.equal(shouldCheckSourceSize(file,'',null),false);
 });
 const repo=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..');
-const scripts=path.join(repo,'skills/gts-ep-charts-coder/scripts');
+const scripts=path.join(repo,'skills/gts-charts-coder/scripts');
 const work=fs.mkdtempSync(path.join(os.tmpdir(),'charts-size-'));
 const project=path.join(work,'size-check');
 function run(name,args){const r=spawnSync(process.execPath,[path.join(scripts,name),...args],{encoding:'utf8',timeout:30000});return {code:r.status,text:r.stdout+r.stderr};}

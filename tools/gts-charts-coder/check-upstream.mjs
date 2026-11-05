@@ -4,8 +4,8 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import {fileURLToPath} from 'node:url';
 const repo=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..');
-const root=path.join(repo,'skills/gts-ep-charts-coder');
-const manifestPath=path.join(repo,'docs/gts-ep-charts-coder/upstream-sources.json');
+const root=path.join(repo,'skills/gts-charts-coder');
+const manifestPath=path.join(repo,'docs/gts-charts-coder/upstream-sources.json');
 function hashes(dir){const out={};function walk(p){for(const e of fs.readdirSync(p,{withFileTypes:true})){if(e.name==='.git')continue;const f=path.join(p,e.name);if(e.isSymbolicLink())throw Error('Linked source unsupported: '+f);if(e.isDirectory())walk(f);else out[path.relative(dir,f).split(path.sep).join('/')]=crypto.createHash('sha256').update(fs.readFileSync(f)).digest('hex');}}walk(dir);return out;}
 function diff(a,b){return [...new Set([...Object.keys(a),...Object.keys(b)])].sort().filter(k=>a[k]!==b[k]).map(k=>`${!a[k]?'ADDED':!b[k]?'REMOVED':'CHANGED'}: ${k}`);}
 function engineeringLocal(){return Object.fromEntries(Object.entries(hashes(root)).filter(([k])=>!k.startsWith('design/')));}

@@ -349,11 +349,11 @@
       "SKILL.md": "adapted"
     },
     "embeddedFiles": {
-      "SKILL.md": "792a6a8816f77c046971679378e41815ef302898047b0f565940e30fd254fa5f",
+      "SKILL.md": "a3fe0aa60b0ec06213319c77ce569d0cab2d530c4dcecb8bbaf5fb08bc9d46ea",
       "references/chart-host.md": "0b6f36b6b005af2dde101ddccc20db404ec2352281b64648588f270418a1669e",
       "references/env-config.json": "72043279e83749fcb364fc6ede71c4f7b7c1b20d1ca69bb66c77f4a59b255732",
       "references/fallback-node-manifest.json": "62bfc0d20ccaa544631bc41bb2babea5fcc540919f096334c6ca4375ca1b4e68",
-      "references/on-demand-toggle.md": "e7d0de8e5482bcc6d5bad22b86e2257633b8836ae8e79e04dba2a83127c3463b",
+      "references/on-demand-toggle.md": "4b37f1a70e67a33fae5c018b98f017aa7d8c4a7c1871eeedda614eaf223ffca9",
       "references/token-catalog.md": "b54608b1fa6646d267bcd6ac55a33082876f746bcdbe4a17a0aa55a479418862",
       "scripts/build-data.mjs": "7d3768aa743ef15ec7a3109c8a5a0b427d77572a2e0c259b762c97912698be21",
       "scripts/build.mjs": "8684852d744010ef5973214cb4713e44a88a16a9cf79f8413ae1f82d554474fd",
