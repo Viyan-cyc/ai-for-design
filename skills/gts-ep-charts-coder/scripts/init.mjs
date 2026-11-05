@@ -99,7 +99,49 @@ mkdirSync(join(srcDir, 'assets', 'uploads'), { recursive: true });
 mkdirSync(join(srcDir, 'pages', pageName, 'components'), { recursive: true });
 
 // ---------- 5. starter page + app shell ----------
-writeFileSync(join(srcDir, 'pages', pageName, 'index.vue'), "<script setup>\n// Technical scaffold only; apply the selected design rules before delivery.\nimport { ref, onMounted, onUnmounted } from 'vue'\nimport * as echarts from 'echarts'\nimport { getChartData } from '../../api/demo.js'\nconst host=ref(null)\nlet chart, observer, disposed=false\nonMounted(async()=>{const data=await getChartData();if(disposed)return;chart=echarts.init(host.value);chart.setOption({tooltip:{trigger:'axis'},xAxis:{type:'category',data:data.categories},yAxis:{type:'value'},series:[{type:'bar',data:data.values}]});observer=new ResizeObserver(()=>chart.resize());observer.observe(host.value)})\nonUnmounted(()=>{disposed=true;observer?.disconnect();chart?.dispose()})\n</script>\n<template><div ref=\"host\" class=\"chart-test\"></div></template>\n<style scoped lang=\"less\">.chart-test { width:100%; height:400px; }</style>", 'utf8');
+writeFileSync(join(srcDir, 'pages', pageName, 'index.vue'), `<script setup>
+// 技术骨架；交付前按任务应用选定图表规范。
+import { ref, onMounted, onUnmounted } from 'vue'
+import * as echarts from 'echarts'
+import { getChartData } from '../../api/demo.js'
+
+const host = ref(null)
+let chart
+let observer
+let disposed = false
+
+onMounted(async () => {
+  const data = await getChartData()
+  if (disposed) return
+  chart = echarts.init(host.value)
+  chart.setOption({
+    tooltip: { trigger: 'axis' },
+    xAxis: { type: 'category', data: data.categories },
+    yAxis: { type: 'value' },
+    series: [{ type: 'bar', data: data.values }],
+  })
+  observer = new ResizeObserver(() => chart.resize())
+  observer.observe(host.value)
+})
+
+onUnmounted(() => {
+  disposed = true
+  observer?.disconnect()
+  chart?.dispose()
+})
+</script>
+
+<template>
+  <div ref="host" class="chart-test"></div>
+</template>
+
+<style scoped lang="less">
+.chart-test {
+  width: 100%;
+  height: 400px;
+}
+</style>
+`, 'utf8');
 
 writeFileSync(
   join(srcDir, 'App.vue'),

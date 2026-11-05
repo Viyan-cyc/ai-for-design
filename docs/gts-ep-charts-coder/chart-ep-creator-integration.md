@@ -174,3 +174,8 @@ commit 不可核实时省略。记录工程基线会生成 unchanged/adapted/exc
 验证结果：工程回归 41 项、集成检查 15 项通过；后者包含新初始化的实际编译，以及设计/工程来源差异检查。全包 79 份 Markdown 的相对链接和文件分类检查通过。测试是静态与隔离加载器检查，不是浏览器验证。
 
 真实任务及记录模板见 [acceptance.md](acceptance.md)。普通/复杂图表生成效果、浏览器运行、resize、Tooltip、主题和图片导出仍待实际执行，原因是当前工具禁止 file://。当前不能标记为完整发布验收通过。
+
+
+## 2026-11-05 交付格式适配
+
+按用户要求，图表 skill 与 gts-ep-coder 采用相同预览 artifact 格式：`<artifact type="text/link">本次成功构建的 HTML_PATH 实际绝对路径</artifact>`。规则集中维护在 SKILL.md 第 9 步，默认交付一个预览 artifact。此次仅变更交付指令，不改变工程生成与编译行为。

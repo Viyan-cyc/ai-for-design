@@ -6,6 +6,7 @@ import vm from 'node:vm';
 import {fileURLToPath} from 'node:url';
 import {refresh} from './build-data.mjs';
 import {compilerRequire,resolveSource,walkFiles,dependencies,visitAST,scripts} from './source-tools.mjs';
+import {checkFileLength, checkFunctionLengths, shouldCheckSourceSize} from './source-size.mjs';
 const args=process.argv.slice(2),i=args.findIndex(a=>a==='--dir'||a==='-d');
 const errors=new Set(),warnings=new Set();
 const fail=s=>errors.add(s),warn=s=>warnings.add(s);
@@ -52,9 +53,21 @@ async function build(){
   function getNames(pattern,out){if(!pattern)return;if(pattern.type==='Identifier')out.add(pattern.name);else if(pattern.type==='ObjectPattern')pattern.properties.forEach(p=>getNames(p.value||p.argument,out));else if(pattern.type==='ArrayPattern')pattern.elements.forEach(p=>getNames(p,out));else if(pattern.type==='AssignmentPattern')getNames(pattern.left,out);else if(pattern.type==='RestElement')getNames(pattern.argument,out);}
   for(const file of files){const k=key(file);if(!texts.test(file))continue;const source=fs.readFileSync(file,'utf8').replace(/^\uFEFF/,'');let ast=[],bindings={};
     try{
+      const relative=path.relative(src,file).split(path.sep).join('/');
+      const template=path.join(scripts,'preview/src',relative);
+      const fixedTheme=/^assets\/themes\/(base|bridge|default|dark)\.less$/.test(relative);
+      const scaffold=fixedTheme&&fs.existsSync(template)?fs.readFileSync(template,'utf8'):null;
+      const checkSize=shouldCheckSourceSize(relative,source,scaffold);
+      const reportSize=items=>items.forEach(d=>fail(`${d.file}:${d.line}: ${d.code} ${d.actual} exceeds ${d.limit}${d.name?' ('+d.name+')':''}`));
+      if(checkSize) reportSize(checkFileLength(source,k));
       if(file.endsWith('.vue')){
         const parsed=sfc.parse(source,{filename:file});if(parsed.errors.length)throw Error(parsed.errors.map(e=>e.message||e).join('; '));const d=parsed.descriptor;
         if([d.script,d.scriptSetup].some(b=>b?.lang&&!['js','javascript'].includes(b.lang)))fail(k+': offline SFC scripts support JavaScript only');
+        if(checkSize) for(const block of [d.script,d.scriptSetup].filter(Boolean)) {
+          if(block.lang&&!['js','javascript'].includes(block.lang))continue;
+          const originalAST=sfc.babelParse(block.content,{sourceType:'module'});
+          reportSize(checkFunctionLengths(originalAST,k,block.loc.start.line-1));
+        }
         if(d.script||d.scriptSetup){const c=sfc.compileScript(d,{id:'gts-verify'});bindings=c.bindings||{};ast=[...(c.scriptAst||[]),...(c.scriptSetupAst||[])];}
         if(!d.template){fail(k+': missing template');}else{
           const c=sfc.compileTemplate({source:d.template.content,filename:file,id:'gts-verify',compilerOptions:{bindingMetadata:bindings}});c.errors.forEach(e=>fail(k+': template '+(e.message||e)));
@@ -81,7 +94,7 @@ async function build(){
           if(/\bzoom\s*:|font-size\s*:[^;}]*\d(?:vw|vh)\b/.test(st.content))warn(k+': viewport/page scaling; use fluid layout');tokenSource(st.content,k);
         }
         let previewSource=source;for(const edit of styleEdits.sort((a,b)=>b.start-a.start))previewSource=previewSource.slice(0,edit.start)+edit.css+previewSource.slice(edit.end);runtimeSources[k]=previewSource;
-      }else if(/\.m?js$/.test(file))ast=sfc.babelParse(source,{sourceType:'module'}).program.body;
+      }else if(/\.m?js$/.test(file)){ast=sfc.babelParse(source,{sourceType:'module'}).program.body;if(checkSize)reportSize(checkFunctionLengths(ast,k));}
       else if(/\.(css|less)$/.test(file)){
         const css=file.endsWith('.less')?(await less.render(source,{filename:file})).css:source;postcss.parse(css,{from:file});cssResources(css,file);runtimeSources[k]=previewCSS(css,file);tokenSource(source,k);
         if(k.startsWith('/src/assets/charts/')){
