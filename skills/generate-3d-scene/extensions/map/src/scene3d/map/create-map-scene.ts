@@ -1,5 +1,5 @@
 import maplibregl from 'maplibre-gl';
-import { MapRuntime, MapPresentation, validateLayerMapping, type MapLayerRule } from '@a3d/a3d-components/map';
+import { MapRuntime, MapPresentation, MapSurfaceParticleScan, normalizeScanOptions, validateScanBuildings, type MapSurfaceScanOptions, validateLayerMapping, type MapLayerRule } from '@a3d/a3d-components/map';
 export { localToMercator } from '@a3d/a3d-components/map';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import * as THREE from 'three';
@@ -9,6 +9,7 @@ import type { Component } from 'vue';
 import { MapOverlays, type MapOverlayConfig } from './map-overlays';
 
 export interface MapConfig {
+  surfaceScan?: Omit<MapSurfaceScanOptions, 'onStatus' | 'id'>;
   layerMapping?: MapLayerRule[];
   overlays?: MapOverlayConfig[];
   styleUrl: string;
@@ -25,6 +26,7 @@ export interface MapConfig {
 export function validateMapConfig(value: unknown): asserts value is MapConfig {
   const config = value as MapConfig;
   validateLayerMapping(config?.layerMapping);
+  if (config?.surfaceScan) { normalizeScanOptions(config.surfaceScan); validateScanBuildings(config.surfaceScan.buildings ?? []); }
   if (!config || typeof config.styleUrl !== 'string' || !config.styleUrl.trim()
       || !Array.isArray(config.origin) || config.origin.length !== 2
       || !config.origin.every(Number.isFinite) || Math.abs(config.origin[0]) > 180 || Math.abs(config.origin[1]) > 85)
@@ -58,20 +60,34 @@ export async function createMapScene(host: HTMLElement, data: SceneData, cards: 
   validateMapConfig(data.map);
   const config = structuredClone(data.map);
   let handle: SceneHandle | undefined;
-  const runtime = await MapRuntime.create({ host, style: config.styleUrl, origin: config.origin,
+  const mapHost = document.createElement('div');
+  mapHost.style.cssText = 'position:absolute;inset:0;visibility:hidden';
+  const loading = document.createElement('div');
+  loading.setAttribute('role', 'status');
+  loading.style.cssText = 'position:absolute;inset:0;display:grid;place-items:center;background:#eff2f6;color:#475569';
+  loading.textContent = '正在准备地图…';
+  host.append(mapHost, loading);
+  let cancelReveal = () => {};
+  let runtime: MapRuntime;
+  try { runtime = await MapRuntime.create({ host: mapHost, style: config.styleUrl, origin: config.origin,
     center: config.center, zoom: config.zoom,
     pitch: config.view === '2d' ? 0 : config.pitch ?? 45, bearing: config.bearing,
     pixelRatio: data.renderer.pixelRatio ?? 1, antialias: data.renderer.antialias ?? false,
     getMaxFps: () => handle?.internals.rendererEngine.getConfig().maxFps ?? data.renderer.maxFps ?? 60,
   });
+  } catch (error) { mapHost.remove(); loading.remove(); throw error; }
   const { map, container, basis } = runtime;
   let experience: MapPresentation | undefined;
   let disposed = false;
   let overlays: MapOverlays | undefined;
+  let scan: MapSurfaceParticleScan | undefined;
+  let scanConfig = structuredClone(config.surfaceScan);
 
   const release = () => {
     if (disposed) return;
     disposed = true;
+    cancelReveal(); loading.remove(); mapHost.remove();
+    scan?.dispose();
     try { overlays?.dispose(); } finally { try { experience?.dispose(); } finally { runtime.dispose(); } }
   };
   try {
@@ -91,9 +107,15 @@ export async function createMapScene(host: HTMLElement, data: SceneData, cards: 
     handle.viewMode = 'map';
     overlays = new MapOverlays(map, config.theme ?? 'light', cards, options.cardContext);
     overlays.replace(config.overlays ?? []);
+    const scanStatus = document.createElement('p');
+    scanStatus.setAttribute('role', 'status');
+    scanStatus.style.cssText = 'position:absolute;bottom:8px;left:12px;background:#fff;color:#333;font:12px sans-serif;max-width:420px';
+    container.append(scanStatus);
+    const reportScan = (stats: ReturnType<MapSurfaceParticleScan['getStats']>) => { scanStatus.textContent = `粒子 ${stats.count} · 设定间距 ${stats.requestedSpacing}m / 实际 ${stats.effectiveSpacing.toFixed(2)}m${stats.warnings.length ? ' · ' + stats.warnings.join(' ') : ''}`; };
+    if (scanConfig) scan = new MapSurfaceParticleScan(runtime, { ...scanConfig, onStatus: reportScan });
     const originalSerialize = handle.serialize.bind(handle);
     handle.serialize = () => ({ ...originalSerialize(), camera: structuredClone(data.camera), map: {
-      ...config, overlays: overlays!.snapshot(), center: map.getCenter().toArray(), zoom: map.getZoom(), pitch: experience!.getState().view === '2d' ? experience!.getState().pitch : map.getPitch(), bearing: map.getBearing(),
+      ...config, surfaceScan: structuredClone(scanConfig), overlays: overlays!.snapshot(), center: map.getCenter().toArray(), zoom: map.getZoom(), pitch: experience!.getState().view === '2d' ? experience!.getState().pitch : map.getPitch(), bearing: map.getBearing(),
       theme: experience!.getState().theme, view: experience!.getState().view,
     } });
     const originalUpdate = handle.update.bind(handle);
@@ -104,6 +126,18 @@ export async function createMapScene(host: HTMLElement, data: SceneData, cards: 
         if (next.styleUrl !== config.styleUrl || JSON.stringify(next.origin) !== JSON.stringify(config.origin))
           throw new Error('更换地图服务或坐标原点需要重新创建场景');
         if (JSON.stringify(next.layerMapping) !== JSON.stringify(config.layerMapping)) throw new Error('更换地图图层映射需要重新创建场景');
+        const nextScan = next.surfaceScan;
+        const sourceChanged = JSON.stringify(nextScan?.buildingLayerIds) !== JSON.stringify(scanConfig?.buildingLayerIds);
+        if (!nextScan || sourceChanged) { scan?.dispose(); scan = undefined; scanStatus.textContent = ''; }
+        if (nextScan) {
+          if (!scan) scan = new MapSurfaceParticleScan(runtime, { ...nextScan, onStatus: reportScan });
+          else {
+            if (JSON.stringify(nextScan.buildings) !== JSON.stringify(scanConfig?.buildings)) scan.setData(nextScan.buildings ?? []);
+            scan.setOptions(normalizeScanOptions(nextScan));
+          }
+        }
+        scanConfig = structuredClone(nextScan);
+        scanStatus.hidden = !nextScan?.enabled;
         overlays!.replace(next.overlays ?? []);
         overlays!.setTheme(next.theme ?? 'light');
         experience!.applyState({ theme: next.theme ?? 'light', view: next.view ?? '3d', pitch: next.pitch ?? 45, overrides: presentationOverrides(next.surfaces) });
@@ -183,7 +217,22 @@ export async function createMapScene(host: HTMLElement, data: SceneData, cards: 
     // Dispose Three first, then its host GL context.
     const disposeScene = handle.dispose.bind(handle);
     handle.dispose = () => { if (!disposed) { runtime.setFrameTarget(); try { disposeScene(); } finally { release(); } } };
-    map.triggerRepaint();
+    let frames = 0;
+    const reveal = () => { mapHost.style.visibility = 'visible'; loading.remove(); cancelReveal(); };
+    const onPreparedFrame = () => {
+      frames++;
+      if (frames >= 2 && map.isStyleLoaded() && map.areTilesLoaded()) reveal();
+      else if (frames < 2) runtime.requestFrame();
+    };
+    const revealTimeout = setTimeout(() => {
+      if (disposed) return;
+      resourceError.textContent = '部分地图资源尚未就绪，已显示当前地图。请检查地图服务或稍后重新打开。';
+      resourceError.style.display = 'block';
+      reveal();
+    }, 30000);
+    cancelReveal = () => { clearTimeout(revealTimeout); map.off('render', onPreparedFrame); };
+    map.on('render', onPreparedFrame);
+    runtime.requestFrame();
     return handle;
   } catch (error) { handle?.dispose(); release(); throw error; }
 }

@@ -1,6 +1,6 @@
 # 3D 组件目录（a3d-components）
 
-> 版本：0.1.0 ｜ 生成：2026-10-31（sync-components.mjs 自动生成，勿手改）
+> 版本：0.1.0 ｜ 生成：2026-11-06（sync-components.mjs 自动生成，勿手改）
 
 从场景需求出发查本表选组件；确定用哪个后，读 `component-docs/<Name>.md` 学 options，再 import 使用。
 
@@ -34,9 +34,10 @@
 | **MaterialManager** | Interface for components that support resource cleanup | `'@a3d/a3d-components/material'` | [MaterialManager.md](component-docs/MaterialManager.md) |
 | **MeshReflectorMaterial** | MeshReflectorMaterial — a **planar reflection material** for Three | `'@a3d/a3d-components/material'` | [MeshReflectorMaterial.md](component-docs/MeshReflectorMaterial.md) |
 | **MapHeatLayer** | Native single heat surface | `'@a3d/a3d-components/map'` | [MapHeatLayer.md](component-docs/MapHeatLayer.md) |
-| **MapPresentation** | 地图主题与整体外观 | `'@a3d/a3d-components/map'` | [MapPresentation.md](component-docs/MapPresentation.md) |
+| **MapPresentation** | Owns presentation only | `'@a3d/a3d-components/map'` | [MapPresentation.md](component-docs/MapPresentation.md) |
 | **MapRuntime** | Optional MapLibre host for a shared-context Three scene | `'@a3d/a3d-components/map'` | [MapRuntime.md](component-docs/MapRuntime.md) |
 | **MapScatterLayer** | One transparent canvas, driven by the host's render events; sizes are CSS pixels | `'@a3d/a3d-components/map'` | [MapScatterLayer.md](component-docs/MapScatterLayer.md) |
+| **MapSurfaceParticleScan** | Optional map-only effect | `'@a3d/a3d-components/map'` | [MapSurfaceParticleScan.md](component-docs/MapSurfaceParticleScan.md) |
 
 ## 使用纪律
 

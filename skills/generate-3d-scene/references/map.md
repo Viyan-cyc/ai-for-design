@@ -78,3 +78,7 @@ enable-map 在写入前预检全部扩展文件及组件包：相同内容复用
 ### 外观组件
 
 `MapPresentation` 管理主题与五类整体外观；`map.surfaces` 的 color/visible 转给组件，locked 留在编辑适配层。主题切换保留显式覆盖，全量恢复可清除覆盖。`map.layerMapping` 为可选规则数组，每项 category 配合 layerIds/sourceLayers/types，条件取交集；提供时仅调整明确映射的颜色与显隐，不启用 OpenMapTiles 专用建筑算法。更换映射需重新创建场景。模型树继续展示五类整体条目，投影由右侧属性控制。详见 [MapPresentation](component-docs/MapPresentation.md)。
+
+可选地图表面粒子扫描：见 [map-surface-scan.md](map-surface-scan.md)，仅按需配置 surfaceScan。
+
+新生成地图场景默认在设计师主题与用户外观覆盖完成、地图实际帧和瓦片准备好后首次显示，加载期间显示准备提示。该流程由create-map-scene.ts统一负责，不在业务代码另加定时遮罩；普通换色不重新隐藏地图。资源30秒仍未齐全时显示当前主题地图并提示加载不完整。

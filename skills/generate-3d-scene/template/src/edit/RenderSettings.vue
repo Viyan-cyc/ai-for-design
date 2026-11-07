@@ -50,11 +50,52 @@ function number(field: 'pixelRatio' | 'shadowMapSize' | 'maxFps' | 'exposure', e
   if (!Number.isFinite(value) || (field === 'exposure' && value <= 0)) { error.value = '请输入有效数值'; return; }
   apply({ [field]: value });
 }
+// Serializable optional map capability: no map library dependency in ordinary scenes.
+const scan = computed(() => { void revision.value; return (props.bridge.handle.serialize().map as any)?.surfaceScan; });
+const scanFields = [
+  ['radius','半径（米）',1,10000,1,720], ['spacing','采样间距（米）',1,100,1,10],
+  ['count','粒子预算',1000,80000,1000,12000], ['period','周期（秒）',.1,120,.1,8],
+  ['width','扫描带宽（米）',1,1000,1,32], ['size','点大小',1,12,.1,3.6],
+  ['facadeDensity','立面密度',.5,2,.1,1], ['opacity','不透明度',0,1,.01,.92],
+  ['emission','发光',0,3,.1,1.2], ['heightScale','建筑高度倍率',0,1,.01,1],
+] as const;
+function applyScan(patch: Record<string, unknown>): void {
+  error.value = '';
+  try {
+    const map = props.bridge.handle.serialize().map as any;
+    if (!map?.surfaceScan) return;
+    props.bridge.commit('粒子扫描', () => props.bridge.handle.update({ map: { ...map, surfaceScan: { ...map.surfaceScan, ...patch } } }));
+  } catch(e) { error.value = e instanceof Error ? e.message : String(e); }
+}
+function scanNumber(key: string, event: Event): void {
+  const raw=(event.target as HTMLInputElement).value;
+  if(!raw.trim()) { error.value='请输入数值';return; }
+  applyScan({[key]:Number(raw)});
+}
+function scanTuple(key: 'colors'|'stops'|'center', index: number, event: Event): void {
+  const defaults = { colors:['#1FC7F5','#B2ECF5','#FFBA47'], stops:[0,50,100], center:[0,0] };
+  const values=[...(scan.value?.[key] ?? defaults[key])];
+  const raw=(event.target as HTMLInputElement).value;
+  if(!raw.trim()) { error.value='请输入数值';return; }
+  values[index]=key==='colors'?raw:Number(raw);applyScan({[key]:values});
+}
 function checked(event: Event): boolean { return (event.target as HTMLInputElement).checked; }
 </script>
 
 <template>
   <section class="render-settings ed-sec" aria-label="渲染设置">
+    <details v-if="bridge.handle.viewMode === 'map' && scan">
+      <summary>地图表面粒子扫描</summary>
+      <label class="setting">开启<input type="checkbox" :checked="scan.enabled ?? false" @change="applyScan({enabled: checked($event)})"></label>
+      <label class="setting">暂停<input type="checkbox" :checked="scan.paused ?? false" @change="applyScan({paused: checked($event)})"></label>
+      <p class="hint">展示效果；预算不足时降低密度，实际间距见地图状态提示。</p>
+      <label v-for="field in scanFields.slice(0,4)" :key="field[0]" class="setting">{{field[1]}}<input type="number" :min="field[2]" :max="field[3]" :step="field[4]" :value="scan[field[0]] ?? field[5]" @change="scanNumber(field[0],$event)"></label>
+      <details><summary>扫描高级设置</summary>
+        <label v-for="field in scanFields.slice(4)" :key="field[0]" class="setting">{{field[1]}}<input type="number" :min="field[2]" :max="field[3]" :step="field[4]" :value="scan[field[0]] ?? field[5]" @change="scanNumber(field[0],$event)"></label>
+        <label v-for="(label,i) in ['中心东向偏移（米）','中心南向偏移（米）']" :key="label" class="setting">{{label}}<input type="number" :value="scan.center?.[i] ?? 0" @change="scanTuple('center',i,$event)"></label>
+        <label v-for="(color,i) in ['#1FC7F5','#B2ECF5','#FFBA47']" :key="i" class="setting">渐变 {{i+1}}<input type="color" :value="scan.colors?.[i] ?? color" @change="scanTuple('colors',i,$event)"><input aria-label="渐变位置百分比" type="number" min="0" max="100" :value="scan.stops?.[i] ?? i*50" @change="scanTuple('stops',i,$event)"></label>
+      </details>
+    </details>
     <div class="ed-sec__t">画质与性能</div>
     <p v-if="bridge.handle.viewMode === 'map'" class="hint">像素比作用于整个地图；阴影与曝光仅作用于三维模型。帧率上限限制模型动画主动请求的重绘，地图导航及瓦片更新由地图调度。统计不包含地图底图开销。</p>
     <div class="setting"><span class="ed-label">画质 <button class="help" aria-label="画质说明" :aria-expanded="help === 'quality'" @click="toggleHelp('quality')">?</button></span>

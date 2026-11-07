@@ -23,6 +23,7 @@ Import MapLibre CSS once in the application, not in this library.
 | antialias | `boolean` | `false` | Context antialiasing; cannot change without recreation. |
 | getMaxFps | `{…}` | `60` | Current application animation FPS cap; navigation remains map-owned. |
 | loadTimeoutMs | `number` | `60000` | Initialization timeout in milliseconds. |
+| signal | `AbortSignal` | — | Cancel initialization; after create resolves, use dispose() for teardown. |
 
 ## Example
 
