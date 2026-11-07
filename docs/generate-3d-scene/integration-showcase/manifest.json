@@ -1,0 +1,111 @@
+{
+  "updated": "2026-11-07",
+  "scope": "数字孪生设计融合的当前资料与面板成果；不是整套系统验收",
+  "sourcePanel": "D:/cyc/project/octo/gts/test/数字孪生skill110501/数字孪生skill/面板/预览.html",
+  "currentPanel": "D:/cyc/project/octo/gts/test/ep-coder/outputs/digital-twin-c4-review/index.3d.html?edit=1&debug=1",
+  "features": [
+    {
+      "id": "camera",
+      "title": "焦距与相机术语",
+      "kind": "新增输入 + 已有能力整理",
+      "status": "已通过",
+      "left": "designer-camera",
+      "right": "ours-camera",
+      "desc": "把设计师熟悉的焦距输入接到现有相机；近、远裁剪面使用成对名称。",
+      "notes": [
+        "焦距 mm 与现有垂直 FOV 换算，固定传感器高度 24 mm；底层仍保存 fov。",
+        "FOV 在焦距旁只读显示；通常最多显示三位小数，小量参数保留必要精度。",
+        "未照搬对方全部观察视角设置；正交相机和地图不强行套用焦距。"
+      ],
+      "evidence": "Spec §53；近远裁剪术语为原有功能命名整理。"
+    },
+    {
+      "id": "hsv",
+      "title": "HSV 颜色输入",
+      "kind": "设计能力适配",
+      "status": "已修复待复审",
+      "left": "designer-color",
+      "right": "ours-hsv",
+      "desc": "原方案在灯光中使用 HSV；我们将颜色输入做成共用控件，保持现有颜色字段。",
+      "notes": [
+        "支持 HEX / HSV 切换；HSV 下只展示 H、S、V，不重复堆叠 HEX 文本。",
+        "接入背景、雾、材质、灯光及地图表面等现有颜色入口；右图展示背景入口。",
+        "持续取色撤销边界 P2 已修复，定向测试通过，待独立复审。"
+      ],
+      "evidence": "Spec §66：持续取色撤销边界修复，背景/材质1.3秒停顿回归通过；待独立复审。"
+    },
+    {
+      "id": "kelvin",
+      "title": "灯光色温",
+      "kind": "设计能力适配",
+      "status": "已修复待复审",
+      "left": "designer-color",
+      "right": "ours-temperature",
+      "desc": "借鉴色温输入方式，近似换算为灯光颜色，不引入另一套颜色状态。",
+      "notes": [
+        "只在灯光主颜色提供色温模式；与 HEX / HSV 共用紧凑布局。",
+        "支持 1000–40000 K；原面板截图范围为 1000–10000 K，并非逐值照搬。",
+        "不从任意颜色反推色温；图中空值是未输入色温，不是丢失颜色。与 HSV 同批待复审。"
+      ],
+      "evidence": "Spec §66：持续取色撤销边界修复，背景/材质1.3秒停顿回归通过；待独立复审。"
+    },
+    {
+      "id": "material",
+      "title": "参数按条件启用",
+      "kind": "借鉴方法，非同名功能移植",
+      "status": "已通过",
+      "left": "designer-light",
+      "right": "ours-material",
+      "desc": "吸收“参数随能力和条件展示”的思路，改进我们已有材质面板。",
+      "notes": [
+        "左图是对方光源高级设置，用于说明条件组织思路，不是右侧材质控件的原型。",
+        "我们在清漆、绒光、透射、镜面四组中按条件控制参数；右图以清漆为例。",
+        "强度为零时相关项禁用并提示原因，已有数值保留；不是把所有材质参数删除。"
+      ],
+      "evidence": "Spec §59：C4/C5/D1 有界复审通过。"
+    },
+    {
+      "id": "save",
+      "title": "保存入口与保存范围",
+      "kind": "已有能力复用",
+      "status": "已通过",
+      "left": "designer-save",
+      "right": "ours-toolbar",
+      "desc": "保留我们的统一保存流程；不复制“保存参数 / 保存模板”两套入口。",
+      "notes": [
+        "材质修改由工具栏统一保存，面板补充保存范围提示。",
+        "开发回写与离线回传沿用已有机制；本页不把它们归为新移植能力。",
+        "风格模板导出 / 导入已规划，尚未实现；左图“保存模板”不代表右侧已支持。"
+      ],
+      "evidence": "Spec §59；新模板能力与当前保存入口分开。"
+    },
+    {
+      "id": "daynight",
+      "title": "日夜模拟",
+      "kind": "已确认方向，尚未实现",
+      "status": "待实现",
+      "left": "designer-timeline",
+      "right": null,
+      "desc": "计划借鉴半圆时间线、滑杆及时间快捷按钮，并适配我们的 UI。",
+      "notes": [
+        "左图为原方案真实控件；右侧不放示意图冒充完成结果。",
+        "本轮只建立对比说明，不推进日夜实现或改变场景默认灯光。",
+        "完成后补实际面板截图、作用范围与独立 review 结果。"
+      ],
+      "evidence": "D4.1 后续任务。"
+    }
+  ],
+  "images": {
+    "designer-camera.png": "a6c17f9dfffbc3827a50433b748e65667d7adba0f949d68e7f91a89f7e0c8110",
+    "designer-color.png": "1d4b88e7605b8c7846514efab55b5cafa234262571058f0c760edfca3e98337a",
+    "designer-light.png": "368362fe89b307fe2e2e50f1a944c7f581812e8472b447613e6e879cb3ec8b13",
+    "designer-save.png": "34a33dde22c850627fd5e3c3a9d1300cd954a6a963477d54f7737e4345b08582",
+    "designer-timeline.png": "977977190e268fb3464bb3901c5234b8b000f905326ebb5dcaea590fb8af5aa2",
+    "ours-camera.png": "e708232c4ec6c9492bd8f61766d89930687d7cc72b296d4e360d6c2e040f3986",
+    "ours-hsv.png": "9bb3ed58c0f9444afbdf83454194c7bf491390975b81be3324891041e4671310",
+    "ours-material.png": "c5f92ba4f9729d355cd8904c77196523b592264e4b6a537d4cd0075db4811e4e",
+    "ours-save.png": "c4e3f68a541e9a124bf9f838afd1fb6e8d77605039e4f578209a1e088ff98c29",
+    "ours-temperature.png": "198caa555ca37df0a9dc397ad202f9f34fb909adaca7bda74d37e037ce889dce",
+    "ours-toolbar.png": "9be99592d366c896a7bc9aa584fce51684aba6a8f5dff2010d9468bb2798e0bb"
+  }
+}

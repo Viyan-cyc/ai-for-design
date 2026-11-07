@@ -1,0 +1,14 @@
+{
+  "files": 8,
+  "approvedChangedBlocks": 35,
+  "retainedOriginalBlocks": 99,
+  "relativeLinksExisting": 39,
+  "commonAnchorExists": true,
+  "htmlMatchesAllCurrentFiles": true,
+  "browser": {
+    "sections": 8,
+    "expanded": true
+  },
+  "scope": "参考文档与本地页面；未做生成、运行功能、性能或审美验收",
+  "implementationNote": "首次脚本在写入前因条目ID映射断言停止；修正port条目ID后执行成功，无部分写入"
+}

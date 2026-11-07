@@ -1,0 +1,134 @@
+{
+  "scope": "C1设计，非生产面板",
+  "rules": [
+    {
+      "id": "quality",
+      "title": "画质与性能",
+      "placement": "场景",
+      "condition": "全部宿主",
+      "behavior": "沿用现有档位和高级参数；地图参数作用范围保留说明。",
+      "status": "现有",
+      "source": "RenderSettings.vue"
+    },
+    {
+      "id": "environment",
+      "title": "场景风格、背景、环境、雾",
+      "placement": "场景",
+      "condition": "普通场景",
+      "behavior": "地图不显示普通场景环境；雾启用后才显示雾参数。",
+      "status": "现有",
+      "source": "PropertyPanel.vue"
+    },
+    {
+      "id": "camera",
+      "title": "相机",
+      "placement": "场景",
+      "condition": "普通场景",
+      "behavior": "透视显示FOV；正交隐藏FOV。近面/远面改名在C2；焦距在C3。",
+      "status": "现有结构；投影条件待C4核对",
+      "source": "PropertyPanel.vue"
+    },
+    {
+      "id": "controls",
+      "title": "控制器",
+      "placement": "场景",
+      "condition": "普通场景",
+      "behavior": "自动旋转开启后显示转速；阻尼开启后显示系数。",
+      "status": "现有",
+      "source": "PropertyPanel.vue"
+    },
+    {
+      "id": "lights",
+      "title": "灯光",
+      "placement": "场景",
+      "condition": "全部宿主",
+      "behavior": "地图内灯光仅影响附加Three模型，不控制底图建筑光影；保留无灯光时添加入口。按灯类型显示参数。",
+      "status": "现有入口；作用域文案为提案",
+      "source": "PropertyPanel.vue"
+    },
+    {
+      "id": "transform",
+      "title": "变换",
+      "placement": "物体",
+      "condition": "选中Three对象",
+      "behavior": "锁定时禁用；地图内附加Three模型同样适用。地图表面不显示XYZ变换。",
+      "status": "现有",
+      "source": "PropertyPanel.vue"
+    },
+    {
+      "id": "material",
+      "title": "材质",
+      "placement": "物体",
+      "condition": "选中Three对象/材质槽",
+      "behavior": "按实际材质支持项显示；不把IOR、透射等强加到全部材质。多选材质策略保持现有，待C4核对。",
+      "status": "现有入口；逐属性条件待C4",
+      "source": "MaterialParams.vue"
+    },
+    {
+      "id": "surface",
+      "title": "图层外观",
+      "placement": "物体",
+      "condition": "选中地图表面",
+      "behavior": "显隐、支持时颜色；建筑支持投影时显示投影开关。锁定禁用编辑；关闭建筑显示时投影控件禁用。",
+      "status": "现有",
+      "source": "PropertyPanel.vue"
+    },
+    {
+      "id": "viewport",
+      "title": "俯视、鸟瞰、浅色、深色",
+      "placement": "底部工具",
+      "condition": "全部宿主",
+      "behavior": "普通场景俯视保留投影类型，深浅目前改背景/雾；地图俯视切view，深浅切主题，不能宣称完全相同效果。",
+      "status": "现有",
+      "source": "ViewportTools.vue"
+    },
+    {
+      "id": "save",
+      "title": "保存、撤销、重做、导入",
+      "placement": "顶部工具",
+      "condition": "编辑模式",
+      "behavior": "沿用唯一保存与撤销入口；不新增高级窗保存或模板保存按钮。具体重置整理留C5。",
+      "status": "现有",
+      "source": "Toolbar.vue"
+    },
+    {
+      "id": "tree",
+      "title": "模型、灯光、统计",
+      "placement": "左侧面板",
+      "condition": "编辑模式",
+      "behavior": "地图表面和Three模型仍在模型列表；保留眼睛/锁，不虚构子节点。",
+      "status": "现有",
+      "source": "OutlineTree.vue"
+    }
+  ],
+  "sources": [
+    {
+      "path": "D:\\cyc\\project\\octo\\gts\\test\\ep-coder\\skills\\generate-3d-scene\\template\\src\\edit\\MaterialParams.vue",
+      "sha256": "3dcd869df3ccc4deab2963c0e96912ba5aa82259b578b41f9ffd2d67d1712c01"
+    },
+    {
+      "path": "D:\\cyc\\project\\octo\\gts\\test\\ep-coder\\skills\\generate-3d-scene\\template\\src\\edit\\OutlineTree.vue",
+      "sha256": "820db9b2939d22d90af13cfc74f15177ae2f602b28bee2b26dc16d6a56b87701"
+    },
+    {
+      "path": "D:\\cyc\\project\\octo\\gts\\test\\ep-coder\\skills\\generate-3d-scene\\template\\src\\edit\\PropertyPanel.vue",
+      "sha256": "6becb3cf2bcfcc260b4fed17b2fa83b59c0bb379f23148e384b3dd02ccdcef01"
+    },
+    {
+      "path": "D:\\cyc\\project\\octo\\gts\\test\\ep-coder\\skills\\generate-3d-scene\\template\\src\\edit\\RenderSettings.vue",
+      "sha256": "eab31d8098ae18fc15d323dfd29a92c5a78ea3a67f00cd967a43bb24933abf46"
+    },
+    {
+      "path": "D:\\cyc\\project\\octo\\gts\\test\\ep-coder\\skills\\generate-3d-scene\\template\\src\\edit\\Toolbar.vue",
+      "sha256": "a2b4fb56637d83eabb03f4739d334d097ca5f1f9169dbbaa5f28a1865049aadc"
+    },
+    {
+      "path": "D:\\cyc\\project\\octo\\gts\\test\\ep-coder\\skills\\generate-3d-scene\\template\\src\\edit\\ViewportTools.vue",
+      "sha256": "9619536b3f938fe66d08c159292a4b00402127823dc2c7428840b67e0f28a6c8"
+    },
+    {
+      "path": "D:\\cyc\\project\\octo\\gts\\test\\ep-coder\\skills\\generate-3d-scene\\template\\src\\edit\\styles\\editor.css",
+      "sha256": "2325bda036444ad61738f81690b8178b85c6630df8b9f94f8b316b3eb04d0749"
+    }
+  ]
+}

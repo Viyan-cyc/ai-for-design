@@ -1,0 +1,26 @@
+{
+  "files": 8,
+  "blocks": 134,
+  "actions": {
+    "修改": 30,
+    "保留": 99,
+    "合并": 5
+  },
+  "allNonemptyLinesCoveredOnce": true,
+  "sourceHashesUnchanged": true,
+  "scope": "资料及行号核对，不是领域方案或生产功能验收",
+  "htmlOriginalsMatch": true,
+  "browser": {
+    "sections": 134,
+    "expanded": true
+  },
+  "p2Revision": {
+    "changedRow": "README-04",
+    "other133RowsUnchanged": true,
+    "htmlAndMarkdownOnlyMatchingBlockChanged": true,
+    "sourceHashesUnchanged": true,
+    "existingMapReferenceVerified": true,
+    "backup": "C:\\Users\\Tony\\AppData\\Local\\Temp\\b2-p2-before-3pne3t7r",
+    "browser": "沿用先前展开验证；本轮外壳未变，仅检查条目对应"
+  }
+}

@@ -131,6 +131,10 @@
   margin-bottom: 6px;
 }
 
+/* Multi-line color controls align their row label with the first input line. */
+.ed-row:has(> .color-input) { align-items: flex-start; }
+.ed-row:has(> .color-input) > .ed-label { padding-top: 4px; }
+
 .ed-row > label:first-child,
 .ed-label {
   color: var(--ed-dim);

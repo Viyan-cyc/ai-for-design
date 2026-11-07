@@ -1,0 +1,53 @@
+{
+  "scope": "仅示意页DOM功能，未验证生产编辑器或视觉",
+  "checks": [
+    {
+      "name": "普通场景显示相机",
+      "pass": true
+    },
+    {
+      "name": "正交不显示FOV编辑",
+      "pass": true
+    },
+    {
+      "name": "地图隐藏普通相机",
+      "pass": true
+    },
+    {
+      "name": "地图禁用普通投影选择",
+      "pass": true
+    },
+    {
+      "name": "无选中提示",
+      "pass": true
+    },
+    {
+      "name": "建筑无变换",
+      "pass": true
+    },
+    {
+      "name": "锁定提示",
+      "pass": true
+    },
+    {
+      "name": "解锁恢复提示",
+      "pass": true
+    },
+    {
+      "name": "隐藏建筑投影禁用说明",
+      "pass": true
+    },
+    {
+      "name": "水面无投影",
+      "pass": true
+    },
+    {
+      "name": "地图Three对象有变换",
+      "pass": true
+    },
+    {
+      "name": "地图选Three仍无普通相机",
+      "pass": true
+    }
+  ]
+}

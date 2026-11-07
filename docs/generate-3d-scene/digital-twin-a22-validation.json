@@ -1,0 +1,36 @@
+{
+  "sourceParameters": 189,
+  "panelFields": 214,
+  "uniqueOwnership": true,
+  "sourceMetadataUnchanged": true,
+  "codeReferencesValidated": 19,
+  "htmlEmbeddedDataMatches": true,
+  "counts": {
+    "语义冲突／待确认": 10,
+    "部分能力／需适配": 102,
+    "领域能力候选": 52,
+    "已有对应接口（静态）": 4,
+    "未找到现成公开映射": 21
+  },
+  "runtime": "not run",
+  "browser": "not run; DOM stub is not real browser verification",
+  "productionChanges": "none by this step",
+  "pageScriptSyntax": "node --check PASS",
+  "filterLogic": "Node vm + minimal DOM stub PASS: initial, all five filters, exposure search, no results, reset, escaping",
+  "upstreamBaselineFilesUnchanged": 131,
+  "poseMappingRevision": {
+    "status": "local targeted checks PASS; independent review pending",
+    "parameters": [
+      "control.adaptive.select.cameraPosition",
+      "control.adaptive.hover.cameraPosition"
+    ],
+    "leafCount": 6,
+    "other187RowsUnchanged": true,
+    "allSourceMetadataUnchanged": true,
+    "htmlShellUnchanged": true,
+    "htmlDataMatches": true,
+    "referenceHashesAndAnchors": "PASS",
+    "formulaChecks": "50mm round trip and 3 cardinal directions PASS; arithmetic only, not runtime integration",
+    "browser": "not rerun; previous reviewer browser evidence remains in spec section17"
+  }
+}

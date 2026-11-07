@@ -1,0 +1,12 @@
+{
+  "source": "D:\\cyc\\project\\octo\\gts\\test\\ep-coder\\skills\\generate-3d-scene\\template\\src\\edit\\PropertyPanel.vue",
+  "beforeSha256": "6becb3cf2bcfcc260b4fed17b2fa83b59c0bb379f23148e384b3dd02ccdcef01",
+  "afterSha256": "fdfd6b421591c51feef0bd3d29afae95d445677fe528a2e625c06f4c9b3f368c",
+  "onlyTwoLabelChanges": true,
+  "preview": "从实际模板抽取两行，未运行Vue或3D",
+  "notRun": [
+    "完整构建",
+    "真实编辑保存",
+    "浏览器功能测试"
+  ]
+}

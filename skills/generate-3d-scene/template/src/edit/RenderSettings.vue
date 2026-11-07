@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { vNumberDisplay } from './number-display';
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import type { Bridge } from './Bridge';
 import type { RendererConfig } from '../scene3d/scene-core/types';
@@ -89,11 +90,11 @@ function checked(event: Event): boolean { return (event.target as HTMLInputEleme
       <label class="setting">开启<input type="checkbox" :checked="scan.enabled ?? false" @change="applyScan({enabled: checked($event)})"></label>
       <label class="setting">暂停<input type="checkbox" :checked="scan.paused ?? false" @change="applyScan({paused: checked($event)})"></label>
       <p class="hint">展示效果；预算不足时降低密度，实际间距见地图状态提示。</p>
-      <label v-for="field in scanFields.slice(0,4)" :key="field[0]" class="setting">{{field[1]}}<input type="number" :min="field[2]" :max="field[3]" :step="field[4]" :value="scan[field[0]] ?? field[5]" @change="scanNumber(field[0],$event)"></label>
+      <label v-for="field in scanFields.slice(0,4)" :key="field[0]" class="setting">{{field[1]}}<input v-number-display="scan[field[0]] ?? field[5]" type="number" :min="field[2]" :max="field[3]" :step="field[4]" :value="scan[field[0]] ?? field[5]" @change="scanNumber(field[0],$event)"></label>
       <details><summary>扫描高级设置</summary>
-        <label v-for="field in scanFields.slice(4)" :key="field[0]" class="setting">{{field[1]}}<input type="number" :min="field[2]" :max="field[3]" :step="field[4]" :value="scan[field[0]] ?? field[5]" @change="scanNumber(field[0],$event)"></label>
-        <label v-for="(label,i) in ['中心东向偏移（米）','中心南向偏移（米）']" :key="label" class="setting">{{label}}<input type="number" :value="scan.center?.[i] ?? 0" @change="scanTuple('center',i,$event)"></label>
-        <label v-for="(color,i) in ['#1FC7F5','#B2ECF5','#FFBA47']" :key="i" class="setting">渐变 {{i+1}}<input type="color" :value="scan.colors?.[i] ?? color" @change="scanTuple('colors',i,$event)"><input aria-label="渐变位置百分比" type="number" min="0" max="100" :value="scan.stops?.[i] ?? i*50" @change="scanTuple('stops',i,$event)"></label>
+        <label v-for="field in scanFields.slice(4)" :key="field[0]" class="setting">{{field[1]}}<input v-number-display="scan[field[0]] ?? field[5]" type="number" :min="field[2]" :max="field[3]" :step="field[4]" :value="scan[field[0]] ?? field[5]" @change="scanNumber(field[0],$event)"></label>
+        <label v-for="(label,i) in ['中心东向偏移（米）','中心南向偏移（米）']" :key="label" class="setting">{{label}}<input v-number-display="scan.center?.[i] ?? 0" type="number" :value="scan.center?.[i] ?? 0" @change="scanTuple('center',i,$event)"></label>
+        <label v-for="(color,i) in ['#1FC7F5','#B2ECF5','#FFBA47']" :key="i" class="setting">渐变 {{i+1}}<input type="color" :value="scan.colors?.[i] ?? color" @change="scanTuple('colors',i,$event)"><input v-number-display="scan.stops?.[i] ?? i*50" aria-label="渐变位置百分比" type="number" min="0" max="100" :value="scan.stops?.[i] ?? i*50" @change="scanTuple('stops',i,$event)"></label>
       </details>
     </details>
     <div class="ed-sec__t">画质与性能</div>
@@ -107,12 +108,12 @@ function checked(event: Event): boolean { return (event.target as HTMLInputEleme
     <p class="hint" role="status"><span :class="{ custom: preset === 'custom' }">当前：{{ qualityLabel }}</span> · {{ qualityHint }}</p>
     <p v-if="help === 'quality'" class="help-text">切换档位会应用像素比、阴影开关、算法和全部灯光的阴影分辨率，不改变帧率上限和渲染方式。</p>
     <label class="setting"><span class="ed-label">帧率上限</span><select aria-label="帧率上限" :value="fpsChoice" @change="chooseFps"><option value="30">30 FPS</option><option value="60">60 FPS</option><option value="0">不限制</option><option value="custom">自定义</option></select></label>
-    <label v-if="fpsCustom" class="setting"><span class="ed-label">自定义帧率</span><input aria-label="自定义帧率" type="number" min="1" max="240" step="1" :value="config.maxFps || 60" @change="number('maxFps', $event)"></label>
+    <label v-if="fpsCustom" class="setting"><span class="ed-label">自定义帧率</span><input v-number-display="config.maxFps || 60" aria-label="自定义帧率" type="number" min="1" max="240" step="1" :value="config.maxFps || 60" @change="number('maxFps', $event)"></label>
     <div class="setting"><span class="ed-label">渲染方式 <button class="help" aria-label="渲染方式说明" :aria-expanded="help === 'mode'" @click="toggleHelp('mode')">?</button></span><select aria-label="渲染方式" :value="config.renderMode" @change="apply({ renderMode: ($event.target as HTMLSelectElement).value as 'demand' | 'continuous' })"><option value="demand">按需渲染</option><option value="continuous">持续渲染</option></select></div>
     <p v-if="help === 'mode'" class="help-text">按需渲染在静止时休眠，交互、动画与内容变化时恢复；持续渲染按帧率上限绘制。上限不保证实际帧率，不限制仍受设备和屏幕刷新率影响。</p>
     <details>
       <summary><span class="chevron">›</span>高级设置<span class="summary-note">开发者参数</span></summary>
-      <label class="setting"><span>实际像素比<small>pixelRatio · 不叠加设备倍率</small></span><input aria-label="实际像素比" type="number" min="0.5" max="2" step="0.05" :value="config.pixelRatio" @change="number('pixelRatio', $event)"></label>
+      <label class="setting"><span>实际像素比<small>pixelRatio · 不叠加设备倍率</small></span><input v-number-display="config.pixelRatio" aria-label="实际像素比" type="number" min="0.5" max="2" step="0.05" :value="config.pixelRatio" @change="number('pixelRatio', $event)"></label>
       
       <label class="setting"><span>阴影<small>shadowMap.enabled</small></span><input type="checkbox" :checked="config.shadowMapEnabled" @change="apply({ shadowMapEnabled: checked($event) })"></label>
       <label class="setting"><span>阴影分辨率<small>应用全部灯光</small></span><select aria-label="阴影分辨率" :disabled="!config.shadowMapEnabled" :value="config.shadowMapSize" @change="number('shadowMapSize', $event)"><option v-for="size in SHADOW_SIZES" :key="size" :value="size">{{ size }}</option></select></label>
@@ -123,7 +124,7 @@ function checked(event: Event): boolean { return (event.target as HTMLInputEleme
 
       <p v-if="pending" class="pending" role="status">保存并回写工程后，重新打开更新后的场景生效。当前初始化值：抗锯齿 {{ engine.initialOptions.antialias ? '开启' : '关闭' }}；对数深度 {{ engine.initialOptions.logarithmicDepthBuffer ? '开启' : '关闭' }}。</p>
       <label class="setting"><span>色调映射</span><select :value="config.toneMapping" @change="apply({ toneMapping: ($event.target as HTMLSelectElement).value as RendererConfig['toneMapping'] })"><option v-for="type in ['NoToneMapping', 'Linear', 'Reinhard', 'Cineon', 'ACESFilmic', 'AgX', 'Neutral']" :key="type">{{ type }}</option></select></label>
-      <label class="setting"><span>曝光</span><input type="number" min="0.01" step="0.05" :value="config.exposure" @change="number('exposure', $event)"></label>
+      <label class="setting"><span>曝光</span><input v-number-display="config.exposure" type="number" min="0.01" step="0.05" :value="config.exposure" @change="number('exposure', $event)"></label>
       <details class="runtime"><summary><span class="chevron">›</span>当前运行参数</summary><p>设备像素比：{{ deviceRatio }} · 实际倍率：{{ bridge.handle.viewMode === 'map' ? config.pixelRatio : engine.renderer.getPixelRatio() }}</p><p>绘制分辨率：{{ actual }}</p><p>实际 MSAA：{{ engine.renderer.getContext().getContextAttributes()?.antialias ? '开启' : '关闭' }}</p><p>对数深度：{{ engine.initialOptions.logarithmicDepthBuffer ? '开启' : '关闭' }}</p>      <p v-for="light in lightSizes.filter(l => l.castShadow)" :key="light.id" class="hint">{{ light.id }}：{{ light.shadowMapSize ?? 512 }} × {{ light.shadowMapSize ?? 512 }}（{{ config.shadowMapEnabled ? '已启用' : '全局阴影已关闭' }}）</p></details>
     </details>
     <p v-if="error" role="alert" class="error">{{ error }}</p>

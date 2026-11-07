@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import ColorInput from './ColorInput.vue';
+import { vNumberDisplay, displayNumber } from './number-display';
 
 /**
  * edit/PropertyPanel — 属性面板（实时生效，Spline 风格，v3）
@@ -34,6 +36,7 @@ import MaterialPalette from './MaterialPalette.vue';
 import EditMaterialModal from './EditMaterialModal.vue';
 import { SCENE_PRESETS, applyScenePreset } from './ScenePresets';
 import { defaultDockPos } from './FloatingDock';
+import { focalFromFov, fovFromFocal, supportsFocal } from './camera-focal';
 
 const props = defineProps<{ bridge: Bridge; lightHelpers: LightHelperService; materialLib: MaterialLibService }>();
 
@@ -401,6 +404,38 @@ const applyCamera = (): void => {
   });
 };
 
+const focalSupported = computed(() => {
+  void snap.value;
+  const camera = props.bridge.handle.internals.camera;
+  return supportsFocal(camera as THREE.PerspectiveCamera);
+});
+const focalValue = computed(() => focalFromFov(camDraft.value.fov));
+const focalError = ref('');
+watch(() => [camDraft.value.type, camDraft.value.fov], () => { focalError.value = ''; });
+const applyFocal = (event: Event): void => {
+  const input = event.target as HTMLInputElement;
+  const text = input.value.trim();
+  if (!focalSupported.value || !text) {
+    input.value = focalValue.value === null ? '' : String(focalValue.value);
+    focalError.value = text ? '当前投影不支持焦距编辑。' : '请输入有效焦距。';
+    return;
+  }
+  // The unrounded derived value is the editing baseline; do not round-trip an unchanged FOV.
+  if (Number(text) === focalValue.value) return;
+  const fov = fovFromFocal(Number(text));
+  if (fov === null) {
+    input.value = focalValue.value === null ? '' : String(focalValue.value);
+    focalError.value = '焦距需为正数，且对应FOV在1°至179°之间。';
+    return;
+  }
+  focalError.value = '';
+  props.bridge.endLiveEdit();
+  props.bridge.commitLive('相机焦距', () => {
+    props.bridge.handle.update({ camera: { fov } });
+  });
+  props.bridge.endLiveEdit();
+};
+
 const setCameraType = (type: 'PerspectiveCamera' | 'OrthographicCamera'): void => {
   camDraft.value.type = type;
   applyCamera();
@@ -694,7 +729,7 @@ const bboxText = computed(() => {
     return '';
   }
   const size = b.getSize(new THREE.Vector3());
-  return `${size.x.toFixed(2)} × ${size.y.toFixed(2)} × ${size.z.toFixed(2)}`;
+  return `${displayNumber(size.x)} × ${displayNumber(size.y)} × ${displayNumber(size.z)}`;
 });
 
 // ---- Tab 页签：物体页（选中相关）/ 场景页（全局配置） ----
@@ -848,7 +883,7 @@ const modalPos = computed(() => defaultDockPos(editSlot.value, PANEL_W));
         <p v-if="surface.locked" class="ed-label">对象已锁定，请在模型列表解锁后修改。</p>
         <fieldset :disabled="surface.locked" class="pp__editable">
         <label class="ed-row"><input type="checkbox" :checked="surface.visible" @change="updateSurface({ visible: ($event.target as HTMLInputElement).checked })"> 显示</label>
-        <label v-if="surface.colorEditable !== false" class="ed-row">颜色 <input type="color" :value="surface.color" @input="updateSurface({ color: ($event.target as HTMLInputElement).value })" @change="bridge.endLiveEdit()" @blur="bridge.endLiveEdit()"></label>
+        <div v-if="surface.colorEditable !== false" class="ed-row"><span class="ed-label">颜色</span><ColorInput :key="surface.id" label="图层颜色" :model-value="surface.color ?? '#ffffff'" @update:model-value="updateSurface({ color: $event })" @begin="bridge.beginLiveEdit()" @end="bridge.endLiveEdit()" /></div>
         <label v-if="surfaceShadow" class="ed-row"><input type="checkbox" :checked="surfaceShadow.visible" :disabled="!surface.visible" @change="updateSurfaceShadow(($event.target as HTMLInputElement).checked)"> 显示投影</label>
         </fieldset>
         <p class="ed-label">统一调整该类内容的外观。位置与形状由地理数据决定。</p>
@@ -880,21 +915,21 @@ const modalPos = computed(() => defaultDockPos(editSlot.value, PANEL_W));
             <div class="ed-row">
               <span class="ed-label pp__ax">位置</span>
               <div class="pp__row3">
-                <input
+                <input v-number-display="draft.px"
                   v-model.number="draft.px"
                   type="number"
                   step="0.1"
                   :disabled="slotIsSkinned"
                   @input="applyTransform"
                 >
-                <input
+                <input v-number-display="draft.py"
                   v-model.number="draft.py"
                   type="number"
                   step="0.1"
                   :disabled="slotIsSkinned"
                   @input="applyTransform"
                 >
-                <input
+                <input v-number-display="draft.pz"
                   v-model.number="draft.pz"
                   type="number"
                   step="0.1"
@@ -906,21 +941,21 @@ const modalPos = computed(() => defaultDockPos(editSlot.value, PANEL_W));
             <div class="ed-row">
               <span class="ed-label pp__ax">旋转</span>
               <div class="pp__row3">
-                <input
+                <input v-number-display="draft.rx"
                   v-model.number="draft.rx"
                   type="number"
                   step="0.1"
                   :disabled="slotIsSkinned"
                   @input="applyTransform"
                 >
-                <input
+                <input v-number-display="draft.ry"
                   v-model.number="draft.ry"
                   type="number"
                   step="0.1"
                   :disabled="slotIsSkinned"
                   @input="applyTransform"
                 >
-                <input
+                <input v-number-display="draft.rz"
                   v-model.number="draft.rz"
                   type="number"
                   step="0.1"
@@ -932,21 +967,21 @@ const modalPos = computed(() => defaultDockPos(editSlot.value, PANEL_W));
             <div class="ed-row">
               <span class="ed-label pp__ax">缩放</span>
               <div class="pp__row3">
-                <input
+                <input v-number-display="draft.sx"
                   v-model.number="draft.sx"
                   type="number"
                   step="0.1"
                   :disabled="slotIsSkinned"
                   @input="applyTransform"
                 >
-                <input
+                <input v-number-display="draft.sy"
                   v-model.number="draft.sy"
                   type="number"
                   step="0.1"
                   :disabled="slotIsSkinned"
                   @input="applyTransform"
                 >
-                <input
+                <input v-number-display="draft.sz"
                   v-model.number="draft.sz"
                   type="number"
                   step="0.1"
@@ -1005,19 +1040,19 @@ const modalPos = computed(() => defaultDockPos(editSlot.value, PANEL_W));
           <div class="ed-row">
             <span class="ed-label pp__ax">位置</span>
             <div class="pp__row3">
-              <input
+              <input v-number-display="draft.px"
                 v-model.number="draft.px"
                 type="number"
                 step="0.1"
                 @input="applyTransform"
               >
-              <input
+              <input v-number-display="draft.py"
                 v-model.number="draft.py"
                 type="number"
                 step="0.1"
                 @input="applyTransform"
               >
-              <input
+              <input v-number-display="draft.pz"
                 v-model.number="draft.pz"
                 type="number"
                 step="0.1"
@@ -1028,19 +1063,19 @@ const modalPos = computed(() => defaultDockPos(editSlot.value, PANEL_W));
           <div class="ed-row">
             <span class="ed-label pp__ax">旋转</span>
             <div class="pp__row3">
-              <input
+              <input v-number-display="draft.rx"
                 v-model.number="draft.rx"
                 type="number"
                 step="0.1"
                 @input="applyTransform"
               >
-              <input
+              <input v-number-display="draft.ry"
                 v-model.number="draft.ry"
                 type="number"
                 step="0.1"
                 @input="applyTransform"
               >
-              <input
+              <input v-number-display="draft.rz"
                 v-model.number="draft.rz"
                 type="number"
                 step="0.1"
@@ -1051,19 +1086,19 @@ const modalPos = computed(() => defaultDockPos(editSlot.value, PANEL_W));
           <div class="ed-row">
             <span class="ed-label pp__ax">缩放</span>
             <div class="pp__row3">
-              <input
+              <input v-number-display="draft.sx"
                 v-model.number="draft.sx"
                 type="number"
                 step="0.1"
                 @input="applyTransform"
               >
-              <input
+              <input v-number-display="draft.sy"
                 v-model.number="draft.sy"
                 type="number"
                 step="0.1"
                 @input="applyTransform"
               >
-              <input
+              <input v-number-display="draft.sz"
                 v-model.number="draft.sz"
                 type="number"
                 step="0.1"
@@ -1189,7 +1224,7 @@ const modalPos = computed(() => defaultDockPos(editSlot.value, PANEL_W));
       <RenderSettings :bridge="bridge" />
       <section v-if="bridge.handle.viewMode !== 'map'" class="ed-sec">
         <div class="ed-sec__t">场景风格</div>
-        <p class="ed-label">替换灯光、背景与曝光，保留模型材质；可撤销。</p>
+        <p class="ed-label">替换全部灯光，调整背景、环境、色调映射与曝光；保留模型材质和相机，可撤销。</p>
         <div style="display: flex; flex-wrap: wrap; gap: 5px">
           <button v-for="preset in SCENE_PRESETS" :key="preset.id" class="ed-btn" @click="applyScenePreset(props.bridge, preset.id)">{{ preset.label }}</button>
         </div>
@@ -1201,12 +1236,7 @@ const modalPos = computed(() => defaultDockPos(editSlot.value, PANEL_W));
         </div>
         <div class="ed-row">
           <span class="ed-label">背景</span>
-          <input
-            v-model="sceneDraft.background"
-            type="color"
-            @input="applyScene"
-          >
-          <span class="pp__hex">{{ sceneDraft.background }}</span>
+          <ColorInput key="background" label="背景" :model-value="sceneDraft.background" @update:model-value="sceneDraft.background = $event; applyScene()" @begin="bridge.beginLiveEdit()" @end="bridge.endLiveEdit()" />
         </div>
         <div class="ed-row">
           <span class="ed-label">环境</span>
@@ -1219,7 +1249,7 @@ const modalPos = computed(() => defaultDockPos(editSlot.value, PANEL_W));
             step="0.05"
             @input="applyScene"
           >
-          <input
+          <input v-number-display="sceneDraft.envIntensity"
             v-model.number="sceneDraft.envIntensity"
             class="pp__num"
             type="number"
@@ -1238,15 +1268,11 @@ const modalPos = computed(() => defaultDockPos(editSlot.value, PANEL_W));
         <template v-if="sceneDraft.fogEnabled">
           <div class="ed-row">
             <span class="ed-label">雾色</span>
-            <input
-              v-model="sceneDraft.fogColor"
-              type="color"
-              @input="applyScene"
-            >
+            <ColorInput key="fog" label="雾色" :model-value="sceneDraft.fogColor" @update:model-value="sceneDraft.fogColor = $event; applyScene()" @begin="bridge.beginLiveEdit()" @end="bridge.endLiveEdit()" />
           </div>
           <div class="ed-row">
             <span class="ed-label">起点</span>
-            <input
+            <input v-number-display="sceneDraft.fogNear"
               v-model.number="sceneDraft.fogNear"
               class="pp__num"
               type="number"
@@ -1257,7 +1283,7 @@ const modalPos = computed(() => defaultDockPos(editSlot.value, PANEL_W));
           </div>
           <div class="ed-row">
             <span class="ed-label">终点</span>
-            <input
+            <input v-number-display="sceneDraft.fogFar"
               v-model.number="sceneDraft.fogFar"
               class="pp__num"
               type="number"
@@ -1290,6 +1316,7 @@ const modalPos = computed(() => defaultDockPos(editSlot.value, PANEL_W));
             </option>
           </select>
         </div>
+        <p v-if="bridge.handle.viewMode === 'map'" class="ed-label" data-map-light-scope>仅影响附加的三维模型，不改变地图建筑与底图光影。</p>
         <div class="ed-row">
           <select
             v-model="activeLightId"
@@ -1327,7 +1354,7 @@ const modalPos = computed(() => defaultDockPos(editSlot.value, PANEL_W));
               step="0.1"
               @input="applyLight"
             >
-            <input
+            <input v-number-display="lightDraft.intensity"
               v-model.number="lightDraft.intensity"
               class="pp__num"
               type="number"
@@ -1338,29 +1365,25 @@ const modalPos = computed(() => defaultDockPos(editSlot.value, PANEL_W));
           </div>
           <div class="ed-row">
             <span class="ed-label">颜色</span>
-            <input
-              v-model="lightDraft.color"
-              type="color"
-              @input="applyLight"
-            >
+            <ColorInput :key="activeLightId ?? 'light'" label="灯光颜色" temperature :model-value="lightDraft.color" @update:model-value="lightDraft.color = $event; applyLight()" @begin="bridge.beginLiveEdit()" @end="bridge.endLiveEdit()" />
           </div>
           <template v-if="activeLight.type !== 'AmbientLight'">
             <div class="ed-row">
               <span class="ed-label pp__ax">位置</span>
               <div class="pp__row3">
-                <input
+                <input v-number-display="lightDraft.positionX"
                   v-model.number="lightDraft.positionX"
                   type="number"
                   step="0.5"
                   @input="applyLight"
                 >
-                <input
+                <input v-number-display="lightDraft.positionY"
                   v-model.number="lightDraft.positionY"
                   type="number"
                   step="0.5"
                   @input="applyLight"
                 >
-                <input
+                <input v-number-display="lightDraft.positionZ"
                   v-model.number="lightDraft.positionZ"
                   type="number"
                   step="0.5"
@@ -1372,9 +1395,9 @@ const modalPos = computed(() => defaultDockPos(editSlot.value, PANEL_W));
           <div v-if="activeLight.type === 'DirectionalLight' || activeLight.type === 'SpotLight'" class="ed-row">
             <span class="ed-label" title="灯光照向的世界坐标位置（米）">照向位置</span>
             <div class="pp__row3">
-              <input v-model.number="lightDraft.targetX" aria-label="照向位置 X" title="X（米）" type="number" step="0.5" @input="applyLight">
-              <input v-model.number="lightDraft.targetY" aria-label="照向位置 Y" title="Y（米）" type="number" step="0.5" @input="applyLight">
-              <input v-model.number="lightDraft.targetZ" aria-label="照向位置 Z" title="Z（米）" type="number" step="0.5" @input="applyLight">
+              <input v-number-display="lightDraft.targetX" v-model.number="lightDraft.targetX" aria-label="照向位置 X" title="X（米）" type="number" step="0.5" @input="applyLight">
+              <input v-number-display="lightDraft.targetY" v-model.number="lightDraft.targetY" aria-label="照向位置 Y" title="Y（米）" type="number" step="0.5" @input="applyLight">
+              <input v-number-display="lightDraft.targetZ" v-model.number="lightDraft.targetZ" aria-label="照向位置 Z" title="Z（米）" type="number" step="0.5" @input="applyLight">
             </div>
           </div>
           <div
@@ -1382,16 +1405,12 @@ const modalPos = computed(() => defaultDockPos(editSlot.value, PANEL_W));
             class="ed-row"
           >
             <span class="ed-label">地面色</span>
-            <input
-              v-model="lightDraft.groundColor"
-              type="color"
-              @input="applyLight"
-            >
+            <ColorInput :key="activeLightId + ':ground'" label="地面色" :model-value="lightDraft.groundColor" @update:model-value="lightDraft.groundColor = $event; applyLight()" @begin="bridge.beginLiveEdit()" @end="bridge.endLiveEdit()" />
           </div>
           <template v-if="activeLight.type === 'PointLight' || activeLight.type === 'SpotLight'">
             <div class="ed-row">
               <span class="ed-label">衰减距</span>
-              <input
+              <input v-number-display="lightDraft.distance"
                 v-model.number="lightDraft.distance"
                 class="pp__num"
                 type="number"
@@ -1402,7 +1421,7 @@ const modalPos = computed(() => defaultDockPos(editSlot.value, PANEL_W));
             </div>
             <div class="ed-row">
               <span class="ed-label">衰减度</span>
-              <input
+              <input v-number-display="lightDraft.decay"
                 v-model.number="lightDraft.decay"
                 class="pp__num"
                 type="number"
@@ -1415,7 +1434,7 @@ const modalPos = computed(() => defaultDockPos(editSlot.value, PANEL_W));
           <template v-if="activeLight.type === 'SpotLight'">
             <div class="ed-row">
               <span class="ed-label">锥角</span>
-              <input
+              <input v-number-display="lightDraft.angle"
                 v-model.number="lightDraft.angle"
                 class="pp__num"
                 type="number"
@@ -1436,7 +1455,7 @@ const modalPos = computed(() => defaultDockPos(editSlot.value, PANEL_W));
                 step="0.01"
                 @input="applyLight"
               >
-              <input
+              <input v-number-display="lightDraft.penumbra"
                 v-model.number="lightDraft.penumbra"
                 class="pp__num"
                 type="number"
@@ -1450,7 +1469,7 @@ const modalPos = computed(() => defaultDockPos(editSlot.value, PANEL_W));
           <template v-if="activeLight.type === 'RectAreaLight'">
             <div class="ed-row">
               <span class="ed-label">宽</span>
-              <input
+              <input v-number-display="lightDraft.width"
                 v-model.number="lightDraft.width"
                 class="pp__num"
                 type="number"
@@ -1461,7 +1480,7 @@ const modalPos = computed(() => defaultDockPos(editSlot.value, PANEL_W));
             </div>
             <div class="ed-row">
               <span class="ed-label">高</span>
-              <input
+              <input v-number-display="lightDraft.height"
                 v-model.number="lightDraft.height"
                 class="pp__num"
                 type="number"
@@ -1488,7 +1507,7 @@ const modalPos = computed(() => defaultDockPos(editSlot.value, PANEL_W));
               </div>
               <div class="ed-row">
                 <span class="ed-label">阴影偏移</span>
-                <input
+                <input v-number-display="lightDraft.shadowBias"
                   v-model.number="lightDraft.shadowBias"
                   class="pp__num"
                   type="number"
@@ -1499,14 +1518,14 @@ const modalPos = computed(() => defaultDockPos(editSlot.value, PANEL_W));
               <template v-if="activeLight.type === 'DirectionalLight'">
                 <div class="ed-row">
                   <span class="ed-label">近/远</span>
-                  <input
+                  <input v-number-display="lightDraft.shadowCameraNear"
                     v-model.number="lightDraft.shadowCameraNear"
                     class="pp__num"
                     type="number"
                     step="0.5"
                     @input="applyLight"
                   >
-                  <input
+                  <input v-number-display="lightDraft.shadowCameraFar"
                     v-model.number="lightDraft.shadowCameraFar"
                     class="pp__num"
                     type="number"
@@ -1517,13 +1536,13 @@ const modalPos = computed(() => defaultDockPos(editSlot.value, PANEL_W));
                 <div class="ed-row">
                   <span class="ed-label pp__ax">视锥</span>
                   <div class="pp__row3">
-                    <input
+                    <input v-number-display="lightDraft.shadowCameraLeft"
                       v-model.number="lightDraft.shadowCameraLeft"
                       type="number"
                       step="1"
                       @input="applyLight"
                     >
-                    <input
+                    <input v-number-display="lightDraft.shadowCameraRight"
                       v-model.number="lightDraft.shadowCameraRight"
                       type="number"
                       step="1"
@@ -1534,13 +1553,13 @@ const modalPos = computed(() => defaultDockPos(editSlot.value, PANEL_W));
                 <div class="ed-row">
                   <span class="ed-label pp__ax">上下</span>
                   <div class="pp__row3">
-                    <input
+                    <input v-number-display="lightDraft.shadowCameraTop"
                       v-model.number="lightDraft.shadowCameraTop"
                       type="number"
                       step="1"
                       @input="applyLight"
                     >
-                    <input
+                    <input v-number-display="lightDraft.shadowCameraBottom"
                       v-model.number="lightDraft.shadowCameraBottom"
                       type="number"
                       step="1"
@@ -1584,19 +1603,19 @@ const modalPos = computed(() => defaultDockPos(editSlot.value, PANEL_W));
         <div class="ed-row">
           <span class="ed-label pp__ax">位置</span>
           <div class="pp__row3">
-            <input
+            <input v-number-display="camDraft.positionX"
               v-model.number="camDraft.positionX"
               type="number"
               step="0.5"
               @input="applyCamera"
             >
-            <input
+            <input v-number-display="camDraft.positionY"
               v-model.number="camDraft.positionY"
               type="number"
               step="0.5"
               @input="applyCamera"
             >
-            <input
+            <input v-number-display="camDraft.positionZ"
               v-model.number="camDraft.positionZ"
               type="number"
               step="0.5"
@@ -1607,19 +1626,19 @@ const modalPos = computed(() => defaultDockPos(editSlot.value, PANEL_W));
         <div class="ed-row">
           <span class="ed-label pp__ax">视点</span>
           <div class="pp__row3">
-            <input
+            <input v-number-display="camDraft.lookAtX"
               v-model.number="camDraft.lookAtX"
               type="number"
               step="0.5"
               @input="applyCamera"
             >
-            <input
+            <input v-number-display="camDraft.lookAtY"
               v-model.number="camDraft.lookAtY"
               type="number"
               step="0.5"
               @input="applyCamera"
             >
-            <input
+            <input v-number-display="camDraft.lookAtZ"
               v-model.number="camDraft.lookAtZ"
               type="number"
               step="0.5"
@@ -1627,30 +1646,27 @@ const modalPos = computed(() => defaultDockPos(editSlot.value, PANEL_W));
             >
           </div>
         </div>
+        <template v-if="camDraft.type === 'PerspectiveCamera'">
+          <div class="ed-row pp__focal-row">
+            <span class="ed-label" title="固定传感器高度24 mm，换算垂直FOV">焦距 mm</span>
+            <input v-number-display="focalValue"
+              :value="focalValue"
+              :disabled="!focalSupported"
+              class="pp__num"
+              type="number"
+              step="any"
+              aria-label="焦距 mm"
+              @change="applyFocal"
+            >
+            <output class="ed-label pp__focal-fov" title="垂直视场角（只读）；按24 mm传感器高度换算，显示舍入不改变保存精度">FOV {{ displayNumber(camDraft.fov) }}°</output>
+          </div>
+          <p v-if="!focalSupported" class="ed-label">当前相机使用特殊投影，焦距不可编辑。</p>
+          <p v-if="focalError" role="alert" class="ed-label">{{ focalError }}</p>
+
+        </template>
         <div class="ed-row">
-          <span class="ed-label">FOV</span>
-          <input
-            v-model.number="camDraft.fov"
-            class="pp__range"
-            type="range"
-            min="10"
-            max="120"
-            step="1"
-            @input="applyCamera"
-          >
-          <input
-            v-model.number="camDraft.fov"
-            class="pp__num"
-            type="number"
-            min="1"
-            max="179"
-            step="1"
-            @input="applyCamera"
-          >
-        </div>
-        <div class="ed-row">
-          <span class="ed-label">近面</span>
-          <input
+          <span class="ed-label">近裁剪面</span>
+          <input v-number-display="camDraft.near"
             v-model.number="camDraft.near"
             class="pp__num"
             type="number"
@@ -1660,8 +1676,8 @@ const modalPos = computed(() => defaultDockPos(editSlot.value, PANEL_W));
           >
         </div>
         <div class="ed-row">
-          <span class="ed-label">远面</span>
-          <input
+          <span class="ed-label">远裁剪面</span>
+          <input v-number-display="camDraft.far"
             v-model.number="camDraft.far"
             class="pp__num"
             type="number"
@@ -1679,7 +1695,7 @@ const modalPos = computed(() => defaultDockPos(editSlot.value, PANEL_W));
         </div>
         <div class="ed-row">
           <span class="ed-label">最近距</span>
-          <input
+          <input v-number-display="ctrlDraft.minDistance"
             v-model.number="ctrlDraft.minDistance"
             class="pp__num"
             type="number"
@@ -1690,7 +1706,7 @@ const modalPos = computed(() => defaultDockPos(editSlot.value, PANEL_W));
         </div>
         <div class="ed-row">
           <span class="ed-label">最远距</span>
-          <input
+          <input v-number-display="ctrlDraft.maxDistance"
             v-model.number="ctrlDraft.maxDistance"
             class="pp__num"
             type="number"
@@ -1711,7 +1727,7 @@ const modalPos = computed(() => defaultDockPos(editSlot.value, PANEL_W));
           class="ed-row"
         >
           <span class="ed-label">转速</span>
-          <input
+          <input v-number-display="ctrlDraft.autoRotateSpeed"
             v-model.number="ctrlDraft.autoRotateSpeed"
             class="pp__num"
             type="number"
@@ -1740,7 +1756,7 @@ const modalPos = computed(() => defaultDockPos(editSlot.value, PANEL_W));
             step="0.01"
             @input="applyControls"
           >
-          <input
+          <input v-number-display="ctrlDraft.dampingFactor"
             v-model.number="ctrlDraft.dampingFactor"
             class="pp__num"
             type="number"
@@ -1752,7 +1768,7 @@ const modalPos = computed(() => defaultDockPos(editSlot.value, PANEL_W));
         </div>
         <div class="ed-row">
           <span class="ed-label">俯角上限</span>
-          <input
+          <input v-number-display="ctrlDraft.maxPolarAngle"
             v-model.number="ctrlDraft.maxPolarAngle"
             class="pp__num"
             type="number"
@@ -1764,7 +1780,7 @@ const modalPos = computed(() => defaultDockPos(editSlot.value, PANEL_W));
         </div>
         <div class="ed-row">
           <span class="ed-label">缩放速度</span>
-          <input
+          <input v-number-display="ctrlDraft.zoomSpeed"
             v-model.number="ctrlDraft.zoomSpeed"
             class="pp__num"
             type="number"
@@ -1899,6 +1915,10 @@ const modalPos = computed(() => defaultDockPos(editSlot.value, PANEL_W));
   min-width: 0;
   accent-color: var(--ed-accent);
 }
+
+.pp__focal-row { flex-wrap: wrap; }
+.pp__focal-row .pp__num { width: 76px; min-width: 0; }
+.pp__focal-fov { white-space: nowrap; font-size: 12px; }
 
 .pp__num {
   flex: 0 0 62px !important;

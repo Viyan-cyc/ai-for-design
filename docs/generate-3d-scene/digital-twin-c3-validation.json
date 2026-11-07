@@ -1,0 +1,67 @@
+{
+  "scope": "实际离线编辑器，剪贴板失败采用替身；未实测系统剪贴板/源码回写重建",
+  "checks": [
+    {
+      "name": "打开旧场景FOV不变",
+      "pass": true
+    },
+    {
+      "name": "焦距显示",
+      "pass": true
+    },
+    {
+      "name": "舍入显示不回写",
+      "pass": true
+    },
+    {
+      "name": "50mm换算",
+      "pass": true
+    },
+    {
+      "name": "只保存FOV",
+      "pass": true
+    },
+    {
+      "name": "撤销",
+      "pass": true
+    },
+    {
+      "name": "重做",
+      "pass": true
+    },
+    {
+      "name": "零值拒绝",
+      "pass": true
+    },
+    {
+      "name": "空值拒绝",
+      "pass": true
+    },
+    {
+      "name": "正交隐藏",
+      "pass": true
+    },
+    {
+      "name": "透视恢复",
+      "pass": true
+    },
+    {
+      "name": "特殊zoom禁用",
+      "pass": true
+    },
+    {
+      "name": "标准投影恢复",
+      "pass": true
+    },
+    {
+      "name": "序列化重新导入",
+      "pass": true
+    },
+    {
+      "name": "离线回传含FOV",
+      "pass": true
+    }
+  ],
+  "fov": 26.991466561591626,
+  "encoded": "{\"format\":\"scene3d-scene\",\"version\":1,\"sourceId\":\"356e05130ec987ce3d0aa1ff2d53b325f6014917cad7033a4ee48af1c440c69b\",\"scene\":{\"version\":\"1\",\"meta\":{\"name\":\"empty-scene\",\"description\":\"空起步场景：舞台配置齐备（灯光/相机/环境），零业务节点。LLM 从检索/建模结果在此装配业务分组。\"},\"scene\":{\"background\":\"#eef0f3\",\"environment\":{\"intensity\":0.6},\"fog\":null},\"camera\":{\"type\":\"PerspectiveCamera\",\"position\":[8.000000000000005,6.000000000000001,10.000000000000005],\"lookAt\":[0,1,0],\"fov\":26.991466561591626},\"lights\":[{\"id\":\"DirectionalLight_001\",\"type\":\"DirectionalLight\",\"color\":\"#ffffff\",\"intensity\":2.2,\"position\":[6,10,4],\"castShadow\":true,\"shadowMapSize\":512,\"shadowBias\":-0.0005,\"shadowCameraNear\":0.5,\"shadowCameraFar\":200,\"shadowCameraLeft\":-15,\"shadowCameraRight\":15,\"shadowCameraTop\":15,\"shadowCameraBottom\":-15},{\"id\":\"AmbientLight_001\",\"type\":\"AmbientLight\",\"color\":\"#8899aa\",\"intensity\":0.4,\"shadowMapSize\":512}],\"controls\":{\"type\":\"OrbitControls\",\"target\":[0,1,0],\"minDistance\":2,\"maxDistance\":80,\"enablePan\":true,\"minPolarAngle\":0,\"maxPolarAngle\":3.141592653589793,\"autoRotate\":false,\"autoRotateSpeed\":2,\"enableDamping\":true,\"dampingFactor\":0.08,\"zoomSpeed\":1},\"renderer\":{\"toneMapping\":\"ACESFilmic\",\"exposure\":1,\"shadowMap\":\"PCF\",\"shadowMapEnabled\":false,\"pixelRatio\":1,\"shadowMapSize\":512,\"antialias\":false,\"logarithmicDepthBuffer\":false,\"maxFps\":60,\"renderMode\":\"demand\"},\"Box\":[{\"id\":\"focal_test_box\",\"position\":[0,1,0],\"scale\":[2,2,2],\"parentId\":null}],\"__materialLib\":{\"glass\":{\"name\":\"玻璃\",\"spec\":{\"type\":\"MeshPhysicalMaterial\",\"transmission\":1,\"ior\":1.5,\"roughness\":0.05,\"thickness\":0.5}},\"carpaint\":{\"name\":\"车漆\",\"spec\":{\"type\":\"MeshPhysicalMaterial\",\"clearcoat\":1,\"clearcoatRoughness\":0.1,\"metalness\":0.7,\"roughness\":0.35}},\"brushed_metal\":{\"name\":\"拉丝金属\",\"spec\":{\"type\":\"MeshPhysicalMaterial\",\"metalness\":1,\"roughness\":0.35,\"anisotropy\":1}},\"velvet\":{\"name\":\"绒布\",\"spec\":{\"type\":\"MeshPhysicalMaterial\",\"sheen\":1,\"sheenRoughness\":0.5,\"roughness\":1,\"metalness\":0}}}},\"textures\":{}}"
+}

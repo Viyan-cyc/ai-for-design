@@ -1,0 +1,617 @@
+{
+  "source": {
+    "tokenFile": "D:/cyc/project/octo/gts/map/map-experience-v297/assets/上海地图-v2.97-基线-v2.1/v2.97样式参数-v2.1.json",
+    "tokenSHA256": "faa521fe235b46f63e61cdcb506f643f9ed9e71cb7a7c81e8ea509e3dbf91af7",
+    "htmlFile": "D:/cyc/project/octo/gts/map/map-experience-v297/assets/上海地图-v2.97-基线-v2.1/上海地图-v2.97-参数锁定-v2.1.dc.html",
+    "htmlSHA256": "b7058768ae9dcac008b942059caf885a23657c759a1f93181777f8e0e3a050b7",
+    "archiveManifest": "D:/cyc/project/octo/gts/map/map-experience-v297/assets/上海地图-v2.97-基线-v2.1/文件校验-SHA256-v2.1.txt"
+  },
+  "implementation": {
+    "component": "D:/cyc/project/octo/test/3d-components/src/map/map-experience.js",
+    "sha256": "3584ce0895d3fc43cc723ebff18854245c6f2b878a7cfc941d48eb3d07947bfe",
+    "method": "MapExperience.themeValues",
+    "line": 1130
+  },
+  "rows": [
+    {
+      "theme": "light",
+      "key": "ground",
+      "sourceValue": "#EFF2F6",
+      "currentValue": "#eff2f6",
+      "classification": "通用主题一致"
+    },
+    {
+      "theme": "light",
+      "key": "road",
+      "sourceValue": "#EAEDF1",
+      "currentValue": "#eaedf1",
+      "classification": "通用主题一致"
+    },
+    {
+      "theme": "light",
+      "key": "roadOutline",
+      "sourceValue": "#EFF2F6",
+      "currentValue": "#eff2f6",
+      "classification": "通用主题一致"
+    },
+    {
+      "theme": "light",
+      "key": "roadOutlineWidth",
+      "sourceValue": 0,
+      "currentValue": 0,
+      "classification": "通用主题一致"
+    },
+    {
+      "theme": "light",
+      "key": "water",
+      "sourceValue": "#CEE3FD",
+      "currentValue": "#cee3fd",
+      "classification": "通用主题一致"
+    },
+    {
+      "theme": "light",
+      "key": "green",
+      "sourceValue": "#86EA61",
+      "currentValue": "#86ea61",
+      "classification": "通用主题一致"
+    },
+    {
+      "theme": "light",
+      "key": "greenParkOpacity",
+      "sourceValue": 0.5,
+      "currentValue": 0.5,
+      "classification": "通用主题一致"
+    },
+    {
+      "theme": "light",
+      "key": "greenWoodOpacity",
+      "sourceValue": 0.49,
+      "currentValue": 0.49,
+      "classification": "通用主题一致"
+    },
+    {
+      "theme": "light",
+      "key": "greenGrassOpacity",
+      "sourceValue": 0.28,
+      "currentValue": 0.28,
+      "classification": "通用主题一致"
+    },
+    {
+      "theme": "light",
+      "key": "greenOtherOpacity",
+      "sourceValue": 0.42,
+      "currentValue": 0.42,
+      "classification": "通用主题一致"
+    },
+    {
+      "theme": "light",
+      "key": "districts",
+      "sourceValue": false,
+      "currentValue": false,
+      "classification": "通用主题一致"
+    },
+    {
+      "theme": "light",
+      "key": "placeColor",
+      "sourceValue": "#C2C2C2",
+      "currentValue": "#c2c2c2",
+      "classification": "通用主题一致"
+    },
+    {
+      "theme": "light",
+      "key": "roadMajorColor",
+      "sourceValue": "#9E9E9E",
+      "currentValue": "#9e9e9e",
+      "classification": "通用主题一致"
+    },
+    {
+      "theme": "light",
+      "key": "roadMinorColor",
+      "sourceValue": "#999999",
+      "currentValue": "#999999",
+      "classification": "通用主题一致"
+    },
+    {
+      "theme": "light",
+      "key": "roadLabelDensity",
+      "sourceValue": 0.05,
+      "currentValue": 0.05,
+      "classification": "通用主题一致"
+    },
+    {
+      "theme": "light",
+      "key": "labelHalo",
+      "sourceValue": "#FFFFFF",
+      "currentValue": "#ffffff",
+      "classification": "通用主题一致"
+    },
+    {
+      "theme": "light",
+      "key": "labelSize",
+      "sourceValue": 0.65,
+      "currentValue": 0.65,
+      "classification": "通用主题一致"
+    },
+    {
+      "theme": "light",
+      "key": "skyColor",
+      "sourceValue": "#C2E3FF",
+      "currentValue": "#c2e3ff",
+      "classification": "通用主题一致"
+    },
+    {
+      "theme": "light",
+      "key": "road3DDarken",
+      "sourceValue": 0.05,
+      "currentValue": 0.05,
+      "classification": "通用主题一致"
+    },
+    {
+      "theme": "light",
+      "key": "building",
+      "sourceValue": "#FFFFFF",
+      "currentValue": "#ffffff",
+      "classification": "通用主题一致"
+    },
+    {
+      "theme": "light",
+      "key": "buildingGlow",
+      "sourceValue": 1,
+      "currentValue": 1,
+      "classification": "通用主题一致"
+    },
+    {
+      "theme": "light",
+      "key": "buildingShadeStrength",
+      "sourceValue": 0.2,
+      "currentValue": 0.2,
+      "classification": "通用主题一致"
+    },
+    {
+      "theme": "light",
+      "key": "buildingGradient",
+      "sourceValue": 0.35,
+      "currentValue": 0.35,
+      "classification": "通用主题一致"
+    },
+    {
+      "theme": "light",
+      "key": "buildingTopLight",
+      "sourceValue": 1,
+      "currentValue": 1,
+      "classification": "通用主题一致"
+    },
+    {
+      "theme": "light",
+      "key": "buildingBottomLight",
+      "sourceValue": 1,
+      "currentValue": 1,
+      "classification": "通用主题一致"
+    },
+    {
+      "theme": "light",
+      "key": "buildingFillLight",
+      "sourceValue": 1,
+      "currentValue": 1,
+      "classification": "通用主题一致"
+    },
+    {
+      "theme": "light",
+      "key": "buildingEdgeShadow",
+      "sourceValue": 1,
+      "currentValue": 1,
+      "classification": "通用主题一致"
+    },
+    {
+      "theme": "light",
+      "key": "lightColor",
+      "sourceValue": "#FFFFFF",
+      "currentValue": "#ffffff",
+      "classification": "通用主题一致"
+    },
+    {
+      "theme": "light",
+      "key": "intensity",
+      "sourceValue": 0,
+      "currentValue": 0,
+      "classification": "通用主题一致"
+    },
+    {
+      "theme": "light",
+      "key": "azimuth",
+      "sourceValue": 164,
+      "currentValue": 164,
+      "classification": "通用主题一致"
+    },
+    {
+      "theme": "light",
+      "key": "altitude",
+      "sourceValue": 45,
+      "currentValue": 45,
+      "classification": "通用主题一致"
+    },
+    {
+      "theme": "light",
+      "key": "pearlColor",
+      "sourceValue": "#FFFFFF",
+      "currentValue": null,
+      "classification": "特定地标，不纳入通用主题"
+    },
+    {
+      "theme": "light",
+      "key": "pearlBrightness",
+      "sourceValue": 4,
+      "currentValue": null,
+      "classification": "特定地标，不纳入通用主题"
+    },
+    {
+      "theme": "light",
+      "key": "pearlGlow",
+      "sourceValue": 0.02,
+      "currentValue": null,
+      "classification": "特定地标，不纳入通用主题"
+    },
+    {
+      "theme": "light",
+      "key": "pearlRoughness",
+      "sourceValue": 0.92,
+      "currentValue": null,
+      "classification": "特定地标，不纳入通用主题"
+    },
+    {
+      "theme": "light",
+      "key": "pearlFillLight",
+      "sourceValue": 0,
+      "currentValue": null,
+      "classification": "特定地标，不纳入通用主题"
+    },
+    {
+      "theme": "light",
+      "key": "pearlLightMatch",
+      "sourceValue": 1,
+      "currentValue": null,
+      "classification": "特定地标，不纳入通用主题"
+    },
+    {
+      "theme": "light",
+      "key": "shadow",
+      "sourceValue": true,
+      "currentValue": true,
+      "classification": "通用主题一致"
+    },
+    {
+      "theme": "light",
+      "key": "shadowColor",
+      "sourceValue": "#777A7E",
+      "currentValue": "#777a7e",
+      "classification": "通用主题一致"
+    },
+    {
+      "theme": "light",
+      "key": "shadowStrength",
+      "sourceValue": 0.04,
+      "currentValue": 0.04,
+      "classification": "通用主题一致"
+    },
+    {
+      "theme": "light",
+      "key": "shadowRange",
+      "sourceValue": 3.35,
+      "currentValue": 3.35,
+      "classification": "通用主题一致"
+    },
+    {
+      "theme": "light",
+      "key": "shadowSoftness",
+      "sourceValue": 0,
+      "currentValue": 0,
+      "classification": "通用主题一致"
+    },
+    {
+      "theme": "dark",
+      "key": "ground",
+      "sourceValue": "#2B2B2B",
+      "currentValue": "#2b2b2b",
+      "classification": "通用主题一致"
+    },
+    {
+      "theme": "dark",
+      "key": "road",
+      "sourceValue": "#34383C",
+      "currentValue": "#34383c",
+      "classification": "通用主题一致"
+    },
+    {
+      "theme": "dark",
+      "key": "roadOutline",
+      "sourceValue": "#34383C",
+      "currentValue": "#34383c",
+      "classification": "通用主题一致"
+    },
+    {
+      "theme": "dark",
+      "key": "roadOutlineWidth",
+      "sourceValue": 0,
+      "currentValue": 0,
+      "classification": "通用主题一致"
+    },
+    {
+      "theme": "dark",
+      "key": "water",
+      "sourceValue": "#384657",
+      "currentValue": "#384657",
+      "classification": "通用主题一致"
+    },
+    {
+      "theme": "dark",
+      "key": "green",
+      "sourceValue": "#689556",
+      "currentValue": "#689556",
+      "classification": "通用主题一致"
+    },
+    {
+      "theme": "dark",
+      "key": "greenParkOpacity",
+      "sourceValue": 0.5,
+      "currentValue": 0.5,
+      "classification": "通用主题一致"
+    },
+    {
+      "theme": "dark",
+      "key": "greenWoodOpacity",
+      "sourceValue": 0.49,
+      "currentValue": 0.49,
+      "classification": "通用主题一致"
+    },
+    {
+      "theme": "dark",
+      "key": "greenGrassOpacity",
+      "sourceValue": 0.28,
+      "currentValue": 0.28,
+      "classification": "通用主题一致"
+    },
+    {
+      "theme": "dark",
+      "key": "greenOtherOpacity",
+      "sourceValue": 0.42,
+      "currentValue": 0.42,
+      "classification": "通用主题一致"
+    },
+    {
+      "theme": "dark",
+      "key": "districts",
+      "sourceValue": false,
+      "currentValue": false,
+      "classification": "通用主题一致"
+    },
+    {
+      "theme": "dark",
+      "key": "placeColor",
+      "sourceValue": "#A6A6A6",
+      "currentValue": "#a6a6a6",
+      "classification": "通用主题一致"
+    },
+    {
+      "theme": "dark",
+      "key": "roadMajorColor",
+      "sourceValue": "#8F8F8F",
+      "currentValue": "#8f8f8f",
+      "classification": "通用主题一致"
+    },
+    {
+      "theme": "dark",
+      "key": "roadMinorColor",
+      "sourceValue": "#5C5C5C",
+      "currentValue": "#5c5c5c",
+      "classification": "通用主题一致"
+    },
+    {
+      "theme": "dark",
+      "key": "roadLabelDensity",
+      "sourceValue": 0.05,
+      "currentValue": 0.05,
+      "classification": "通用主题一致"
+    },
+    {
+      "theme": "dark",
+      "key": "labelHalo",
+      "sourceValue": "#4F4F4F",
+      "currentValue": "#4f4f4f",
+      "classification": "通用主题一致"
+    },
+    {
+      "theme": "dark",
+      "key": "labelSize",
+      "sourceValue": 0.65,
+      "currentValue": 0.65,
+      "classification": "通用主题一致"
+    },
+    {
+      "theme": "dark",
+      "key": "skyColor",
+      "sourceValue": "#396184",
+      "currentValue": "#396184",
+      "classification": "通用主题一致"
+    },
+    {
+      "theme": "dark",
+      "key": "road3DDarken",
+      "sourceValue": 0.05,
+      "currentValue": 0.05,
+      "classification": "通用主题一致"
+    },
+    {
+      "theme": "dark",
+      "key": "building",
+      "sourceValue": "#2B2D31",
+      "currentValue": "#2b2d31",
+      "classification": "通用主题一致"
+    },
+    {
+      "theme": "dark",
+      "key": "buildingGlow",
+      "sourceValue": 0.5,
+      "currentValue": 0.5,
+      "classification": "通用主题一致"
+    },
+    {
+      "theme": "dark",
+      "key": "buildingShadeStrength",
+      "sourceValue": 0.71,
+      "currentValue": 0.71,
+      "classification": "通用主题一致"
+    },
+    {
+      "theme": "dark",
+      "key": "buildingGradient",
+      "sourceValue": 0.28,
+      "currentValue": 0.28,
+      "classification": "通用主题一致"
+    },
+    {
+      "theme": "dark",
+      "key": "buildingTopLight",
+      "sourceValue": 0.9,
+      "currentValue": 0.9,
+      "classification": "通用主题一致"
+    },
+    {
+      "theme": "dark",
+      "key": "buildingBottomLight",
+      "sourceValue": 0.85,
+      "currentValue": 0.85,
+      "classification": "通用主题一致"
+    },
+    {
+      "theme": "dark",
+      "key": "buildingFillLight",
+      "sourceValue": 0.65,
+      "currentValue": 0.65,
+      "classification": "通用主题一致"
+    },
+    {
+      "theme": "dark",
+      "key": "buildingEdgeShadow",
+      "sourceValue": 0.5,
+      "currentValue": 0.5,
+      "classification": "通用主题一致"
+    },
+    {
+      "theme": "dark",
+      "key": "lightColor",
+      "sourceValue": "#FFFFFF",
+      "currentValue": "#ffffff",
+      "classification": "通用主题一致"
+    },
+    {
+      "theme": "dark",
+      "key": "intensity",
+      "sourceValue": 0,
+      "currentValue": 0,
+      "classification": "通用主题一致"
+    },
+    {
+      "theme": "dark",
+      "key": "azimuth",
+      "sourceValue": 164,
+      "currentValue": 164,
+      "classification": "通用主题一致"
+    },
+    {
+      "theme": "dark",
+      "key": "altitude",
+      "sourceValue": 45,
+      "currentValue": 45,
+      "classification": "通用主题一致"
+    },
+    {
+      "theme": "dark",
+      "key": "pearlColor",
+      "sourceValue": "#2B2D31",
+      "currentValue": null,
+      "classification": "特定地标，不纳入通用主题"
+    },
+    {
+      "theme": "dark",
+      "key": "pearlBrightness",
+      "sourceValue": 4,
+      "currentValue": null,
+      "classification": "特定地标，不纳入通用主题"
+    },
+    {
+      "theme": "dark",
+      "key": "pearlGlow",
+      "sourceValue": 1,
+      "currentValue": null,
+      "classification": "特定地标，不纳入通用主题"
+    },
+    {
+      "theme": "dark",
+      "key": "pearlRoughness",
+      "sourceValue": 1,
+      "currentValue": null,
+      "classification": "特定地标，不纳入通用主题"
+    },
+    {
+      "theme": "dark",
+      "key": "pearlFillLight",
+      "sourceValue": -1,
+      "currentValue": null,
+      "classification": "特定地标，不纳入通用主题"
+    },
+    {
+      "theme": "dark",
+      "key": "pearlLightMatch",
+      "sourceValue": 1,
+      "currentValue": null,
+      "classification": "特定地标，不纳入通用主题"
+    },
+    {
+      "theme": "dark",
+      "key": "shadow",
+      "sourceValue": true,
+      "currentValue": true,
+      "classification": "通用主题一致"
+    },
+    {
+      "theme": "dark",
+      "key": "shadowColor",
+      "sourceValue": "#3C3F44",
+      "currentValue": "#3c3f44",
+      "classification": "通用主题一致"
+    },
+    {
+      "theme": "dark",
+      "key": "shadowStrength",
+      "sourceValue": 0.04,
+      "currentValue": 0.04,
+      "classification": "通用主题一致"
+    },
+    {
+      "theme": "dark",
+      "key": "shadowRange",
+      "sourceValue": 3.35,
+      "currentValue": 3.35,
+      "classification": "通用主题一致"
+    },
+    {
+      "theme": "dark",
+      "key": "shadowSoftness",
+      "sourceValue": 0,
+      "currentValue": 0,
+      "classification": "通用主题一致"
+    }
+  ],
+  "scope": "实际常量方法隔离求值；不实例化地图，不验证算法或发布包一致性",
+  "laterChanges": [
+    "MapPresentation包装与覆盖/保存适配不属于原页面UI",
+    "业务ScreenLabel尺寸和显隐不等于底图labelSize",
+    "散点聚合与热力透明策略属于后续组件适配，未由本次主题常量比对证明"
+  ],
+  "excluded": [
+    "pearl*特定地标参数",
+    "城市坐标、zoom、bearing、绝对机位",
+    "pixelRatio、MSAA、阴影分辨率和帧率档位",
+    "独立粒子扫光任务"
+  ]
+}

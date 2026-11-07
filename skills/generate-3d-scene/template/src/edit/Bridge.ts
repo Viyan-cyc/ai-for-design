@@ -123,8 +123,17 @@ export class Bridge {
     this.handle.internals.renderLoop.invalidate();
   }
 
+  private explicitLiveEdit = false;
+
+  /** Explicit gestures remain one undo step until their end event. */
+  beginLiveEdit(): void {
+    this.endLiveEdit();
+    this.explicitLiveEdit = true;
+  }
+
   /** Selection/target changes terminate a continuous edit gesture. */
   endLiveEdit(): void {
+    this.explicitLiveEdit = false;
     this.lastLiveLabel = null;
   }
 
@@ -228,7 +237,7 @@ export class Bridge {
 
   /** 所有编辑操作的统一入口：先拍快照再应用 */
   commit(label: string, apply: () => void): void {
-    this.lastLiveLabel = null;
+    this.endLiveEdit();
     this.takeSnapshot(label);
     apply();
     this.emit();
@@ -240,11 +249,12 @@ export class Bridge {
 
   /**
    * 实时生效入口（面板拖动/连续输入）：一次交互会话只压一层撤销快照。
-   * 同标签 1s 内的连续调用不重复拍快照——撤销一步回到交互前状态。
+   * 显式会话持续至结束；其他同标签 1s 内的连续调用不重复拍快照——撤销一步回到交互前状态。
    */
   commitLive(label: string, apply: () => void): void {
     const now = performance.now();
-    const sameSession = this.lastLiveLabel === label && now - this.lastLiveTime < 1000;
+    if (this.lastLiveLabel !== null && this.lastLiveLabel !== label) this.endLiveEdit();
+    const sameSession = this.lastLiveLabel === label && (this.explicitLiveEdit || now - this.lastLiveTime < 1000);
     this.lastLiveLabel = label;
     this.lastLiveTime = now;
     if (!sameSession) {
@@ -259,7 +269,7 @@ export class Bridge {
     if (!snap) {
       return;
     }
-    this.lastLiveLabel = null;
+    this.endLiveEdit();
     this.redoStack.push({ data: structuredClone(this.handle.serialize()), label: snap.label });
     this.rebuild(snap.data);
   }
@@ -269,7 +279,7 @@ export class Bridge {
     if (!snap) {
       return;
     }
-    this.lastLiveLabel = null;
+    this.endLiveEdit();
     this.undoStack.push({ data: structuredClone(this.handle.serialize()), label: snap.label });
     this.rebuild(snap.data);
   }

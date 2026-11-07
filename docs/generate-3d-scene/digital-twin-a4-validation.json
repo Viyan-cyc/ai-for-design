@@ -1,0 +1,19 @@
+{
+  "parameterCount": 189,
+  "actionCount": 22,
+  "groupCount": 23,
+  "uniqueReferences": true,
+  "originalMappingsUnchanged": true,
+  "htmlItemCount": 211,
+  "scope": "静态资料一致性，非运行功能验收",
+  "inputs": {
+    "digital-twin-a22-capability-map.json": "d2407d4816eb117dc7d3ea6f118da2636002d17638cbd0a1aedc9f53a63e12d1",
+    "digital-twin-a3-panel-catalog.json": "46335d263f47d823d0c5ccccd498ac9b157a0e507535023bb745b76930874e41"
+  },
+  "localBrowser": {
+    "groups": 23,
+    "items": 211,
+    "expanded": true,
+    "scope": "真实headless Edge资料页面；无生产功能或审美验收"
+  }
+}

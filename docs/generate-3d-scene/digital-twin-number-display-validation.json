@@ -1,0 +1,33 @@
+{
+  "checks": [
+    {
+      "name": "显示三位",
+      "pass": true
+    },
+    {
+      "name": "聚焦完整值:{\"value\":\"8.123456789\",\"active\":true,\"rect\":{\"x\":989,\"y\":371.09375,\"width\":71.65625,\"height\":28,\"top\":371.09375,\"right\":1060.65625,\"bottom\":399.09375,\"left\":989},\"camera\":[8.123456789,6,10],\"x\":\"<input data-v-2e8e51a5=\\\"\\\" type=\\\"number\\\" step=\\\"0.5\\\">\"}",
+      "pass": true
+    },
+    {
+      "name": "失焦三位且不回写",
+      "pass": true
+    },
+    {
+      "name": "编辑保留完整精度",
+      "pass": true
+    },
+    {
+      "name": "撤销恢复原精度",
+      "pass": true
+    },
+    {
+      "name": "极小偏移增加小数位",
+      "pass": true
+    },
+    {
+      "name": "FOV三位只读",
+      "pass": true
+    }
+  ],
+  "scope": "实际相机位置和灯光偏移输入；其余输入静态接线检查"
+}

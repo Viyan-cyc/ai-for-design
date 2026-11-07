@@ -1,0 +1,61 @@
+{
+  "scope": "本轮读取来源版本；不证明运行行为",
+  "inputs": {
+    "template": {
+      "path": "D:\\cyc\\project\\octo\\gts\\test\\ep-coder\\docs\\generate-3d-scene\\scene-design-guide-template.md",
+      "sha256": "01f8509e6d353f9dc16d3f3fcacbf18833e967a9322bd703ea0b2b14bc19cd0a"
+    },
+    "common": {
+      "path": "D:\\cyc\\project\\octo\\gts\\test\\ep-coder\\skills\\generate-3d-scene\\references\\scene-design-examples\\common.md",
+      "sha256": "b8218ba91e69be24c7c9993f1695a8a60132699a9c8c66df22e7483cf627e914"
+    },
+    "factory": {
+      "path": "D:\\cyc\\project\\octo\\gts\\test\\ep-coder\\skills\\generate-3d-scene\\references\\scene-design-examples\\factory.md",
+      "sha256": "039f8c8880526aab50bbccd45c6eb046f1644e53f852b041ca15af5f77b72773"
+    },
+    "map-guide": {
+      "path": "D:\\cyc\\project\\octo\\gts\\test\\ep-coder\\skills\\generate-3d-scene\\references\\scene-design-examples\\geographic-map.md",
+      "sha256": "9a1015b7074cc013f367a40747151eb45350200012ff86bed019fdce530e5b37"
+    },
+    "map-contract": {
+      "path": "D:\\cyc\\project\\octo\\gts\\test\\ep-coder\\skills\\generate-3d-scene\\references\\map.md",
+      "sha256": "042137f9a359cdec653587e9f462c90b5aec7c5dc46ccc5a5dd56121743c6ba8"
+    },
+    "workflow": {
+      "path": "D:\\cyc\\project\\octo\\gts\\test\\ep-coder\\skills\\generate-3d-scene\\references\\scene-workflow.md",
+      "sha256": "ce0cd8870a5c1e92cd46f9703f6645d18e9bb0d336598668b4d90f90d67669cd"
+    },
+    "types": {
+      "path": "D:\\cyc\\project\\octo\\gts\\test\\ep-coder\\skills\\generate-3d-scene\\template\\src\\scene3d\\scene-core\\types.ts",
+      "sha256": "923eeb895d25797b357ea77f83b73461045025bf6faf9aa09b4ddbab7e3b3dd4"
+    },
+    "focus": {
+      "path": "D:\\cyc\\project\\octo\\gts\\test\\ep-coder\\skills\\generate-3d-scene\\template\\src\\scene3d\\scene-core\\engine\\ControlsEngine.ts",
+      "sha256": "4888de2b09abc7a10cacabe71e84048364dcf3c7308df526271e45614d4e2153"
+    },
+    "save": {
+      "path": "D:\\cyc\\project\\octo\\gts\\test\\ep-coder\\skills\\generate-3d-scene\\template\\src\\edit\\SaveService.ts",
+      "sha256": "41ee6ae2d6568eb18457411fad2ad4698c89d3f9a1d1a8154a55e40c60a49952"
+    },
+    "map-adapter": {
+      "path": "D:\\cyc\\project\\octo\\gts\\test\\ep-coder\\skills\\generate-3d-scene\\extensions\\map\\src\\scene3d\\map\\create-map-scene.ts",
+      "sha256": "7c76224c576bcc0265783ee4ccd0a76911a80ec5ac5c1a9066d25d913d2e5bf0"
+    },
+    "label": {
+      "path": "D:\\cyc\\project\\octo\\gts\\test\\ep-coder\\skills\\generate-3d-scene\\references\\component-docs\\ScreenLabel.md",
+      "sha256": "6bf7184930b6525331b6e271eccf41c07a94129b72a6f3d0f526068c983b0945"
+    },
+    "presentation": {
+      "path": "D:\\cyc\\project\\octo\\test\\3d-components\\src\\map\\MapPresentation.ts",
+      "sha256": "1268e40c9dc654d9151b5812b66fe330c8cadd2f698a8f6bb06af5107fa6c26c"
+    },
+    "theme": {
+      "path": "D:\\cyc\\project\\octo\\test\\3d-components\\src\\map\\map-experience.js",
+      "sha256": "3584ce0895d3fc43cc723ebff18854245c6f2b878a7cfc941d48eb3d07947bfe"
+    },
+    "interior": {
+      "path": "D:\\cyc\\project\\octo\\gts\\test\\ep-coder\\skills\\generate-3d-scene\\references\\scene-design-examples\\interior.md",
+      "sha256": "7ba6342390acb8f40e745284629abaa08b785a6359e2be51b94233f53cbacc05"
+    }
+  }
+}

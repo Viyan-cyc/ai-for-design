@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import ColorInput from './ColorInput.vue';
+import { vNumberDisplay } from './number-display';
+import { materialParamDisabledReason } from './material-conditions';
 import type { TexturePreviews } from './material-preview';
 import { showEditorMessage } from './message';
 
@@ -15,7 +18,7 @@ import {
 import type { MaterialSpec, MaterialType } from '../scene3d/scene-core/types';
 
 const props = defineProps<{ spec: MaterialSpec; targetKey: string; textures?: TexturePreviews }>();
-const emit = defineEmits<{ (e: 'change', key: string, value: unknown): void }>();
+const emit = defineEmits<{ (e: 'change', key: string, value: unknown): void; (e: 'colorBegin'): void; (e: 'colorEnd'): void }>();
 
 interface ParamD {
   key: string; label: string;
@@ -278,6 +281,8 @@ const vecVal = (key: string): [number, number] => {
 };
 const showTransmissionHint = computed(() => matType.value === 'MeshPhysicalMaterial' && numVal('transmission') > 0);
 
+const disabledReason = (key: string): string => materialParamDisabledReason(rawSpec.value, key);
+
 const setNum = (key: string, value: number): void => {
   if (Number.isFinite(value)) {
     emit('change', key, value);
@@ -413,19 +418,17 @@ const clearTexture = (key: string): void => {
         <p v-if="g.key === 'common'" class="ed-label">不透明度越低越透明，需启用透明混合。</p>
         <p v-if="g.key === 'advanced'" class="ed-label">透明裁剪会丢弃透明度低于阈值的像素。</p>
         <p v-if="g.key === 'transmission'" class="ed-label">透射模拟玻璃透光，与透明混合不同。</p>
-        <div
+        <fieldset
           v-for="p in g.params"
           :key="p.key"
-          class="ed-row"
+          class="ed-row mp__param"
+          :data-param="p.key"
+          :disabled="!!disabledReason(p.key)"
+          :title="disabledReason(p.key)"
         >
           <span class="ed-label">{{ p.label }}</span>
           <template v-if="p.kind === 'color'">
-            <input
-              type="color"
-              :value="strVal(p.key)"
-              @input="evStr(p.key, $event)"
-            >
-            <span class="pp__hex">{{ strVal(p.key) }}</span>
+            <ColorInput :key="targetKey + ':' + p.key" :label="p.label" :model-value="strVal(p.key)" @update:model-value="setStr(p.key, $event)" @begin="emit('colorBegin')" @end="emit('colorEnd')" />
           </template>
           <template v-else-if="p.kind === 'check'">
             <input
@@ -449,14 +452,14 @@ const clearTexture = (key: string): void => {
             </select>
           </template>
           <template v-else-if="p.kind === 'vec2'">
-            <input
+            <input v-number-display="vecVal(p.key)[0]"
               class="pp__num"
               type="number"
               :step="p.step"
               :value="vecVal(p.key)[0]"
               @input="evVec2(p.key, 0, $event)"
             >
-            <input
+            <input v-number-display="vecVal(p.key)[1]"
               class="pp__num"
               type="number"
               :step="p.step"
@@ -474,7 +477,7 @@ const clearTexture = (key: string): void => {
               :value="numVal(p.key)"
               @input="evNum(p.key, $event)"
             >
-            <input
+            <input v-number-display="numVal(p.key)"
               class="pp__num"
               type="number"
               :min="p.min"
@@ -485,7 +488,7 @@ const clearTexture = (key: string): void => {
             >
           </template>
           <template v-else>
-            <input
+            <input v-number-display="numVal(p.key)"
               class="pp__num"
               type="number"
               :min="p.min"
@@ -495,7 +498,8 @@ const clearTexture = (key: string): void => {
               @input="evNum(p.key, $event)"
             >
           </template>
-        </div>
+          <small v-if="disabledReason(p.key)" class="ed-label mp__reason">{{ disabledReason(p.key) }}</small>
+        </fieldset>
         <div
           v-if="g.key === 'basic' && showTransmissionHint"
           class="pp__hint"
@@ -545,6 +549,10 @@ const clearTexture = (key: string): void => {
 </template>
 
 <style scoped>
+.mp__param { border: 0; padding: 0; margin-top: 0; margin-inline: 0; min-width: 0; flex-wrap: wrap; }
+.mp__param:disabled > :not(.mp__reason) { opacity: 0.55; }
+.mp__reason { flex-basis: 100%; }
+
 .mp {
   display: block;
 }

@@ -1,0 +1,26 @@
+{
+  "requiredSections": 9,
+  "conditionalSections": 6,
+  "optionalSections": 1,
+  "templateSHA256": "01f8509e6d353f9dc16d3f3fcacbf18833e967a9322bd703ea0b2b14bc19cd0a",
+  "scope": "结构和文档页面核对；无领域试填、生产功能或审美验收",
+  "browser": {
+    "sections": 12,
+    "expanded": true,
+    "scope": "本地资料页面"
+  },
+  "previousTemplateSHA256": "1f0d3ca75211b4a0e508f3669d393e892ce4e4b4ba9b5cf29ba6469d35d1b9e8",
+  "p2Revision": {
+    "backup": "C:\\Users\\Tony\\AppData\\Local\\Temp\\b1-p2-before-kczxtm6e",
+    "changedSections": [
+      "5. 相机与浏览【必填】",
+      "6. 功能适用性与面板【必填】",
+      "9. 验收与更新【必填】",
+      "发布前核对"
+    ],
+    "fullHtmlContentMatches": true,
+    "unchangedOtherSections": true,
+    "scope": "文档填写契约修订；未运行生产视口或资源失败测试",
+    "browser": "沿用此前页面交互检查；本轮只核对全文与外壳未变"
+  }
+}

@@ -20,6 +20,10 @@ const props = defineProps<{
   onImport: () => void;
 }>();
 
+const saveHint = import.meta.env.DEV
+  ? '保存 (Ctrl+S)：将整个场景的修改写回源码；离线预览需重新构建'
+  : '保存 (Ctrl+S)：复制整个场景的修改，粘贴到对话后写回源码；不会直接修改此预览文件';
+
 const state = ref<EditorState>(props.bridge.getState());
 props.bridge.onState((s) => {
   state.value = s;
@@ -382,7 +386,7 @@ const deleteSelected = (): void => {
     <button
       class="tb-btn tb-btn--primary tb-btn--label"
       :disabled="props.saving || !props.dirty"
-      title="保存 (Ctrl+S)：开发模式写回源码，离线模式复制修改"
+      :title="saveHint"
       @click="props.onSave()"
     >
       <svg

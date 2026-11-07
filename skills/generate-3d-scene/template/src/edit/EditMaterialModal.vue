@@ -10,7 +10,7 @@
  * 浮动面板（FloatingPanel 外壳，无遮罩可拖拽，可与材质素材并排）。仅呈现层。
  */
 import {
-  computed, onBeforeUnmount, ref, watch,
+  computed, onBeforeUnmount, ref, watch, toRaw,
 } from 'vue';
 import type { MaterialSpec, MaterialType, MaterialLibEntry } from '../scene3d/scene-core/types';
 import { migrateMaterialSpec } from '../scene3d/scene-core/index';
@@ -128,8 +128,10 @@ const apply = (): void => {
   if (unavailable.value) {
     return;
   }
+  // Persist plain values: nested Vue array proxies cannot enter undo snapshots.
+  const s = structuredClone(toRaw(spec.value));
   if (props.matId) {
-    props.materialLib.updateEntry(props.matId, { ...spec.value }, '编辑材质球');
+    props.materialLib.updateEntry(props.matId, s, '编辑材质球');
     refresh();
     return;
   }
@@ -137,7 +139,6 @@ const apply = (): void => {
   if (!id) {
     return;
   }
-  const s = { ...spec.value };
   if (editShared.value && sharedId.value) {
     props.materialLib.updateEntry(sharedId.value, s, '编辑共享材质');
     refresh();
@@ -163,7 +164,8 @@ const onParamChange = (key: string, value: unknown): void => {
   apply();
 };
 const changeType = (next: MaterialType): void => {
-  spec.value = migrateMaterialSpec(spec.value, next);
+  // Migrate plain data so retained vector properties cannot carry Vue proxies.
+  spec.value = migrateMaterialSpec(structuredClone(toRaw(spec.value)), next);
   apply();
 };
 
@@ -201,6 +203,7 @@ const selectReferencers = (): void => {
         <label><input v-model="editShared" type="checkbox">修改共享材质（同步全部引用）</label>
         <button class="ed-btn" @click="makeIndependent">复制为独立材质</button>
       </div>
+      <p class="ed-label" data-material-save-scope>修改即时预览，关闭面板不撤销；使用顶部“保存”统一保存场景修改。</p>
       <p class="ed-label">预览显示基础色与颜色贴图，不模拟场景光照。</p>
       <input
         v-if="isLibMode"
@@ -248,6 +251,8 @@ const selectReferencers = (): void => {
         :spec="spec"
         :textures="textures"
         @change="onParamChange"
+        @color-begin="props.bridge.beginLiveEdit()"
+        @color-end="props.bridge.endLiveEdit()"
       />
       </fieldset>
     </div>

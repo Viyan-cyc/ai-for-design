@@ -1,0 +1,20 @@
+{
+  "samples": 3,
+  "requiredSectionsPerSample": 9,
+  "conditionalDecisionsPerSample": 6,
+  "enabledSectionsPresent": true,
+  "sourceHashesMatch": true,
+  "htmlMatches": true,
+  "browser": {
+    "sections": 3,
+    "expanded": true,
+    "note": "本轮初版试填页面运行；随后字段术语修正仅改正文，全文一致性重验，未重跑浏览器"
+  },
+  "notVerified": [
+    "实际场景生成与视觉",
+    "资源失败与视口响应",
+    "保存重载",
+    "性能"
+  ],
+  "templateFinding": "可以表达三领域差异，但未知运行行为及精确视觉参数仍需项目核对；不是已确认默认预设"
+}

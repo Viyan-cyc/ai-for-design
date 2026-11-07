@@ -1,0 +1,71 @@
+{
+  "sourceHashFiles": 131,
+  "fieldRoutes": 214,
+  "groups": 19,
+  "actions": 22,
+  "uniqueObservedControlSignatures": 290,
+  "dialogOpenSamples": 61,
+  "radioCheckboxBranchSamples": 112,
+  "behaviorAssertions": "PASS",
+  "scope": "Real headless Edge DOM, original panel.js; isolated state and applyDraft/commitState callbacks, no Three renderer or disk saving",
+  "notCovered": [
+    "所有状态笛卡尔积",
+    "拖拽和键盘全组合",
+    "每字段真实三维效果",
+    "真实项目文件写回",
+    "自定义模板跨会话持久化",
+    "每个高级窗dirty回退的值验证"
+  ],
+  "reviewPageBrowser": {
+    "initial": 19,
+    "groups": 19,
+    "actions": 18,
+    "conditionRules": 5,
+    "fields": 214,
+    "observedControls": 288,
+    "runtime": 1,
+    "search": 1,
+    "open": true,
+    "empty": 0
+  },
+  "viewPresetRevision": {
+    "status": "targeted local checks PASS; independent review pending",
+    "backup": "C:\\Users\\Tony\\AppData\\Local\\Temp\\a3-revision-before-g6seqcgd",
+    "previous18ActionsAnd214FieldsUnchanged": true,
+    "sourceHashUnchanged": true,
+    "menuAdded": [
+      "重命名",
+      "删除"
+    ],
+    "checks": "conditions, four snapshot paths, rename via blur, cancel/confirm delete, fallback, zero project commits",
+    "notTested": "Enter/Escape/empty-name event behavior; differing snapshot values; cross-session persistence; real renderer/disk/OS confirm",
+    "reviewPageBrowser": {
+      "initial": 19,
+      "groups": 19,
+      "actions": 22,
+      "conditionRules": 5,
+      "fields": 214,
+      "observedControls": 290,
+      "runtime": 1,
+      "search": 1,
+      "open": true,
+      "empty": 0
+    }
+  },
+  "view02Revision": {
+    "status": "targeted checks PASS; independent review pending",
+    "backup": "C:\\Users\\Tony\\AppData\\Local\\Temp\\a3-view02-before-60f5u1mf",
+    "other21ActionsAndAll214FieldsUnchanged": true,
+    "htmlEmbeddedActionsMatch": true,
+    "sourceUnchanged": true,
+    "differentValuesResult": {
+      "mode": "custom-1",
+      "focal": 80,
+      "polar": 30,
+      "azimuth": 150,
+      "radius": "fixed"
+    },
+    "commitCount": 0,
+    "browserPageShell": "unchanged; no fresh page UI test claimed"
+  }
+}
