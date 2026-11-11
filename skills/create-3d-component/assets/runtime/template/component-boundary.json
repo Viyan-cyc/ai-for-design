@@ -1,0 +1,10 @@
+{
+  "formatVersion": 1,
+  "entry": "component/component.mjs",
+  "schema": "component/schema.mjs",
+  "purpose": "可调整大小和颜色的立方体；创作时替换为实际组件职责",
+  "owns": ["立方体几何、材质和网格"],
+  "borrows": ["宿主scene；不得销毁"],
+  "hostContract": "create(scene,preset,invalidate)；返回update/tick/snapshot/dispose。宿主负责相机、灯光、渲染和面板；dispose只释放自己创建的资源。",
+  "assets": []
+}

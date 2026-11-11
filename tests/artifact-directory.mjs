@@ -22,41 +22,31 @@ function snapshot(root) {
 }
 for (const skill of ['gts-ep-coder', 'gts-charts-coder', 'sweetui-vue-creator', 'gts-sweetui-coder']) {
   const script = path.join(repo, 'skills', skill, 'scripts/init.mjs');
-  const html = skill.includes('sweetui') ? 'index.gts.html' : 'index.gts-ep.html';
-  const run = (root, explicit = true) => spawnSync(process.execPath,
-    [script, ...(explicit ? [root] : []), 'test-page'], { cwd: root, encoding: 'utf8' });
   for (const explicit of [true, false]) {
-    const root = fs.mkdtempSync(path.join(scratch, 'success-'));
-    const result = run(root, explicit);
-    assert.equal(result.status, 0, result.stdout + result.stderr);
-    assert(fs.existsSync(path.join(root, 'src/pages/TestPage/index.vue')));
-    assert(fs.existsSync(path.join(root, html)));
-    assert(!fs.existsSync(path.join(root, 'test-page')));
-    const before = snapshot(root);
-    assert.notEqual(run(root, explicit).status, 0);
-    assert.deepEqual(snapshot(root), before);
-    cases++;
-  }
-  for (const relative of [html, 'preview-data.js', 'src/user.txt', 'public/library/user.txt', 'public']) {
-    const root = fs.mkdtempSync(path.join(scratch, 'conflict-'));
-    const file = path.join(root, relative);
-    fs.mkdirSync(path.dirname(file), { recursive: true });
-    fs.writeFileSync(file, 'USER_CONTENT');
-    const before = snapshot(root);
-    const result = run(root);
-    assert.notEqual(result.status, 0, `${skill}: accepted ${relative}`);
-    assert(!result.stdout.includes('RESULT: OK'));
-    assert.deepEqual(snapshot(root), before, `${skill}: changed files on conflict`);
-    cases++;
-  }
-  // Non-conflicting attachments may coexist with generated files in these three scaffolds.
-  if (skill !== 'gts-sweetui-coder') {
-    const root = fs.mkdtempSync(path.join(scratch, 'attachment-'));
-    fs.mkdirSync(path.join(root, 'public'));
-    fs.writeFileSync(path.join(root, 'public/user.txt'), 'ATTACHMENT');
-    assert.equal(run(root).status, 0);
-    assert.equal(fs.readFileSync(path.join(root, 'public/user.txt'), 'utf8'), 'ATTACHMENT');
+    const parent = fs.mkdtempSync(path.join(scratch, 'parent-'));
+    const args = [...(explicit ? [parent] : []), 'test-page'];
+    const run = (values) => spawnSync(process.execPath, [script, ...values], {cwd:parent,encoding:'utf8'});
+    const first = run(args); assert.equal(first.status, 0, first.stdout + first.stderr);
+    const project = path.join(parent, 'test-page');
+    assert(fs.existsSync(path.join(project, 'src/pages/TestPage/index.vue')));
+    fs.writeFileSync(path.join(project, 'user.txt'), 'USER_CONTENT');
+    const before = snapshot(project);
+    assert.equal(run(args).status, 0);
+    assert(fs.existsSync(path.join(parent, 'test-page-2/src')));
+    assert.deepEqual(snapshot(project), before);
+    assert.equal(run(args).status, 0);
+    assert(fs.existsSync(path.join(parent, 'test-page-3/src')));
+    const all = snapshot(parent);
+    assert.notEqual(run([project, 'test-page', '--project-dir']).status, 0);
+    assert.deepEqual(snapshot(parent), all);
+    const exact = path.join(parent, 'explicit-location');
+    assert.equal(run([exact, 'test-page', '--project-dir']).status, 0);
+    assert(fs.existsSync(path.join(exact, 'src')));
+    assert(!fs.existsSync(path.join(exact, 'test-page')));
+    const numeric = run([parent, '3d-dashboard']);
+    assert.equal(numeric.status, 0, numeric.stdout + numeric.stderr);
+    assert(fs.existsSync(path.join(parent, '3d-dashboard/src')));
     cases++;
   }
 }
-console.log(`PASS: ${cases} artifact directory cases; fixtures: ${scratch}`);
+console.log(`PASS: ${cases} directory scenarios (new, numbered collision, unchanged original, exact path); fixtures: ${scratch}`);

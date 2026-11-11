@@ -19,7 +19,7 @@ function cleanSource(root) {
 }
 const builds = () => fs.existsSync(join(env.dir, 'builds')) ? fs.readdirSync(join(env.dir, 'builds')).sort() : [];
 try {
-  run(join(skill, 'scripts/init.mjs'), [project, '--deps', 'external']);
+  run(join(skill, 'scripts/init.mjs'), [project, '--project-dir', '--name', 'test-scene', '--deps', 'external']);
   cleanSource(source);
   const before = builds();
   run(join(skill, 'scripts/build-offline.mjs'), [project]);

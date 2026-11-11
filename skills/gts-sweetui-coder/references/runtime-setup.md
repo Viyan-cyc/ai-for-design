@@ -87,7 +87,7 @@ node scripts/verify-build.mjs
 
 ~~~powershell
 node scripts/init.mjs '<隔离输出目录>' 'sweetui-acceptance'
-node scripts/build.mjs --dir '<隔离输出目录>'
+node scripts/build.mjs --dir '<隔离输出目录>/sweetui-acceptance'
 ~~~
 
 已有验收项目原地修改，不覆盖用户文件；确认其接线已经同步最新版。每次源码修改后重新 build。只读 --source-only 不能代替正式构建。

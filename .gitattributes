@@ -1,6 +1,8 @@
 # Keep reviewed chart snapshot files stable across Git checkouts.
-skills/gts-charts-coder/SKILL.md text eol=crlf
 skills/gts-charts-coder/scripts/build-data.mjs text eol=crlf
 skills/gts-charts-coder/scripts/fetch-icons.mjs text eol=crlf
-skills/gts-charts-coder/scripts/init.mjs text eol=crlf
 skills/gts-charts-coder/scripts/source-size.mjs text eol=lf
+skills/gts-charts-coder/SKILL.md text eol=lf
+skills/gts-charts-coder/scripts/init.mjs text eol=lf
+skills/gts-charts-coder/scripts/project-directory.mjs text eol=lf
+skills/create-3d-component/assets/runtime/** -text

@@ -6,7 +6,7 @@ import {spawnSync} from 'node:child_process';
 const base=fs.mkdtempSync(join(tmpdir(),'in-place-cli-')),out=join(base,'project'),skill=resolve('skills/generate-3d-scene');
 function run(script,args){const r=spawnSync(process.execPath,[join(skill,'scripts',script),...args],{encoding:'utf8',timeout:120000});assert.equal(r.status,0,r.stdout+r.stderr);return r;}
 try {
- run('init.mjs',[out,'--profile','empty','--assets','referenced','--deps','external','--defer-build']);
+ run('init.mjs',[out,'--project-dir','--name','test-scene','--profile','empty','--assets','referenced','--deps','external','--defer-build']);
  assert(fs.existsSync(join(out,'source/package.json')));
  run('build-offline.mjs',[out]);
  fs.mkdirSync(join(out,'.history'));fs.writeFileSync(join(out,'.history/user.txt'),'history');

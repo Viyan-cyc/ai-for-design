@@ -1,11 +1,12 @@
 #!/usr/bin/env node
+import { reserveProject } from './project-directory.mjs';
 // init.mjs
-// Initializes a ux-proto page workspace: uses artifact-folder directly with a REAL Vue
+// Initializes a ux-proto page workspace: creates a named project under artifact-folder with a REAL Vue
 // deliverable (src/) plus the offline preview runtime. The AI then authors
 // .vue SFC files under src/ — the code IS the deliverable.
 //
 // Layout created:
-//   {artifact-folder}/
+//   {project}/
 //   ├── src/                  ← 交付件（真实工程结构，直接可拷贝）
 //   │   ├── main.js           # 工程入口示例
 //   │   ├── App.vue           # 应用壳（导入目标页面组件）
@@ -24,8 +25,8 @@
 //
 // Output (agent-parseable):
 //   RESULT: OK
-//   HTML_PATH: <absolute path to {artifact-folder}/index.gts.html>
-//   SRC_DIR: <absolute path to {artifact-folder}/src>
+//   HTML_PATH: <absolute path to {project}/index.gts.html>
+//   SRC_DIR: <absolute path to {project}/src>
 //   PAGE: <PascalCase page name>
 //   RESULT: FAIL | <reason>
 
@@ -64,8 +65,6 @@ if (existsSync(artifactFolder)) {
   if (!statSync(artifactFolder).isDirectory()) {
     fail(`Artifact folder exists but is not a directory: ${artifactFolder}`);
   }
-} else {
-  mkdirSync(artifactFolder, { recursive: true });
 }
 if (!/^[a-z0-9]+(-[a-z0-9]+){1,5}$/.test(slug)) {
   fail(`Slug must be kebab-case ascii, 2-6 hyphen-separated segments: '${slug}'`);
@@ -87,7 +86,7 @@ const pageName = slug
   .join('');
 
 // ---------- 3. create destination ----------
-const dest = resolve(artifactFolder);
+const dest = reserveProject(artifactFolder, slug, process.argv.includes('--project-dir'));
 // Check every generated target before copying or writing any project files.
 const inspectPath = (path) => {
   try { return lstatSync(path); }

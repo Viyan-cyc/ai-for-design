@@ -368,32 +368,32 @@ rmSync(join(F('stripped'), 'src', 'edit'), { recursive: true, force: true });
 /* ── init.mjs ─────────────────────────────────────────────────────────────── */
 {
   const out = F('init-ok');
-  const r = run('init.mjs', [out, '--name', 'Factory Monitor', '--assets', 'referenced', '--deps', 'skip'], true);
-  const pkg = existsSync(join(out, 'package.json')) ? JSON.parse(readFileSync(join(out, 'package.json'), 'utf8')) : {};
-  const refModels = existsSync(join(out, 'public/scene3d/assets/models'))
-    ? readdirSync(join(out, 'public/scene3d/assets/models'))
+  const r = run('init.mjs', [out, '--project-dir', '--name', 'factory-monitor', '--assets', 'referenced', '--deps', 'skip'], true);
+  const pkg = existsSync(join(out, 'source/package.json')) ? JSON.parse(readFileSync(join(out, 'source/package.json'), 'utf8')) : {};
+  const refModels = existsSync(join(out, 'source/public/scene3d/assets/models'))
+    ? readdirSync(join(out, 'source/public/scene3d/assets/models'))
     : [];
-  const scene = existsSync(join(out, 'public/scene3d/scene-data.json'))
-    ? JSON.parse(readFileSync(join(out, 'public/scene3d/scene-data.json'), 'utf8'))
+  const scene = existsSync(join(out, 'source/public/scene3d/scene-data.json'))
+    ? JSON.parse(readFileSync(join(out, 'source/public/scene3d/scene-data.json'), 'utf8'))
     : {};
   const RESERVED = new Set(['version', 'meta', 'scene', 'camera', 'lights', 'controls', 'renderer', 'remove', '__visuals', '__materialLib']);
   const groupKeys = Object.keys(scene).filter((k) => Array.isArray(scene[k]) && !RESERVED.has(k) && !k.startsWith('__'));
   check('init: 首次 build 门禁 PASS（默认 empty profile）', r.ok && /\[init\/PASS\]/.test(r.out), `status=${r.status}`);
   check('init: 占位替换 name=kebab', pkg.name === 'factory-monitor', `name=${pkg.name}`);
-  check('init: 编辑态工程（含 src/edit）', existsSync(join(out, 'src/edit')));
+  check('init: 编辑态工程（含 src/edit）', existsSync(join(out, 'source/src/edit')));
   check('init: 空起步场景（零业务分组）', groupKeys.length === 0, `groups=[${groupKeys.join(',')}]`);
   check('init: 空工程不带未引用 Demo 模型（F09）', refModels.length === 0, `[${refModels.join(',')}]`);
-  check('init: .gitignore 已写', existsSync(join(out, '.gitignore')));
-  check('init: 母版残留未拷入（无 dist/node_modules）', !existsSync(join(out, 'dist')) && !existsSync(join(out, 'node_modules')));
+  check('init: .gitignore 已写', existsSync(join(out, 'source/.gitignore')));
+  check('init: 母版残留未拷入（无 dist/node_modules）', !existsSync(join(out, 'source/dist')) && !existsSync(join(out, 'source/node_modules')));
 }
 {
-  const r = run('init.mjs', [F('init-ok')], false);
-  check('init: 目标非空拒绝', r.ok && /非空/.test(r.out), `status=${r.status}`);
+  const r = run('init.mjs', [F('init-ok'), '--project-dir', '--name', 'factory-monitor'], false);
+  check('init: 目标非空拒绝', r.ok && /EEXIST|非空/.test(r.out), `status=${r.status}`);
 }
 {
   const out = F('init-demo');
-  const r = run('init.mjs', [out, '--name', 'demo-proj', '--profile', 'demo'], true);
-  const models = existsSync(join(out, 'public/scene3d/assets/models')) ? readdirSync(join(out, 'public/scene3d/assets/models')) : [];
+  const r = run('init.mjs', [out, '--project-dir', '--name', 'demo-proj', '--profile', 'demo'], true);
+  const models = existsSync(join(out, 'source/public/scene3d/assets/models')) ? readdirSync(join(out, 'source/public/scene3d/assets/models')) : [];
   check(
     'init: --profile demo 注入 纯几何 demo 不注入业务模型',
     r.ok && models.length === 0,
@@ -402,12 +402,12 @@ rmSync(join(F('stripped'), 'src', 'edit'), { recursive: true, force: true });
 }
 {
   const out = F('init-withcomp');
-  const r = run('init.mjs', [out, '--name', 'wcomp', '--with-components', '--assets', 'all'], true);
-  const pkg = JSON.parse(readFileSync(join(out, 'package.json'), 'utf8'));
-  const models = readdirSync(join(out, 'public/scene3d/assets/models'));
+  const r = run('init.mjs', [out, '--project-dir', '--name', 'wcomp', '--with-components', '--assets', 'all'], true);
+  const pkg = JSON.parse(readFileSync(join(out, 'source/package.json'), 'utf8'));
+  const models = readdirSync(join(out, 'source/public/scene3d/assets/models'));
   check(
     'init: --with-components 写 file: 依赖 + tgz 落 vendor',
-    r.ok && /file:\.\/vendor\/.+\.tgz/.test(pkg.dependencies?.['@a3d/a3d-components'] ?? '') && existsSync(join(out, 'vendor')),
+    r.ok && /file:\.\/vendor\/.+\.tgz/.test(pkg.dependencies?.['@a3d/a3d-components'] ?? '') && existsSync(join(out, 'source/vendor')),
   );
   check(
     'init: --assets all 注入全部库内模型（catalog manifests 全集）',
@@ -419,7 +419,7 @@ rmSync(join(F('stripped'), 'src', 'edit'), { recursive: true, force: true });
 /* ── 端到端（--with-build）：小写盘符 + 外部构建 ───────────── */
 if (withBuild) {
   const out = F('lc-init').replace(/^([A-Za-z]):/, (m, d) => `${d.toLowerCase()}:`);
-  const r = run('init.mjs', [out, '--name', 'lower-case', '--deps', 'external'], true);
+  const r = run('init.mjs', [out, '--project-dir', '--name', 'lower-case', '--deps', 'external'], true);
   const build = r.ok ? run('build-offline.mjs', [out], true) : r;
   const built = existsSync(join(F('lc-init'), 'index.3d.html'));
   check('init: 小写盘符目标 + 外部构建 PASS', r.ok && build.ok && built, `status=${build.status}`);

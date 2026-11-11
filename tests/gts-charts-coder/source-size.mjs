@@ -40,7 +40,7 @@ test('scope and immutable templates',()=>{
 const repo=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..');
 const scripts=path.join(repo,'skills/gts-charts-coder/scripts');
 const work=fs.mkdtempSync(path.join(os.tmpdir(),'charts-size-'));
-const project=work;
+const project=path.join(work,'size-check');
 function run(name,args){const r=spawnSync(process.execPath,[path.join(scripts,name),...args],{encoding:'utf8',timeout:30000});return {code:r.status,text:r.stdout+r.stderr};}
 assert.equal(run('init.mjs',[work,'size-check']).code,0);
 const page=path.join(project,'src/pages/SizeCheck/index.vue');

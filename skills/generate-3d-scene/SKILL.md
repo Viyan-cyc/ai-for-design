@@ -9,7 +9,7 @@ metadata:
 
 ## 产物目录
 
-运行环境提供 `artifact-folder` 时原样作为工程目录；未提供时使用当前工作目录。初始化直接在该目录生成产物，页面名称仅用于源码命名。修改已有产物时定位原工程、跳过初始化，修改源码并更新同一预览入口。
+运行环境提供 `artifact-folder` 时将其作为产物父目录；未提供时使用当前工作目录。新项目按需求生成简短英文连字符名称，在父目录下创建同名工程目录；重名自动追加 `-2`、`-3`。名称由 LLM 根据需求确定，初始化脚本负责分配目录。修改已有项目沿用原工程和预览入口，跳过初始化；构建或编辑冲突不通过新建目录绕过。用户明确指定完整新工程路径时，初始化加 `--project-dir`，路径已存在则报告冲突，不自动换名。后续操作使用初始化返回的实际路径。
 
 
 目标是快速交付清晰、丰富、可编辑的场景。默认输出 index.3d.html 与配套文件和源码；不默认另出二开包或启动服务。
@@ -29,7 +29,7 @@ metadata:
 1. 读 `references/generation-contract.md`，再读 `references/scene-design-examples/README.md`，读取共享规范与命中的领域方案。普通生成不通读引擎、编辑器、材质系统或构建脚本。
 2. 会话首次运行 `node scripts/ensure-env.mjs`；缺环境按 HINT 安装。无 Node 时按速查中的 install 脚本处理。依赖位于外部环境，生成项目中不创建 node_modules。
 3. 按下方「选材与复用」选择资源；上传包的接收、更新与导入命令见 [designer-assets.md](references/designer-assets.md)，仅在涉及资产操作时读取。
-4. `node scripts/init.mjs "<artifact-folder>" --profile empty --assets referenced --deps external --defer-build`。模型确认后用 designer-assets inject 注入资源，或 --asset-package 指定已确认资产包；skill 不携带模型库。需组件时加 --with-components，由 init 在工程外准备依赖。
+4. `node scripts/init.mjs "<artifact-folder>" --name <场景名称> --profile empty --assets referenced --deps external --defer-build`。模型确认后用 designer-assets inject 注入资源，或 --asset-package 指定已确认资产包；skill 不携带模型库。需组件时加 --with-components，由 init 在工程外准备依赖。
 5. 读取生成工程现状，局部修改业务 handler、scene-profile 的注册项和 scene-data。设计相机、光照、材质与布局；不要从 demo 模板覆盖现有文件。
 6. `node scripts/build-offline.mjs <WORKSPACE_PATH>`。一次执行静态契约、Node 同步装配检查、类型检查、资源检查和离线打包，前置失败不执行后续依赖阶段。编译使用工程外临时输入，结束后清理；项目仅保留源码与预览。工程自身 npm run build:offline 供开发者安装依赖后使用，默认生成使用此统一入口。成功直接交付并停止；TIMING 与非阻塞性能 WARN 不是新门禁。
 

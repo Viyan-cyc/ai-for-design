@@ -1,0 +1,3 @@
+export const check=(ok,message)=>{if(!ok)throw Error(message);};
+export const canonical=v=>JSON.stringify(v&&typeof v==='object'?Array.isArray(v)?v.map(x=>JSON.parse(canonical(x))):Object.fromEntries(Object.keys(v).sort().map(k=>[k,JSON.parse(canonical(v[k]))])):v);
+export function validate(p){check(p&&Object.keys(p).sort().join(',')==='componentId,design,formatVersion'&&p.formatVersion===1&&p.componentId==='__ID__','参数身份/字段无效');check(Object.keys(p.design).sort().join(',')==='color,size','设计字段无效');check(Number.isFinite(p.design.size)&&p.design.size>=.5&&p.design.size<=2,'size范围.5..2');check(/^#[0-9a-f]{6}$/i.test(p.design.color),'颜色无效');return structuredClone(p);}

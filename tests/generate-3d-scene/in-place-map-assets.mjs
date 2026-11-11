@@ -14,7 +14,7 @@ await new Promise(r=>server.listen(0,'127.0.0.1',r));
 try {
  const help=run('init.mjs',['--help']);assert(!help.stdout.includes('--force'));
  const unknown=run('init.mjs',[project,'--force'],false);assert.match(unknown.stderr,/未知选项/);assert(!fs.existsSync(project));
- run('init.mjs',[project,'--deps','skip','--defer-build']);
+ run('init.mjs',[project,'--project-dir','--name','test-scene','--deps','skip','--defer-build']);
  const original=fs.readFileSync(join(source,'package.json'));
  run('init.mjs',[project,'--force'],false);
  assert.equal(initProject(source,{force:true,deps:'skip'}).ok,false);

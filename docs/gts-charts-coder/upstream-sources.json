@@ -349,7 +349,7 @@
       "SKILL.md": "adapted"
     },
     "embeddedFiles": {
-      "SKILL.md": "d83009905686fd539034fc943a708197f8814c84dcf25db2feb05693c54cee74",
+      "SKILL.md": "f4a61019b9c535f910a6a02babfa1c9b7c387fd0fa76855d8487688a99161606",
       "references/chart-host.md": "0b6f36b6b005af2dde101ddccc20db404ec2352281b64648588f270418a1669e",
       "references/env-config.json": "72043279e83749fcb364fc6ede71c4f7b7c1b20d1ca69bb66c77f4a59b255732",
       "references/fallback-node-manifest.json": "62bfc0d20ccaa544631bc41bb2babea5fcc540919f096334c6ca4375ca1b4e68",
@@ -360,7 +360,7 @@
       "scripts/cleanup-starter.mjs": "a24fc1f3b9da2c039c7ac92fc3ae78a81b3ac11e79020830919e4afd9289cfae",
       "scripts/ensure-env.mjs": "d1432432e937a3126f1c85dfabec72c113cbb7a02c0b6ebb645c48908630a623",
       "scripts/fetch-icons.mjs": "ecf3327e907a595ba8e12c20d053850ce696257a39a560265510422b20d9979b",
-      "scripts/init.mjs": "1e23b4a71a9957f61f1e554d4856ddd86a9a06803bef3625160a2ae6506a7369",
+      "scripts/init.mjs": "c2f6e9f31e83f3be48a792ed4f98dcc4e1d973cf10088a614e2efc9d9647eaa2",
       "scripts/setup-env.mjs": "0f74cbdef8ec0814bf9adf9f2561bb6de73a0a9aa82c766e76c0e684afea097f",
       "scripts/source-size.mjs": "921e639abeffc8b0ed67c6e817813acef1e92f7d8ef75ac725bb867017ebf37d",
       "scripts/source-tools.mjs": "0a2674b396ed04680fc9a57a02726fd0d6e439da294e43e7cce05f1a616364d4",
@@ -400,11 +400,13 @@
       "scripts/verify/compiler/package.json": "62aff9d30de69c28f25dee4e751edf2aa2c3d8b3756cec3f83db2dee5d057ac8",
       "scripts/verify/whitelists/element-plus-components.json": "bb813d05de9e1d9837875e50f0112ca668a9361322c14aabaf6f75d87a986f77",
       "scripts/verify/whitelists/element-plus-exports.json": "60be7557568d7107a8ce64fce5e6361e435b365144655421f74a2ac29f63c478",
-      "scripts/verify/whitelists/element-plus-icons.json": "7fcfd0d645ee0f5e5e5b6cc1acbea5fa55e0dc1d14e02500bce4ea8d84e8ad90"
+      "scripts/verify/whitelists/element-plus-icons.json": "7fcfd0d645ee0f5e5e5b6cc1acbea5fa55e0dc1d14e02500bce4ea8d84e8ad90",
+      "scripts/project-directory.mjs": "d8535ef781dcba0817134a056aec087c2900c6182e2bcab93f5226f6eb1f49e7"
     },
     "added": [
       "references/chart-host.md",
-      "scripts/source-size.mjs"
+      "scripts/source-size.mjs",
+      "scripts/project-directory.mjs"
     ]
   },
   "localChanges": [

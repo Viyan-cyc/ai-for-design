@@ -1,3 +1,4 @@
+import { reserveProject } from './project-directory.mjs';
 /**
  * init.mjs — 工程脚手架（母版复制 → 场景选择 → 资产库注入 → 占位替换 → 首次构建校验）
  *
@@ -17,7 +18,7 @@
  *   ⑥ 首次构建校验：跑 build.mjs 结构门禁，外部准备依赖，场景完成后统一离线构建
  *
  * CLI：
- *   node init.mjs <target-dir> [--name <proj-name>] [--profile empty|demo] [--scene <file>]
+ *   node init.mjs [artifact-folder] --name <proj-name> [--project-dir] [--profile empty|demo] [--scene <file>]
  *        [--assets referenced|all|<id,id>] [--with-components [--components-version <ver>]]
  *        [--deps external|skip] [--json]
  *   退出码：0 成功 / 1 校验失败 / 2 用法错误
@@ -364,7 +365,8 @@ export const initProject = (target, opts = {}) => {
 const USAGE = `用法: node init.mjs [target-dir] [选项]（省略目录时使用当前工作目录）
 
 选项:
-  --name <proj>            工程名（kebab；默认取目标目录名）
+  --name <proj>            必填：按需求命名的新场景（kebab）
+  --project-dir            target-dir 是完整新工程路径，已存在则拒绝
   --profile empty          空起步场景（默认：舞台配置齐备，零业务节点）
   --profile demo           示例场景（trees/cars/examples 业务分组）
   --scene <file>           业务场景数据 JSON（优先于 profile；资产按其引用注入）
@@ -387,6 +389,8 @@ const parseArgs = (argv) => {
     const next = () => argv[++i];
     if (a === '--name') {
       opts.name = next();
+    } else if (a === '--project-dir') {
+      opts.projectDir = true;
     } else if (a === '--profile') {
       opts.profile = next();
     } else if (a === '--scene') {
@@ -435,7 +439,8 @@ const main = () => {
     console.log(USAGE);
     process.exit(opts.help ? 0 : 2);
   }
-  const deliveryPath = resolve(positional[0] ?? process.cwd());
+  if (!opts.name) { console.error('--name is required for a new scene'); process.exit(2); }
+  const deliveryPath = reserveProject(positional[0] ?? process.cwd(), opts.name, opts.projectDir);
   if (existsSync(deliveryPath) && readdirSync(deliveryPath).length) {
     console.error('目标项目目录非空；修改已有项目请直接使用其中的 source，不要重新初始化。');
     process.exit(1);

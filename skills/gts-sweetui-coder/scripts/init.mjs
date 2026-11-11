@@ -1,13 +1,14 @@
+import { reserveProject } from './project-directory.mjs';
 import fs from 'node:fs'
 import path from 'node:path'
 import { scripts } from './source-tools.mjs'
 import { refresh } from './build-data.mjs'
 try {
-  const args = process.argv.slice(2)
+  const args = process.argv.slice(2).filter(arg => arg !== '--project-dir')
   if (args.length !== 1 && args.length !== 2) throw Error('Usage: node init.mjs "<output-directory>" "<page-slug>"')
   const [output, slug] = args.length === 1 ? [process.cwd(), args[0]] : args
   if (!/^[a-z0-9]+(-[a-z0-9]+){1,5}$/.test(slug)) throw Error('slug: 2–6 lowercase hyphen-separated segments')
-  const root = path.resolve(output), preview = path.join(scripts, 'preview')
+  const root = reserveProject(output, slug, process.argv.includes('--project-dir')), preview = path.join(scripts, 'preview')
   if (fs.existsSync(root) && fs.readdirSync(root).length) throw Error('Target is not empty; modify the existing project in place')
   const page = slug.split('-').map(x => x[0].toUpperCase()+x.slice(1)).join('')
   fs.mkdirSync(root, { recursive: true })
