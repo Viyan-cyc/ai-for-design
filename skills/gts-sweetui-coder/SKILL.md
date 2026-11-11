@@ -6,12 +6,17 @@ version: 0.5.2
 
 # gts-sweetui-coder
 
+## 产物目录
+
+运行环境提供 `artifact-folder` 时原样作为工程目录；未提供时使用当前工作目录。初始化直接在该目录生成产物，页面名称仅用于源码命名。修改已有产物时定位原工程、跳过初始化，修改源码并更新同一预览入口。
+
+
 使用 SweetUI 5.7.0。交付 src/ 与 index.gts.html。以下命令在本 skill 根执行，工程目录使用绝对路径；输出位置遵循宿主要求。
 
 ## 生成流程
 
 1. **准备环境**：当前会话未确认 Node 时执行 node -v。随后执行 node scripts/ensure-env.mjs；环境未变则复用结果。失败按 HINT 执行安装脚本或 setup-env，不反复读实现。
-2. **初始化**：新页面执行 node scripts/init.mjs "<输出目录>" "<page-slug>"，记住 HTML_PATH、SRC_DIR、PAGE。slug 为 2–6 段英文/数字连字符，页面目录由脚本转为 PascalCase。已有项目原地修改，不重跑 init。
+2. **初始化**：新页面执行 node scripts/init.mjs "<artifact-folder>" "<page-slug>"，记住 HTML_PATH、SRC_DIR、PAGE。slug 为 2–6 段英文/数字连字符，页面目录由脚本转为 PascalCase。已有项目原地修改，不重跑 init。
 3. **编写**：编码前完整读取一次 [代码规则](references/code-rules.md)，同一上下文已读可复用。先确定页面区域、局部组件和数据归属，再编写；不输出冗长规划。多功能页面在 src/pages/{PAGE}/components/ 拆分，入口装配；重复内容先写配置数组，再用 v-for。
 4. **自查与构建**：按代码规则做一次交付自查，执行 node scripts/cleanup-starter.mjs --dir "<工程目录>"，再执行 node scripts/build.mjs --dir "<工程目录>"。源码最后修改后必须重新 build。
 5. **交付**：构建通过立即按以下格式交付预览。准确说明验证范围；未执行浏览器时写“构建通过，浏览器运行未验证”。不主动打开浏览器、截图或增加多视口流程。

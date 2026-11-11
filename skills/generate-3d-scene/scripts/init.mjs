@@ -361,7 +361,7 @@ export const initProject = (target, opts = {}) => {
 
 /* ── CLI ─────────────────────────────────────────────────────────────────── */
 
-const USAGE = `用法: node init.mjs <target-dir> [选项]
+const USAGE = `用法: node init.mjs [target-dir] [选项]（省略目录时使用当前工作目录）
 
 选项:
   --name <proj>            工程名（kebab；默认取目标目录名）
@@ -431,11 +431,11 @@ const main = () => {
     process.exit(2);
   }
   const { opts, positional } = parsed;
-  if (opts.help || positional.length !== 1) {
+  if (opts.help || positional.length > 1) {
     console.log(USAGE);
     process.exit(opts.help ? 0 : 2);
   }
-  const deliveryPath = resolve(positional[0]);
+  const deliveryPath = resolve(positional[0] ?? process.cwd());
   if (existsSync(deliveryPath) && readdirSync(deliveryPath).length) {
     console.error('目标项目目录非空；修改已有项目请直接使用其中的 source，不要重新初始化。');
     process.exit(1);

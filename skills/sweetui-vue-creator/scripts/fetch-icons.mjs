@@ -9,7 +9,7 @@
 // built-in font icon (sweetui-icon-{name}-l).
 //
 // Usage:
-//   node fetch-icons.mjs --dir "<artifact-folder>/<slug>" [--base-url <url>] [--timeout <ms>]
+//   node fetch-icons.mjs --dir "<artifact-folder>" [--base-url <url>] [--timeout <ms>]
 //
 // Output (agent-parseable):
 //   RESULT: OK

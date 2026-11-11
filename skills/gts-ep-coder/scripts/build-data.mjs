@@ -8,7 +8,7 @@
 // use is rarely needed).
 //
 // Usage:
-//   node build-data.mjs --dir "{artifact-folder}/{slug}"
+//   node build-data.mjs --dir "{artifact-folder}"
 //
 // Output (agent-parseable):
 //   RESULT: OK

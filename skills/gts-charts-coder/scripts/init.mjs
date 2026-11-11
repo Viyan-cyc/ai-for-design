@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 // init.mjs
-// Initializes a ux-proto page workspace: creates {slug}/ with a REAL Vue
+// Initializes a ux-proto page workspace: uses artifact-folder directly with a REAL Vue
 // deliverable (src/) plus the offline preview runtime. The AI then authors
 // .vue SFC files under src/ — the code IS the deliverable.
 //
 // Layout created:
-//   {slug}/
+//   {artifact-folder}/
 //   ├── src/                  ← 交付件（真实工程结构，直接可拷贝）
 //   │   ├── main.js           # 工程入口示例
 //   │   ├── App.vue           # 应用壳（导入目标页面组件）
@@ -23,14 +23,15 @@
 //
 // Output (agent-parseable):
 //   RESULT: OK
-//   HTML_PATH: <absolute path to {slug}/index.gts-ep.html>
-//   SRC_DIR: <absolute path to {slug}/src>
+//   HTML_PATH: <absolute path to {artifact-folder}/index.gts-ep.html>
+//   SRC_DIR: <absolute path to {artifact-folder}/src>
 //   PAGE: <PascalCase page directory name>
 //   RESULT: FAIL | <reason>
 
 import {
   existsSync,
   statSync,
+  lstatSync,
   mkdirSync,
   cpSync,
   writeFileSync,
@@ -85,9 +86,22 @@ const pageName = slug
   .join('');
 
 // ---------- 3. create destination ----------
-const dest = join(artifactFolder, slug);
-if (existsSync(join(dest, 'src'))) {
-  fail(`target already exists (use Modification Workflow instead): ${dest}`);
+const dest = resolve(artifactFolder);
+// Check every generated target before copying or writing any project files.
+const inspectPath = (path) => {
+  try { return lstatSync(path); }
+  catch (error) { if (error.code === 'ENOENT') return null; throw error; }
+};
+const publicPath = join(dest, 'public');
+const publicStat = inspectPath(publicPath);
+if (publicStat && (!publicStat.isDirectory() || publicStat.isSymbolicLink())) {
+  fail(`Initialization conflict: ${publicPath}`);
+}
+const conflicts = ['src', 'public/library', 'index.gts-ep.html', 'preview-data.js']
+  .map((relative) => join(dest, relative))
+  .filter((target) => inspectPath(target));
+if (conflicts.length) {
+  fail(`Initialization conflict (modify existing projects in place): ${conflicts.join(', ')}`);
 }
 mkdirSync(dest, { recursive: true });
 

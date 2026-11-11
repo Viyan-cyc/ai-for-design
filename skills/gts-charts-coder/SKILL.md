@@ -7,6 +7,11 @@ metadata:
 
 # gts-charts-coder
 
+## 产物目录
+
+运行环境提供 `artifact-folder` 时原样作为工程目录；未提供时使用当前工作目录。初始化直接在该目录生成产物，页面名称仅用于源码命名。修改已有产物时定位原工程、跳过初始化，修改源码并更新同一预览入口。
+
+
 先读取 [图表公共入口](design/01-router/design-entry.md)，按其路由加载本次需要的方法、视觉规范和验收要求。不要全量读取设计库。
 
 ## 职责与宿主
@@ -21,7 +26,7 @@ metadata:
 
 1. 确认 Node。缺失时运行 `scripts/install/install.ps1`（Windows）或 `scripts/install/install.sh`（macOS），不修改全局配置。
 2. 会话首次运行 `node scripts/ensure-env.mjs`；失败按 HINT 安装或更新，再检查。安装失败如实报告错误及日志，不绕过环境。
-3. 新任务运行 `node scripts/init.mjs "<产物父目录>" "<slug>"`。已有工程沿用其源码。读取输出 PAGE、SRC_DIR、HTML_PATH，不猜目录。初始化的最小柱图仅验证运行链路，不是视觉规范模板。
+3. 新任务运行 `node scripts/init.mjs "<artifact-folder>" "<slug>"`。已有工程沿用其源码。读取输出 PAGE、SRC_DIR、HTML_PATH，不猜目录。初始化的最小柱图仅验证运行链路，不是视觉规范模板。
 4. 读取宿主协议后生成图表；按公共入口读取适用设计规范与交付要求。业务数据经 `src/api/` 的 Promise 接口获取，mock 放在 `src/api/mock/`，页面不直接导入 mock。
 5. 首次使用或改变 EP 图标引用时运行 `node scripts/fetch-icons.mjs --dir "<工程>"`；没有图标或引用未变时跳过。图标从 `@element-plus/icons-vue` 导入，裸图标用 ElIcon 包装或设置宽高。
 6. 替换示例后运行 `node scripts/cleanup-starter.mjs --dir "<工程>"`，不手工删除用户文件。所有源码修改完成后执行 `node scripts/build.mjs --dir "<工程>"`。

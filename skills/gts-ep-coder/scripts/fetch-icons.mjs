@@ -8,7 +8,7 @@
 // the moduleCache Proxy in index.gts-ep.html falls back to ElementPlusIconsVue.
 //
 // Usage:
-//   node fetch-icons.mjs --dir "<artifact-folder>/<slug>" [--base-url <url>] [--timeout <ms>]
+//   node fetch-icons.mjs --dir "<artifact-folder>" [--base-url <url>] [--timeout <ms>]
 //
 // Output (agent-parseable):
 //   RESULT: OK

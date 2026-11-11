@@ -7,6 +7,11 @@ metadata:
 
 # gts-ep-coder
 
+## 产物目录
+
+运行环境提供 `artifact-folder` 时原样作为工程目录；未提供时使用当前工作目录。初始化直接在该目录生成产物，页面名称仅用于源码命名。修改已有产物时定位原工程、跳过初始化，修改源码并更新同一预览入口。
+
+
 把自然语言需求变成 Vue 3 + Element Plus 2.13.5 的 `.vue` 页面，样式严格走 design-language token 体系（见 `references/design-language.md`）。
 
 交付两件东西：

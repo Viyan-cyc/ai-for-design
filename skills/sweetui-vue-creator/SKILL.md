@@ -6,6 +6,11 @@ version: 0.1.0
 
 # sweetui-vue-creator
 
+## 产物目录
+
+运行环境提供 `artifact-folder` 时原样作为工程目录；未提供时使用当前工作目录。初始化直接在该目录生成产物，页面名称仅用于源码命名。修改已有产物时定位原工程、跳过初始化，修改源码并更新同一预览入口。
+
+
 把自然语言需求变成 Vue 3 + SweetUI 的 `.vue` 页面，样式严格走 design-language token 体系（见 `references/design-language.md`）。
 
 交付两件东西：
@@ -90,13 +95,13 @@ build 门禁用）、`env.lock.json` 的 lock hash 与 skill 携带的 `package-
 
 **装不上时把 `RESULT: FAIL`、`DETAIL:`、`HINT:` 原样报给用户**——那是环境问题，人的活（见硬约束 0.2）。
 
-### ② `init.mjs` —— 每个需求建一次工程（幂等）
+### ② `init.mjs` —— 仅新建页面时初始化工程
 
 ```bash
 node scripts/init.mjs "<artifact-folder 绝对路径>" "<slug>"
 ```
 
-- `<slug>`：小写英文/数字/连字符，1–6 段（如 `login-form`、`device-list`）。
+- `<slug>`：小写英文/数字/连字符，2–6 段（如 `login-form`、`device-list`）。
 - 返回值记住三个：`HTML_PATH`（预览入口）、`SRC_DIR`（你写代码的地方）、`PAGE`（主组件名）。
 
 init 会生成完整骨架：`index.gts.html` + `public/library/`（UMD 运行时）+ `src/`（App.vue、

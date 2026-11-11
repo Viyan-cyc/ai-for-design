@@ -22,7 +22,7 @@
 //   7. Theme check — bridge.less + themes/default.less present
 //
 // Usage:
-//   node build.mjs --dir "{artifact-folder}/{slug}"
+//   node build.mjs --dir "{artifact-folder}"
 //
 // Output (agent-parseable):
 //   RESULT: OK

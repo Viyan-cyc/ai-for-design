@@ -4,8 +4,8 @@
 
 ## 启用
 
-1. `node scripts/init.mjs <交付目录> --profile empty --assets referenced --deps external --defer-build`，使用返回的 WORKSPACE_PATH 编辑。
-2. `node scripts/enable-map.mjs <交付目录>`。后续统一构建自动在工程外安装依赖并同步 lockfile（内网用已有 npm 源）。Three 固定 0.185.1，MapLibre 5.24.0，Turf 7.2.0。
+1. `node scripts/init.mjs "<artifact-folder>" --profile empty --assets referenced --deps external --defer-build`，使用返回的 WORKSPACE_PATH 编辑。
+2. `node scripts/enable-map.mjs "<artifact-folder>"`。后续统一构建自动在工程外安装依赖并同步 lockfile（内网用已有 npm 源）。Three 固定 0.185.1，MapLibre 5.24.0，Turf 7.2.0。
 3. 在 `public/scene3d/scene-data.json` 增加 map。原 scene/camera/lights/controls/renderer 保留，模型仍用现有 asset 或业务分组。
 
 ```json
@@ -39,7 +39,7 @@
 
 ## 构建与二开
 
-继续执行 `node scripts/build-offline.mjs <交付目录>`，成功交付根目录 index.3d.html + preview/ + source/。不新增浏览器审美验收。地图适配位于 source/src/scene3d/map，业务数据和 Vue 卡片仍在 source/src/business。
+继续执行 `node scripts/build-offline.mjs "<artifact-folder>"`，成功交付根目录 index.3d.html + preview/ + source/。不新增浏览器审美验收。地图适配位于 source/src/scene3d/map，业务数据和 Vue 卡片仍在 source/src/business。
 
 普通场景不复制此扩展。地图服务配置属于 scene-data 的 map，SDK 不内置内网地址和认证。需要散点聚合、热力和点位详情时，按需读 [map-overlays.md](map-overlays.md)，通过 map.overlays 接到同一场景。
 
