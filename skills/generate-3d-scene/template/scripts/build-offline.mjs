@@ -136,10 +136,11 @@ try {
   // CSS may have added resources; bind the final closure to the saved-file identity.
   data.sourceId = hash(data.sourceId + JSON.stringify(resources));
   writeFileSync(resolve(stage, 'scene-data.js'), `window.__scene3dOffline=${JSON.stringify(data).replace(/</g, '\\u003c')};\n`);
-  const styles = walk(stage).filter((file) => extname(file) === '.css').map((file) => `<link rel="stylesheet" href="./${relative(stage, file).replaceAll('\\', '/')}">`).join('\n');
+  const sceneDataHash = hash(readFileSync(resolve(stage, 'scene-data.js'))).slice(0, 12);
+  const styles = walk(stage).filter((file) => extname(file) === '.css').map((file) => `<link rel="stylesheet" href="./${relative(stage, file).replaceAll('\\', '/')}?v=${sceneDataHash}">`).join('\n');
   const html = readFileSync(resolve(root, 'index.html'), 'utf8')
     .replace('</head>', `${styles}\n</head>`)
-    .replace(/<script\s+type="module"\s+src="\/src\/entry\.ts"><\/script>/, '<script src="./scene-data.js"></script><script src="./scene.js"></script>');
+    .replace(/<script\s+type="module"\s+src="\/src\/entry\.ts"><\/script>/, `<script src="./scene-data.js?v=${sceneDataHash}"></script><script src="./scene.js?v=${sceneDataHash}"></script>`);
   if (html.includes('type="module"') || !html.includes('./scene-data.js')) throw new Error('index.html 入口形态不支持离线打包');
   writeFileSync(resolve(stage, 'index.3d.html'), html);
   writeFileSync(resolve(stage, '.scene3d-offline'), '1\n');

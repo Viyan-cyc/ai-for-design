@@ -171,29 +171,51 @@ export class SaveService {
       this.bridge?.endLiveEdit();
       const snapshot = JSON.stringify(this.handle.serialize());
       if (snapshot.includes('blob:')) { throw new Error('场景含临时资源，请重新选择贴图后保存'); }
-      const json = JSON.stringify(JSON.parse(snapshot), null, 2) + '\n';
-      if (import.meta.env.DEV) {
-        const response = await fetch('/__scene3d/save-scene', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: json,
-        });
-        if (!response.ok) { throw new Error(`写入工程失败 (${response.status})`); }
-      } else {
-        const changes = sceneChanges(JSON.parse(this.savedSnapshot), JSON.parse(snapshot));
-        if (!changes.length) { showEditorMessage('没有需要复制的修改。'); return; }
+
+      // 构造 scene3d-changes 文本,两种模式都通过 postMessage 回传 host:
+      // host 收到后自行决定回写方式(dev 模式直接写文件 / 离线模式发 AI 重构建)。
+      const changes = sceneChanges(JSON.parse(this.savedSnapshot), JSON.parse(snapshot));
+      console.log('[scene3d/save] changes count:', changes.length, 'DEV:', import.meta.env.DEV, 'inHostIframe:', typeof window !== 'undefined' && window.parent !== window, 'offlineData:', !!offlineData());
+      if (changes.length) {
         const payload = {
           format: 'scene3d-changes', version: 1, sourceId: offlineData()?.sourceId,
           changes,
         };
         const text = '请将以下场景修改应用到对应工程 public/scene3d/scene-data.json。先逐项核对 before；不匹配时不要覆盖已有修改。path 是路径数组；缺少 after 表示删除，数组整体替换。保留其他数据，完成后重新构建离线页面。图片 data URI 为资源内容，请保留或落盘后更新引用。\n\n' + JSON.stringify(payload, null, 2);
-        const copied = await copyChanges(text);
-        this.status.value = copied ? '已复制，待写回源码' : '待手动复制';
-        showEditorMessage(copied ? '修改已复制，请粘贴到对话；源码尚未更新。' : '请在弹窗中手动复制修改。');
+        try {
+          parent?.postMessage({ type: 'od:scene3d-save', payload: text, sourceId: offlineData()?.sourceId }, '*');
+          console.log('[scene3d/save] postMessage od:scene3d-send sent, payload length:', text.length);
+        } catch (e) { console.warn('[scene3d/save] postMessage failed:', e) }
+      }
+
+      // 仅在真正的 Vite dev server(独立浏览器窗口,parent === self)里直写工程文件;
+      // host app iframe 内(parent !== self)无此端点,fetch 必 404,跳过,只走 postMessage + 剪贴板。
+      const inHostIframe = typeof window !== 'undefined' && window.parent !== window;
+      if (import.meta.env.DEV && !inHostIframe) {
+        const json = JSON.stringify(JSON.parse(snapshot), null, 2) + '\n';
+        const response = await fetch('/__scene3d/save-scene', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: json,
+        });
+        if (!response.ok) { throw new Error(`写入工程失败 (${response.status})`); }
+        this.savedSnapshot = snapshot;
+        this.dirty.value = JSON.stringify(this.handle.serialize()) !== snapshot;
+        this.status.value = '已保存到源码';
+        showEditorMessage('已写入 public/scene3d/scene-data.json。离线页面需重新构建才会包含此次修改。');
         return;
       }
-      this.savedSnapshot = snapshot;
-      this.dirty.value = JSON.stringify(this.handle.serialize()) !== snapshot;
-      this.status.value = '已保存到源码';
-      showEditorMessage('已写入 public/scene3d/scene-data.json。离线页面需重新构建才会包含此次修改。');
+
+      // host iframe 内 或 离线模式:postMessage 已回传。host iframe 内不再走剪贴板
+      // (postMessage 已送达 host,会自动发 AI);仅在非 host 环境降级剪贴板兜底。
+      if (!changes.length) { showEditorMessage('没有需要保存的修改。'); return; }
+      if (inHostIframe) {
+        this.status.value = '已回传宿主';
+        showEditorMessage('修改已回传宿主,源码待写回。');
+      } else {
+        const fallbackText = '请将以下场景修改应用到对应工程 public/scene3d/scene-data.json。先逐项核对 before；不匹配时不要覆盖已有修改。path 是路径数组；缺少 after 表示删除，数组整体替换。保留其他数据，完成后重新构建离线页面。图片 data URI 为资源内容，请保留或落盘后更新引用。\n\n' + JSON.stringify({ format: 'scene3d-changes', version: 1, sourceId: offlineData()?.sourceId, changes }, null, 2);
+        const copied = await copyChanges(fallbackText);
+        this.status.value = copied ? '已复制,待写回源码' : '待手动复制';
+        showEditorMessage(copied ? '修改已回传宿主,源码待写回。' : '请在弹窗中手动复制修改。');
+      }
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') { return; }
       this.status.value = '保存失败';

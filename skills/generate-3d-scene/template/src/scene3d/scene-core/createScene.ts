@@ -284,6 +284,10 @@ export const createScene = async (
       tracker.cancelNode(id);
     });
 
+    // 应用 scene 环境配置（background/fog）——初始化必须调用，否则
+    // data.scene.background/fog 不会应用到 three.scene，预览不显示背景色/雾
+    // （与下方 update 路径 sceneEngine.applyEnvironment 调用对齐）。
+    sceneEngine.applyEnvironment(data.scene);
     await environmentEngine
       .apply(
         rendererEngine.renderer,
