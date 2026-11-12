@@ -487,6 +487,7 @@ export const createScene = async (
     const handle: SceneHandle = {
       update(frag: TreeSceneFragment): UpdateStats {
         if (disposed) throw new Error('Scene is disposed');
+        sceneEngine.validateFragment(frag);
         // Validate before mutating any scene state.
         if (frag.renderer) normalizeRenderer({ ...rendererEngine.getConfig(), ...frag.renderer });
         // 保留区

@@ -1,0 +1,36 @@
+import {readFile,mkdir,writeFile} from 'node:fs/promises';
+import {fileURLToPath,pathToFileURL} from 'node:url';
+import {resolve,join} from 'node:path';
+import {spawnSync} from 'node:child_process';
+import assert from 'node:assert/strict';
+import {chromium} from '../../tools/3d-component-studio/node_modules/playwright/index.mjs';
+const repo=fileURLToPath(new URL('../../',import.meta.url));
+const out=resolve(process.env.COMPONENT_TEST_OUTPUT||join(repo,'docs/create-3d-component/native-work/panel'));
+await mkdir(out,{recursive:true});
+const run=args=>{const p=spawnSync(process.execPath,args,{cwd:repo,encoding:'utf8'});assert.equal(p.status,0,p.stdout+p.stderr);return p.stdout;};
+const project=run(['skills/create-3d-component/scripts/init.mjs',out,'right-panel','--profile','legacy']).match(/WORKSPACE_PATH=(.+)/)[1].trim();
+run([join(project,'example/build.mjs')]);
+const css=await readFile(join(repo,'skills/generate-3d-scene/template/src/edit/styles/editor.css'),'utf8');
+const expected=Object.fromEntries([...css.match(/\.edit-scope\s*\{[^}]+\}/)[0].matchAll(/(--ed-[\w-]+):\s*([^;]+);/g)].map(m=>[m[1],m[2].trim()]));
+const browser=await chromium.launch({...(process.env.COMPONENT_BROWSER_PATH?{executablePath:process.env.COMPONENT_BROWSER_PATH}:{channel:'msedge'}),headless:true});
+const context=await browser.newContext({offline:true,acceptDownloads:true,viewport:{width:1280,height:800}});
+const page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
+try {
+ await page.goto(pathToFileURL(join(project,'index.3d.html')).href);await page.waitForFunction(()=>window.studio?.renders()>0);
+ const panel=await page.locator('#panel').boundingBox(),view=await page.locator('#view').boundingBox();assert(panel.x>view.x+view.width);assert(panel.x+panel.width<=1280);
+ const actual=await page.evaluate(keys=>Object.fromEntries(keys.map(k=>[k,getComputedStyle(document.body).getPropertyValue(k).trim()])),Object.keys(expected));assert.deepEqual(actual,expected);
+ await page.locator('#control-size').fill('1.7');assert.equal(await page.evaluate(()=>studio.snapshot().design.size),1.7);
+ await page.locator('#control-color').fill('#aabbcc');assert.equal(await page.evaluate(()=>studio.snapshot().design.color),'#aabbcc');
+ const downloaded=page.waitForEvent('download');await page.locator('#export').click();const download=await downloaded;const zip=join(out,'demo.zip');await download.saveAs(zip);
+ await page.locator('#reset').click();assert.equal(await page.evaluate(()=>studio.snapshot().design.size),1);
+ await page.locator('#import').setInputFiles(zip);await page.waitForFunction(()=>studio.snapshot().design.size===1.7);
+ await page.screenshot({path:join(out,'desktop.png')});
+ await page.locator('#toggle-panel').click();assert(await page.locator('#panel').isHidden());await page.locator('#open-panel').click();assert(await page.locator('#panel').isVisible());
+ await page.setViewportSize({width:390,height:844});await page.reload();await page.waitForFunction(()=>window.studio?.renders()>0);assert(await page.locator('#panel').isHidden());
+ await page.locator('#open-panel').click();const mobile=await page.locator('#panel').boundingBox();assert(mobile.x>=0&&mobile.x+mobile.width<=390);
+ assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth),390);
+ await page.screenshot({path:join(out,'mobile.png')});await page.locator('#toggle-panel').focus();await page.keyboard.press('Escape');assert(await page.locator('#panel').isHidden());
+ assert.deepEqual(errors,[]);await page.evaluate(()=>{studio.dispose();studio.dispose();});assert.equal(await page.locator('#view canvas').count(),0);
+ await writeFile(join(out,'result.json'),JSON.stringify({status:'pass',project,errors,checks:['right desktop panel','actual generator theme tokens','live size/color','export/import roundtrip','reset','toggle','narrow drawer and no overflow','Escape','dispose']},null,2));
+ console.log('PASS right panel, theme tokens, offline controls and parameter roundtrip: '+project);
+}finally{await browser.close();}

@@ -4,7 +4,7 @@ import {createFrameClock} from './frame-clock.mjs';
 import * as THREE from '../vendor/three.module.js';
 import {create} from '../component/component.mjs';import {validate} from '../component/schema.mjs';import {template,exportPackage,importPackage} from '../component/delivery.mjs';
 const $=id=>document.getElementById(id),initial=validate(initialPreset),controls=controlDefinitions,known=await template();let preset=initial,revision=0,frame=0,disposed=false,renders=0;const clock=createFrameClock();
-const scene=new THREE.Scene();scene.background=new THREE.Color('#101e30');const camera=new THREE.PerspectiveCamera(42,1,.1,100);camera.position.set(0,5,9);camera.lookAt(0,0,0);scene.add(new THREE.HemisphereLight(0xffffff,0x334466,3));const light=new THREE.DirectionalLight(0xffffff,3);light.position.set(2,4,3);scene.add(light);const renderer=new THREE.WebGLRenderer({antialias:true,preserveDrawingBuffer:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));$('view').append(renderer.domElement);let component=create(scene,preset,()=>request());
+const scene=new THREE.Scene();scene.background=new THREE.Color('#eef1f5');const camera=new THREE.PerspectiveCamera(42,1,.1,100);camera.position.set(0,5,9);camera.lookAt(0,0,0);scene.add(new THREE.HemisphereLight(0xffffff,0x334466,3));const light=new THREE.DirectionalLight(0xffffff,3);light.position.set(2,4,3);scene.add(light);const renderer=new THREE.WebGLRenderer({antialias:true,preserveDrawingBuffer:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));$('view').append(renderer.domElement);let component=create(scene,preset,()=>request());
 function request(){if(!disposed&&!frame)frame=requestAnimationFrame(draw);}
 function draw(now){frame=0;const active=component.tick(clock.advance(now));renderer.render(scene,camera);renders++;$('state').textContent=JSON.stringify(component.snapshot(),null,2);if(active)request();}
 function resize(){const box=$('view');renderer.setSize(box.clientWidth,box.clientHeight);camera.aspect=box.clientWidth/box.clientHeight;camera.updateProjectionMatrix();request();}const observer=new ResizeObserver(resize);observer.observe($('view'));
@@ -17,3 +17,9 @@ $('import').onchange=async e=>{const file=e.target.files[0],token=++revision;if(
 window.studio={snapshot:()=>structuredClone(preset),apply,state:()=>component.snapshot(),renders:()=>renders,dispose(){if(disposed)return;disposed=true;observer.disconnect();cancelAnimationFrame(frame);component.dispose();renderer.dispose();renderer.domElement.remove();for(const b of document.querySelectorAll('#actions button'))b.disabled=true;}};sync();resize();$('status').textContent='就绪 · 独立原型';
 
 $('reset').onclick=()=>{apply(structuredClone(initial));$('status').textContent='已恢复默认参数';};
+
+function panelOpen(open){$('panel').hidden=!open;$('open-panel').hidden=open;document.body.classList.toggle('panel-collapsed',!open);$('toggle-panel').setAttribute('aria-expanded',String(open));$('open-panel').setAttribute('aria-expanded',String(open));resize();}
+$('toggle-panel').onclick=()=>{panelOpen(false);$('open-panel').focus();};
+$('open-panel').onclick=()=>{panelOpen(true);$('toggle-panel').focus();};
+$('panel').onkeydown=e=>{if(e.key==='Escape')$('toggle-panel').click();};
+if(matchMedia('(max-width:720px)').matches)panelOpen(false);

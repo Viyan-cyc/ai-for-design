@@ -8,12 +8,12 @@ description: 调试已有三维组件的参数，或从自然语言与设计资�
 先核对用户的目标、实际组件接口和设计来源。已有能力可以表达需求时走参数调试；缺少行为时在用户指定的独立工程修改代码，不能把改色包装为新能力，也不能包装生产组件冒充从零创作。
 
 - **调试已有能力**：读 [debug.md](references/debug.md)。随附页面目前只提供经过验证的 Grid 参数适配器；其他已有组件应使用其已验证独立宿主或明确新增适配，不能宣称通用拖入任意组件。
-- **创作新能力**：读 [create.md](references/create.md)。用随附静态 Three.js 原型初始化，LLM负责实现需求，再由页面调整已实现参数。未提供的行为不能靠滑块凭空出现。
-- **整理/导出交付**：读 [delivery.md](references/delivery.md)。分类为 preset / scene-recipe / candidate-component；源码只随新能力交付。随附自动脚手架仅导出candidate-component；已有Grid工具导出其专用preset；scene-recipe目前按契约整理并人工审查，不冒称自动导出已实现。
+- **创作新能力**：读 [create.md](references/create.md)。用随附原生 TypeScript 对象模板初始化，LLM负责实现需求，再由页面调整已实现参数。未提供的行为不能靠滑块凭空出现。
+- **整理/导出交付**：读 [delivery.md](references/delivery.md)。默认原生模板导出native-component-source源码包和独立参数JSON；旧原型支持component-source源码包及candidate-component演示工程包；已有Grid工具导出其专用preset；scene-recipe目前按契约整理并人工审查，不冒称自动导出已实现。
 
 设计师只需说明六项：方案与场景、布局、默认表现、操作结果、开放设置、效果依据与待定。LLM负责单位、映射、来源差异、依赖和验证；不要让设计师填工程清单。参考源码有明确值时先建立源码运行基线，不能将猜测曲线称为样式一致。
 
-运行脚本前用 `node <本skill>/scripts/verify.mjs` 核对版本/hash。工具在 `assets/runtime/`，按本skill位置解析，不依赖开发机器路径。Node24、Python3需环境已有；不自动全局安装。
+运行脚本前用 `node <本skill>/scripts/verify.mjs` 核对版本/hash。工具在 `assets/runtime/`，按本skill位置解析，不依赖开发机器路径。Node24需环境已有；不自动全局安装。
 
 运行环境提供 `artifact-folder` 时将其作为产物父目录；未提供时使用当前工作目录。新项目按需求生成简短英文连字符名称，在父目录下创建同名工程目录；重名自动追加 `-2`、`-3`。名称由 LLM 根据需求确定，初始化脚本负责分配目录。修改已有项目沿用原工程和预览入口，跳过初始化；构建或编辑冲突不通过新建目录绕过。用户明确指定完整新工程路径时，初始化加 `--project-dir`，路径已存在则报告冲突，不自动换名。后续操作使用初始化返回的实际路径。组件id用作新项目目录名。
 
@@ -22,12 +22,22 @@ description: 调试已有三维组件的参数，或从自然语言与设计资�
 每轮交付给出打开方式、已实际验证内容、差异、用户待确认项及简短独立review prompt。原型运行、导出、设计确认、工程验证、发布分别记录；技术测试不代签视觉，用户确认不能扩展到未确认版本。导出不是发布授权。
 
 ## 默认预览与回复
-创作默认交付预览＋实时调参面板＋重置；无需使用者重复要求。源码集中在项目source/，按create.md本地构建出可直接打开的index.3d.html，实际验证文件预览后才交付。
+创作默认交付预览＋实时调参面板＋重置；无需使用者重复要求。组件源码及说明集中在component/，完整演示集中在example/，按create.md本地构建出可直接打开的index.3d.html，实际验证文件预览后才交付。
 最终回复只提供一个预览artifact：
 `<artifact type="text/link">实际构建返回的HTML_PATH绝对路径</artifact>`
 必须替换为真实生成路径，不输出占位符；不要把component、preset、controls、说明或目录逐个输出为artifact。除非用户明确要求，其他源码/ZIP/报告不单独链接。验证范围和用户待确认仍用简短文字说明；需要独立review时直接给prompt，不另生成prompt文件。
 
 ## 组件本体与演示边界
-每次创作先明确组件本体、借用的宿主资源和接入接口，写入component-boundary.json。组件源码在source/component/；场景、业务样本、相机/渲染调度和面板通常在source/example/。按需求判断所有权：货架的几何属于货架组件；地图扫光借用地图建筑，不能在扫光组件里重建整座城市。创作的能力本身就是灯光或相机时，这些资源可以属于组件。
+每次创作先明确组件本体、借用的宿主资源和接入接口，写入component-boundary.json。组件源码在component/src/，设计/接口/参数说明在component/；场景、业务样本、相机/渲染调度和面板统一在example/。按需求判断所有权：货架的几何属于货架组件；地图扫光借用地图建筑，不能在扫光组件里重建整座城市。创作的能力本身就是灯光或相机时，这些资源可以属于组件。
 组件不得反向依赖example或演示导出代码。宿主通过明确参数/适配接口传入资源；关闭和销毁组件只处理自己拥有的资源，实际验证原宿主仍可运行。不得把演示地图换名移入component来通过检查。
-用户确认后，默认用npm run export:component生成独立组件源码包；预览中的“导出演示工程ZIP”是单独的可重建演示及参数往返材料，不是纯组件。详情见references/delivery.md。不以导出成功代替工程适配/发布。
+用户确认后，默认用node example/build.mjs --export-component生成独立组件源码包；默认原生预览中的“导出参数”只导出参数JSON；旧原型的“导出演示工程ZIP”不是纯组件。详情见references/delivery.md。不以导出成功代替工程适配/发布。
+
+根目录只保留index.3d.html、component/、example/（已有用户历史保留）。不再新增source/或preview/，也不在交付目录执行npm install。统一运行node example/build.mjs，工具在LOCALAPPDATA下的隔离目录安装依赖并生成中间文件，将JS/CSS嵌入根预览。原生模板使用OctoComponentNative；旧原型使用OctoComponentBuild。构建不等于发布。旧原型不要直接运行example/scripts内部规范化构建脚本，它们由build.mjs在外部工作区调用。
+
+## 面板与维护边界
+创作预览使用随附面板模板：桌面右侧参数面板，窄屏从右侧展开且可收起，保持新版场景编辑器的配色、控件和间距。不要另起一套UI或把整个场景编辑器复制进组件。只为实际支持的动画开放播放操作。默认值来自可执行参数定义，控件显示单位与当前值。
+本skill仅含使用必需说明、脚本和运行资源；维护源码和测试留在仓库tools/tests，不复制到用户组件。原生组件交付目标见[规范](references/native-contract.md)；默认原生对象模板已提供；旧mjs原型通过--profile legacy保留。native-host提供普通Three Mesh的借用宿主示范；地图自动适配尚未提供。开发确认后的库接纳使用维护工具，见[入库说明](references/library-intake.md)，创作不会自动写入共享库。
+
+借用现有场景创作组件时，默认原场景只读，在example内使用独立真实副本接入；明确要求修改原项目时才按授权原地局部修改。复制脚本与宿主范围见create.md。动画及播放控件按需求启用；默认静态，不把附加效果等同于动画。
+
+新创作需同步维护example/library-demo.ts用于组件库可交互文档：右侧实时控件、源码默认恢复和切页释放；演示宿主不进入component源码包。接口及开发交付方法见references/library-intake.md。

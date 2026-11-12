@@ -1,24 +1,40 @@
-# 从自然语言到可修改原型
+# 创作独立组件
 
-新建原型运行 `node <skill>/scripts/init.mjs "<artifact-folder>" <稳定id>`，目录按主入口规则取自运行环境；未提供时执行 `node <skill>/scripts/init.mjs <稳定id>`，使用当前工作目录。默认在产物父目录下按稳定id创建具名工程，重名追加编号；显式完整路径加 `--project-dir`，已有路径拒绝初始化。init返回WORKSPACE_PATH，源码集中在返回的`WORKSPACE_PATH`。在该目录本地执行`npm install`、`npm run build`；构建返回HTML_PATH，默认交付根目录`index.3d.html`，不要求设计师启动HTTP服务。Three基础库随附，Vite仅为项目本地构建依赖，不全局安装。
+默认创建原生TypeScript对象组件：
 
-初始化只有静态立方体，不能当作业务实现。将需求转为至少一条可观察行为和失败/空态；核对已有组件接口能否表达，写入design.md和flow.md。随后修改同一个工程的component/component.mjs，必要时增加纯逻辑模块。修改preset.json、component/schema.mjs、controls.json应一起完成；控件默认值来自preset。
+```text
+node <skill>/scripts/init.mjs "<artifact-folder>" <组件id>
+```
 
-接口：create(scene,preset,invalidate)返回update(preset)、tick(dtSeconds)（仍有活动时返回true）、snapshot()、dispose()。dispose只释放自己资源且可重复调用。宿主在活动结束后停止RAF；交互唤醒invalidate。actions可提供{id,label,start,stop}，宿主处理指针/键盘。每次改变组件actions后重开页面；不要热替换未解绑旧闭包。
+未提供artifact-folder时省略该参数，使用当前目录。目录重名自动编号；显式完整项目路径用--project-dir，已有路径拒绝覆盖。修改已有工程沿用原目录，不重新初始化。以WORKSPACE_PATH为准。
 
-自然语言迭代必须改代码并复验行为。例如先做顺序检查点，再按“离开前未达到驻留时长则取消”新增状态机；这不是只改duration默认值。此例不是用户必选设计，不限制其他创意。
+## 组件与演示
+根目录只有index.3d.html、component/和example/。component/src/index.ts是组件入口，src/parameters.ts提供默认值、校验和控件描述；preset.json存项目覆盖。组件继承Group，宿主负责场景、相机、灯光和渲染，setOptions修改组件选项，dispose释放自己资源。不要把演示地图、参数面板或渲染器放进组件源码。
 
-每次代码修改后重新`npm run build`，同步当前文件hash、交付模板和离线预览。只执行prepare不能算预览交付完成。导出后关页重开导入参数；额外在全新真实目录解包并实际运行。导入不同源码版本被拒绝是预期行为，新源码由开发审查/启动，不通过导入动态执行。
+初始化只有可调立方体，必须实现用户实际需求，不能把模板叫作完成业务。字段变化同时调整parameters、预览宿主和说明。默认值不在面板中重复硬编码。参数导入的允许字段与版本必须随实际组件同步，保留错误输入不改变当前画面的行为。
 
-性能/画面：验证更新、空态、重复创建、资源释放、闲置不持续绘制；视觉实际查看，用户评价必要性。对底图或在线资源不可达应报告，不静默伪装。依赖只使用许可可交付资产并记录版本。
+自动模板支持object3d与native-host（借用普通Three Mesh）。native-host是轮廓高亮接入示范，不是扫光或地图瓦片成品；MapLibre、蒙皮与实例化几何需另行适配。原生构建当前支持本地TS模块和three peer，暂不支持组件资产、动态导入或其他peer；需要这些功能先实现适配和测试，不能绕过检查。旧mjs工程继续沿用自身构建；需旧模板时显式--profile legacy，见[兼容说明](legacy-prototype.md)。
 
-## 默认交付体验
-每次创作默认提供实际预览、实时参数面板和恢复默认；用户无需重复提出“可调面板”。根据需求开放已实现的参数、单位、范围及适用的播放操作，不能显示无效控件。自定义地图等宿主也应提供等价面板，不能把静态Three脚手架说成支持任意宿主。
-根目录面向设计师：index.3d.html（唯一主预览）、兼容index.html入口、source/（可修改工程）；内部代码、参数、说明、依赖及manifest都在source。候选ZIP是source契约，不把源码工程文件逐个变成聊天artifact。旧工程迁移先备份并核对，保留用户历史，不静默覆盖。
-默认构建器把Three模块、当前参数、控件与导出模板打入单一HTML。仅支持可内嵌的本地静态依赖；额外网络资源/动态模块必须明确实现并验证相应交付策略，不以“改后缀为index.3d.html”冒充离线支持。对独立解包的候选工程，在其根目录npm install后npm run build同样生成index.3d.html。
-交付前实际以file://且禁用网络打开HTML_PATH，验证画布、控件、更新、重置及参数往返；有外部必需资源时必须另行说明实际条件。失败应在页面显示原因，不能只留下空壳按钮。不能只以HTTP开发页通过代替文件预览通过。
+## 预览和调参
+运行node example/build.mjs。依赖和构建中间文件位于外置真实工作区，不在交付目录安装依赖或建立链接。原始TS类型依赖（含类型导入、导出和引用指令）、类型检查和运行依赖闭包检查通过后生成可直接打开的index.3d.html；构建失败保留旧页面，不能将旧页面称本轮成功。
+使用默认右侧面板与生成器样式，窄屏可收起。参数实时生效并显示单位，支持恢复默认和同版本参数JSON导入/导出。静态组件没有虚假播放按钮；实现动画时补齐实际暂停、继续、重播及循环接口，并接入宿主调度。
+实际检查file预览、控件、错误输入及释放；外部网络依赖如实说明。最终仅输出构建返回的HTML_PATH artifact，源码不逐个作为artifact展示。
 
-## 独立性检查
-初始化后按实际需求更新component-boundary.json的purpose、owns、borrows、hostContract及assets。entry/schema是实际源码入口；assets仅列组件必要资源（放assets/），许可与来源写sources.json。将宿主适配放example，由它把建筑表面等输入传给组件，而非组件导入演示场景。参数及接口变化同步schema/controls。
-npm run build在prepare阶段检查入口和schema的静态依赖图：仅允许component（不含delivery.mjs）及vendor模块，拒绝example、外部/未解析依赖及动态导入。额外加载机制需要明确扩展打包器并验证，不能删除检查绕过。组件中通过fetch/URL加载的资产须显式登记，检查器不自动证明运行时资源闭合。
-技术检查不能判定复制进component的业务内容是否属于本体。LLM仍须审查职责并验证开关、重复挂载、销毁后宿主资源与行为；将未验证项明确记录。至少以另一组宿主输入验证没有写死演示业务数据。
+## 组件交付
+用户确认后运行node example/build.mjs --export-component导出原生源码ZIP。它只包含component自身源码和资料，Three由peer提供，不含演示或node_modules。预览中的“导出参数”只导出参数，不等于组件源码包。
+自动导出保持设计未确认、工程未验证和未发布，不能通过点击导出自动升级。开发接纳前还须在当前目标组件库副本检查类型、构建、公共入口与实际行为。原生源码测试通过不等于已自动入库。
+
+## 借用现有场景
+创作附加效果默认原场景只读。在独立组件工程初始化：
+
+```text
+node <skill>/scripts/init.mjs "<artifact-folder>" <组件id> --profile native-host
+node <skill>/scripts/copy-host.mjs "<原场景源码目录>" "<返回的WORKSPACE_PATH>"
+```
+
+脚本在example/host产生真实副本，排除node_modules、缓存、git、历史和已生成预览；拒绝覆盖、链接及相互嵌套目录，不执行原场景脚本。复制后还没有自动接入。读取副本的真实入口，在example中编写宿主适配，把root、targets、invalidate等实际资源传给组件；改动只落副本，不把整座场景放component。静态资源和配置按副本的实际目录核对，复杂宿主需调整example构建入口；不能承诺任意场景复制后立即可运行。
+用户明确要求修改原项目时，按该授权局部修改原项目，不另建副本冒充更新；生成器自己的“修改已有项目”规则不因此改变。
+
+## 动画由需求决定
+“向外扩散、逐渐消散”等包含动画意图；“添加高亮/边框”不表示要闪烁。native-host默认静态，无播放按钮，无持续刷新。只有需求确实需要动画时加--animation pulse作为动画接线示范，再实现真正业务算法。不要因为模板存在播放能力就自动增加动画或循环。动画宿主调用tick(dtSeconds)；false表示该效果无需持续帧，操作通过invalidate唤醒。暂停、继续、重播和循环只在选择动画时显示。
+关闭仅隐藏组件自有组，销毁仅释放自有几何/材质；借用对象的形状、材质、光影和可见性保持。宿主变换后调用syncTargets，几何拓扑变化需重建效果。

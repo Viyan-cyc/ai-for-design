@@ -1,0 +1,16 @@
+import {readFile,writeFile,access} from 'node:fs/promises';
+import {resolve,join} from 'node:path';
+import {fileURLToPath} from 'node:url';
+import assert from 'node:assert/strict';
+import {baseline,hash} from '../../tools/3d-component-studio/intake/core.mjs';
+const out=resolve(process.argv[2]),supplement=resolve(process.argv[3]),repo=fileURLToPath(new URL('../../',import.meta.url));
+const read=async p=>JSON.parse(await readFile(p));
+const main=await read(join(out,'result.json')),update=await read(join(out,'update-result.json')),browser=await read(join(out,'browser-result.json')),exported=await read(join(supplement,'export-result.json')),boundary=await read(join(supplement,'plan-boundary-result.json'));
+for(const r of [main,update,browser,exported,boundary])assert.equal(r.status,'pass');
+const receipt=await read(join(out,'cli-final-validation/receipt.json'));assert.equal(receipt.status,'validated');
+for(const [p,b] of Object.entries(receipt.operations))assert.deepEqual(await readFile(join(receipt.target,p)),Buffer.from(b,'base64'));
+assert.equal(await readFile(join(receipt.target,'docs/components/intake-host/notes.md'),'utf8'),'人工内容保持\n');
+await assert.rejects(()=>access(join(receipt.target,'.component-intake.lock')));
+assert.equal(await baseline('D:/cyc/project/octo/test/3d-components'),main.productionBaselineUnchanged);
+const implementation={};for(const file of ['core.mjs','docs.mjs','cli.mjs'])implementation[file]=hash(await readFile(join(repo,'tools/3d-component-studio/intake',file)));
+await writeFile(join(out,'final-verification.json'),JSON.stringify({status:'pass',main:'result.json',update:'update-result.json',browser:'browser-result.json',supplement,cliReceipt:'cli-final-validation/receipt.json',allAppliedBytesMatch:true,manualNotesPreserved:true,lockReleased:true,productionBaselineUnchanged:true,implementation,limits:['template runtime tests cover classes for object3d and borrowed-host','trusted reviewed code, not a security sandbox','no process-kill transaction recovery','no production apply, no M4 sync, no publication','independent review pending']},null,2));console.log('PASS final bytes, notes, lock and production baseline');

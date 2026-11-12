@@ -1,0 +1,40 @@
+import {readFile,readdir,mkdir,writeFile} from 'node:fs/promises';
+import {spawnSync} from 'node:child_process';
+import {fileURLToPath,pathToFileURL} from 'node:url';
+import assert from 'node:assert/strict';
+import {cleanPath,legacyPath,remap} from '../../tools/3d-component-studio/layout/build.mjs';
+import {chromium} from '../../tools/3d-component-studio/node_modules/playwright/index.mjs';
+import {readZip} from '../../skills/create-3d-component/assets/runtime/template/scripts/zip.mjs';
+const repo=fileURLToPath(new URL('../../',import.meta.url)),e=(process.env.COMPONENT_TEST_OUTPUT || repo+'docs/create-3d-component/component-authoring-work/migration/flat-layout').replace(/[\\/]$/,'')+'/';
+const run=(args,cwd=repo)=>{const p=spawnSync(process.execPath,args,{cwd,encoding:'utf8'});assert.equal(p.status,0,p.stdout+p.stderr);return p.stdout;};
+await mkdir(e,{recursive:true});
+const init=run(['skills/create-3d-component/scripts/init.mjs',e,'flat-preview','--profile','legacy']);
+const project=init.match(/WORKSPACE_PATH=(.+)/)[1].trim();
+const original='import x from "../example/x.mjs"; export {y} from "../example/y.mjs"; export const u=new URL("../assets/a.png",import.meta.url); export const token="../customer-key"; export const t=`../template`; export const r=/../; // "../comment"';
+const mapped=remap(original,'component/component.mjs','component/src/component.mjs',cleanPath);
+assert(mapped.includes('"../../example/src/x.mjs"'));
+assert(mapped.includes('token="../customer-key"'));
+assert(mapped.includes('t=`../template`'));assert(mapped.includes('r=/../;'));assert(mapped.includes('// "../comment"'));
+assert.equal(remap(mapped,'component/src/component.mjs','component/component.mjs',legacyPath),original);
+assert.throws(()=>remap('import(path)','component/a.mjs','component/src/a.mjs',cleanPath),/non-literal/);
+assert.equal(remap('<template>"../literal"</template>','a.vue','example/a.vue',cleanPath),'<template>"../literal"</template>');
+await mkdir(project+'/component/assets');await writeFile(project+'/component/assets/probe.txt','asset-payload');
+const boundary=JSON.parse(await readFile(project+'/component/component-boundary.json','utf8'));boundary.assets=['assets/probe.txt'];await writeFile(project+'/component/component-boundary.json',JSON.stringify(boundary));
+await writeFile(project+'/component/src/helper.mjs','export const value="../customer-key";');
+const entry=project+'/component/src/component.mjs';await writeFile(entry,(await readFile(entry,'utf8'))+'\nimport {value} from "./helper.mjs";export const token=value;export const literal="../customer-key";export const words=`../template`;export const resource=new URL("../assets/probe.txt",import.meta.url).href;');
+run(['example/build.mjs'],project);
+assert.deepEqual((await readdir(project)).sort(),['component','example','index.3d.html']);
+async function clean(dir){for(const f of await readdir(dir,{withFileTypes:true})){assert(!['node_modules','.cache','offline','preview','source'].includes(f.name));if(f.isDirectory())await clean(dir+'/'+f.name);}}
+await clean(project);
+const exp=run(['example/build.mjs','--export-component'],project);
+const zip=exp.match(/COMPONENT_SOURCE_PATH=(.+)/)[1].trim();
+const files=readZip(new Uint8Array(await readFile(zip)));
+assert(files['design.md']&&files['engineering.md']&&files['src/component.mjs']);assert(!Object.keys(files).some(p=>p.startsWith('example/')));
+const extracted=project+'-component';await mkdir(extracted);
+for(const [p,b]of Object.entries(files)){const target=extracted+'/'+p;await mkdir(target.slice(0,target.lastIndexOf('/')),{recursive:true});await writeFile(target,b);}
+const {create,token,literal,words,resource}=await import(pathToFileURL(extracted+'/src/component.mjs'));assert.equal(typeof create,'function');assert.equal(token,'../customer-key');assert.equal(literal,'../customer-key');assert.equal(words,'../template');assert.equal(await readFile(new URL(resource),'utf8'),'asset-payload');
+const browser=await chromium.launch({...(process.env.COMPONENT_BROWSER_PATH?{executablePath:process.env.COMPONENT_BROWSER_PATH}:{channel:'msedge'}),headless:true});
+const context=await browser.newContext({offline:true});const page=await context.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
+try{await page.goto(pathToFileURL(project+'/index.3d.html').href);await page.waitForFunction(()=>window.studio?.renders()>0);await page.locator('#control-size').fill('2');assert.equal(await page.evaluate(()=>studio.snapshot().design.size),2);await page.locator('#reset').click();assert.equal(await page.evaluate(()=>studio.snapshot().design.size),1);assert.deepEqual(errors,[]);}finally{await browser.close();}
+await writeFile(e+'flat-test-result.json',JSON.stringify({status:'pass',project,checks:['clean init and external build','no dependency/cache directories in delivery','AST import/export/URL roundtrip; ordinary strings/templates/comments/regex preserved','component ZIP executable business values and asset URL unchanged','offline single HTML controls/reset'],errors},null,2));
+console.log('PASS clean layout, standalone source ZIP, offline preview');

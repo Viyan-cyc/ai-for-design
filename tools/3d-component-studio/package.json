@@ -1,0 +1,32 @@
+{
+  "name": "component-studio-n2",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node scripts/check-baseline.mjs && vite --host 127.0.0.1 --port 4173 --strictPort",
+    "build": "node scripts/check-baseline.mjs && tsc --noEmit && vite build",
+    "test": "node --test ../../tests/create-3d-component/package.test.mjs",
+    "test:boundary": "node ../../tests/create-3d-component/component-boundary.mjs",
+    "test:preview": "node ../../tests/create-3d-component/flat-layout.mjs",
+    "test:panel": "node ../../tests/create-3d-component/panel-browser.mjs",
+    "test:native": "node ../../tests/create-3d-component/native-boundary.mjs",
+    "test:native-preview": "node ../../tests/create-3d-component/native-browser.mjs",
+    "test:init": "node ../../tests/create-3d-component/init-profiles.mjs",
+    "test:native-types": "node ../../tests/create-3d-component/native-type-boundary.mjs",
+    "test:host-copy": "node ../../tests/create-3d-component/copy-host.mjs",
+    "test:host-preview": "node ../../tests/create-3d-component/host-browser.mjs",
+    "test:intake": "node ../../tests/create-3d-component/intake.mjs"
+  },
+  "dependencies": {
+    "three": "0.185.1",
+    "gsap": "3.15.0"
+  },
+  "devDependencies": {
+    "vite": "6.0.11",
+    "typescript": "5.7.3",
+    "@types/three": "0.185.0",
+    "@types/node": "22.10.5",
+    "playwright": "1.51.1"
+  }
+}

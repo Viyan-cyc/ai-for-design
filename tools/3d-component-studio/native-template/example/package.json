@@ -1,0 +1,17 @@
+{
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs",
+    "export:component": "node build.mjs --export-component"
+  },
+  "dependencies": {
+    "three": "0.185.1"
+  },
+  "devDependencies": {
+    "vite": "6.4.3",
+    "typescript": "5.8.3",
+    "@types/three": "0.185.0",
+    "@types/node": "22.10.5"
+  }
+}

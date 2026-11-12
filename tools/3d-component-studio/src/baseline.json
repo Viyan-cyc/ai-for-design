@@ -1,0 +1,63 @@
+{
+  "id": "b4cbda69936bcc4878ba58c03567721d321c6049d63703753c5ee26d181fca15",
+  "component": "Grid",
+  "version": "0.1.0",
+  "three": "0.185.1",
+  "sources": [
+    {
+      "path": "baseline/src/core/Grid.ts",
+      "sha256": "1e076d043b5e9f12f15fec4d1f5a38c71b84d9e05756a9418a0eca3b9caa9dd5",
+      "role": "reference-code"
+    },
+    {
+      "path": "baseline/src/animation/index.ts",
+      "sha256": "bcd06c93f494f17ae35be1b5fdc27a65fe7df3735f154c6a1093efd44cf1b2a5",
+      "role": "reference-code"
+    },
+    {
+      "path": "baseline/src/animation/animate.ts",
+      "sha256": "2376bdac4446212b21b366293968c7364bebe52559cf32b7a929056ffae59ccc",
+      "role": "reference-code"
+    },
+    {
+      "path": "baseline/src/animation/types.ts",
+      "sha256": "08711409404654a9f591012c175790d4f9930def70a6f9c792c9cb30a065c99c",
+      "role": "reference-code"
+    },
+    {
+      "path": "baseline/src/animation/AnimationController.ts",
+      "sha256": "571cff07accf8111c524bfcb48b1aa33c3934038f2300b06232e2d9a3c1e7352",
+      "role": "reference-code"
+    },
+    {
+      "path": "baseline/src/animation/timelineBuilder.ts",
+      "sha256": "956edb73e19c0096fb4f04537356d288a78acf9cf28c6ae1453b0c1fdd87ed20",
+      "role": "reference-code"
+    },
+    {
+      "path": "baseline/src/animation/propertyResolver.ts",
+      "sha256": "6122e9721d8f3fb6ebd95c96064b7c0f8564cf110aeb2c01e70dcd43f820ec19",
+      "role": "reference-code"
+    },
+    {
+      "path": "baseline/src/animation/easing.ts",
+      "sha256": "61423315418c58c19dcaeba276f98aee352786c029d11026d23dc0d52273cca5",
+      "role": "reference-code"
+    },
+    {
+      "path": "baseline/src/animation/defaults.ts",
+      "sha256": "ed016e6d809124290ef614384209d60a8809460c08b30a73f087519feccddb2b",
+      "role": "reference-code"
+    },
+    {
+      "path": "baseline/src/types.ts",
+      "sha256": "7ca78025a75c870e04aa5b93cec96ff8ac856a6fe04843801dd171c42410a502",
+      "role": "reference-code"
+    },
+    {
+      "path": "baseline/docs/components/grid/demo.ts",
+      "sha256": "d77f03d77a089f75386440618898297a48a7d9824a32a8c3a0d360b31d8fbba8",
+      "role": "reference-code"
+    }
+  ]
+}

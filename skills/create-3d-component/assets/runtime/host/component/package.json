@@ -1,0 +1,21 @@
+{
+  "name": "__ID__",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "peerDependencies": {
+    "three": ">=0.183.0 <0.190.0"
+  },
+  "component": {
+    "formatVersion": 1,
+    "id": "__ID__",
+    "host": "borrowed-host",
+    "category": "helper",
+    "entry": "src/index.ts",
+    "parameters": "src/parameters.ts",
+    "assets": []
+  }
+}

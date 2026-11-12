@@ -93,6 +93,7 @@ metadata:
 | 普通生成、接口和样例 | references/generation-contract.md |
 | 修改已有场景、编辑结果回写、定向诊断 | references/scene-workflow.md |
 | 自定义轮廓与精细建模 | references/modeling-channels.md |
+| 开发维护：同步已入库组件包与使用说明 | references/component-sync.md |
 | 已选中组件 | references/component-catalog.md → 对应 component-docs 文件 |
 | 生产数据接入或架构排障 | references/scene-engineering.md |
 | 资产导入、检索库维护 | references/asset-pipeline.md |

@@ -412,6 +412,8 @@ export interface FactoryContext {
  * 不再是"只存数据不更新模型"的静默行为。
  */
 export interface NodeFactoryDefinition {
+  /** Preflight only: reject invalid input without changing live state or retaining resources. */
+  validate?(next: SceneNode): void;
   create(node: SceneNode, context: FactoryContext): import('three').Object3D | null;
   update?(
     object: import('three').Object3D,

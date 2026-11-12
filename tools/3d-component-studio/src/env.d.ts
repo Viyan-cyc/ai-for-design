@@ -1,0 +1,1 @@
+declare module "@grid-baseline" { export { Grid } from "../../../docs/create-3d-component/component-authoring-work/n2-isolated-grid/src/core/Grid"; }

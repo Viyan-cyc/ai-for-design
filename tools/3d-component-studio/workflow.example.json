@@ -1,0 +1,14 @@
+{
+  "project": "D:/your-work/my-component",
+  "demo": "D:/your-work/my-component/example/library-demo.ts",
+  "candidate": "D:/your-work/unpacked-component",
+  "library": "D:/your-work/3d-components-copy",
+  "generator": "D:/your-work/generate-3d-scene-copy",
+  "category": "core",
+  "exports": ["YourComponent"],
+  "runtimeTest": "D:/your-work/component-runtime-test.mjs",
+  "intakePlan": "D:/your-work/review-01/intake-plan.json",
+  "intakeWork": "D:/your-work/review-01/intake-validation",
+  "syncWork": "D:/your-work/review-01/sync-validation",
+  "update": false
+}

@@ -295,6 +295,7 @@ export class Bridge {
    * - 视觉层/材质库：快照为全集语义（__visuals/__materialLib 整表替换）。
    */
   restoreSnapshot(data: SceneData): void {
+    this.handle.internals.sceneEngine.validateFragment(data, true);
     this.commit('导入场景', () => this.rebuild(structuredClone(data)));
   }
 

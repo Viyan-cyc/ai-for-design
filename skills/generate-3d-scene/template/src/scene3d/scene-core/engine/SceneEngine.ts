@@ -722,7 +722,24 @@ export class SceneEngine {
    *                  不存在 → create
    * 3. params 整块替换；__visuals 应用编辑器视觉层
    */
+  /** Validate the entire batch before removals, transforms or factory updates.
+   * Snapshot mode uses incoming values alone; omitted params mean defaults.
+   * This covers registered validators, not arbitrary factory exceptions.
+   */
+  validateFragment(frag: TreeSceneFragment, snapshot = false): void {
+    for (const [type, nodes] of extractGroups(frag)) {
+      const validate = this.factories.get(type)?.definition?.validate;
+      if (!validate) continue;
+      for (const incoming of nodes) {
+        const previous = snapshot ? undefined : this.entries.get(incoming.id)?.node;
+        const next = { ...previous, ...stripUndefined(incoming) } as SceneNode;
+        validate(structuredClone(next));
+      }
+    }
+  }
+
   applyFragment(frag: TreeSceneFragment): UpdateStats {
+    this.validateFragment(frag);
     const stats: UpdateStats = { created: [], updated: [], removed: [], rebuilt: [] };
 
     // 1. remove 先行
