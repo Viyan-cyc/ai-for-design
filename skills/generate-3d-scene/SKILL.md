@@ -33,6 +33,12 @@ metadata:
 5. 读取生成工程现状，局部修改业务 handler、scene-profile 的注册项和 scene-data。设计相机、光照、材质与布局；不要从 demo 模板覆盖现有文件。
 6. `node scripts/build-offline.mjs <WORKSPACE_PATH>`。一次执行静态契约、Node 同步装配检查、类型检查、资源检查和离线打包，前置失败不执行后续依赖阶段。编译使用工程外临时输入，结束后清理；项目仅保留源码与预览。工程自身 npm run build:offline 供开发者安装依赖后使用，默认生成使用此统一入口。成功直接交付并停止；TIMING 与非阻塞性能 WARN 不是新门禁。
 
+### 受控生成与构建
+
+有数据或源码生成脚本时，必须通过统一入口执行：`node scripts/build-offline.mjs <WORKSPACE_PATH> --prepare <可执行文件> ...参数`。例如 `--prepare node scripts/generate-layout.mjs`；准备命令的工作目录为 WORKSPACE_PATH，使用直接进程参数，不拼接 shell 命令。多个准备步骤由工程生成脚本串联，任一步失败必须返回非零退出码。直接编辑源码、没有生成脚本时沿用原构建命令。
+
+入口在准备阶段前获取工程锁；准备命令失败则不启动检查和构建。源文件在复制期间或发布前被检测到变化时，本轮失败且不发布旧产物。锁阻止同一入口并发构建，不阻止外部编辑；完成全部计划内修改后再构建，构建期间不编辑输入。异常退出可能留下 `.cache/scene3d-build.lock`，确认其中进程已退出后才可删除，不自动抢锁。原有检查和修复次数上限保持不变。
+
 场景构建后不追加 typecheck、普通 build、lint、浏览器、截图、性能采样、验证报告或审美修复。模型接收的固定缩略图/加载检查与整包确认属于资产阶段，不是场景复核。真实错误按下文处理；未经运行不能声称已验证渲染或交互。
 
 装配检查在独立进程中用真实 Three.js、SceneEngine 与实际 scene-data 执行工厂注册和同步节点创建，限时 30 秒；超时或检查脚本失败按阻塞处理。它不创建 WebGL、不模拟 DOM、不执行动画帧或联网加载模型。捕获 Duplicate slot、提前 finish、材质实例冲突等代码错误；不是浏览器运行或视觉验收。ASSEMBLY 的 partial / UNCHECKED 表示 Canvas、异步模型等未覆盖，不要求因此打开浏览器、重检库模型或改用几何体。RUNTIME: not-run 表示没有验证渲染与交互。页面好不好看、交互是否好用由用户评价，Agent 不自行做视觉检查或审美修复。
