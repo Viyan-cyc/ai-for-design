@@ -18,7 +18,7 @@ try {
  await handle.whenReady({timeoutMs:20000});await frame(handle);
  assert(handle.getDiagnostics().firstFrame,'真实 WebGL 首帧');
  assert(handle.internals.rendererEngine.renderer.getContext().getError()===0,'共享上下文无 GL 错误');
- assert(handle.getDiagnostics().failedAssets.length===0,'GLB 实际加载');
+ assert(handle.getDiagnostics().failedAssets.length===0,'场景资产加载无失败（具体资产由fixture决定）');
  const label=createScreenLabel({text:'测试标签'});label.position.set(0,35,0);handle.internals.scene.add(label);
  for (const zoom of [15,17]) {
    handle.update({map:{...handle.serialize().map,zoom}});await frame(handle);

@@ -195,7 +195,7 @@ onBeforeUnmount(() => { active = false; scene?.dispose(); });
 - 模型的灯光/阴影与底图的建筑投影分别控制。对数深度关闭以共享地图深度缓冲。统计只包含 Three 图层；地图导航不受模型动画帧率上限约束。
 - `handle.serialize()` 包含地图状态，`handle.update({map: 完整地图配置})` 恢复视角/主题；更换 styleUrl 或 origin 需 dispose 后重新创建。`handle.dispose()` 同时清理地图和模型资源。
 
-底图建筑不是可逐栋编辑的业务资产。散点和交通热力通过 map.overlays 配置，与 Three 模型共用同一场景。
+底图建筑不是可逐栋编辑的业务资产。旧地图散点和话务热力接口已撤下，等待新组件接入。map.overlays只允许省略或空数组；非空或非数组会在创建/更新前报错，不自动丢弃原有业务数据。
 
 
 地图整体编辑通过可选 `SceneHandle.surfaces.list/update` 能力接入既有模型列表。`map.surfaces` 保存建筑、道路、水面、地面、绿地的颜色/显隐覆盖，不创建伪 Three 节点。所有修改经 Bridge.commit，随场景保存、撤销和恢复；更换地图数据规范时需适配类别识别。底部俯视/鸟瞰、浅色/深色入口适用于普通三维和地图，普通场景深浅只改背景/雾，不覆盖业务模型材质。
@@ -215,28 +215,14 @@ onBeforeUnmount(() => { active = false; scene?.dispose(); });
 
 ### 地图业务叠加层
 
-`map.overlays` 是完整数组。散点形态为 `{id, kind:'scatter', options:{tone:'blue'}, data:[{id,lng,lat,properties}], card:{type:'device'}}`；热力为 `{id,kind:'heat',options:{valueRange:[0,100]},data:[{id,lng,lat,value}]}`。每层可设置 name/visible/locked。经纬度为 WGS84，id 稳定且唯一，数值范围由业务定义，空数据不会回填演示数据。
-
-业务 adapter 读取 `handle.serialize().map`，替换相应层 data 后通过 `handle.update({map})` 更新；保留其他层和视角。同样的完整配置可用于恢复。整体层在模型列表支持显隐、锁定及保存撤销，散点还可调统一颜色。热力五级阈值/色带参数在 options 配置，不对应普通 PBR 材质。
-
-点位 `card.type` 查外部 cards 注册表；选中单点时挂载一张 Vue 卡片，props 合并 card.props、点位 properties 和 id/lng/lat，隐藏或删除后卸载。卡片和数据接入继续放 src/business。聚合不是单个业务对象，不自动弹一个成员的卡片。
-
-底层 `/map` 导出 MapScatterLayer、MapHeatLayer，提供 setData/setOptions/dispose；模板 map-overlays.ts 管理注册、序列化和生命周期。无需在业务层再次建立这些组件。散点尺寸固定 CSS px；热力采用原生单层强光晕表达式、固定数值标尺和屏幕核，不是米制物理测量。普通工程不引入这些能力。
-
-
-地图热力 options.displayMode 默认 transparent：零密度透明，缺省 blankThreshold=0.02；reference 保留来源的全域低值底色。没有模式但已显式保存 blankThreshold=0 的历史配置按 reference 迁移，其他显式阈值保留；完全缺省采用新透明默认，serialize 保存确定的模式。transparent 的显式 blankThreshold 必须为有限数且大于 0.0001。无数据、缺测与实测低值不能混为一谈，业务请求失败仍由业务层表达。
-
-散点在导航结束及视口尺寸变化时按邻近点与实际投影聚合，消除相邻分箱造成的分裂，并合并重叠图钉；成员/计数保留，位置为成员加权地理中心，不人为挪位。导航中间帧可能临时重叠，达到 maxClusterZoom 后按配置显示独立点，不承诺重合单点能完全分开。主题/DPR不用于改变成员关系。
-
-地图叠加层整批更新会先校验完整热力色带与配置，成功后才提交保存快照。无效配置直接抛错且不修改旧层；运行期创建失败会尝试恢复旧层及快照，调用方应捕获错误，不能把失败当作已保存。持续资源故障导致恢复也失败时，会报告原错误和恢复错误。
-
+旧地图散点和话务热力接口已撤下，等待新组件接入。map.overlays只允许省略或空数组；非空或非数组会在创建/更新前报错，不自动丢弃原有业务数据。
 
 ### 独立源码安装与地图服务验收
 
 复制完整source目录到新位置后，运行npm ci，再运行npm run dev或npm run build:offline。安装需要可用的npm源或完整缓存；vendor中的组件包已经随源码携带，但不代表全部npm依赖均已离线打包。将源码保留在新项目的 source 子目录，重新构建更新父目录的 index.3d.html。
 
-内网验收顺序：先确认样式JSON可访问，再检查其中的source/tiles、glyphs、sprite及其相对地址、鉴权、跨域和版权要求；用已知坐标核对定位，再验证模型、叠加层数据、显隐与保存恢复。浏览器file协议的Origin可能为null，服务需允许实际运行方式；遇到拒绝应改用受支持的HTTP部署，不宣称双击一定适用于所有地图服务。生产空数据不自动回填示例。
+内网验收顺序：先确认样式JSON可访问，再检查其中的source/tiles、glyphs、sprite及其相对地址、鉴权、跨域和版权要求；用已知坐标核对定位，再验证模型、地图外观、显隐与保存恢复。浏览器file协议的Origin可能为null，服务需允许实际运行方式；遇到拒绝应改用受支持的HTTP部署，不宣称双击一定适用于所有地图服务。生产空数据不自动回填示例。
 
-性能测量应分别记录像素比、窗口尺寸、点数、建筑/模型量、设备与地图服务。空闲重绘、聚合CPU耗时、数据提交与异步完成、导航帧间隔是不同指标。Three统计不包含底图全部开销；本地空白底图的成绩不能代表城市瓦片、建筑投影和网络加载性能。
+性能测量应分别记录像素比、窗口尺寸、点数、建筑/模型量、设备与地图服务。空闲重绘、数据提交与异步完成、导航帧间隔是不同指标。Three统计不包含底图全部开销；本地空白底图的成绩不能代表城市瓦片、建筑投影和网络加载性能。
 
 预览基线只登记工具生成的 HTML 和运行资源；附件与历史文件不归构建管理。单独移动源码时放在新项目的 source 目录，构建输出到该项目根部。

@@ -6,3 +6,9 @@ skills/gts-charts-coder/SKILL.md text eol=lf
 skills/gts-charts-coder/scripts/init.mjs text eol=lf
 skills/gts-charts-coder/scripts/project-directory.mjs text eol=lf
 skills/create-3d-component/assets/runtime/** -text
+
+# Preserve component-sync ownership hashes across Windows checkouts.
+skills/generate-3d-scene/references/component-catalog.md -text
+skills/generate-3d-scene/references/component-docs/*.md -text
+skills/generate-3d-scene/vendor/components.json -text
+skills/generate-3d-scene/vendor/components-sync.json -text

@@ -1,37 +1,25 @@
-import { MapRuntime } from '@a3d/a3d-components/map';
-import { MapOverlays } from './src/scene3d/map/map-overlays';
-const out=document.querySelector('#result')!;
-const host=document.querySelector('#host') as HTMLElement;
+import { createScene3D } from './src/scene3d/create-scene';
+const host=document.querySelector('#host') as HTMLElement, out=document.querySelector('#result')!;
 const lines:string[]=[];
-const check=(value:unknown,label:string)=>{if(!value)throw Error(label);lines.push('PASS '+label);out.textContent=lines.join('\n');};
-let runtime:MapRuntime|undefined, overlays:MapOverlays|undefined;
+function check(ok:unknown,label:string){if(!ok)throw Error(label);lines.push('PASS '+label);out.textContent=lines.join('\n');}
+let handle:any;
 const style=URL.createObjectURL(new Blob([JSON.stringify({version:8,sources:{},layers:[{id:'bg',type:'background',paint:{'background-color':'#eee'}}]})],{type:'application/json'}));
-try {
- runtime=await MapRuntime.create({host,style,origin:[121.49,31.23]});
- overlays=new MapOverlays(runtime.map,'light',{});
- overlays.replace([{id:'traffic',kind:'heat',options:{valueRange:[0,100]},data:[{id:'a',lng:121.49,lat:31.23,value:50}]}]);
- const before=overlays.snapshot(), source=runtime.map.getSource('a3d_heat_traffic:source');
- const bad=structuredClone(before); (bad[0].options as any).thresholds=[0.9,0.2,0.7,0.93];
- let rejected=false;try{overlays.replace(bad);}catch{rejected=true;}
- check(rejected,'invalid thresholds rejected');
- check(runtime.map.getSource('a3d_heat_traffic:source')===source,'preflight leaves original source intact');
- check(JSON.stringify(overlays.snapshot())===JSON.stringify(before),'invalid update preserves saved document');
- const batch=structuredClone(before);batch[0].data[0].value=90;batch.push({...bad[0],id:'second'});
- rejected=false;try{overlays.replace(batch);}catch{rejected=true;}
- check(rejected&&runtime.map.getSource('a3d_heat_traffic:source')===source,'invalid second layer rejected before first layer mutation');
- check(JSON.stringify(overlays.snapshot())===JSON.stringify(before),'invalid batch preserves snapshot');
- const changed=structuredClone(before);changed[0].data[0].value=90;changed.push({...structuredClone(before[0]),id:'second'});
- const add=runtime.map.addLayer.bind(runtime.map);let injected=false;
- runtime.map.addLayer=((layer:any,...args:any[])=>{if(layer.id==='a3d_heat_second'&&!injected){injected=true;throw Error('injected creation failure');}return (add as any)(layer,...args);}) as any;
- rejected=false;try{overlays.replace(changed);}catch{rejected=true;}finally{runtime.map.addLayer=add;}
- check(rejected&&injected,'runtime creation failure propagated');
- check(!!runtime.map.getLayer('a3d_heat_traffic')&&!runtime.map.getSource('a3d_heat_second:source'),'old layer restored and partial new source cleaned');
- check(JSON.stringify(overlays.snapshot())===JSON.stringify(before),'runtime failure restores saved document');
- const restored=await (runtime.map.getSource('a3d_heat_traffic:source') as any).getData();
- check(restored.features[0].properties.traffic===0.5,'old rendered source data restored');
- overlays.replace(changed);
- check(overlays.snapshot()[0].data[0].value===90&&!!runtime.map.getLayer('a3d_heat_second'),'valid update succeeds after failure');
- const saved=overlays.snapshot();overlays.dispose();overlays=new MapOverlays(runtime.map,'light',{});overlays.replace(saved);
- check(JSON.stringify(overlays.snapshot())===JSON.stringify(saved),'post-recovery save can recreate scene');
+try{
+ const data=await(await fetch('/scene3d/scene-data.json')).json();data.map.styleUrl=style;data.map.overlays=[];
+ for(const value of [null,{},[{id:'legacy',kind:'heat'}]]){
+  const bad=structuredClone(data);bad.map.overlays=value;let error='';try{await createScene3D(host,{data:bad});}catch(e){error=String(e);}
+  check(error.includes('overlays')&&host.children.length===0,'invalid initial overlays rejected before resources');
+ }
+ handle=await createScene3D(host,{data});await handle.whenReady({timeoutMs:20000});
+ const before=JSON.stringify(handle.serialize()),canvas=host.querySelector('canvas');
+ for(const value of [null,{},[{id:'legacy',kind:'scatter'}]]){
+  const bad=structuredClone(handle.serialize().map);bad.overlays=value;bad.zoom=12;bad.theme='dark';let error='';try{handle.update({map:bad});}catch(e){error=String(e);}
+  check(error.includes('overlays'),'invalid update rejected');check(JSON.stringify(handle.serialize())===before&&host.querySelector('canvas')===canvas,'snapshot and resources preserved');
+ }
+ handle.update({map:{...handle.serialize().map,overlays:[],theme:'dark'}});
+ check(handle.serialize().map.theme==='dark','valid update after rejection');
+ const saved=handle.serialize();handle.dispose();handle=null;check(host.children.length===0,'dispose removes host resources');
+ handle=await createScene3D(host,{data:saved});await handle.whenReady({timeoutMs:20000});
+ check(handle.serialize().map.theme==='dark'&&handle.serialize().map.overlays.length===0,'saved configuration recreates');
  out.textContent=lines.join('\n')+'\nALL PASS';
-}catch(e){out.textContent=lines.join('\n')+'\nFAIL '+String(e);}finally{overlays?.dispose();runtime?.dispose();URL.revokeObjectURL(style);}
+}catch(e){out.textContent=lines.join('\n')+'\nFAIL '+e;}finally{handle?.dispose();URL.revokeObjectURL(style);}

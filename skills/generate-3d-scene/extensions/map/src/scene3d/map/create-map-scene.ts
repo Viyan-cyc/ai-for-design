@@ -6,12 +6,11 @@ import * as THREE from 'three';
 import { createScene, type SceneHandle, type SceneOptions } from '../scene-core/createScene';
 import type { SceneData } from '../scene-core/types';
 import type { Component } from 'vue';
-import { MapOverlays, type MapOverlayConfig } from './map-overlays';
 
 export interface MapConfig {
   surfaceScan?: Omit<MapSurfaceScanOptions, 'onStatus' | 'id'>;
   layerMapping?: MapLayerRule[];
-  overlays?: MapOverlayConfig[];
+  overlays?: [];
   styleUrl: string;
   origin: [number, number];
   center?: [number, number];
@@ -25,6 +24,8 @@ export interface MapConfig {
 
 export function validateMapConfig(value: unknown): asserts value is MapConfig {
   const config = value as MapConfig;
+  if (config?.overlays !== undefined && (!Array.isArray(config.overlays) || config.overlays.length !== 0))
+    throw new Error('地图旧业务叠加层已撤下：overlays只接受省略或空数组；请保留原数据，等待新组件接入');
   validateLayerMapping(config?.layerMapping);
   if (config?.surfaceScan) { normalizeScanOptions(config.surfaceScan); validateScanBuildings(config.surfaceScan.buildings ?? []); }
   if (!config || typeof config.styleUrl !== 'string' || !config.styleUrl.trim()
@@ -79,7 +80,6 @@ export async function createMapScene(host: HTMLElement, data: SceneData, cards: 
   const { map, container, basis } = runtime;
   let experience: MapPresentation | undefined;
   let disposed = false;
-  let overlays: MapOverlays | undefined;
   let scan: MapSurfaceParticleScan | undefined;
   let scanConfig = structuredClone(config.surfaceScan);
 
@@ -88,7 +88,7 @@ export async function createMapScene(host: HTMLElement, data: SceneData, cards: 
     disposed = true;
     cancelReveal(); loading.remove(); mapHost.remove();
     scan?.dispose();
-    try { overlays?.dispose(); } finally { try { experience?.dispose(); } finally { runtime.dispose(); } }
+    try { experience?.dispose(); } finally { runtime.dispose(); }
   };
   try {
     experience = new MapPresentation(map, { theme: config.theme, view: config.view, pitch: config.pitch, layerMapping: config.layerMapping, overrides: presentationOverrides(config.surfaces) });
@@ -105,8 +105,6 @@ export async function createMapScene(host: HTMLElement, data: SceneData, cards: 
       handle!.internals.renderLoop.drawExternal();
     } });
     handle.viewMode = 'map';
-    overlays = new MapOverlays(map, config.theme ?? 'light', cards, options.cardContext);
-    overlays.replace(config.overlays ?? []);
     const scanStatus = document.createElement('p');
     scanStatus.setAttribute('role', 'status');
     scanStatus.style.cssText = 'position:absolute;bottom:8px;left:12px;background:#fff;color:#333;font:12px sans-serif;max-width:420px';
@@ -115,7 +113,7 @@ export async function createMapScene(host: HTMLElement, data: SceneData, cards: 
     if (scanConfig) scan = new MapSurfaceParticleScan(runtime, { ...scanConfig, onStatus: reportScan });
     const originalSerialize = handle.serialize.bind(handle);
     handle.serialize = () => ({ ...originalSerialize(), camera: structuredClone(data.camera), map: {
-      ...config, surfaceScan: structuredClone(scanConfig), overlays: overlays!.snapshot(), center: map.getCenter().toArray(), zoom: map.getZoom(), pitch: experience!.getState().view === '2d' ? experience!.getState().pitch : map.getPitch(), bearing: map.getBearing(),
+      ...config, surfaceScan: structuredClone(scanConfig), overlays: [], center: map.getCenter().toArray(), zoom: map.getZoom(), pitch: experience!.getState().view === '2d' ? experience!.getState().pitch : map.getPitch(), bearing: map.getBearing(),
       theme: experience!.getState().theme, view: experience!.getState().view,
     } });
     const originalUpdate = handle.update.bind(handle);
@@ -138,8 +136,6 @@ export async function createMapScene(host: HTMLElement, data: SceneData, cards: 
         }
         scanConfig = structuredClone(nextScan);
         scanStatus.hidden = !nextScan?.enabled;
-        overlays!.replace(next.overlays ?? []);
-        overlays!.setTheme(next.theme ?? 'light');
         experience!.applyState({ theme: next.theme ?? 'light', view: next.view ?? '3d', pitch: next.pitch ?? 45, overrides: presentationOverrides(next.surfaces) });
         map.jumpTo({ center: next.center ?? config.origin, zoom: next.zoom ?? 16, pitch: next.view === '2d' ? 0 : next.pitch ?? 45, bearing: next.bearing ?? 0 });
       }
@@ -185,9 +181,8 @@ export async function createMapScene(host: HTMLElement, data: SceneData, cards: 
       return result;
     };
     handle.surfaces = {
-      list: () => [...entries(), ...overlays!.entries()],
+      list: () => entries(),
       update: (id, patch) => {
-        if (id.startsWith('overlay_')) { overlays!.update(id, patch); return; }
         if (!entries().some(item => item.id === id)) throw new Error('未知地图内容');
         const selected = entries().find(item => item.id === id)!;
         if (selected.locked && (patch.color !== undefined || patch.visible !== undefined)) throw new Error('对象已锁定，请先解锁');

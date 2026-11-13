@@ -1,0 +1,41 @@
+// R2: exercise actual ownership guards and real apply transaction in isolated copies.
+import assert from 'node:assert/strict';
+import {readFile,writeFile,mkdir,cp,unlink} from 'node:fs/promises';
+import {resolve,join} from 'node:path';
+import {createHash} from 'node:crypto';
+import {prepareSync,applySync,syncBaseline} from '../../skills/generate-3d-scene/scripts/lib/component-sync.mjs';
+const root=resolve(process.argv[2]);await mkdir(root);
+const moduleUrl=new URL('../../skills/generate-3d-scene/scripts/lib/component-sync.mjs',import.meta.url);
+const code=await readFile(moduleUrl,'utf8');
+// Expose private guards only in the in-memory test module; production file is unchanged.
+const {ownership}=await import('data:text/javascript;base64,'+Buffer.from(code+'\nexport {ownership};').toString('base64'));
+const source=join(root,'source'),target=join(root,'target');await mkdir(source);await mkdir(join(target,'vendor'),{recursive:true});
+await writeFile(join(source,'package.json'),JSON.stringify({name:'@a3d/a3d-components'}));
+await writeFile(join(target,'SKILL.md'),'name: generate-3d-scene');
+await writeFile(join(target,'vendor/a3d-a3d-components-old.tgz'),'legacy');
+const operations={'vendor/a3d-a3d-components-old.tgz':null};
+const before=await syncBaseline(target);
+await assert.rejects(()=>ownership(target,operations,null,false),/未登记/);
+assert.equal(await syncBaseline(target),before);
+await mkdir(join(target,'references/component-docs'),{recursive:true});
+const manual='references/component-docs/Test.md';await writeFile(join(target,manual),'Human authored content');
+await assert.rejects(()=>ownership(target,{[manual]:Buffer.from('new').toString('base64')},null,true),/人工文件不得接管/);
+assert.equal(await readFile(join(target,manual),'utf8'),'Human authored content');
+assert.deepEqual(await ownership(target,operations,null,true),Object.keys(operations));
+await writeFile(join(target,'vendor/components-sync.json'),JSON.stringify({formatVersion:1,files:{}}));
+await assert.rejects(()=>prepareSync({source,target,work:join(root,'must-not-create'),adoptGenerated:true}),/已有同步清单/);
+await unlink(join(target,'vendor/components-sync.json'));
+// Use a genuine prepared payload against an exact fresh target snapshot.
+const real=JSON.parse(await readFile(process.argv[3],'utf8'));
+const tx=join(root,'transaction');await cp(real.target,tx,{recursive:true});
+const plan={...real,target:tx,targetBaseline:await syncBaseline(tx)};
+const snapshot=await syncBaseline(tx);
+await assert.rejects(()=>applySync(plan),/confirmed/);
+await writeFile(join(tx,'concurrent.txt'),'keep');
+await assert.rejects(()=>applySync(plan,{confirmed:true}),/目标skill变化/);
+assert.equal(await readFile(join(tx,'concurrent.txt'),'utf8'),'keep');await unlink(join(tx,'concurrent.txt'));
+await assert.rejects(()=>applySync({...plan,sourceBaseline:'outdated'},{confirmed:true}),/源库变化/);
+await assert.rejects(()=>applySync(plan,{confirmed:true,onWrite:(_p,n)=>{if(n===3)throw Error('injected rollback');}}),/injected rollback/);
+assert.equal(await syncBaseline(tx),snapshot);
+const result={status:'PASS',guardSourceSha256:createHash('sha256').update(code).digest('hex'),checks:['first unowned denied','manual not adopted','legacy eligible','repeat adoption denied','confirmation required','target change preserved','source baseline mismatch denied','transaction rollback']};
+await writeFile(join(root,'result.json'),JSON.stringify(result,null,2));console.log(JSON.stringify(result));

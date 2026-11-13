@@ -10,7 +10,7 @@
 ## 怎样组合组件
 - 基础地图使用[MapPresentation](../component-docs/MapPresentation.md)，通过map.theme选择light或dark。地面、道路、水域、绿地、建筑和底图文字沿用预设，不逐项手抄主题颜色。
 - 地点、中心、范围、zoom、bearing和pitch按项目关注区域设置，不沿用上海样本的绝对取景。
-- 没有业务数据需求时只生成底图和所需模型。散点、热力按[叠加层说明](../map-overlays.md)独立启用；扫光另按相应能力接入，不默认添加。
+- 没有业务数据需求时只生成底图和所需模型。旧散点、热力暂不可用，见[过渡说明](../map-overlays.md)；扫光另按相应能力接入，不默认添加。
 - 业务标签可用[ScreenLabel](../component-docs/ScreenLabel.md)，按项目定义信息、尺寸、缩放显隐及遮挡规则；底图labelSize不是业务卡片的像素尺寸。
 
 ## 哪些可以调

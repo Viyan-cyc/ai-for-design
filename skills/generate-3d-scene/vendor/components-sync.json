@@ -1,0 +1,52 @@
+{
+  "formatVersion": 1,
+  "package": {
+    "name": "@a3d/a3d-components",
+    "version": "0.1.1",
+    "path": "vendor/a3d-a3d-components-0.1.1.tgz",
+    "sha256": "d327819b0cec0b74e46559c7178c00fe310ca64b09e12dc1e45ebc533ffb7523"
+  },
+  "sourceDigest": "7913c70bba0c4b188d6a78c6931f3ee7c37db3a6f8f0e4000ab0505cec048827",
+  "files": {
+    "references/component-catalog.md": "5cb5191e92767c8f39c8a85d71e416411dd9b0f62b704ae63b179b27ba16d7aa",
+    "references/component-docs/AssetCache.md": "36884bcb590418fa66d7e2a9f1e34c974110a83e2daf10dd5a5224c95b83a46a",
+    "references/component-docs/BitmapText.md": "affebbac102f84ba4774b0fa47c82fad501342d322777c28009ba15db2233f6c",
+    "references/component-docs/CameraControls.md": "4286686d4e30cc2d217f0462c6a610359b28d230c89425d326a9e9b78448f023",
+    "references/component-docs/Edge3D.md": "c63f445762b753d3e534cb42d7c60b31fde12450f97d3428ea662533ecc4f2c9",
+    "references/component-docs/GizmoHelper.md": "bafe900440740cbfef8cf72a6c91c370f5590b2dfa6efe59cf375c8d155c3058",
+    "references/component-docs/GizmoViewport.md": "1564071a1e56a596c3006c0ebf26bc144041685e6642aae54ff8d95d9beb7dcd",
+    "references/component-docs/Graph3D.md": "87c99f46873cee3b21d902a1274eabe145330d698a0ad6ae0c5922eea6acecb3",
+    "references/component-docs/Grid.md": "d64acb8dd1ebf358286cb7c6560247a1ff5bdcdaaa2f002637af7f8dc150c450",
+    "references/component-docs/HeatMap.md": "60d116599e128bbd1ec56f3864b2f812d21a169bfe1b7915b2ac0f77893f2a6b",
+    "references/component-docs/Html.md": "a77fe41365f6c8cab12d5e18a44f258dd8a4354d6b35a7f64849b287c095be60",
+    "references/component-docs/InstancedEntity.md": "01b81645f6b5151f9dceda5fffde5dc3622ac38a5b6c47775f103828664d0593",
+    "references/component-docs/InstancedMesh2.md": "074027e5f380039908aa1cc54c02048b667da8e562a0f572e82b4229d92b42bc",
+    "references/component-docs/InstancedMeshBVH.md": "f9e87531fa75da522dd31354f919338efe3ffb9bbd216cf5564d5a715cf5335d",
+    "references/component-docs/InteractiveManager.md": "60e75c3ae37fa108df1445a06c31f3e8033baea856f2dbd7be048b87e9b71ad4",
+    "references/component-docs/MapPresentation.md": "d72cbada6bd279ea8afcc49dbf522b649c68ebe551d2441305823aa31fba46bf",
+    "references/component-docs/MapRuntime.md": "bd8af13cb909fa149ebce072293e02938f5238d79b258b1edf762222c084b219",
+    "references/component-docs/MapSurfaceParticleScan.md": "75539655e1cbeb7204ca8e28aa4db7eb1ed099bc647e775ced2ec93c94b6fafa",
+    "references/component-docs/MaterialManager.md": "d485839f3b4c25d8de9e65b8d68d5cfd5e5d997f3c779151e23ee541d63c95f5",
+    "references/component-docs/MeshReflectorMaterial.md": "8008165fc45911f8cc17832d2a8e6d38a4c18778d5a3d8129f5e99460b61a35e",
+    "references/component-docs/Node3D.md": "6d15f0d1280220685dadc73dd1f0901c6b98fc7a7f18b2a9c997cac5efb1c9bd",
+    "references/component-docs/Outlines.md": "1170775aa5366cb2e0459f42d72e258552e936548bdc5c5c8c0f85fb75c055e2",
+    "references/component-docs/Path.md": "6b434e0b4c95fc47e5101edb49f9ee56f6d7e2597fa5ff2a1e0392674a686a14",
+    "references/component-docs/PickController.md": "43fb1045e2755835fdf23739bf456bfaa26f08708d38a600e738ccdac7882834",
+    "references/component-docs/PivotControls.md": "b7945dc35d3e7b4ae1db50ce04a01790ef251e22d826479da65b1395ab3b7152",
+    "references/component-docs/Rack.md": "7cdc67681aa7a3689e22a8006253665d41d7d12d2488aa51b5472ff212c9241f",
+    "references/component-docs/ScreenLabel.md": "abf58321d40ec59dbc60acbd844a90a4554821122b61f279e474304cb30d1417",
+    "references/component-docs/Shape.md": "a463810c3ca7093df944cbdcb978a0e61026672958f4d98374c0f89c29e2cad9",
+    "references/component-docs/Sky.md": "59b171985f8ea77300cf6d87ee1a583e2188e874bcbac1a035ac31aa6eb2d281",
+    "references/component-docs/Wall.md": "5598fa91799947983047251c9b016dd91e775a41238351f6935f5e833d76208a",
+    "references/component-docs/Wireframe.md": "1dd987efe42c463d67a6b57da780b12d7c98b3dd79c1067b1e1a03862323ef73",
+    "vendor/a3d-a3d-components-0.1.1.tgz": "d327819b0cec0b74e46559c7178c00fe310ca64b09e12dc1e45ebc533ffb7523",
+    "vendor/components.json": "5d7200d51a2bf0a1f2c32a58ba78f13208cfbaad31ba0fc4552b61f43817e322"
+  },
+  "states": {
+    "package": "built",
+    "documentation": "generated",
+    "scene": "not-verified",
+    "editor": "not-verified",
+    "publication": "unpublished"
+  }
+}
