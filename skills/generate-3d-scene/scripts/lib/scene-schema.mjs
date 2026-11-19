@@ -193,25 +193,13 @@ export const registryFromFactories = (factoryTypes, { hasAssetFactory = true } =
 
 import { createRequire } from 'node:module';
 import { dependencyPath } from './environment.mjs';
-import { existsSync } from 'node:fs';
-import { resolve as pathResolve, join } from 'node:path';
 const requireFromHere = createRequire(import.meta.url);
 
 /**
- * 惰性加载共享环境 node_modules 的 typescript（vue-tsc 构建链的既有硬依赖，
+ * 惰性加载调用方指定依赖目录的 typescript（vue-tsc 构建链的既有硬依赖，
  * 无新增依赖）。加载失败明确抛错——提取器不能在拿不到 AST 时静默退回猜测。
  */
-let tsModule = null;
-const getTs = () => {
-  if (!tsModule) {
-    const tsPath = dependencyPath('typescript', 'lib', 'typescript.js');
-    if (!existsSync(tsPath)) {
-      throw new Error(`TypeScript 不可达（AST 提取依赖）：${tsPath}——先运行 scripts/setup-env.mjs 准备共享依赖`);
-    }
-    tsModule = requireFromHere(tsPath);
-  }
-  return tsModule;
-};
+const getTs = (typescriptPath = dependencyPath('typescript')) => requireFromHere(typescriptPath);
 
 /**
  * 从业务 profile 源码提取工厂分组登记表（P2-RR1 单一来源：BUSINESS_REGISTRARS；
@@ -226,8 +214,8 @@ const getTs = () => {
  * - 对象存在（含空对象）→ 返回 key 列表（空 = 纯内建图元/asset 工程，合法）
  * - 声明缺失 / 顶层成员非 key:value / key 形态不支持 → 抛错（不静默放行残缺集合）
  */
-export const extractBusinessFactoryTypes = (profileSource) => {
-  const ts = getTs();
+export const extractBusinessFactoryTypes = (profileSource, typescriptPath) => {
+  const ts = getTs(typescriptPath);
   const sf = ts.createSourceFile('scene-profile.ts', profileSource, ts.ScriptTarget.ES2022, true, ts.ScriptKind.TS);
   let obj = null;
   const visit = (node) => {
@@ -266,7 +254,7 @@ export const extractBusinessFactoryTypes = (profileSource) => {
  * 构建工程用的完整工厂注册表（内建图元 + asset + 业务分组）。
  * @param {string} profileSource template/src/scene3d/scene-profile.ts 源码文本
  */
-export const factoryRegistryFromProfile = (profileSource) => registryFromFactories([
+export const factoryRegistryFromProfile = (profileSource, typescriptPath) => registryFromFactories([
   ...['Box', 'Sphere', 'Cylinder', 'Plane', 'Cone', 'Torus', 'asset'],
-  ...extractBusinessFactoryTypes(profileSource),
+  ...extractBusinessFactoryTypes(profileSource, typescriptPath),
 ]);

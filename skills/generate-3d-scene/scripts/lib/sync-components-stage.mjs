@@ -124,7 +124,23 @@ function exampleText(comment) {
 const top = (td.children || []).flatMap(c => c.kind === 2 ? (c.children || []) : [c]);
 const classes = top.filter((c) => c.kind === KIND.CLASS);
 const nativeNames=new Set();const intakeDir=join(srcRoot,'docs/intake');
-if(existsSync(intakeDir))for(const f of require_('fs').readdirSync(intakeDir).filter(f=>f.endsWith('.json'))){const r=JSON.parse(readFileSync(join(intakeDir,f),'utf8'));r.names.forEach(n=>nativeNames.add(n));}
+const indexedDocs=JSON.parse(readFileSync(join(srcRoot,'docs/components.json'),'utf8'));
+let restoredSuite=false;
+if(existsSync(intakeDir))for(const f of require_('fs').readdirSync(intakeDir).filter(f=>f.endsWith('.json'))){
+  const r=JSON.parse(readFileSync(join(intakeDir,f),'utf8'));
+  const names=r.profile==='restored-map-suite'&&r.version===1?r.components:r.names;
+  if(!Array.isArray(names)||!names.length||names.some(n=>typeof n!=='string'||!n))throw Error('Unsupported intake record: '+f);
+  names.forEach(n=>nativeNames.add(n));
+  if(r.profile==='restored-map-suite'){
+    if(JSON.stringify([...names].sort())!==JSON.stringify(['BuildingTint','GridHeat','LogicalScatter','MapExperience']))throw Error('Unexpected restored suite components');
+    restoredSuite=true;
+  }
+}
+// R7's verified generated pages are the documentation authority for this profile.
+// Do not rewrite the byte-preserved R6 runtime just to add documentation comments.
+const admittedDocs=new Map([...nativeNames].map(n=>[n,indexedDocs.find(d=>d.name===n)]));
+for(const [name,doc] of admittedDocs)if(!doc?.summary||!doc.examples?.some(e=>typeof e==='string'&&e.trim()))throw Error('Missing admitted component summary/example: '+name);
+const supportDoc=restoredSuite?{name:'HeatField',summary:'栅格与建筑染色共享的数据场。generateHeatRecords(bounds,valueAt,options) 用于显式模拟：按当前单元大小逐格生成0–255整数，最多100000条，范围超限拒绝。不得用近似经纬度大步长制造稀疏网格，不修改样式补偿数据间隔。setData严格要求每格一值；重复或非法数据拒绝并保留上次有效状态。heatCellCenter(x,y,options)返回相对原点向东/向南整数格的经纬度中心。prepareHeatRecords(records,options,policy)显式转换：error（默认）/max/mean，mean四舍五入，返回records、inputCount、cellCount、mergedCount。非法数据不丢弃。先释放使用者，再释放场。',examples:["import { HeatField, heatCellCenter, prepareHeatRecords } from '@a3d/a3d-components/map';\nconst options = { origin: [121.49517, 31.24194] as [number, number] };\nconst [lng, lat] = heatCellCenter(0, 0, options);\nconst field = new HeatField(options);\nfield.setData([{ lng, lat, value: 180 }]);\n// 仅业务明确需要取最大值时选择max；不默认聚合用户数据。\nconst prepared = prepareHeatRecords([{lng, lat, value:180}, {lng, lat, value:200}], options, 'max');\nfield.setData(prepared.records);\n// 先销毁引用此场的GridHeat和BuildingTint。\nfield.dispose();"]}:null;
 const factoryComment=c=>c.comment??c.signatures?.[0]?.comment;
 const factories = top.filter(c=>c.kind===KIND.FUNCTION && (nativeNames.has(c.name) || /^create[A-Z]/.test(c.name)) && exampleText(factoryComment(c)) && commentText(factoryComment(c)));
 const sources = [...classes,...factories].map((c) => {
@@ -142,9 +158,9 @@ const sources = [...classes,...factories].map((c) => {
   }
   return {
     name: c.name,
-    summary: commentText(docComment),
-    example: exampleText(docComment),
-    hasClassDoc: !!docComment,
+    summary: admittedDocs.get(c.name)?.summary ?? (c.name==='HeatField'?supportDoc?.summary:undefined) ?? commentText(docComment),
+    example: admittedDocs.get(c.name)?.examples?.[0] ?? (c.name==='HeatField'?supportDoc?.examples[0]:undefined) ?? exampleText(docComment),
+    hasClassDoc: !!docComment || admittedDocs.has(c.name) || (c.name==='HeatField'&&!!supportDoc),
     options,
   };
 });
@@ -176,7 +192,6 @@ const program=ts.createProgram(entries,{module:ts.ModuleKind.ESNext,moduleResolu
 const checker=program.getTypeChecker(),imports=new Map();
 for(const entry of entries){const sf=program.getSourceFile(entry);const b=entry===join(srcRoot,'src/index.ts')?'':basename(dirname(entry));for(const sym of checker.getExportsOfModule(checker.getSymbolAtLocation(sf)))if(!imports.has(sym.name))imports.set(sym.name,'@a3d/a3d-components'+(b?'/'+b:''));}
 function findImportPath(name){const path=imports.get(name);if(!path)throw Error('Public import unavailable: '+name);return path;}
-const indexedDocs=JSON.parse(readFileSync(join(srcRoot,'docs/components.json'),'utf8'));
 
 for(const name of nativeNames)if(!sources.some(s=>s.name===name))throw Error('Admitted export missing TSDoc/example: '+name);
 const cell=v=>String(v??'—').replace(/\|/g,'\\|').replace(/\r?\n/g,' ');
@@ -197,7 +212,7 @@ for (const s of sources) {
   // Native defaults come from the verified intake-generated documentation.
   const nativeDoc=nativeNames.has(s.name)?indexedDocs.find(d=>d.name===s.name):null;
   if(nativeNames.has(s.name)&&!nativeDoc)throw Error('Missing native component documentation: '+s.name);
-  if(nativeDoc){lines.push('## 参数','', '| 参数 | 类型 | 默认值 | 说明 |','|---|---|---|---|');for(const f of nativeDoc.options)lines.push('| '+[f.name,f.type,f.default,f.description].map(cell).join(' | ')+' |');lines.push('');}
+  if(nativeDoc){lines.push('## 创建','', '```ts',nativeDoc.constructor,'```','', '## 可调参数','', '以下是调节项，不等于完整构造参数；宿主与数据按示例显式提供。','', '| 参数 | 类型 | 默认值 | 说明 |','|---|---|---|---|');for(const f of nativeDoc.options)lines.push('| '+[f.name,f.type,f.default,f.description].map(cell).join(' | ')+' |');lines.push('');}
   if (!nativeDoc && s.options) {
     const fields = (s.options.children || []).filter((f) => f.kind === KIND.PROPERTY);
     if (fields.length) {
@@ -223,6 +238,9 @@ for (const s of sources) {
     lines.push(ex);
     lines.push('```');
     lines.push('');
+  }
+  if(restoredSuite&&['MapExperience','LogicalScatter','GridHeat','BuildingTint','HeatField'].includes(s.name)){
+    lines.push('## 场景接入','', '参阅[地图组件选用与接入](../restored-map-components.md)。包中存在该接口不代表已接入生成器编辑、撤销和保存；不要把逻辑坐标当成经纬度。','');
   }
   lines.push('---');
   lines.push('');

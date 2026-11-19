@@ -33,9 +33,13 @@
 | **AssetCache** | AssetCache —— 模型与贴图的按需加载 / 内存缓存组件 | `'@a3d/a3d-components'` | [AssetCache.md](component-docs/AssetCache.md) |
 | **MaterialManager** | Interface for components that support resource cleanup | `'@a3d/a3d-components/material'` | [MaterialManager.md](component-docs/MaterialManager.md) |
 | **MeshReflectorMaterial** | MeshReflectorMaterial — a **planar reflection material** for Three | `'@a3d/a3d-components/material'` | [MeshReflectorMaterial.md](component-docs/MeshReflectorMaterial.md) |
-| **MapPresentation** | Owns presentation only | `'@a3d/a3d-components/map'` | [MapPresentation.md](component-docs/MapPresentation.md) |
-| **MapRuntime** | Optional MapLibre host for a shared-context Three scene | `'@a3d/a3d-components/map'` | [MapRuntime.md](component-docs/MapRuntime.md) |
-| **MapSurfaceParticleScan** | Optional map-only effect | `'@a3d/a3d-components/map'` | [MapSurfaceParticleScan.md](component-docs/MapSurfaceParticleScan.md) |
+| **GeographicScatter** | 经纬度散点 | `'@a3d/a3d-components/map'` | [GeographicScatter.md](component-docs/GeographicScatter.md) |
+| **BuildingTint** | 按建筑表面每个片段的地面投影染色，同时适配原生建筑和普通Three模型；保持原几何、材质明暗与不透明度 | `'@a3d/a3d-components/map'` | [BuildingTint.md](component-docs/BuildingTint.md) |
+| **GridHeat** | 经纬度栅格热力 | `'@a3d/a3d-components/map'` | [GridHeat.md](component-docs/GridHeat.md) |
+| **HeatField** | 栅格与建筑染色共享的数据场 | `'@a3d/a3d-components/map'` | [HeatField.md](component-docs/HeatField.md) |
+| **LogicalScatter** | 逻辑坐标散点与缩放聚合 | `'@a3d/a3d-components/map'` | [LogicalScatter.md](component-docs/LogicalScatter.md) |
+| **MapExperience** | 完整地图体验：统一管理底图、建筑、光影、双主题及地图交互 | `'@a3d/a3d-components/map'` | [MapExperience.md](component-docs/MapExperience.md) |
+| **SurfaceParticleScan** | Borrowed geometry in host-local metres (X east, Y up, Z south) | `'@a3d/a3d-components/map'` | [SurfaceParticleScan.md](component-docs/SurfaceParticleScan.md) |
 
 ## 使用纪律
 

@@ -1,0 +1,18 @@
+import {createRequire} from 'node:module';
+import {writeFile,mkdir} from 'node:fs/promises';import {resolve,join} from 'node:path';import {pathToFileURL} from 'node:url';import assert from 'node:assert/strict';
+const c='D:/cyc/project/octo/test/3d-components',require=createRequire(c+'/package.json'),{build}=require('esbuild');
+const w=resolve(process.argv[2]);await mkdir(w,{recursive:true});
+await build({stdin:{contents:"export * from './sampling';export * from './index';export * as THREE from 'three';",resolveDir:c+'/src/map/surface-particle-scan',loader:'ts'},bundle:true,platform:'node',format:'esm',outfile:join(w,'sampling.mjs')});
+const m=await import(pathToFileURL(join(w,'sampling.mjs')));const o={...m.defaults,centerX:0,centerZ:0,radius:720};
+const data={buildings:Array.from({length:300},(_,i)=>{const x=(i%20)*40-400,z=Math.floor(i/20)*40-300;return {height:30+i%180,rings:[[[x,z],[x+25,z],[x+25,z+25],[x,z+25],[x,z]]]};}),meshes:[{geometry:new m.THREE.SphereGeometry(60,96,64),matrix:new m.THREE.Matrix4().makeTranslation(0,150,0)}]};
+const baseline=resolve('docs/create-3d-component/native-work/scan-height-contract/sync-final/library/src/map/surface-particle-scan/sampling.ts');
+await build({entryPoints:[baseline],bundle:true,platform:'node',format:'esm',outfile:join(w,'sampling-before.mjs')});
+const before=await import(pathToFileURL(join(w,'sampling-before.mjs')));assert.deepEqual(m.sampleSurfaces(data,o),before.sampleSurfaces(data,o));
+const t=performance.now(),sync=m.sampleSurfaces(data,o),syncMs=performance.now()-t;let ticks=0;const timer=setInterval(()=>ticks++,1),start=performance.now();const sliced=await m.sampleSurfacesAsync(data,o);clearInterval(timer);const asyncMs=performance.now()-start;assert.deepEqual(sliced,sync);assert.ok(ticks>0);
+const scan=new m.SurfaceParticleScan(()=>{},o);scan.setData({buildings:[],meshes:[]});const previous=scan.children[0].geometry;
+await assert.rejects(scan.setDataAsync({buildings:[{height:NaN,rings:[]}],meshes:[]}));assert.equal(scan.children[0].geometry,previous);
+const cancelled=scan.setDataAsync(data);scan.setOptions({size:4});assert.equal(await cancelled,false);assert.equal(scan.children[0].geometry,previous);
+const first=scan.setDataAsync(data),second=scan.setDataAsync({buildings:[],meshes:[]});assert.equal(await first,false);assert.equal(await second,true);
+const final=scan.setDataAsync(data);scan.dispose();assert.equal(await final,false);
+assert.equal(await m.sampleSurfacesAsync(data,o,()=>true),null);
+await writeFile(join(w,'sampling-contract.json'),JSON.stringify({passed:true,syncMs,asyncMs,yieldsObserved:ticks,points:sync.kinds.length,spacing:sync.spacing,equivalent:true,cancellation:true},null,2));console.log({syncMs,asyncMs,ticks,points:sync.kinds.length});

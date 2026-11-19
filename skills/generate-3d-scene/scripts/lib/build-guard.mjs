@@ -19,7 +19,7 @@ export function acquireBuildLock(root) {
 }
 
 // Match build-input exclusions; generated output and caches are not source inputs.
-export function inputDigest(root, { ignoreLockfile = false } = {}) {
+export function inputDigest(root, { ignoreLockfile = false, replacements = new Map() } = {}) {
   const hash = createHash('sha256');
   function walk(dir, prefix = '') {
     for (const name of readdirSync(dir).sort()) {
@@ -29,7 +29,7 @@ export function inputDigest(root, { ignoreLockfile = false } = {}) {
       if (stat.isSymbolicLink()) throw new Error(`构建输入不支持链接：${path}`);
       hash.update(JSON.stringify([relative, stat.isDirectory() ? 'directory' : 'file']));
       if (stat.isDirectory()) walk(path, relative + '/');
-      else hash.update(createHash('sha256').update(readFileSync(path)).digest());
+      else hash.update(createHash('sha256').update(replacements.has(relative) ? replacements.get(relative) : readFileSync(path)).digest());
     }
   }
   walk(root);

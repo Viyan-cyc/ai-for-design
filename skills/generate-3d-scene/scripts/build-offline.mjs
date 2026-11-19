@@ -4,16 +4,21 @@ import { pathToFileURL } from 'node:url';
 import { prepareProjectEnvironment, createBuildInput } from './lib/project-environment.mjs';
 import { spawnSync } from 'node:child_process';
 import { checkProject } from './build.mjs';
-import { checkEnvironment } from './lib/environment.mjs';
+import { checkRuntime } from './lib/environment.mjs';
 import { checkAssembly } from './lib/assembly-check.mjs';
 import { resolveWorkspace } from './lib/workspace.mjs';
 
 import { acquireBuildLock, inputDigest, runPreparation } from './lib/build-guard.mjs';
+import { checkComponentVersion } from './lib/component-version.mjs';
+import { skillRoot } from './lib/environment.mjs';
+import { generateProjectHeat } from './lib/heat-simulation.mjs';
 
 const target = process.argv[2];
 const extra = process.argv.slice(3);
+const requireCurrent = extra[0] === '--current-components';
+if (requireCurrent) extra.shift();
 if (extra.length && (extra[0] !== '--prepare' || !extra[1])) {
-  console.error('用法：build-offline.mjs <工程目录> [--prepare <可执行文件> ...参数]');
+  console.error('用法：build-offline.mjs <工程目录> [--current-components] [--prepare <可执行文件> ...参数]');
   process.exit(2);
 }
 if (!target) {
@@ -31,12 +36,20 @@ try {
     try { runPreparation(extra[1], extra.slice(2), root, spawnSync); }
     finally { console.log(`TIMING: preparation=${Math.round(performance.now() - prepareStarted)}ms`); }
   }
-  const env = checkEnvironment();
+  const env = checkRuntime();
+  if (requireCurrent) console.log('COMPONENTS: ' + checkComponentVersion(root, skillRoot).status);
   const publisher = await import(pathToFileURL(join(root, 'scripts/publish-preview.mjs')).href);
   if (publisher.externalInputVersion !== 1) throw new Error('工程构建脚本版本较旧：请保留用户修改，将 template/scripts/build-offline.mjs 和 publish-preview.mjs 的更新合入 source/scripts 后重试');
-  const checkedDigest = inputDigest(root, { ignoreLockfile: true });
+  let checkedDigest = inputDigest(root, { ignoreLockfile: true });
+  const projectEnv = prepareProjectEnvironment(root, env);
+  if (inputDigest(root, { ignoreLockfile: true }) !== checkedDigest) throw new Error('BUILD_INPUT_CHANGED：依赖准备期间源文件变化，请重新构建');
+  const preparedDigest = inputDigest(root);
+  const simulation = await generateProjectHeat(root, projectEnv.modules, preparedDigest);
+  if (simulation) console.log('HEAT_SIMULATION: ' + JSON.stringify(simulation));
+  checkedDigest = simulation?.digest ?? preparedDigest;
+  if (inputDigest(root) !== checkedDigest) throw new Error('BUILD_INPUT_CHANGED: simulation inputs changed');
   const started = performance.now();
-  const result = checkProject(root);
+  const result = checkProject(root, { modules: projectEnv.modules });
   console.log(`TIMING: static-check=${Math.round(performance.now() - started)}ms`);
   result.warnings.forEach((warning) => console.warn(warning));
   if (!result.ok) {
@@ -44,8 +57,7 @@ try {
     result.errors.forEach((error) => console.error(error));
     process.exitCode = 1;
   } else {
-    const projectEnv = prepareProjectEnvironment(root, env);
-    if (inputDigest(root, { ignoreLockfile: true }) !== checkedDigest) throw new Error('BUILD_INPUT_CHANGED：检查或依赖准备期间源文件变化，请重新构建');
+    if (inputDigest(root) !== checkedDigest) throw new Error('BUILD_INPUT_CHANGED：检查或依赖准备期间源文件变化，请重新构建');
     const digest = inputDigest(root);
     input = createBuildInput(root, projectEnv);
     if (inputDigest(root) !== digest || inputDigest(input.source) !== digest) throw new Error('BUILD_INPUT_CHANGED：复制期间源文件变化，未启动装配检查');

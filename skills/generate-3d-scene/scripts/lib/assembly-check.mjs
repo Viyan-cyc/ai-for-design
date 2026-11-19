@@ -1,17 +1,17 @@
 /** Execute synchronous scene assembly, never a browser or visual acceptance pass. */
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { resolve, join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
 import { spawnSync } from 'node:child_process';
-import { dependencyPath, environment } from './environment.mjs';
+import { environment } from './environment.mjs';
 
-export async function checkAssembly(project, { timeout = 30000 } = {}) {
+export async function checkAssembly(project, { timeout = 30000, modules = join(resolve(project), 'node_modules') } = {}) {
   const root = resolve(project);
   const temp = mkdtempSync(join(tmpdir(), 'scene-assembly-'));
   try {
-    const { build } = createRequire(import.meta.url)(dependencyPath('esbuild'));
+    const { build } = createRequire(import.meta.url)(join(modules, 'esbuild'));
     const core = join(root, 'src/scene3d/scene-core');
     const imports = {
       SceneEngine: join(core, 'engine/SceneEngine.ts'),
@@ -20,12 +20,14 @@ export async function checkAssembly(project, { timeout = 30000 } = {}) {
       registerBusinessFactories: join(root, 'src/scene3d/scene-profile.ts'),
       RESERVED_KEYS: join(core, 'types.ts'),
     };
+    const mapValidator = join(root, 'src/scene3d/map/map-components.ts');
+    if (existsSync(mapValidator)) imports.validateComponents = mapValidator;
     const code = Object.entries(imports).map(([name, path]) =>
       `export { ${name} } from ${JSON.stringify(path)};`).join('\n');
     const bundle = join(temp, 'assembly.mjs');
     await build({ stdin: { contents: code, resolveDir: root, sourcefile: 'assembly-entry.ts' },
       outfile: bundle, bundle: true, platform: 'node', format: 'esm', sourcemap: 'inline',
-      nodePaths: [dependencyPath()], alias: { '@': join(root, 'src') }, logLevel: 'silent' });
+      nodePaths: [modules], alias: { '@': join(root, 'src') }, logLevel: 'silent' });
     const runner = join(dirname(fileURLToPath(import.meta.url)), 'assembly-runner.mjs');
     const child = spawnSync(environment().node,
       ['--enable-source-maps', runner, bundle, join(root, 'public/scene3d/scene-data.json'), join(temp, 'result.json')],

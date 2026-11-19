@@ -12,7 +12,7 @@ export interface FrameStats {
 
 /** One scheduler for both run/edit. Only successful scene draws count as frames. */
 export class RenderLoop {
-  private callbacks: Array<{ cb: FrameCallback; continuous: boolean }> = [];
+  private callbacks: Array<{ cb: FrameCallback; continuous: boolean | (() => boolean) }> = [];
   private afterFrameCallbacks: FrameCallback[] = [];
   private resizeCbs: Array<(width: number, height: number) => void> = [];
   private running = false;
@@ -50,7 +50,7 @@ export class RenderLoop {
   }
 
   /** Animation callbacks keep rendering while registered. Observers pass continuous=false. */
-  onFrame(cb: FrameCallback, continuous = true): () => void {
+  onFrame(cb: FrameCallback, continuous: boolean | (() => boolean) = true): () => void {
     const entry = { cb, continuous };
     this.callbacks.push(entry);
     this.invalidate();
@@ -66,7 +66,8 @@ export class RenderLoop {
   }
   private continuous(): boolean {
     return this.rendererEngine.getConfig().renderMode === 'continuous'
-      || this.controlsEngine.controls.autoRotate || this.callbacks.some(item => item.continuous);
+      || this.controlsEngine.controls.autoRotate || this.callbacks.some(item =>
+        typeof item.continuous === 'function' ? item.continuous() : item.continuous);
   }
   invalidate = (): void => {
     this.dirty = true;

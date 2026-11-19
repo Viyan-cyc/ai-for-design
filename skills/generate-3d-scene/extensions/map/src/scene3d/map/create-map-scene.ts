@@ -1,16 +1,20 @@
+import {attemptComponent} from '@a3d/a3d-components/utils';
 import maplibregl from 'maplibre-gl';
-import { MapRuntime, MapPresentation, MapSurfaceParticleScan, normalizeScanOptions, validateScanBuildings, type MapSurfaceScanOptions, validateLayerMapping, type MapLayerRule } from '@a3d/a3d-components/map';
+import { attachSurfaceParticleScan, normalizeSurfaceParticleScanOptions, type SurfaceParticleScanOptions, type SurfaceData } from '@a3d/a3d-components/map';
 export { localToMercator } from '@a3d/a3d-components/map';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import * as THREE from 'three';
 import { createScene, type SceneHandle, type SceneOptions } from '../scene-core/createScene';
 import type { SceneData } from '../scene-core/types';
 import type { Component } from 'vue';
+import {normalizeMapExperienceParameters,mapExperienceThemes,validateMapExperienceOutside} from '@a3d/a3d-components/map';
+import {ExperienceHost,type ExperienceConfig} from './experience-host';
+import {MapComponents,validateComponents,type ComponentConfig} from './map-components';
 
-export interface MapConfig {
-  surfaceScan?: Omit<MapSurfaceScanOptions, 'onStatus' | 'id'>;
-  layerMapping?: MapLayerRule[];
-  overlays?: [];
+export interface MapConfig extends ComponentConfig {
+  runtime?: 'experience';
+  experience?: ExperienceConfig;
+  surfaceScan?: SurfaceParticleScanOptions;
   styleUrl: string;
   origin: [number, number];
   center?: [number, number];
@@ -19,46 +23,36 @@ export interface MapConfig {
   bearing?: number;
   theme?: 'light' | 'dark';
   view?: '2d' | '3d';
-  surfaces?: Record<string, { color?: string; visible?: boolean; locked?: boolean }>;
 }
 
-export function validateMapConfig(value: unknown): asserts value is MapConfig {
+export function validateMapConfig(value: unknown, optionalComponents = true): asserts value is MapConfig {
   const config = value as MapConfig;
-  if (config?.overlays !== undefined && (!Array.isArray(config.overlays) || config.overlays.length !== 0))
-    throw new Error('地图旧业务叠加层已撤下：overlays只接受省略或空数组；请保留原数据，等待新组件接入');
-  validateLayerMapping(config?.layerMapping);
-  if (config?.surfaceScan) { normalizeScanOptions(config.surfaceScan); validateScanBuildings(config.surfaceScan.buildings ?? []); }
+  const keys=new Set(['runtime','experience','surfaceScan','styleUrl','origin','center','zoom','pitch','bearing','theme','view','heat','geographicScatter','logicalScatter']);
+  if(config && Object.keys(config).some(key=>!keys.has(key)))throw Error('未知地图配置字段');
+  if (optionalComponents && config?.surfaceScan !== undefined) normalizeSurfaceParticleScanOptions(config.surfaceScan);
   if (!config || typeof config.styleUrl !== 'string' || !config.styleUrl.trim()
       || !Array.isArray(config.origin) || config.origin.length !== 2
       || !config.origin.every(Number.isFinite) || Math.abs(config.origin[0]) > 180 || Math.abs(config.origin[1]) > 85)
     throw new Error('地图需设置 styleUrl 和有效经纬度 origin（纬度范围 -85～85）');
   if (config.center !== undefined && (!Array.isArray(config.center) || config.center.length !== 2 || !config.center.every(Number.isFinite) || Math.abs(config.center[0]) > 180 || Math.abs(config.center[1]) > 85)) throw new Error('地图 center 经纬度无效');
   if (config.theme !== undefined && !['light', 'dark'].includes(config.theme)) throw new Error('地图 theme 需为 light 或 dark');
-  if (config.surfaces !== undefined) {
-    if (!config.surfaces || typeof config.surfaces !== 'object' || Array.isArray(config.surfaces)) throw new Error('地图外观配置无效');
-    for (const [id, patch] of Object.entries(config.surfaces)) {
-      if (!/^(building|road|water|ground|greenery)(:(volume|area|edge|shadow|base))?$/.test(id) || !patch || typeof patch !== 'object'
-        || (patch.color !== undefined && !/^#[0-9a-f]{6}$/i.test(patch.color))
-        || (patch.locked !== undefined && typeof patch.locked !== 'boolean')
-        || (patch.visible !== undefined && typeof patch.visible !== 'boolean')) throw new Error('地图颜色或显示配置无效');
-    }
-  }
   if (config.view !== undefined && !['2d', '3d'].includes(config.view)) throw new Error('地图 view 需为 2d 或 3d');
   if (config.zoom !== undefined && (config.zoom < 0 || config.zoom > 22)) throw new Error('地图 zoom 范围为 0～22');
   if (config.pitch !== undefined && (config.pitch < 0 || config.pitch > 80)) throw new Error('地图 pitch 范围为 0～80');
   for (const key of ['zoom', 'pitch', 'bearing'] as const)
     if (config[key] !== undefined && !Number.isFinite(config[key])) throw new Error(`地图 ${key} 必须为有限数值`);
-}
-
-function presentationOverrides(surfaces: MapConfig['surfaces']) {
-  return Object.fromEntries(Object.entries(surfaces ?? {}).map(([id, value]) => [id, {
-    ...(value.color !== undefined ? { color: value.color } : {}),
-    ...(value.visible !== undefined ? { visible: value.visible } : {}),
-  }]));
+  if(config.runtime!==undefined&&config.runtime!=='experience')throw Error('未知地图runtime');
+  {
+    if(config.experience!==undefined&&(!config.experience||typeof config.experience!=='object'||Array.isArray(config.experience)))throw Error('experience参数无效');
+    normalizeMapExperienceParameters(config.experience?.parameters??{},mapExperienceThemes[config.theme??'light']);
+    if(config.experience?.outside)validateMapExperienceOutside(config.experience.outside);
+    if((config.zoom??16)<2.2||(config.zoom??16)>20||(config.pitch??45)<15||(config.pitch??45)>75||Math.abs(config.bearing??0)>360)throw Error('experience视角范围：zoom2.2–20、目标pitch15–75、bearing±360');
+  }
+  if(optionalComponents)validateComponents(config);
 }
 
 export async function createMapScene(host: HTMLElement, data: SceneData, cards: Record<string, Component>, options: SceneOptions): Promise<SceneHandle> {
-  validateMapConfig(data.map);
+  validateMapConfig(data.map, false);
   const config = structuredClone(data.map);
   let handle: SceneHandle | undefined;
   const mapHost = document.createElement('div');
@@ -69,29 +63,58 @@ export async function createMapScene(host: HTMLElement, data: SceneData, cards: 
   loading.textContent = '正在准备地图…';
   host.append(mapHost, loading);
   let cancelReveal = () => {};
-  let runtime: MapRuntime;
-  try { runtime = await MapRuntime.create({ host: mapHost, style: config.styleUrl, origin: config.origin,
-    center: config.center, zoom: config.zoom,
-    pitch: config.view === '2d' ? 0 : config.pitch ?? 45, bearing: config.bearing,
-    pixelRatio: data.renderer.pixelRatio ?? 1, antialias: data.renderer.antialias ?? false,
-    getMaxFps: () => handle?.internals.rendererEngine.getConfig().maxFps ?? data.renderer.maxFps ?? 60,
-  });
+  let runtime: ExperienceHost;
+  try { runtime = await ExperienceHost.create(mapHost,{...config,getMaxFps:()=>handle?.internals.rendererEngine.getConfig().maxFps??data.renderer.maxFps??60});
   } catch (error) { mapHost.remove(); loading.remove(); throw error; }
   const { map, container, basis } = runtime;
-  let experience: MapPresentation | undefined;
+  const experience = runtime;
   let disposed = false;
-  let scan: MapSurfaceParticleScan | undefined;
+  let scan: ReturnType<typeof attachSurfaceParticleScan> | undefined;
   let scanConfig = structuredClone(config.surfaceScan);
+  let components:MapComponents|undefined;
+  const componentErrors=new Map<string,string>();
+  const componentStatus=document.createElement('p');
+  componentStatus.setAttribute('role','alert');componentStatus.hidden=true;
+  componentStatus.style.cssText='position:absolute;left:12px;top:12px;z-index:10;max-width:440px;padding:8px;background:#fff4df;color:#714700;white-space:pre-wrap';
+  container.append(componentStatus);
+  const reportComponent=(name:string,error:unknown)=>{
+    componentErrors.set(name,error instanceof Error?error.message:String(error));
+    componentStatus.textContent=Array.from(componentErrors,([key,message])=>`${key} 未加载：${message}`).join('\n');
+    componentStatus.hidden=false;console.error(`[${name}]`,error);
+  };
+  let experienceConfig=structuredClone(config.experience);
+  const createScan=(value:SurfaceParticleScanOptions)=>{
+    const scene=handle!.internals.scene, loop=handle!.internals.renderLoop;
+    return attachSurfaceParticleScan({map,scene,origin:config.origin,
+      invalidate:loop.invalidate,onFrame:(callback,demand)=>loop.onFrame(callback,demand),
+      acceptsLayer:id=>['sh-rounded-buildings-3d','sh-rounded-buildings-3d-next','sh-rounded-buildings-3d-retained','sh-rounded-buildings-3d-next-retained','sh-buildings-3d','sh-halic-ordinary-buildings-3d'].includes(id),
+      completeLayer:id=>id==='sh-rounded-buildings-3d'||id==='sh-rounded-buildings-3d-next',
+      buildingHeight:f=>Number(f.properties?.render_height??f.properties?.height??6)*runtime.experience.getBuildingState().heightScale,
+      growth:()=>runtime.experience.getBuildingState().growth,meshGrowth:()=>1,
+      visible:()=>runtime.experience.getBuildingState().visible,
+      getMeshes:()=>{
+        scene.updateMatrixWorld(true);
+        const meshes:SurfaceData['meshes']=[],seen=new Set<THREE.Object3D>();
+        for(const id of handle!.internals.sceneEngine.getAllIds())handle!.internals.sceneEngine.getObject(id)?.traverse(object=>{
+          if(seen.has(object))return;seen.add(object);
+          if(object instanceof THREE.Mesh && object.geometry instanceof THREE.BufferGeometry){
+            let parent:THREE.Object3D|null=object;while(parent){if(!parent.visible)return;parent=parent.parent;}
+            meshes.push({geometry:object.geometry,matrix:object.matrixWorld.clone()});
+          }
+        });return meshes;
+      },
+      onStatus:status=>{if(status.startsWith('采样失败'))reportComponent('surfaceScan',status);}
+    },value);
+  };
 
   const release = () => {
     if (disposed) return;
     disposed = true;
-    cancelReveal(); loading.remove(); mapHost.remove();
-    scan?.dispose();
-    try { experience?.dispose(); } finally { runtime.dispose(); }
+    cancelReveal(); loading.remove(); componentStatus.remove(); mapHost.remove();
+    scan?.dispose();components?.dispose();
+    runtime.dispose();
   };
   try {
-    experience = new MapPresentation(map, { theme: config.theme, view: config.view, pitch: config.pitch, layerMapping: config.layerMapping, overrides: presentationOverrides(config.surfaces) });
     const sceneData = structuredClone(data);
     // Log depth cannot share MapLibre's standard depth buffer.
     sceneData.renderer.logarithmicDepthBuffer = false;
@@ -99,49 +122,67 @@ export async function createMapScene(host: HTMLElement, data: SceneData, cards: 
     handle = await createScene(map.getCanvas(), sceneData, cards, { ...options, externalView: {
       context: runtime.context as WebGL2RenderingContext, resize: runtime.resize, requestFrame: runtime.requestFrame,
     } });
+    components=new MapComponents(map,container,config,reportComponent);
+    if(runtime instanceof ExperienceHost)runtime.experience.setOutside(config.experience?.outside??null);
     runtime.setFrameTarget({ camera: handle.internals.camera as THREE.PerspectiveCamera, draw: () => {
       handle!.internals.scene.background = null;
       handle!.internals.scene.fog = null;
+      // Only scene-owned business nodes, not editor gizmos/helpers, are tint targets.
+      const roots=handle!.internals.sceneEngine.getAllIds().map(id=>handle!.internals.sceneEngine.getObject(id)).filter((o):o is THREE.Object3D=>!!o);
+      const owned=new Set(roots);
+      const targets={traverse(callback:(o:THREE.Object3D)=>void){for(const root of roots){let p=root.parent;let nested=false;while(p){if(owned.has(p)){nested=true;break;}p=p.parent;}if(!nested)root.traverse(callback);}}};
+      if(!componentErrors.has('buildingTint.render')){
+        const tintFrame=attemptComponent('buildingTint.render',()=>{
+          components?.setLighting(runtime instanceof ExperienceHost?runtime.experience.getParameters():{});
+          map.fire('heatmodelrender',{scene:targets,sceneToMercator:basis,renderer:handle!.internals.rendererEngine.renderer});
+        },reportComponent);
+        if(!tintFrame.ok)attemptComponent('buildingTint.cleanup',()=>components?.disableTint(),reportComponent);
+      }
       handle!.internals.renderLoop.drawExternal();
     } });
     handle.viewMode = 'map';
-    const scanStatus = document.createElement('p');
-    scanStatus.setAttribute('role', 'status');
-    scanStatus.style.cssText = 'position:absolute;bottom:8px;left:12px;background:#fff;color:#333;font:12px sans-serif;max-width:420px';
-    container.append(scanStatus);
-    const reportScan = (stats: ReturnType<MapSurfaceParticleScan['getStats']>) => { scanStatus.textContent = `粒子 ${stats.count} · 设定间距 ${stats.requestedSpacing}m / 实际 ${stats.effectiveSpacing.toFixed(2)}m${stats.warnings.length ? ' · ' + stats.warnings.join(' ') : ''}`; };
-    if (scanConfig) scan = new MapSurfaceParticleScan(runtime, { ...scanConfig, onStatus: reportScan });
+    if(runtime instanceof ExperienceHost){const current=runtime;handle.mapParameters=()=>({...current.experience.getParameters()});}
+    handle.validateUpdate=fragment=>{
+      if(fragment.renderer?.logarithmicDepthBuffer)throw Error('地图不支持对数深度');
+      if(fragment.map!==undefined){validateMapConfig(fragment.map);const next=fragment.map;
+        if(JSON.stringify(next.experience?.assets)!==JSON.stringify(config.experience?.assets))throw Error('更换地图地标资产需要重新创建');
+        if(next.styleUrl!==config.styleUrl||JSON.stringify(next.origin)!==JSON.stringify(config.origin))throw Error('地图服务、原点、宿主或图层映射改变需要重新创建');
+      }
+    };
+    if(scanConfig){const result=attemptComponent('surfaceScan',()=>createScan(scanConfig!),reportComponent);if(result.ok)scan=result.value;}
     const originalSerialize = handle.serialize.bind(handle);
     handle.serialize = () => ({ ...originalSerialize(), camera: structuredClone(data.camera), map: {
-      ...config, surfaceScan: structuredClone(scanConfig), overlays: [], center: map.getCenter().toArray(), zoom: map.getZoom(), pitch: experience!.getState().view === '2d' ? experience!.getState().pitch : map.getPitch(), bearing: map.getBearing(),
+      ...config, heat:components?.serialize().heat,geographicScatter:components?.serialize().geographicScatter,logicalScatter:components?.serialize().logicalScatter,experience:structuredClone(experienceConfig), surfaceScan: structuredClone(scanConfig), center: map.getCenter().toArray(), zoom: map.getZoom(), pitch: experience!.getState().view === '2d' ? experience!.getState().pitch : map.getPitch(), bearing: map.getBearing(),
       theme: experience!.getState().theme, view: experience!.getState().view,
     } });
     const originalUpdate = handle.update.bind(handle);
     handle.update = fragment => {
+      handle!.validateUpdate!(fragment);
+      if(fragment.renderer?.logarithmicDepthBuffer)throw Error('地图共用标准深度缓冲，不支持对数深度');
       const next = fragment.map as MapConfig | undefined;
       if (next) {
+        const previous=handle!.serialize().map as MapConfig;
         validateMapConfig(next);
         if (next.styleUrl !== config.styleUrl || JSON.stringify(next.origin) !== JSON.stringify(config.origin))
           throw new Error('更换地图服务或坐标原点需要重新创建场景');
-        if (JSON.stringify(next.layerMapping) !== JSON.stringify(config.layerMapping)) throw new Error('更换地图图层映射需要重新创建场景');
+        components!.update(next);
         const nextScan = next.surfaceScan;
-        const sourceChanged = JSON.stringify(nextScan?.buildingLayerIds) !== JSON.stringify(scanConfig?.buildingLayerIds);
-        if (!nextScan || sourceChanged) { scan?.dispose(); scan = undefined; scanStatus.textContent = ''; }
-        if (nextScan) {
-          if (!scan) scan = new MapSurfaceParticleScan(runtime, { ...nextScan, onStatus: reportScan });
-          else {
-            if (JSON.stringify(nextScan.buildings) !== JSON.stringify(scanConfig?.buildings)) scan.setData(nextScan.buildings ?? []);
-            scan.setOptions(normalizeScanOptions(nextScan));
-          }
-        }
+        if(!nextScan){scan?.dispose();scan=undefined;}
+        else if(!scan)scan=createScan(nextScan);
+        else scan.component.setOptions(normalizeSurfaceParticleScanOptions(nextScan));
         scanConfig = structuredClone(nextScan);
-        scanStatus.hidden = !nextScan?.enabled;
-        experience!.applyState({ theme: next.theme ?? 'light', view: next.view ?? '3d', pitch: next.pitch ?? 45, overrides: presentationOverrides(next.surfaces) });
-        map.jumpTo({ center: next.center ?? config.origin, zoom: next.zoom ?? 16, pitch: next.view === '2d' ? 0 : next.pitch ?? 45, bearing: next.bearing ?? 0 });
+        const appearanceChanged=['theme','view','pitch'].some(key=>JSON.stringify(next[key as keyof MapConfig])!==JSON.stringify(previous[key as keyof MapConfig]));
+        if(appearanceChanged)experience!.applyState({ theme: next.theme ?? 'light', view: next.view ?? '3d', pitch: next.pitch ?? 45, overrides: {} });
+        if(runtime instanceof ExperienceHost&&(next.theme!==previous.theme||JSON.stringify(next.experience?.parameters)!==JSON.stringify(experienceConfig?.parameters)))runtime.experience.setParameters(normalizeMapExperienceParameters(next.experience?.parameters??{},mapExperienceThemes[next.theme??'light']));
+        if(runtime instanceof ExperienceHost&&JSON.stringify(next.experience?.outside)!==JSON.stringify(experienceConfig?.outside))runtime.experience.setOutside(next.experience?.outside??null);
+        experienceConfig=structuredClone(next.experience);
+        if(['center','zoom','pitch','bearing','view'].some(key=>JSON.stringify(next[key as keyof MapConfig])!==JSON.stringify(previous[key as keyof MapConfig])))map.jumpTo({ center: next.center ?? config.origin, zoom: next.zoom ?? 16, pitch: next.view === '2d' ? 0 : next.pitch ?? 45, bearing: next.bearing ?? 0 });
       }
       const { camera: _camera, controls: _controls, map: _map, ...rest } = fragment;
       if (rest.renderer?.logarithmicDepthBuffer) throw new Error('地图共用标准深度缓冲，不支持对数深度');
       const result = originalUpdate(rest);
+      scan?.refresh();
+      if(next){components!.clearRejected();componentErrors.clear();componentStatus.hidden=true;componentStatus.textContent='';}
 
       return result;
     };
@@ -160,50 +201,6 @@ export async function createMapScene(host: HTMLElement, data: SceneData, cards: 
       const point = new THREE.Box3().setFromObject(object).getCenter(new THREE.Vector3()).applyMatrix4(basis);
       map.easeTo({ center: new maplibregl.MercatorCoordinate(point.x, point.y, point.z).toLngLat() });
     };
-    const names: Record<string, string> = { building: '建筑', road: '道路', water: '水面', ground: '地面', greenery: '绿地' };
-    let surfaceOverrides = structuredClone(config.surfaces ?? {});
-    const entries = () => experience!.listSurfaces().map(item => ({ ...item, name: (item.parentId ? (item.id.endsWith(':shadow') ? '投影' : names[item.parentId]) : names[item.id]) ?? item.id, locked: surfaceOverrides[item.parentId ?? item.id]?.locked === true || surfaceOverrides[item.id]?.locked === true }));
-    const serializeMap = handle.serialize.bind(handle);
-    handle.serialize = () => {
-      const value = serializeMap();
-      (value.map as MapConfig).surfaces = structuredClone(surfaceOverrides);
-      return value;
-    };
-    const updateMap = handle.update.bind(handle);
-    handle.update = fragment => {
-      if (fragment.map) {
-        validateMapConfig(fragment.map);
-        const next = fragment.map as MapConfig;
-        if (next.styleUrl !== config.styleUrl || JSON.stringify(next.origin) !== JSON.stringify(config.origin)) throw new Error('更换地图服务或坐标原点需要重新创建场景');
-      }
-      const result = updateMap(fragment);
-      if (fragment.map) surfaceOverrides = structuredClone((fragment.map as MapConfig).surfaces ?? {});
-      return result;
-    };
-    handle.surfaces = {
-      list: () => entries(),
-      update: (id, patch) => {
-        if (!entries().some(item => item.id === id)) throw new Error('未知地图内容');
-        const selected = entries().find(item => item.id === id)!;
-        if (selected.locked && (patch.color !== undefined || patch.visible !== undefined)) throw new Error('对象已锁定，请先解锁');
-        const next = handle!.serialize().map as MapConfig;
-        next.surfaces = { ...next.surfaces, [id]: { ...next.surfaces?.[id], ...patch } };
-        // Parent edits apply to the whole category, including legacy child overrides.
-        if (!id.includes(':')) {
-          for (const [key, value] of Object.entries(next.surfaces)) {
-            if (!key.startsWith(`${id}:`)) continue;
-            if (patch.color !== undefined) delete value.color;
-            if (patch.visible !== undefined && !key.endsWith(':shadow')) delete value.visible;
-          }
-        }
-        validateMapConfig(next);
-        // Color drags update only paint/visibility, never camera or the full theme.
-        surfaceOverrides = structuredClone(next.surfaces ?? {});
-        experience!.updateSurface(id, Object.fromEntries(Object.entries(patch).filter(([key, value]) => key !== 'locked' && value !== undefined)));
-        map.triggerRepaint();
-      },
-    };
-
     const resourceError = document.createElement('div');
     resourceError.setAttribute('role', 'status');
     resourceError.style.cssText = 'position:absolute;bottom:32px;left:12px;max-width:360px;padding:10px;background:#fff7ed;color:#9a3412;font:13px sans-serif;display:none;';
@@ -211,7 +208,7 @@ export async function createMapScene(host: HTMLElement, data: SceneData, cards: 
     map.on('error', () => { resourceError.textContent = '部分地图资源加载失败，请检查地图服务、字体和图标地址。已加载模型仍可编辑。'; resourceError.style.display = 'block'; });
     // Dispose Three first, then its host GL context.
     const disposeScene = handle.dispose.bind(handle);
-    handle.dispose = () => { if (!disposed) { runtime.setFrameTarget(); try { disposeScene(); } finally { release(); } } };
+    handle.dispose = () => { if (!disposed) { runtime.setFrameTarget();components?.dispose();map.fire('heatmodelremove');try { disposeScene(); } finally { release(); } } };
     let frames = 0;
     const reveal = () => { mapHost.style.visibility = 'visible'; loading.remove(); cancelReveal(); };
     const onPreparedFrame = () => {

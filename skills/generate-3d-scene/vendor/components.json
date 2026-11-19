@@ -267,6 +267,54 @@
     ]
   },
   {
+    "name": "BuildingTint",
+    "summary": "按建筑表面每个片段的地面投影染色，同时适配原生建筑和普通Three模型；保持原几何、材质明暗与不透明度。",
+    "importPath": "@a3d/a3d-components/map",
+    "extends": "",
+    "constructor": "new BuildingTint(map: Map$1, field: HeatField, options?: Partial<TintOptions>): BuildingTint",
+    "options": [
+      {
+        "name": "enabled",
+        "type": "boolean",
+        "default": "true",
+        "description": "开启染色；"
+      },
+      {
+        "name": "strength",
+        "type": "number",
+        "default": "1",
+        "description": "染色强度；0–1；0–1"
+      },
+      {
+        "name": "brightness",
+        "type": "number",
+        "default": "1.5",
+        "description": "建筑明度；0–2；0–2"
+      }
+    ],
+    "dataTypes": [],
+    "properties": [],
+    "methods": [],
+    "examples": [
+      "import { HeatField, GridHeat, BuildingTint } from '@a3d/a3d-components/map';\n// map必须来自已完成渲染适配的MapLibre；Three模型另需宿主事件接点。\nconst field = new HeatField();\nconst grid = new GridHeat(map, field);\nconst tint = new BuildingTint(map, field, { brightness: 1.5 });\nfield.setData([{ lng: 121.49517, lat: 31.24194, value: 180 }]);\ngrid.setVisible(false); // 关闭格子后建筑仍染色\ntint.setOptions({ enabled: false }); // 恢复原建筑表现\ntint.dispose(); grid.dispose(); field.dispose();",
+      "// 在应用的Node构建脚本中（不是浏览器运行时）：\nimport { readFileSync, writeFileSync } from 'node:fs';\nimport { patchMapLibre } from './scripts/adapters/patch-maplibre.mjs';\nconst source = readFileSync('node_modules/maplibre-gl/dist/maplibre-gl-dev.js', 'utf8');\nwriteFileSync('maplibre-heat.cjs', patchMapLibre(source));\n// 将构建工具中精确匹配maplibre-gl的JS导入alias到此文件。\n// CSS仍从maplibre-gl/dist/maplibre-gl.css导入；不可修改node_modules。"
+    ]
+  },
+  {
+    "name": "GeographicScatter",
+    "summary": "经纬度散点与屏幕网格聚合。借用地图投影，固定CSS像素大小；与0–1逻辑坐标的LogicalScatter分别使用。",
+    "importPath": "@a3d/a3d-components/map",
+    "extends": "",
+    "constructor": "new GeographicScatter(map, config)",
+    "options": [],
+    "dataTypes": [],
+    "properties": [],
+    "methods": [],
+    "examples": [
+      "const scatter = new GeographicScatter(map, {data: [{id: \"event\", lng: 121.5, lat: 31.24}]});\nscatter.setOptions({pointRadius: 4});\nscatter.setVisible(false);\nscatter.dispose();"
+    ]
+  },
+  {
     "name": "Grid",
     "summary": "无限网格。基于屏幕空间四边形 + 着色器实现，把整屏四边形反投影成世界射线、与网格平面求交来绘制无边界网格——无论相机如何移动或拉远，网格始终铺满屏幕。写入 gl_FragDepth，能被场景中的物体正确遮挡。自带主 / 次双层网格、坐标轴高亮（X 红、Z/Y 蓝）与距离淡出。",
     "importPath": "@a3d/a3d-components/core",
@@ -420,6 +468,110 @@
     ],
     "examples": [
       "import { Grid } from '@a3d/a3d-components/core';\n\n// 作为无限地面参考网，自定义网格与坐标轴颜色\nconst grid = new Grid({\n  primaryScale: 5,\n  secondaryScale: 1,\n  color: '#9aa7b8',       // 网格线颜色\n  xAxisColor: 0xff5555,   // X 轴\n  zAxisColor: 0x55aaff,   // Z / Y 轴\n});\nscene.add(grid);\n\n// 运行时调整样式（所有 setter 链式调用）\ngrid.setShowAxis(false).setLinearFade(true).setFade(20, 80);\ngrid.setColor('#ffffff').setXAxisColor('red');\n\n// 平滑切换到 2D 立面网格（GSAP 动画）\ngrid.setPlane('xy');"
+    ]
+  },
+  {
+    "name": "GridHeat",
+    "summary": "经纬度栅格热力。接收0–255整数值，通过共享HeatField分档着色，支持空数据、独立显示开关和实时更新。",
+    "importPath": "@a3d/a3d-components/map",
+    "extends": "",
+    "constructor": "new GridHeat(map: Map$1, field: HeatField): GridHeat",
+    "options": [
+      {
+        "name": "origin",
+        "type": "object",
+        "default": "[121.49517,31.24194]",
+        "description": "栅格原点，经纬度；"
+      },
+      {
+        "name": "cellSizeMeters",
+        "type": "number",
+        "default": "14",
+        "description": "中心间距；米"
+      },
+      {
+        "name": "bins",
+        "type": "number",
+        "default": "5",
+        "description": "档数；"
+      },
+      {
+        "name": "colorMode",
+        "type": "string",
+        "default": "\"five\"",
+        "description": "双色或五色插值；"
+      },
+      {
+        "name": "colors",
+        "type": "object",
+        "default": "[\"#CCFEC2\",\"#78EE95\",\"#FFF05C\",\"#FFAC4D\",\"#FF5757\"]",
+        "description": "颜色节点；"
+      },
+      {
+        "name": "sizeStart",
+        "type": "number",
+        "default": "≈0.79",
+        "description": "首档边长比例；"
+      },
+      {
+        "name": "sizeEnd",
+        "type": "number",
+        "default": "≈0.79",
+        "description": "末档边长比例；"
+      },
+      {
+        "name": "alphaStart",
+        "type": "number",
+        "default": "1",
+        "description": "首档不透明度；"
+      },
+      {
+        "name": "alphaEnd",
+        "type": "number",
+        "default": "1",
+        "description": "末档不透明度；"
+      },
+      {
+        "name": "breaks",
+        "type": "object",
+        "default": "[0.45,0.68,0.73,0.75]",
+        "description": "非均匀分界；"
+      },
+      {
+        "name": "bandMode",
+        "type": "string",
+        "default": "\"thresholds\"",
+        "description": "均匀/非均匀分档；"
+      },
+      {
+        "name": "threshold",
+        "type": "number",
+        "default": "0.17",
+        "description": "最低显示值/255；"
+      },
+      {
+        "name": "colorBlur",
+        "type": "number",
+        "default": "2.63",
+        "description": "颜色平滑标准差；单元"
+      }
+    ],
+    "dataTypes": [],
+    "properties": [
+      {
+        "name": "id",
+        "type": "string",
+        "description": ""
+      },
+      {
+        "name": "field",
+        "type": "HeatField",
+        "description": ""
+      }
+    ],
+    "methods": [],
+    "examples": [
+      "import { HeatField, GridHeat } from '@a3d/a3d-components/map';\nconst field = new HeatField();\nconst grid = new GridHeat(map, field);\nfield.setData([{ lng: 121.49517, lat: 31.24194, value: 180 }]);\ngrid.setOptions({ alphaStart: 0.8, alphaEnd: 0.8 });\ngrid.setVisible(false); // 不影响使用同一场的建筑染色\ngrid.dispose();\nfield.dispose(); // 所有消费者释放后再释放共享场"
     ]
   },
   {
@@ -1085,207 +1237,424 @@
     ]
   },
   {
-    "name": "MapPresentation",
-    "summary": "地图主题与建筑、道路、水面、地面、绿地整体外观控制。建筑由 MapLibre 绘制；组件不依赖编辑器，也不保存工程文件。地图入口需安装 maplibre-gl 与 @turf/turf。",
+    "name": "LogicalScatter",
+    "summary": "逻辑坐标散点与缩放聚合。接收0–1的x/y坐标，标记保持固定CSS尺寸；不接收经纬度，也不自动投影到地图。",
     "importPath": "@a3d/a3d-components/map",
     "extends": "",
-    "constructor": "new MapPresentation(map, options?: MapPresentationOptions)",
+    "constructor": "new LogicalScatter(host: HTMLElement, options?: ScatterPatch, data?: readonly ScatterPoint[]): LogicalScatter",
     "options": [
       {
-        "name": "theme",
-        "type": "'light' | 'dark'",
-        "default": "'light'",
-        "description": "地图主题"
-      },
-      {
-        "name": "overrides",
-        "type": "Record<string, MapSurfaceOverride>",
-        "default": "{}",
-        "description": "按 building / road / water / ground / greenery 设置 color（#RRGGBB）和 visible；兼容已有 :area、:volume、:base、:edge、:shadow 子项。"
-      },
-      {
-        "name": "view",
-        "type": "'2d' | '3d'",
-        "default": "'3d'",
-        "description": "建筑表现模式；相机导航由宿主控制"
-      },
-      {
-        "name": "pitch",
+        "name": "pointRadius",
         "type": "number",
-        "default": "45",
-        "description": "0–80 度，表现状态中的目标倾角"
+        "default": "3.4",
+        "description": "普通点半径；px；2–8"
       },
       {
-        "name": "layerMapping",
-        "type": "MapLayerRule[]",
-        "default": "—",
-        "description": "省略时使用 OpenMapTiles 主题、标注、圆角建筑及投影算法；提供时只修改明确映射的颜色与显隐，不应用服务特定算法。每条规则 category 配合 layerIds、sourceLayers、types，同条条件取交集，首条匹配生效。"
-      }
-    ],
-    "dataTypes": [],
-    "properties": [],
-    "methods": [
-      {
-        "signature": "getState(): MapPresentationState",
-        "description": "返回独立 JSON 快照；不含编辑锁定、撤销栈和工程文件信息。"
+        "name": "clusterPinWidth",
+        "type": "number",
+        "default": "24",
+        "description": "图钉宽度；px；16–40"
       },
       {
-        "signature": "applyState(state): void",
-        "description": "完整替换，先验证再应用。空 overrides 恢复当前主题。主题保留显式覆盖，未覆盖类别随主题改变。"
+        "name": "clusterDistance",
+        "type": "number",
+        "default": "28",
+        "description": "聚合距离；px；12–60"
       },
       {
-        "signature": "setTheme(theme): void",
-        "description": "切换主题并请求重绘。"
+        "name": "minClusterCount",
+        "type": "number",
+        "default": "9",
+        "description": "最小聚合数量；个；3–16"
       },
       {
-        "signature": "updateSurface(id, patch): void",
-        "description": "局部更新 color / visible，不移动相机。父项修改清除相应旧子项覆盖，保留独立投影显隐。隐藏建筑同步隐藏投影。"
+        "name": "markerStrokeWidth",
+        "type": "number",
+        "default": "1.5",
+        "description": "标记描边；px；0–5"
       },
       {
-        "signature": "listSurfaces()",
-        "description": "返回当前图层对应类别及子项描述。UI 可只展示无 parentId 的五类整体条目；building:shadow 可用于右侧投影开关。"
-      },
-      {
-        "signature": "dispose(): void",
-        "description": "幂等释放监听、定时任务和自身图层、数据源，恢复本实例首次修改的底图属性，不销毁 map。先释放表现组件，再释放地图宿主。"
-      }
-    ],
-    "examples": [
-      "import { MapPresentation } from '@a3d/a3d-components/map';\nconst presentation = new MapPresentation(runtime.map, { theme: 'light' });\npresentation.updateSurface('water', { color: '#b6d9ec' });\nconst saved = presentation.getState();\npresentation.setTheme('dark');\npresentation.applyState(saved);\n// 编辑器自行保存 saved，将 locked 等业务字段保留在工程适配层。\npresentation.dispose();"
-    ]
-  },
-  {
-    "name": "MapRuntime",
-    "summary": "可选地图共享渲染宿主，不含编辑器和业务逻辑；仅从 /map 导入，需要安装 maplibre-gl 与 @turf/turf。使用局部 Mercator 米制坐标，不支持地形、球面。",
-    "importPath": "@a3d/a3d-components/map",
-    "extends": "",
-    "constructor": "await MapRuntime.create(options: MapRuntimeOptions)",
-    "options": [
-      {
-        "name": "host",
-        "type": "HTMLElement",
-        "default": "—",
-        "description": "地图容器，需有高度"
-      },
-      {
-        "name": "style",
-        "type": "string",
-        "default": "—",
-        "description": "样式 URL"
-      },
-      {
-        "name": "origin",
-        "type": "[number,number]",
-        "default": "—",
-        "description": "WGS84 原点，经纬度"
-      },
-      {
-        "name": "center",
-        "type": "[number,number]",
-        "default": "origin",
-        "description": "初始中心"
-      },
-      {
-        "name": "zoom",
+        "name": "countFontSize",
         "type": "number",
         "default": "16",
-        "description": "缩放"
+        "description": "数量字号；px；10–22"
       },
       {
-        "name": "pitch",
+        "name": "countFontWeight",
         "type": "number",
-        "default": "45",
-        "description": "倾角（度）"
+        "default": "500",
+        "description": "数量字重；；400–900"
       },
       {
-        "name": "bearing",
+        "name": "countStrokeWidth",
         "type": "number",
         "default": "0",
-        "description": "方位角（度）"
+        "description": "文字描边；px；0–4"
       },
       {
-        "name": "pixelRatio",
+        "name": "selectedStrokeWidth",
         "type": "number",
-        "default": "1",
-        "description": "唯一画布倍率"
-      },
-      {
-        "name": "antialias",
-        "type": "boolean",
-        "default": "false",
-        "description": "创建上下文时设置"
-      },
-      {
-        "name": "getMaxFps",
-        "type": "() => number",
-        "default": "60",
-        "description": "业务重绘上限，不限地图导航"
-      },
-      {
-        "name": "loadTimeoutMs",
-        "type": "number",
-        "default": "60000",
-        "description": "加载超时毫秒"
-      },
-      {
-        "name": "signal",
-        "type": "AbortSignal",
-        "default": "—",
-        "description": "取消初始化并释放加载中的地图；创建完成后使用 dispose()。"
+        "default": "2",
+        "description": "选中描边；px；1–5"
       }
     ],
     "dataTypes": [],
-    "properties": [],
-    "methods": [
+    "properties": [
       {
-        "signature": "setFrameTarget(target?: MapFrameTarget): void",
-        "description": "连接调用者拥有的相机与 draw 回调；回调需重置共享 GL 状态，不清深度。"
-      },
-      {
-        "signature": "requestFrame(): void",
-        "description": "合并业务重绘请求。"
-      },
-      {
-        "signature": "resize(ratio: number): void",
-        "description": "地图统一调整 DPR 和画布尺寸。"
-      },
-      {
-        "signature": "dispose(): void",
-        "description": "先释放调用者的 Three 资源，再调用此方法释放地图和调度。"
+        "name": "canvas",
+        "type": "HTMLCanvasElement",
+        "description": ""
       }
     ],
+    "methods": [],
     "examples": [
-      "import { MapRuntime } from &#x27;@a3d/a3d-components/map&#x27;;\nimport &#x27;maplibre-gl/dist/maplibre-gl.css&#x27;;\nconst runtime = await MapRuntime.create({ host, style: styleUrl, origin: [121.5, 31.2] });\n// renderer 使用 runtime.canvas / context，关闭对数深度与 autoClear。\nruntime.setFrameTarget({ camera, draw: () => { renderer.resetState(); renderer.render(scene, camera); renderer.resetState(); } });\n// 先 renderer.dispose()，后 runtime.dispose()。"
+      "import { LogicalScatter } from '@a3d/a3d-components/map';\nconst scatter = new LogicalScatter(container);\nscatter.setData([{ id: 'fault-1', x: 0.45, y: 0.55 }]);\nscatter.setOptions({ pointRadius: 4, markerTone: 'red' });\nscatter.setZoom(0.6);\nscatter.dispose();"
     ]
   },
   {
-    "name": "MapSurfaceParticleScan",
-    "summary": "地图地面、建筑立面与屋顶粒子扫描。展示效果，不代表物理传播。默认关闭；本演示主动开启。在线瓦片轮廓可能截断，缺高度建筑跳过；建议生产环境传入完整建筑轮廓。",
+    "name": "MapExperience",
+    "summary": "完整地图体验：统一管理底图、建筑、光影、双主题及地图交互。地图统一使用此入口，不要在同一容器创建两个地图。",
     "importPath": "@a3d/a3d-components/map",
     "extends": "",
-    "constructor": "new MapSurfaceParticleScan(runtime: MapRuntime, options?: MapSurfaceScanOptions)",
-    "options": [],
-    "dataTypes": [],
-    "properties": [],
-    "methods": [
+    "constructor": "new MapExperience(options: MapExperienceOptions): MapExperience",
+    "options": [
       {
-        "signature": "setOptions(patch: Partial<ScanOptions>): void",
-        "description": "校验后更新，几何变更延迟120ms合并。"
+        "name": "ground",
+        "type": "string",
+        "default": "\"#EFF2F6\"",
+        "description": "地面；sRGB"
       },
       {
-        "signature": "setData(buildings: ScanBuilding[]): void",
-        "description": "替换完整建筑数据。"
+        "name": "road",
+        "type": "string",
+        "default": "\"#EAEDF1\"",
+        "description": "道路；sRGB"
       },
       {
-        "signature": "getStats(): ScanStats",
-        "description": "请求和实际间距、粒子数、警告与重建耗时快照。"
+        "name": "roadOutline",
+        "type": "string",
+        "default": "\"#EFF2F6\"",
+        "description": "道路描边；sRGB"
       },
       {
-        "signature": "dispose(): void",
-        "description": "释放图层、资源、监听与计时器；幂等。"
+        "name": "roadOutlineWidth",
+        "type": "number",
+        "default": "0",
+        "description": "描边粗细；倍率；0–2"
+      },
+      {
+        "name": "water",
+        "type": "string",
+        "default": "\"#CEE3FD\"",
+        "description": "水域；sRGB"
+      },
+      {
+        "name": "green",
+        "type": "string",
+        "default": "\"#86EA61\"",
+        "description": "绿地；sRGB"
+      },
+      {
+        "name": "greenParkOpacity",
+        "type": "number",
+        "default": "0.5",
+        "description": "公园不透明度；0–1；0–1"
+      },
+      {
+        "name": "greenWoodOpacity",
+        "type": "number",
+        "default": "0.49",
+        "description": "林地不透明度；0–1；0–1"
+      },
+      {
+        "name": "greenGrassOpacity",
+        "type": "number",
+        "default": "0.28",
+        "description": "草地不透明度；0–1；0–1"
+      },
+      {
+        "name": "greenOtherOpacity",
+        "type": "number",
+        "default": "0.42",
+        "description": "其他绿地不透明度；0–1；0–1"
+      },
+      {
+        "name": "districts",
+        "type": "boolean",
+        "default": "false",
+        "description": "区界线；开关"
+      },
+      {
+        "name": "placeColor",
+        "type": "string",
+        "default": "\"#C2C2C2\"",
+        "description": "行政文字；sRGB"
+      },
+      {
+        "name": "roadMajorColor",
+        "type": "string",
+        "default": "\"#9E9E9E\"",
+        "description": "主干道文字；sRGB"
+      },
+      {
+        "name": "roadMinorColor",
+        "type": "string",
+        "default": "\"#999999\"",
+        "description": "次干道文字；sRGB"
+      },
+      {
+        "name": "roadLabelDensity",
+        "type": "number",
+        "default": "0.05",
+        "description": "道路文字数量；倍率；0–1"
+      },
+      {
+        "name": "labelHalo",
+        "type": "string",
+        "default": "\"#FFFFFF\"",
+        "description": "文字描边色；sRGB"
+      },
+      {
+        "name": "labelSize",
+        "type": "number",
+        "default": "0.65",
+        "description": "字号倍率；倍率；0.6–1.8"
+      },
+      {
+        "name": "skyColor",
+        "type": "string",
+        "default": "\"#C2E3FF\"",
+        "description": "天空；sRGB"
+      },
+      {
+        "name": "road3DDarken",
+        "type": "number",
+        "default": "0.05",
+        "description": "3D道路加深；倍率；0–1"
+      },
+      {
+        "name": "building",
+        "type": "string",
+        "default": "\"#FFFFFF\"",
+        "description": "建筑；sRGB"
+      },
+      {
+        "name": "buildingGlow",
+        "type": "number",
+        "default": "1",
+        "description": "材质发光；倍率；0–1"
+      },
+      {
+        "name": "buildingShadeStrength",
+        "type": "number",
+        "default": "0.2",
+        "description": "暗面强度；倍率；0–1"
+      },
+      {
+        "name": "buildingGradient",
+        "type": "number",
+        "default": "0.35",
+        "description": "暗面上下渐变；倍率；0–1"
+      },
+      {
+        "name": "buildingTopLight",
+        "type": "number",
+        "default": "1",
+        "description": "顶部光照；倍率；0–1"
+      },
+      {
+        "name": "buildingBottomLight",
+        "type": "number",
+        "default": "1",
+        "description": "底部补光；倍率；0–1"
+      },
+      {
+        "name": "buildingFillLight",
+        "type": "number",
+        "default": "1",
+        "description": "暗面补光；倍率；0–1"
+      },
+      {
+        "name": "buildingEdgeShadow",
+        "type": "number",
+        "default": "1",
+        "description": "建筑层次；倍率；0–1"
+      },
+      {
+        "name": "lightColor",
+        "type": "string",
+        "default": "\"#FFFFFF\"",
+        "description": "光照颜色；sRGB"
+      },
+      {
+        "name": "intensity",
+        "type": "number",
+        "default": "0",
+        "description": "明暗对比；倍率；0–1"
+      },
+      {
+        "name": "azimuth",
+        "type": "number",
+        "default": "164",
+        "description": "光照方位；°；0–360"
+      },
+      {
+        "name": "altitude",
+        "type": "number",
+        "default": "45",
+        "description": "光照高度；°；0–90"
+      },
+      {
+        "name": "pearlColor",
+        "type": "string",
+        "default": "\"#FFFFFF\"",
+        "description": "地标颜色；sRGB"
+      },
+      {
+        "name": "pearlBrightness",
+        "type": "number",
+        "default": "4",
+        "description": "地标亮度；倍率；0–4"
+      },
+      {
+        "name": "pearlGlow",
+        "type": "number",
+        "default": "0.02",
+        "description": "地标发光；倍率；0–1"
+      },
+      {
+        "name": "pearlRoughness",
+        "type": "number",
+        "default": "0.92",
+        "description": "地标粗糙度；倍率；0.35–1"
+      },
+      {
+        "name": "pearlFillLight",
+        "type": "number",
+        "default": "0",
+        "description": "地标暗部补光；倍率；-1–1"
+      },
+      {
+        "name": "pearlLightMatch",
+        "type": "number",
+        "default": "1",
+        "description": "地标光影同步；倍率；0–1"
+      },
+      {
+        "name": "shadow",
+        "type": "boolean",
+        "default": "true",
+        "description": "投影开关；开关"
+      },
+      {
+        "name": "shadowColor",
+        "type": "string",
+        "default": "\"#777A7E\"",
+        "description": "投影颜色；sRGB"
+      },
+      {
+        "name": "shadowStrength",
+        "type": "number",
+        "default": "0.04",
+        "description": "投影浓度；倍率；0–1"
+      },
+      {
+        "name": "shadowRange",
+        "type": "number",
+        "default": "3.35",
+        "description": "投影范围；倍率；0.5–4"
+      },
+      {
+        "name": "shadowSoftness",
+        "type": "number",
+        "default": "0",
+        "description": "投影虚化；倍率；0–2"
       }
     ],
-    "examples": []
+    "dataTypes": [
+      {
+        "name": "MapExperienceOptions",
+        "fields": [
+          {
+            "name": "container",
+            "type": "HTMLElement",
+            "default": "—",
+            "description": ""
+          },
+          {
+            "name": "style",
+            "type": "string | StyleSpecification",
+            "default": "—",
+            "description": ""
+          },
+          {
+            "name": "center",
+            "type": "[number, number]",
+            "default": "—",
+            "description": ""
+          },
+          {
+            "name": "zoom?",
+            "type": "number",
+            "default": "—",
+            "description": ""
+          },
+          {
+            "name": "pitch?",
+            "type": "number",
+            "default": "—",
+            "description": ""
+          },
+          {
+            "name": "bearing?",
+            "type": "number",
+            "default": "—",
+            "description": ""
+          },
+          {
+            "name": "mode?",
+            "type": "\"2d\" | \"3d\"",
+            "default": "—",
+            "description": ""
+          },
+          {
+            "name": "theme?",
+            "type": "\"light\" | \"dark\"",
+            "default": "—",
+            "description": ""
+          },
+          {
+            "name": "parameters?",
+            "type": "Partial<MapParameters>",
+            "default": "—",
+            "description": ""
+          },
+          {
+            "name": "assets?",
+            "type": "{ ORIENTAL_PEARL_GLB_V3_BASE64?: string; HALIC_ORDINARY_BUILDINGS_V1?: unknown; }",
+            "default": "—",
+            "description": ""
+          },
+          {
+            "name": "onChange?",
+            "type": "(state: unknown) => void",
+            "default": "—",
+            "description": ""
+          }
+        ]
+      }
+    ],
+    "properties": [
+      {
+        "name": "map",
+        "type": "Map$1",
+        "description": ""
+      }
+    ],
+    "methods": [],
+    "examples": [
+      "import { MapExperience } from '@a3d/a3d-components/map';\nimport 'maplibre-gl/dist/maplibre-gl.css';\n// container与styleUrl由应用提供；地标资产可通过assets显式传入。\nconst scene = new MapExperience({ container, style: styleUrl,\n  center: [121.49517, 31.24194], mode: '3d', zoom: 16.2 });\nscene.setParameters({ water: '#CEE3FD' });\nscene.setTheme('dark');\nscene.dispose();"
+    ]
   },
   {
     "name": "MeshReflectorMaterial",
@@ -2169,6 +2538,20 @@
     ],
     "examples": [
       "import { Sky } from '@a3d/a3d-components/core';\n\n// 天空穹顶\nconst sky = new Sky({\n  size: 500,\n  topColor: 0x109df4,\n  bottomColor: 0xf5f5f5,\n  offset: 0,\n  exponent: 0.6,\n});\nscene.add(sky);\n\n// 运行时调整颜色（所有 setter 链式调用）\nsky.setTopColor(0x1a8af4).setBottomColor(0xe0e0e0);\nsky.setOffset(10).setExponent(0.8);\n\n// 同时设置天顶与地平线颜色\nsky.setColors(0x109df4, 0xf5f5f5);"
+    ]
+  },
+  {
+    "name": "SurfaceParticleScan",
+    "summary": "贴合建筑表面的粒子扫描。借用完整高度建筑轮廓和模型几何，保留宿主材质。地图接入使用attachSurfaceParticleScan，地图和模型由宿主提供。",
+    "importPath": "@a3d/a3d-components/map",
+    "extends": "",
+    "constructor": "new SurfaceParticleScan(invalidate, options)",
+    "options": [],
+    "dataTypes": [],
+    "properties": [],
+    "methods": [],
+    "examples": [
+      "const scan = new SurfaceParticleScan(invalidate, {enabled: true});\nscene.add(scan);\nscan.setData({buildings, meshes});\nscan.restart();\n// 宿主每帧调用setFrame与tick，关闭页面时释放\nscan.dispose();"
     ]
   },
   {

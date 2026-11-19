@@ -3,6 +3,7 @@ import { mkdir, writeFile, rename } from 'node:fs/promises';
 import path from 'node:path';
 import { defineConfig, type Plugin } from 'vite';
 import vue from '@vitejs/plugin-vue';
+import {mapRenderer} from './scripts/map-renderer.mjs';
 
 /** 贴图上传扩展名白名单 */
 const TEXTURE_EXT = new Set(['.png', '.jpg', '.jpeg', '.webp', '.avif']);
@@ -101,15 +102,15 @@ const sceneSavePlugin = (): Plugin => ({
   },
 });
 
-export default defineConfig({
+export default defineConfig(async()=>{const mapAliases=await mapRenderer(fileURLToPath(new URL('.',import.meta.url)));return {
   cacheDir: fileURLToPath(new URL('./.cache/vite', import.meta.url)),
   plugins: [vue(), textureUploadPlugin(), sceneSavePlugin()],
   resolve: {
-    alias: {
-      '@': fileURLToPath(new URL('./src', import.meta.url)),
-    },
+    alias: [{find:'@',replacement:fileURLToPath(new URL('./src',import.meta.url))},...mapAliases],
   },
+  optimizeDeps:{include:['vue',...(mapAliases.length?['maplibre-gl']:[])]},
+  build:{commonjsOptions:{include:[/node_modules/,/maplibre-heat-.*\.cjs$/]}},
   server: {
     port: 5183,
   },
-});
+};});

@@ -17,22 +17,32 @@ export function environment(override) {
   const compiler = join(dir, 'compiler');
   const portable = process.platform === 'win32' ? join(dir, 'node/node.exe') : join(dir, 'node/bin/node');
   return { dir, compiler, modules: join(compiler, 'node_modules'),
-    node: existsSync(portable) ? portable : process.execPath, registry: process.env.SCENE3D_REGISTRY || cfg.fallbackNpmRegistry };
+    node: existsSync(portable) ? portable : process.execPath };
 }
 export const dependencyPath = (...parts) => join(environment().modules, ...parts);
-export function checkEnvironment(override) {
+export function checkRuntime(override) {
   const env = environment(override);
-  const hint = `node "${join(skillRoot, 'scripts/setup-env.mjs')}" --env-dir="${env.dir}"`;
+  const hint = '请安装完整的Node >=22（含npm），或使用scripts/install中的运行时安装脚本。';
   const fail = (code, message) => { throw Object.assign(new Error(message), { code, hint }); };
   let version;
   try { version = execFileSync(env.node, ['-v'], { encoding: 'utf8' }).trim(); }
   catch (e) { fail('ENV_NODE_BROKEN', e.message); }
   if (Number(version.slice(1).split('.')[0]) < 22) {
     const install = process.platform === 'win32'
-      ? `powershell -ExecutionPolicy Bypass -File "${join(skillRoot, 'scripts/install/install.ps1')}" -EnvDir "${env.dir}" -ForcePortableNode`
-      : `bash "${join(skillRoot, 'scripts/install/install.sh')}" --env-dir="${env.dir}" --force-portable-node`;
+      ? `powershell -ExecutionPolicy Bypass -File "${join(skillRoot, 'scripts/install/install.ps1')}" -EnvDir "${env.dir}" -ForcePortableNode -RuntimeOnly`
+      : `bash "${join(skillRoot, 'scripts/install/install.sh')}" --env-dir="${env.dir}" --force-portable-node --runtime-only`;
     throw Object.assign(new Error(`Node >=22 required, found ${version}`), { code: 'ENV_NODE_UNSUPPORTED', hint: install });
   }
+  try { execFileSync(env.node, [npmEntry(env.node), '--version'], { encoding: 'utf8', timeout: 10000 }); }
+  catch (e) { fail('ENV_NPM_BROKEN', e.message); }
+  return { ...env, version };
+}
+// Explicit diagnostic for an optionally preinstalled template compiler.
+export function checkEnvironment(override) {
+  const env = checkRuntime(override);
+  const { version } = env;
+  const hint = `node "${join(skillRoot, 'scripts/setup-env.mjs')}" --env-dir="${env.dir}"`;
+  const fail = (code, message) => { throw Object.assign(new Error(message), { code, hint }); };
   let lock;
   try { lock = JSON.parse(readFileSync(join(env.dir, 'env.lock.json'), 'utf8')); }
   catch { fail('ENV_LOCK_MISSING', `Environment is not installed: ${env.dir}`); }
@@ -46,7 +56,7 @@ export function checkEnvironment(override) {
   const declared = JSON.parse(readFileSync(join(skillRoot, 'template/package.json'), 'utf8')).dependencies.three;
   const installed = JSON.parse(readFileSync(join(env.modules, 'three/package.json'), 'utf8')).version;
   if (declared !== installed) fail('THREE_VERSION_MISMATCH', `Expected ${declared}, found ${installed}`);
-  return { ...env, registry: process.env.SCENE3D_REGISTRY || lock.npmRegistry || env.registry, version, three: installed };
+  return { ...env, version, three: installed };
 }
 
 export function npmEntry(node) {

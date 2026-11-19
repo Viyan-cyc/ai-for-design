@@ -19,6 +19,7 @@ import './styles/editor.css';
 import ViewportTools from './ViewportTools.vue';
 import LightList from './LightList.vue';
 import SceneStats from './SceneStats.vue';
+import MapComponentsPanel from './MapComponentsPanel.vue';
 
 const props = defineProps<{
   onEditingChange: (value: boolean) => void;
@@ -79,6 +80,7 @@ onMounted(() => {
       <SceneStats v-if="leftTab === 'stats' && !focused" :bridge="props.bridge" />
     </aside>
     <aside v-if="editing" v-show="!focused" class="ed-panel ed-panel--right">
+      <MapComponentsPanel v-if="props.bridge.handle.viewMode==='map'" :bridge="props.bridge" />
       <PropertyPanel
         ref="propertyPanel"
         @light-selected="selectedLight = $event"

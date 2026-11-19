@@ -1,3 +1,4 @@
+import {showSceneError} from '../scene3d/scene-core';
 /**
  * edit/edit-main — 编辑态入口（独立于 main.ts，strip-edit 后不存在于二开交付物）
  *
@@ -135,5 +136,5 @@ const boot = async (): Promise<void> => {
 };
 
 if (!window.__scene3dOffline || new URLSearchParams(window.location.search).get('edit') === '1') {
-  void boot();
+  void boot().catch(showSceneError);
 }

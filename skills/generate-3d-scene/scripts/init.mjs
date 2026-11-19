@@ -29,10 +29,10 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import { inject } from './lib/designer-assets.mjs';
 import { checkProject } from './build.mjs';
-import { checkEnvironment } from './lib/environment.mjs';
+import { checkRuntime } from './lib/environment.mjs';
 import { prepareProjectEnvironment } from './lib/project-environment.mjs';
+import { validateSceneData } from './lib/scene-schema.mjs';
 import { buildAssetCatalog, resolveAsset, referencedAssetIds } from './lib/asset-catalog.mjs';
-import { validateSceneData, factoryRegistryFromProfile } from './lib/scene-schema.mjs';
 
 const SKILL_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const TEMPLATE_DIR = join(SKILL_ROOT, 'template');
@@ -107,10 +107,10 @@ export const initProject = (target, opts = {}) => {
   const out = resolve(target);
   const errors = [];
   const warnings = [];
-  const deps = opts.deps ?? 'external';
+  const deps = opts.deps ?? 'skip';
   if (!['external', 'skip'].includes(deps)) return { ok: false, out, errors: [`Unknown deps mode: ${deps}`], warnings };
   let env;
-  try { env = checkEnvironment(); }
+  try { env = checkRuntime(); }
   catch (e) { return { ok: false, out, errors: [`${e.code}: ${e.message}`, `HINT: ${e.hint}`], warnings }; }
 
 
@@ -184,12 +184,9 @@ export const initProject = (target, opts = {}) => {
   if (!['preview', 'standard', 'off'].includes(validateLevel)) {
     return { ok: false, out, errors: [`--validate 取值非法：${validateLevel}（preview|standard|off）`], warnings };
   }
-  let schema = null;
+  // General JSON structure is dependency-free; factory AST checks run at build.
   if (validateLevel !== 'off') {
-    // 工厂注册表从模板业务 profile 提取（P2-R3 单一来源，不维护镜像）
-    const profileSrc = readFileSync(join(TEMPLATE_DIR, 'src', 'scene3d', 'scene-profile.ts'), 'utf8');
-    schema = validateSceneData(data, factoryRegistryFromProfile(profileSrc));
-    for (const e of schema.errors) {
+    for (const e of validateSceneData(data).errors) {
       errors.push(`场景 schema 违规 [${e.code}] ${e.path}: ${e.message}`);
     }
   }
@@ -325,8 +322,8 @@ export const initProject = (target, opts = {}) => {
   }
   writeFileSync(pkgPath, `${JSON.stringify(pkg, null, 2)}\n`);
 
-  /* ⑥ 首次构建校验（结构门禁） */
-  const check = checkProject(out);
+  /* ⑥ 完整门禁需要项目依赖；初始化不预装基础编译器。 */
+  let check = { ok: true, errors: [], warnings: ['完整校验待依赖准备后在 build-offline 中执行。'], report: { status: 'deferred' } };
 
   /* ⑥b 工程外依赖准备与可选离线构建 */
   timings.scaffold = Math.round(performance.now() - started) - timings.environment;
@@ -334,7 +331,8 @@ export const initProject = (target, opts = {}) => {
   let buildRun = null;
   if (deps !== 'skip') {
     try {
-      prepareProjectEnvironment(out, env);
+      const projectEnv = prepareProjectEnvironment(out, env);
+      check = checkProject(out, { modules: projectEnv.modules });
       if (opts.deferBuild === false) {
         const r = spawnSync(env.node, [join(SKILL_ROOT, 'scripts/build-offline.mjs'), out], { stdio: 'inherit' });
         buildRun = { ok: r.status === 0, status: r.status };
@@ -375,8 +373,8 @@ const USAGE = `用法: node init.mjs [target-dir] [选项]（省略目录时使�
   --assets id1,id2         注入指定资产
   --with-components        注入 3d-components（vendor tgz + file: 依赖）
   --components-version <v> 多 tgz 时显式选择版本（含 v 的文件名须唯一匹配）
-  --deps external          在工程外准备依赖（默认）
-  --deps skip              只做结构门禁
+  --deps external          立即在工程外准备依赖
+  --deps skip              仅初始化文件；完整校验在构建时执行（默认）
   --defer-build            场景完成后统一离线构建（默认）
   --validate preview       场景 schema 校验档位（默认 preview；standard 同级严格；off 跳过）
   --json / --quiet`;

@@ -295,11 +295,13 @@ export class Bridge {
    * - 视觉层/材质库：快照为全集语义（__visuals/__materialLib 整表替换）。
    */
   restoreSnapshot(data: SceneData): void {
+    this.handle.validateUpdate?.(data);
     this.handle.internals.sceneEngine.validateFragment(data, true);
     this.commit('导入场景', () => this.rebuild(structuredClone(data)));
   }
 
   private rebuild(data: SceneData): void {
+    this.handle.validateUpdate?.(data);
     const alive = new Set<string>();
     const groups: Array<[string, Array<{ id: string }>]> = [];
     for (const [key, val] of Object.entries(data)) {

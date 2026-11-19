@@ -1,9 +1,9 @@
-import {MapRuntime} from '@a3d/a3d-components/map';
+import {MapScene} from '@a3d/a3d-components/map';
 import {createScene3D} from './src/scene3d/create-scene';
 const host=document.querySelector('#host') as HTMLElement, out=document.querySelector('#result')!;
-let handle:any, runtime:MapRuntime|undefined;
-const create=MapRuntime.create;
-MapRuntime.create=async options=>{runtime=await create(options);return runtime;};
+let handle:any, runtime:MapScene|undefined;
+const create=MapScene.create;
+MapScene.create=async options=>{runtime=await create(options);return runtime;};
 try{
  const data=await(await fetch('/scene3d/scene-data.json')).json();delete data.map.overlays;
  handle=await createScene3D(host,{data});await handle.whenReady({timeoutMs:20000});
@@ -16,4 +16,4 @@ try{
  check(handle.internals.rendererEngine.renderer.getContext().getError()===0,'shared GL context valid');
  const saved=handle.serialize();handle.update({map:saved.map});check(handle.serialize().map.overlays.length===0,'empty roundtrip');
  handle.dispose();handle=null;check(host.children.length===0,'lifecycle cleanup');out.textContent+='ALL PASS';
-}catch(e){out.textContent+='FAIL '+e;}finally{handle?.dispose();MapRuntime.create=create;}
+}catch(e){out.textContent+='FAIL '+e;}finally{handle?.dispose();MapScene.create=create;}

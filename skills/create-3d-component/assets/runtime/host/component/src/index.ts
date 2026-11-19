@@ -1,11 +1,11 @@
 import {Group,Mesh,EdgesGeometry,LineBasicMaterial,LineSegments,Matrix4,type Object3D} from 'three';
 import {normalize,type HighlightOptions,type AnimationMode} from './parameters';
 export {controls,defaults,normalize,animationMode} from './parameters';export type {HighlightOptions,AnimationMode} from './parameters';
-export interface HighlightHost { 
+export interface HighlightHost {
  /** 挂载效果的宿主根节点。 */
- root:Object3D; 
+ root:Object3D;
  /** 需要描边的普通Mesh集合；资源仍由宿主所有。 */
- targets:readonly Mesh[]; 
+ targets:readonly Mesh[];
  /** 通知宿主重新渲染。 */
  invalidate:()=>void }
 /** 为现有Mesh添加可开关的轮廓高亮，保留宿主几何与材质。
@@ -25,12 +25,12 @@ export class HostHighlight {
   if(!['none','pulse'].includes(animation))throw Error('动画模式无效');
   normalize(options);this.host=host;this.targets=[...host.targets];this.animation=animation;
   this.material=new LineBasicMaterial({transparent:true,depthTest:true,depthWrite:false});
-  for(const target of this.targets){const line=new LineSegments(new EdgesGeometry(target.geometry),this.material);line.matrixAutoUpdate=false;this.group.add(line);this.lines.push(line);}
-  host.root.add(this.group);this.setOptions(options);this.syncTargets();
+  try{for(const target of this.targets){const line=new LineSegments(new EdgesGeometry(target.geometry),this.material);line.matrixAutoUpdate=false;this.group.add(line);this.lines.push(line);}
+  host.root.add(this.group);this.setOptions(options);this.syncTargets();}catch(error){try{this.dispose();}catch{}throw error;}
  }
  private assertLive(){if(this.disposed)throw Error('效果已释放');}
  /** 更新指定效果参数，未传字段保留当前值。 */
- setOptions(value:HighlightOptions){this.assertLive();normalize(value);this.options=normalize({...this.options,...value});this.group.visible=this.options.enabled;this.paint();this.host.invalidate();}
+ setOptions(value:HighlightOptions){this.assertLive();normalize(value);const previous=this.options;const next=normalize({...previous,...value});try{this.options=next;this.group.visible=next.enabled;this.paint();this.host.invalidate();}catch(error){this.options=previous;this.group.visible=previous.enabled;this.paint();throw error;}}
  /** 返回当前配置副本。 */
  getOptions(){return {...this.options};}
  /** 同步目标的世界变换，不重建几何。 */

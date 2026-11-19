@@ -3,6 +3,7 @@ import { mkdtempSync, cpSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { resolve, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { dependencyPath } from '../../skills/generate-3d-scene/scripts/lib/environment.mjs';
 import { checkAssembly } from '../../skills/generate-3d-scene/scripts/lib/assembly-check.mjs';
 
 const skill = fileURLToPath(new URL('../../skills/generate-3d-scene/', import.meta.url));
@@ -29,7 +30,7 @@ try {
     [`for(let i=0;i<2;i++) b.batch('steel',g,new THREE.MeshStandardMaterial()); return b.finish();`, 'same material instance'],
   ]) {
     setFactory(body);
-    const result = await checkAssembly(root);
+    const result = await checkAssembly(root, { modules: dependencyPath() });
     assert.equal(result.ok, false, JSON.stringify(result));
     assert.equal(result.errors.length, 2, JSON.stringify(result));
     assert.ok(result.errors.every(error => error.includes(expected)), JSON.stringify(result));
@@ -38,33 +39,33 @@ try {
   setFactory(`const col=(id)=>b.mesh(id,g,m); col('left'); col('right');
     const batch=b.batchSlot('beams',m); for(let i=0;i<4;i++) batch.add(new THREE.BoxGeometry(1,1,1));
     return b.finish();`);
-  let result = await checkAssembly(root);
+  let result = await checkAssembly(root, { modules: dependencyPath() });
   assert.equal(result.ok, true, JSON.stringify(result));
   assert.equal(result.checked, 2);
   assert.equal(result.skipped.length, 0);
   setFactory(`Promise.reject(new Error('async rejected')); return b.finish();`);
-  result = await checkAssembly(root);
+  result = await checkAssembly(root, { modules: dependencyPath() });
   assert.equal(result.ok, false, JSON.stringify(result));
   assert.match(result.errors.join('\n'), /async rejected/);
   setFactory(`if(node.id==='first') document.createElement('canvas');
     b.mesh('x',g,m); b.mesh('x',g,m); return b.finish();`);
-  result = await checkAssembly(root);
+  result = await checkAssembly(root, { modules: dependencyPath() });
   assert.equal(result.ok, false);
   assert.equal(result.skipped.length, 1);
   assert.equal(result.errors.length, 1);
   assert.match(result.errors[0], /second: Error: Duplicate slot/);
   writeFileSync(data, JSON.stringify({ asset: [{ id: 'remote', params: { assetId: 'truck' } }] }));
-  result = await checkAssembly(root);
+  result = await checkAssembly(root, { modules: dependencyPath() });
   assert.equal(result.ok, true, JSON.stringify(result));
   assert.equal(result.checked, 0);
   assert.equal(result.skipped.length, 1); // never claim GLB loaded
   writeFileSync(data, JSON.stringify({ test: [{ id: 'loop' }] }));
   setFactory('while(true) {}');
-  result = await checkAssembly(root, { timeout: 500 });
+  result = await checkAssembly(root, { timeout: 500, modules: dependencyPath() });
   assert.equal(result.ok, false);
   assert.match(result.errors.join('\n'), /ETIMEDOUT/);
   setFactory('this is not valid TypeScript !');
-  result = await checkAssembly(root);
+  result = await checkAssembly(root, { modules: dependencyPath() });
   assert.equal(result.ok, false);
   console.log('PASS: assembly errors, source locations, valid batches, partial coverage, assets, timeout, syntax');
 } finally { rmSync(root, { recursive: true, force: true }); }

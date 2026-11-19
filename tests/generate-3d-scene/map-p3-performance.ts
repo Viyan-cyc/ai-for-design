@@ -1,14 +1,14 @@
-import { MapRuntime } from '@a3d/a3d-components/map';
+import { MapScene } from '@a3d/a3d-components/map';
 const host = document.querySelector('#host') as HTMLElement;
 const out = document.querySelector('#result')!;
 const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 const startView = { center: [121.49, 31.23] as [number, number], zoom: 16, pitch: 45, bearing: 0 };
 const endView = { ...startView, center: [121.491, 31.231] as [number, number] };
 const style = URL.createObjectURL(new Blob([JSON.stringify({ version: 8, sources: {}, layers: [{ id: 'bg', type: 'background', paint: { 'background-color': '#eee' } }] })], { type: 'application/json' }));
-let runtime: MapRuntime | undefined;
+let runtime: MapScene | undefined;
 function check(value: boolean, message: string) { if (!value) throw new Error(message); }
 try {
-  runtime = await MapRuntime.create({ host, style, origin: startView.center, ...startView });
+  runtime = await MapScene.create({ host, style, origin: startView.center, ...startView });
   const map = runtime.map;
   const view = () => ({ center: map.getCenter().toArray(), zoom: map.getZoom(), pitch: map.getPitch(), bearing: map.getBearing() });
   const assertView = (expected: typeof startView) => {

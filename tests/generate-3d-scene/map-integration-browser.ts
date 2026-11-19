@@ -1,4 +1,4 @@
-import { MapRuntime } from '@a3d/a3d-components/map';
+import { MapScene } from '@a3d/a3d-components/map';
 import { createScreenLabel } from '@a3d/a3d-components/labels';
 import * as THREE from 'three';
 import {Bridge} from './src/edit/Bridge';
@@ -86,10 +86,10 @@ try {
  assert(handle.internals.rendererEngine.renderer.getContext().getError()===0,'重建后无 GL 错误');
  handle.dispose();handle=null;
  let rejected=false;
- try { await MapRuntime.create({host,style:'data:application/json,%7B',origin:[121,31],loadTimeoutMs:3000}); }
+ try { await MapScene.create({host,style:'data:application/json,%7B',origin:[121,31],loadTimeoutMs:3000}); }
  catch { rejected=true; }
  assert(rejected&&host.children.length===0,'地图初始化失败释放容器与画布');
- const runtime=await MapRuntime.create({host,style:'data:application/json,'+encodeURIComponent(JSON.stringify({version:8,sources:{},layers:[]})),origin:[121,31]});
+ const runtime=await MapScene.create({host,style:'data:application/json,'+encodeURIComponent(JSON.stringify({version:8,sources:{},layers:[]})),origin:[121,31]});
  runtime.requestFrame();runtime.dispose();runtime.dispose();runtime.requestFrame();
  assert(host.children.length===0,'独立地图重复释放及销毁后重绘安全');
  lines.push('ALL PASS');output.textContent=lines.join('\n');

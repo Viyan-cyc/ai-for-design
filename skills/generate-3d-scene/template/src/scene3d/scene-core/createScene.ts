@@ -44,6 +44,9 @@ import {
 
 /** 对外 Handle API（edit 外壳只允许经此触达 core——build 铁律 2） */
 export interface SceneHandle {
+  /** Optional host preflight, without mutation; used before editor snapshot changes. */
+  validateUpdate?(fragment:TreeSceneFragment):void;
+  mapParameters?():Readonly<Record<string,string|number|boolean>>;
   /** Geographic hosts own camera/background and expose their controls separately. */
   viewMode?: 'map';
   /** Aggregate content owned by a renderer; never fake Object3Ds. */

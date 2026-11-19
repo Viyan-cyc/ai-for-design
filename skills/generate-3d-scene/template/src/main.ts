@@ -1,3 +1,4 @@
+import {showSceneError} from './scene3d/scene-core/offline';
 /**
  * main.ts — 二开态入口（交付物运行入口）
  *
@@ -29,5 +30,5 @@ const boot = async (): Promise<void> => {
 
 // An offline IIFE includes both entry modules; only boot the selected mode.
 if (!window.__scene3dOffline || new URLSearchParams(window.location.search).get('edit') !== '1') {
-  void boot();
+  void boot().catch(showSceneError);
 }

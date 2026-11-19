@@ -1,0 +1,14 @@
+import {readFile,writeFile} from 'node:fs/promises';import {stripTypeScriptTypes} from 'node:module';import assert from 'node:assert/strict';import {resolve,join} from 'node:path';
+const w=resolve(process.argv[2]),delay=ms=>new Promise(r=>setTimeout(r,ms));
+let source=await readFile('D:/cyc/project/octo/test/3d-components/src/map/surface-particle-scan/map-host.ts','utf8');source=stripTypeScriptTypes(source.replace(/^import .*;\r?\n/gm,''));
+const mocks=`const maplibregl={MercatorCoordinate:{fromLngLat:()=>({x:0,y:0,meterInMercatorCoordinateUnits:()=>1})}};class SurfaceParticleScan{userData={};commits=0;async setDataAsync(d,cancel){await new Promise(r=>setTimeout(r,20));if(cancel())return false;this.commits++;return true;}dispose(){}};`;
+const {attachSurfaceParticleScan}=await import('data:text/javascript;base64,'+Buffer.from(mocks+source).toString('base64'));
+const listeners=new Map();let reads=0,opacity=1;
+const event=(name,value={})=>{for(const f of listeners.get(name)??[])f(value);};
+const map={getStyle:()=>({layers:[{id:'b',type:'fill-extrusion',source:'s'}]}),getLayoutProperty:()=> 'visible',getPaintProperty:()=>opacity,getFilter:()=>null,getLayer:()=>({source:'s'}),getSource:()=>({type:'geojson',async getData(){reads++;await delay(350);return {type:'FeatureCollection',features:[]};}}),on(k,f){const s=listeners.get(k)??new Set();s.add(f);listeners.set(k,s)},off(k,f){listeners.get(k)?.delete(f)}};
+const binding=attachSurfaceParticleScan({map,origin:[0,0],scene:{add(){}},invalidate(){},onFrame:()=>()=>{},getMeshes:()=>[],acceptsLayer:()=>true,completeLayer:()=>true,growth:()=>1,visible:()=>true});
+const emit=type=>{for(const f of listeners.get('sourcedata')??[])f({sourceId:'s',isSourceLoaded:true,sourceDataType:type});};
+event('render');const storm=setInterval(()=>{emit('visibility');event('styledata');event('render');},15);await delay(800);clearInterval(storm);assert.equal(reads,1);assert.equal(binding.component.commits,1);
+opacity=0;event('styledata');event('render');await delay(650);assert.equal(reads,2);opacity=1;event('styledata');event('render');await delay(650);assert.equal(reads,3);assert.ok(binding.component.userData.surfaceCollectionRevision>1);
+emit('content');await delay(220);assert.equal(reads,4);binding.dispose();await delay(400);assert.equal(binding.component.commits,1);assert.ok([...listeners.values()].every(s=>s.size===0));
+await writeFile(join(w,'query-events.json'),JSON.stringify({passed:true,visibilityDoesNotStarveCollection:true,contentInvalidates:true,actualLayerSwitchRefreshes:true,unchangedStyleDoesNotStarve:true,disposedPendingReadDoesNotCommit:true,listenersRemoved:true},null,2));console.log('query events PASS');

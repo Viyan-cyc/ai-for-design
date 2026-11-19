@@ -28,7 +28,7 @@ let engine;
 let assets;
 process.on('unhandledRejection', error => { current = 'async (not a rendered frame)'; record(error); });
 try {
-  const { SceneEngine, AssetEngine, registerBuiltinFactories, registerBusinessFactories, RESERVED_KEYS } = await import(pathToFileURL(bundle));
+  const { SceneEngine, AssetEngine, registerBuiltinFactories, registerBusinessFactories, RESERVED_KEYS, validateComponents } = await import(pathToFileURL(bundle));
   engine = new SceneEngine();
   assets = new AssetEngine();
   // Throw synchronously rather than manufacture a successful placeholder load.
@@ -60,6 +60,21 @@ try {
   registerBuiltinFactories(engine, assets);
   registerBusinessFactories(context);
   const data = JSON.parse(readFileSync(dataPath, 'utf8'));
+  if (data.map !== undefined) {
+    current = 'map';
+    if (!data.map || typeof data.map !== 'object' || Array.isArray(data.map)) record(new Error('map须为对象'));
+    else {
+      for (const key of ['heat', 'logicalScatter', 'geographicScatter', 'surfaceScan']) {
+        if (data.map[key] === undefined) continue;
+        current = `map.${key}`;
+        if (!validateComponents) { record(new Error('地图数据校验入口缺失，请启用地图扩展')); continue; }
+        try { validateComponents({ [key]: data.map[key] }); completed.add(current); }
+        catch (error) { record(error); }
+      }
+      skipped.add('map: 未执行地图加载、瓦片、模型渲染或动画；已检查项仅为组件数据契约');
+    }
+    current = 'profile';
+  }
   const groups = Object.entries(data).filter(([key, value]) => !RESERVED_KEYS.has(key) && Array.isArray(value));
   engine.buildTree(groups);
   await new Promise(resolve => setImmediate(resolve));

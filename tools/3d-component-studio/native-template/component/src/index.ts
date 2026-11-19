@@ -16,7 +16,7 @@ export class AuthoredComponent extends Group {
  private disposed=false;
  private options=normalize();
  constructor(options: ComponentOptions={}) {
-  super();this.mesh=new Mesh(new BoxGeometry(),new MeshStandardMaterial());this.add(this.mesh);this.setOptions(options);
+  super();normalize(options);this.mesh=new Mesh(new BoxGeometry(),new MeshStandardMaterial());this.add(this.mesh);try{this.setOptions(options);}catch(error){this.dispose();throw error;}
  }
  /** 更新指定参数；未传字段保持当前值。尺寸改变几何缩放，颜色改变材质颜色。 */
  setOptions(options: ComponentOptions) {

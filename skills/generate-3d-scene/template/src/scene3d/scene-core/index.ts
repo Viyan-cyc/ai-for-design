@@ -31,3 +31,5 @@ export type { SceneEngine } from './engine/SceneEngine';
 export type { AssetEngine } from './engine/AssetEngine';
 export type { RenderLoop } from './engine/RenderLoop';
 export { makeAssetNodeFactory } from './handlers/registry';
+
+export {showSceneError} from './offline';

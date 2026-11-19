@@ -321,7 +321,7 @@ export const checkProject = (dir, opts = {}) => {
   }
 
   /* 5. 引擎/编辑器受控白名单；外部应用可使用已声明的运行依赖。 */
-  for (const file of srcFiles) errors.push(...checkCompositeSource(readFileSync(file, "utf8"), relative(root,file)));
+  for (const file of srcFiles) errors.push(...checkCompositeSource(readFileSync(file, "utf8"), relative(root,file), opts.modules ? join(opts.modules, 'typescript') : undefined));
   const imports = { ok: true, violations: [] };
   for (const file of srcFiles) {
     for (const { spec, line } of extractImports(readFileSync(file, 'utf8'))) {
@@ -368,7 +368,7 @@ export const checkProject = (dir, opts = {}) => {
       const profilePath = join(srcDir, 'scene3d', 'scene-profile.ts');
       if (existsSync(profilePath)) {
         try {
-          factoryRegistry = factoryRegistryFromProfile(readFileSync(profilePath, 'utf8'));
+          factoryRegistry = factoryRegistryFromProfile(readFileSync(profilePath, 'utf8'), opts.modules ? join(opts.modules, 'typescript') : undefined);
         } catch (err) {
           errors.push(`业务 profile 工厂表提取失败：${err.message}`);
         }

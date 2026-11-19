@@ -18,13 +18,13 @@
 #
 # Usage:
 #   bash install.sh [--manifest=<url|path>] [--env-dir=<path>] [--registry=<npm registry>]
-#                   [--force-portable-node] [--proxy=<addr>] [--check]
+#                   [--force-portable-node] [--runtime-only] [--proxy=<addr>] [--check]
 set -Eeuo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SKILL_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
-MANIFEST=""; ENV_DIR=""; REGISTRY=""; PROXY=""; CHECK=""; FORCE_PORTABLE=""; BAD_ARG=""
+MANIFEST=""; ENV_DIR=""; REGISTRY=""; PROXY=""; CHECK=""; FORCE_PORTABLE=""; RUNTIME_ONLY=""; BAD_ARG=""
 for a in "$@"; do
   case "$a" in
     --manifest=*) MANIFEST="${a#*=}" ;;
@@ -32,6 +32,7 @@ for a in "$@"; do
     --registry=*) REGISTRY="${a#*=}" ;;
     --proxy=*) PROXY="${a#*=}" ;;
     --check) CHECK=1 ;;
+    --runtime-only) RUNTIME_ONLY=1 ;;
     --force-portable-node) FORCE_PORTABLE=1 ;;
     *) BAD_ARG="$a" ;;
   esac
@@ -352,6 +353,9 @@ fi
 
 # ---------- handoff to setup-env.mjs (npm-only dep install) ----------
 [ -n "$EFFECTIVE_NODE" ] || fail NODE_MISSING "no usable node resolved (internal state)" ""
+if [ -n "$RUNTIME_ONLY" ]; then
+  exec "$EFFECTIVE_NODE" "$SKILL_DIR/scripts/ensure-env.mjs" "--env-dir=$ENV_DIR"
+fi
 ARGV=("$SKILL_DIR/scripts/setup-env.mjs" "--env-dir=$ENV_DIR")
 [ -n "$REGISTRY" ] && ARGV+=("--registry=$REGISTRY")
 echo "[handoff] $EFFECTIVE_NODE ${ARGV[*]}"

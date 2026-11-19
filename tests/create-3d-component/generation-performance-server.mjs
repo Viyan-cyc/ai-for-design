@@ -1,0 +1,12 @@
+import {prepareProjectEnvironment,createBuildInput} from '../../skills/generate-3d-scene/scripts/lib/project-environment.mjs';
+import {join,resolve} from 'node:path';
+import {pathToFileURL} from 'node:url';
+import {writeFile} from 'node:fs/promises';
+const port=Number(process.argv[4]??17971);
+const project=resolve(process.argv[2]),env=prepareProjectEnvironment(project),input=createBuildInput(project,env);
+const {createServer}=await import(pathToFileURL(join(env.modules,'vite/dist/node/index.js')).href);
+const server=await createServer({root:input.source,configFile:join(input.source,'vite.config.ts'),configLoader:'native',server:{host:'127.0.0.1',port,strictPort:true}});
+await server.listen();
+await writeFile(resolve(process.argv[3]),JSON.stringify({source:input.source,url:'http://127.0.0.1:'+port,modules:env.modules},null,2));
+console.log('PERFORMANCE_SERVER_READY http://127.0.0.1:'+port+'/');
+process.on('SIGINT',async()=>{await server.close();input.dispose();process.exit();});

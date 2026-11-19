@@ -22,7 +22,7 @@
 #
 # Usage:
 #   powershell -ExecutionPolicy Bypass -File install.ps1 [-Manifest <url|path>]
-#              [-EnvDir <path>] [-Registry <npm registry>] [-ForcePortableNode]
+#              [-EnvDir <path>] [-Registry <npm registry>] [-ForcePortableNode] [-RuntimeOnly]
 #              [-Proxy <addr>] [-Check]
 [CmdletBinding()]
 param(
@@ -30,6 +30,7 @@ param(
   [string]$EnvDir = "",
   [string]$Registry = "",
   [switch]$ForcePortableNode,
+  [switch]$RuntimeOnly,
   [string]$Proxy = "",
   [switch]$Check
 )
@@ -350,6 +351,10 @@ try {
 
   # ---------- handoff to setup-env.mjs (npm-only dep install) ----------
   if (-not $EffectiveNode) { Fail "NODE_MISSING" "no usable node resolved (internal state)" "" "send the whole LOG run for triage" }
+  if ($RuntimeOnly) {
+    & $EffectiveNode (Join-Path $SkillDir "scripts\ensure-env.mjs") "--env-dir=$EnvDir"
+    exit $LASTEXITCODE
+  }
   $argv = @((Join-Path $SkillDir "scripts\setup-env.mjs"), "--env-dir=$EnvDir")
   if ($Registry) { $argv += "--registry=$Registry" }
   Say "[handoff] $EffectiveNode $($argv[1..($argv.Length-1)] -join ' ')"

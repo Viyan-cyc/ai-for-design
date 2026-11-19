@@ -8,6 +8,7 @@ import { createRequire } from 'node:module';
 import { spawnSync } from 'node:child_process';
 import { build } from 'vite';
 import vue from '@vitejs/plugin-vue';
+import {mapRenderer} from './map-renderer.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const require = createRequire(import.meta.url);
@@ -115,9 +116,10 @@ try {
   await build({
     cacheDir: resolve(root, '.cache/vite'),
     root, configFile: false, publicDir: false,
-    plugins: [vue()], resolve: { alias: { '@': resolve(root, 'src') } },
+    plugins: [vue()], resolve: { alias: [{find:'@',replacement:resolve(root,'src')},...await mapRenderer(root)] },
     define: { 'process.env.NODE_ENV': JSON.stringify('production') },
     build: {
+      commonjsOptions:{include:[/node_modules/,/maplibre-heat-.*\.cjs$/]},
       outDir: stage, emptyOutDir: true, assetsInlineLimit: Number.MAX_SAFE_INTEGER,
       lib: { entry: resolve(root, 'src/offline-entry.ts'), name: 'Scene3d', formats: ['iife'], fileName: () => 'scene.js' },
       rollupOptions: { output: { inlineDynamicImports: true } },

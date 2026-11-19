@@ -8,3 +8,6 @@ outputs/ep-dedup-check/
 # Local authoring verification copies and evidence (keep on disk)
 /docs/create-3d-component/native-work/
 /docs/create-3d-component/component-authoring-work/
+
+# Local packaged export, not the skill runtime dependency
+/skills/gts-ep-coder/gts-ep-coder.zip

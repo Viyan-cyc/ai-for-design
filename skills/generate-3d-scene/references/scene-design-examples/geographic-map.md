@@ -8,9 +8,9 @@
 建筑形状和高度以地图数据为准。白模表达实际体块，不代表精细地标模型；数据缺失时说明限制，不用虚构精模冒充真实数据。
 
 ## 怎样组合组件
-- 基础地图使用[MapPresentation](../component-docs/MapPresentation.md)，通过map.theme选择light或dark。地面、道路、水域、绿地、建筑和底图文字沿用预设，不逐项手抄主题颜色。
+- 完整设计地图使用[MapExperience](../component-docs/MapExperience.md)，由生成器统一接入。通过map.theme选择light或dark，地面、道路、水域、绿地、建筑和文字沿用预设，不逐项手抄颜色。
 - 地点、中心、范围、zoom、bearing和pitch按项目关注区域设置，不沿用上海样本的绝对取景。
-- 没有业务数据需求时只生成底图和所需模型。旧散点、热力暂不可用，见[过渡说明](../map-overlays.md)；扫光另按相应能力接入，不默认添加。
+- 没有业务数据需求时只生成底图和所需模型。经纬度热力采用栅格和建筑染色共享数据场；逻辑散点单独呈现，不能直接当作地图图层。当前生成器接入范围见[组件选用](../restored-map-components.md)及[叠加层接口](../map-overlays.md)，未接通的编辑保存能力不作承诺；扫光按需添加。
 - 业务标签可用[ScreenLabel](../component-docs/ScreenLabel.md)，按项目定义信息、尺寸、缩放显隐及遮挡规则；底图labelSize不是业务卡片的像素尺寸。
 
 ## 哪些可以调
@@ -30,3 +30,6 @@
 编辑沿用现有编辑器的选择、锁定、撤销和保存流程，不复制原设计页面的固定城市导航或独立localStorage。新预设不自动覆盖已有工程。
 
 设计来源与核对历史留在维护Spec；本页指导使用，不增加日常生成的审美或浏览器门禁。实际接入和生成验证遵循[主入口](../../SKILL.md)。
+
+
+经纬度故障点使用 `map.geographicScatter`；`map.logicalScatter` 是独立逻辑画布，不能代替地图点位。字段及聚合差异见 [地图组件选用说明](../restored-map-components.md)。项目提供的真实地标模型和已确认热力参数应原样沿用，不用技术测试Box或径向数据替换。

@@ -26,12 +26,15 @@ metadata:
 
 ## 默认生成路径
 
+新建场景通过当前 skill 的 init 创建，初始化自动带入所选组件包。连续对话中追加效果、调整内容或修复问题，默认沿用当前工程和预览入口；只有用户要求独立副本或新场景时另建。修改已有工程不自动升级依赖；需要升级时核对公开接口并保留业务接线。
+
+
 1. 读 `references/generation-contract.md`，再读 `references/scene-design-examples/README.md`，读取共享规范与命中的领域方案。普通生成不通读引擎、编辑器、材质系统或构建脚本。
-2. 会话首次运行 `node scripts/ensure-env.mjs`；缺环境按 HINT 安装。无 Node 时按速查中的 install 脚本处理。依赖位于外部环境，生成项目中不创建 node_modules。
+2. 会话首次运行 `node scripts/ensure-env.mjs`，仅检查 Node/npm，不要求预装基础编译依赖。无可用运行时时按 HINT 处理；调用运行时安装脚本时使用 -RuntimeOnly（Windows）或 --runtime-only（Shell），不预装基础依赖。工程依赖在完整清单确定后由统一构建准备，位于工程外，不在生成项目中创建 node_modules。
 3. 按下方「选材与复用」选择资源；上传包的接收、更新与导入命令见 [designer-assets.md](references/designer-assets.md)，仅在涉及资产操作时读取。
-4. `node scripts/init.mjs "<artifact-folder>" --name <场景名称> --profile empty --assets referenced --deps external --defer-build`。模型确认后用 designer-assets inject 注入资源，或 --asset-package 指定已确认资产包；skill 不携带模型库。需组件时加 --with-components，由 init 在工程外准备依赖。
+4. `node scripts/init.mjs "<artifact-folder>" --name <场景名称> --profile empty --assets referenced --deps skip --defer-build`。模型确认后用 designer-assets inject 注入资源，或 --asset-package 指定已确认资产包；skill 不携带模型库。需组件时加 --with-components；地图场景先 enable-map 确定完整依赖，再由统一构建一次准备。普通生成不先运行 setup-env 预装基础依赖。
 5. 读取生成工程现状，局部修改业务 handler、scene-profile 的注册项和 scene-data。设计相机、光照、材质与布局；不要从 demo 模板覆盖现有文件。
-6. `node scripts/build-offline.mjs <WORKSPACE_PATH>`。一次执行静态契约、Node 同步装配检查、类型检查、资源检查和离线打包，前置失败不执行后续依赖阶段。编译使用工程外临时输入，结束后清理；项目仅保留源码与预览。工程自身 npm run build:offline 供开发者安装依赖后使用，默认生成使用此统一入口。成功直接交付并停止；TIMING 与非阻塞性能 WARN 不是新门禁。
+6. `node scripts/build-offline.mjs <WORKSPACE_PATH>`。准备完整依赖后执行静态契约、Node 同步装配检查、类型检查、资源检查和离线打包。连续模拟热力通过工程 scripts/heat-simulation.mjs 提供范围/数值函数，构建自动调用组件生成连续单元，见 references/restored-map-components.md；不手写经纬度点阵。编译使用工程外临时输入，结束后清理；项目仅保留源码与预览。工程自身 npm run build:offline 供开发者安装依赖后使用，默认生成使用此统一入口。成功直接交付并停止；TIMING 与非阻塞性能 WARN 不是新门禁。
 
 ### 受控生成与构建
 
@@ -42,6 +45,8 @@ metadata:
 场景构建后不追加 typecheck、普通 build、lint、浏览器、截图、性能采样、验证报告或审美修复。模型接收的固定缩略图/加载检查与整包确认属于资产阶段，不是场景复核。真实错误按下文处理；未经运行不能声称已验证渲染或交互。
 
 装配检查在独立进程中用真实 Three.js、SceneEngine 与实际 scene-data 执行工厂注册和同步节点创建，限时 30 秒；超时或检查脚本失败按阻塞处理。它不创建 WebGL、不模拟 DOM、不执行动画帧或联网加载模型。捕获 Duplicate slot、提前 finish、材质实例冲突等代码错误；不是浏览器运行或视觉验收。ASSEMBLY 的 partial / UNCHECKED 表示 Canvas、异步模型等未覆盖，不要求因此打开浏览器、重检库模型或改用几何体。RUNTIME: not-run 表示没有验证渲染与交互。页面好不好看、交互是否好用由用户评价，Agent 不自行做视觉检查或审美修复。
+
+依赖安装源由 `references/env-config.json` 的 `npmRegistries` 统一配置，自动按内网、官方公网、备用公网顺序尝试，不要求使用者配置源。已有匹配且健康的依赖直接复用；清单及锁定依赖未变用 npm ci，新增依赖或本地组件包变化时用 npm install。网络故障或镜像缺少版本时切源，权限与依赖清单错误直接报告。安装共享5分钟总预算，不按源分配短时限；总超时报“安装未完成”，不当作源不可用继续重装。setup-env仅用于显式预装基础编译环境，不是场景生成前置步骤。
 
 ## 选材与复用
 
@@ -61,9 +66,11 @@ metadata:
 
 ## 地理地图（按需）
 
-明确需要真实地理底图时，读取 references/map.md 并启用可选地图扩展；示意园区不自动启用。地图与三维模型在同一场景，Three 固定 0.185.1。地图服务在内网可访问，使用实际配置；不要求离线瓦片包。旧地图散点和话务热力接口已撤下，等待新组件接入。map.overlays只允许省略或空数组；非空或非数组会在创建/更新前报错，不自动丢弃原有业务数据。 详见 references/map-overlays.md。
+明确需要真实地理底图时，读取 references/map.md 并启用可选地图扩展；示意园区不自动启用。地图与三维模型在同一场景，Three 固定 0.185.1。旧工程省略map.runtime沿用MapScene；完整设计地图显式选择experience，由MapExperience统一管理地图运行与外观。地图服务使用实际可访问配置，不要求离线瓦片包。新栅格与染色使用map.heat，经纬度地图散点使用map.geographicScatter；独立逻辑散点才使用map.logicalScatter。旧map.overlays只允许省略或空数组；非空或非数组在创建/更新前报错，不自动丢弃原有业务数据。详见 references/map-overlays.md。
 
 ## 数据与修改边界
+
+新地图整体、逻辑散点、栅格与建筑染色的字段、右侧编辑面板、保存方式及渲染依赖先读 [restored-map-components.md](references/restored-map-components.md)。已有工程在副本合入适配，不直接替换类名或覆盖源码；离线页保存仍需回写并重建。
 
 工程目录、数据字段、坐标和依赖方向以 [generation-contract.md](references/generation-contract.md) 为准。读取生成工程现状后局部修改；不得用 demo 覆盖用户源码、布局、槽位或已保存外观。生成时不修改核心引擎、编辑器、构建与校验脚本。
 
@@ -120,3 +127,13 @@ metadata:
 
 
 预览基线只登记工具生成的 HTML 和运行资源；附件与历史文件不归构建管理。单独移动源码时放在新项目的 source 目录，构建输出到该项目根部。
+
+### 经纬度散点与表面扫光
+地理散点使用正式包GeographicScatter；地图表面扫光使用SurfaceParticleScan及attachSurfaceParticleScan。宿主资源与生长适配见[接入说明](references/map-scan-integration.md)，不要从旧演示复制另一份采样算法。
+
+## 默认配置与故障处理
+
+- 使用组件时，未明确要求修改的样式和行为沿用组件默认值；只传必要的宿主、资源、坐标和数据，以及用户明确指定的覆盖。不要为“完整配置”复制默认对象，或凭感觉重设配色、虚化、亮度、阈值、主题。核对公开默认值，不猜测。
+- 用户要求的修改只影响对应字段；来源示例的演示数据不是组件默认业务数据。无数据保持空，不用演示数据静默回填。
+- 可选组件独立初始化并显示局部错误，保留底图及其他内容；严格校验错误不等于整页失败。组件库 `attemptComponent`（utils入口）提供同步错误结果/报告边界；异步操作必须另行 await/catch。失败构造器负责释放已分配的自有资源。
+- 非法数据更新拒绝并保留最后有效状态；不要擅自平均、去重或造坐标。数值修正仅使用组件公开的安全范围。错误信息要可见，不能只吞异常。

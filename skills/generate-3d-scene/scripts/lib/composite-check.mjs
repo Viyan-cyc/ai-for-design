@@ -1,8 +1,9 @@
 import {createRequire} from 'node:module';
 import {dependencyPath} from './environment.mjs';
-const ts=createRequire(import.meta.url)(dependencyPath('typescript'));
+
 /** Conservative checks of direct composite calls. No execution or browser simulation. */
-export function checkCompositeSource(source,file='handler.ts'){
+export function checkCompositeSource(source,file='handler.ts',typescriptPath=dependencyPath('typescript')){
+ const ts=createRequire(import.meta.url)(typescriptPath);
  const sf=ts.createSourceFile(file,source,ts.ScriptTarget.Latest,true),errors=[];
  const report=(node,message)=>{const p=sf.getLineAndCharacterOfPosition(node.getStart(sf));errors.push(`${file}:${p.line+1}:${p.character+1} ${message}`);};
  const method=n=>ts.isCallExpression(n)&&ts.isPropertyAccessExpression(n.expression)?n.expression.name.text:null;

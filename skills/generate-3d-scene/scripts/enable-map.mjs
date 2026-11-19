@@ -8,6 +8,7 @@ import { resolveWorkspace } from './lib/workspace.mjs';
 const target = process.argv[2];
 if (!target) throw new Error('用法: node scripts/enable-map.mjs <交付目录或工作区>');
 const workspace = resolveWorkspace(target);
+if(!existsSync(join(workspace,'scripts/map-renderer.mjs'))||!readFileSync(join(workspace,'vite.config.ts'),'utf8').includes('mapRenderer'))throw Error('工程构建模板较旧：请在副本合入当前template的map-renderer、vite.config和build-offline适配后启用地图；未修改工程。');
 // Reject links in every destination ancestry before reading or writing project files.
 function rejectLinkedPath(destination) {
   let path = resolve(destination);
