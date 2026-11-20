@@ -26,6 +26,7 @@ if (!target) {
   process.exit(2);
 }
 let input;
+let projectEnv;
 let releaseLock;
 const totalStarted = performance.now();
 try {
@@ -41,7 +42,7 @@ try {
   const publisher = await import(pathToFileURL(join(root, 'scripts/publish-preview.mjs')).href);
   if (publisher.externalInputVersion !== 1) throw new Error('工程构建脚本版本较旧：请保留用户修改，将 template/scripts/build-offline.mjs 和 publish-preview.mjs 的更新合入 source/scripts 后重试');
   let checkedDigest = inputDigest(root, { ignoreLockfile: true });
-  const projectEnv = prepareProjectEnvironment(root, env);
+  projectEnv = prepareProjectEnvironment(root, env);
   if (inputDigest(root, { ignoreLockfile: true }) !== checkedDigest) throw new Error('BUILD_INPUT_CHANGED：依赖准备期间源文件变化，请重新构建');
   const preparedDigest = inputDigest(root);
   const simulation = await generateProjectHeat(root, projectEnv.modules, preparedDigest);
@@ -88,6 +89,7 @@ try {
   process.exitCode = 1;
 } finally {
   try { input?.dispose(); } finally {
+    projectEnv?.dispose?.();
     releaseLock?.();
     console.log(`TIMING: total=${Math.round(performance.now() - totalStarted)}ms`);
   }

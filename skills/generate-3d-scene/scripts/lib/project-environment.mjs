@@ -55,9 +55,54 @@ function sameTemplate(pkg, lock) {
   return normalizedLock(lock) === normalizedLock(readFileSync(join(skillRoot, 'template/package-lock.json'), 'utf8'));
 }
 
+const cleanupRetryDelays = [200, 500, 1000, 2000];
+const retrySignal = new Int32Array(new SharedArrayBuffer(4));
+
+function reclaimReleasedStages(base) {
+  let entries;
+  try { entries = readdirSync(base, { withFileTypes: true }); }
+  catch { return; }
+  for (const entry of entries) {
+    if (!entry.isFile() || !/^\.install-[A-Za-z0-9]{6}\.cleanup$/.test(entry.name)) continue;
+    const marker = join(base, entry.name);
+    const stage = marker.slice(0, -'.cleanup'.length);
+    try {
+      rmSync(stage, { recursive: true, force: true });
+      rmSync(marker, { force: true });
+    } catch { /* Leave the marker for the next build. */ }
+  }
+}
+
+function publishDependencyCache(stage, compiler, key, pkg) {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      if (existsSync(compiler)) {
+        let healthy = false;
+        try {
+          healthy = readFileSync(join(compiler, '.ready'), 'utf8') === key;
+          if (healthy) checkDependencyHealth(join(compiler, 'node_modules'), pkg);
+        } catch { healthy = false; }
+        if (healthy) return true;
+        renameSync(compiler, compiler + '.incomplete-' + basename(stage));
+      }
+      renameSync(stage, compiler);
+      return true;
+    } catch (error) {
+      if (!['EPERM', 'EACCES', 'EBUSY', 'EEXIST', 'ENOTEMPTY'].includes(error.code)) throw error;
+      if (attempt === 1) {
+        console.warn(`WARN: 依赖缓存未保存，本次使用临时依赖，下次可能需要重新安装：${error.message}`);
+        return false;
+      }
+      Atomics.wait(retrySignal, 0, 0, 200);
+    }
+  }
+}
+
 export function prepareProjectEnvironment(project, env = checkRuntime()) {
   const root = resolve(project);
   externalOnly(root, env);
+  const base = join(env.dir, 'projects');
+  reclaimReleasedStages(base);
   const packageFile = join(root, 'package.json'), lockFile = join(root, 'package-lock.json');
   plain(packageFile);
   if (existsSync(lockFile)) plain(lockFile);
@@ -69,7 +114,6 @@ export function prepareProjectEnvironment(project, env = checkRuntime()) {
     try { checkDependencyHealth(env.modules, pkg); return { ...env, reused: true }; }
     catch { /* No healthy template compiler: prepare this project's full manifest once. */ }
   }
-  const base = join(env.dir, 'projects');
   mkdirSync(base, { recursive: true });
   const key = keyFor(pkg, lockText, files, env);
   const cached = join(base, key);
@@ -90,7 +134,6 @@ export function prepareProjectEnvironment(project, env = checkRuntime()) {
       }
     }
   } catch { /* An expired or broken hint never bypasses installation. */ }
-  const stage = mkdtempSync(join(base, '.install-'));
   const rootLock = lockText ? JSON.parse(lockText).packages?.[''] : null;
   const fields = ['dependencies', 'devDependencies', 'optionalDependencies'];
   const changed = !rootLock || fields.some(field => !isDeepStrictEqual(pkg[field] || {}, rootLock[field] || {}));
@@ -104,6 +147,25 @@ export function prepareProjectEnvironment(project, env = checkRuntime()) {
     catch { return true; }
   });
   const command = changed || localChanged ? 'install' : 'ci';
+  const stage = mkdtempSync(join(base, '.install-'));
+  let keepStage = false;
+  const dispose = () => {
+    for (let attempt = 0; ; attempt++) {
+      try {
+        rmSync(stage, { recursive: true, force: true });
+        return;
+      } catch (error) {
+        if (attempt === cleanupRetryDelays.length || !['EPERM', 'EACCES', 'EBUSY', 'ENOTEMPTY'].includes(error.code)) {
+          console.warn(`WARN: 无法清理临时依赖目录 ${stage}：${error.message}`);
+          // Only dispose marks a stage, after all callers have finished using it.
+          try { writeFileSync(stage + '.cleanup', ''); }
+          catch (markerError) { console.warn(`WARN: 无法登记临时依赖目录 ${stage}：${markerError.message}`); }
+          return;
+        }
+        Atomics.wait(retrySignal, 0, 0, cleanupRetryDelays[attempt]);
+      }
+    }
+  };
   try {
     writeFileSync(join(stage, 'package.json'), packageText);
     if (lockText) {
@@ -135,16 +197,18 @@ export function prepareProjectEnvironment(project, env = checkRuntime()) {
     }
     const finalKey = keyFor(pkg, nextLock, files, env), compiler = join(base, finalKey);
     writeFileSync(join(stage, '.ready'), finalKey);
-    if (existsSync(compiler)) {
-      let healthy = false;
-      try { checkDependencyHealth(join(compiler, 'node_modules'), pkg); healthy = readFileSync(join(compiler, '.ready'), 'utf8') === finalKey; } catch {}
-      if (!healthy) renameSync(compiler, compiler + '.incomplete-' + Date.now());
+    const published = publishDependencyCache(stage, compiler, finalKey, pkg);
+    if (published) {
+      try { writeFileSync(alias, JSON.stringify({ key: finalKey, time: Date.now() })); }
+      catch (error) { console.warn(`WARN: 无法保存依赖缓存索引：${error.message}`); }
     }
-    if (!existsSync(compiler)) renameSync(stage, compiler);
-    writeFileSync(alias, JSON.stringify({ key: finalKey, time: Date.now() }));
     if (nextLock !== lockText) writeFileSync(lockFile, nextLock);
-    return { ...env, compiler, modules: join(compiler, 'node_modules'), reused: false };
-  } finally { rmSync(stage, { recursive: true, force: true }); }
+    if (published) return { ...env, compiler, modules: join(compiler, 'node_modules'), reused: false };
+    keepStage = true;
+    return { ...env, compiler: stage, modules: join(stage, 'node_modules'), reused: false, dispose };
+  } finally {
+    if (!keepStage) dispose();
+  }
 }
 
 export function createBuildInput(project, env) {

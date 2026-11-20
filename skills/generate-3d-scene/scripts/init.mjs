@@ -331,14 +331,16 @@ export const initProject = (target, opts = {}) => {
   const depsStarted = performance.now();
   let buildRun = null;
   if (deps !== 'skip') {
+    let projectEnv;
     try {
-      const projectEnv = prepareProjectEnvironment(out, env);
+      projectEnv = prepareProjectEnvironment(out, env);
       check = checkProject(out, { modules: projectEnv.modules });
       if (opts.deferBuild === false) {
         const r = spawnSync(env.node, [join(SKILL_ROOT, 'scripts/build-offline.mjs'), out], { stdio: 'inherit' });
         buildRun = { ok: r.status === 0, status: r.status };
       }
     } catch (e) { errors.push(e.message); }
+    finally { projectEnv?.dispose?.(); }
   }
 
   timings.dependenciesAndOptionalBuild = Math.round(performance.now() - depsStarted);
