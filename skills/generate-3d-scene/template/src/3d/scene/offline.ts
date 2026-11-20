@@ -33,9 +33,14 @@ export const offlineResource = (url: string): string => {
   if (!data || /^(data:|blob:)/i.test(url)) {
     return url;
   }
-  const base = new URL('./', window.location.href);
+  // Relative references name files inside the offline payload, independent of the host.
+  // Absolute references from loaders still have to belong to the preview directory.
+  const pageUrl = /^(?:https?:|file:|\/\/)/i.test(url) ? document.baseURI : '';
+  const base = /^(?:https?|file):/i.test(pageUrl)
+    ? new URL('./', pageUrl)
+    : new URL('https://offline.invalid/preview/');
   const absolute = new URL(url.replace(/^\/(?!\/)/, ''), base);
-  if (absolute.protocol !== base.protocol || !absolute.pathname.startsWith(base.pathname)) {
+  if (absolute.protocol !== base.protocol || absolute.host !== base.host || !absolute.pathname.startsWith(base.pathname)) {
     throw new Error(`离线预览无法读取资源：${url}`);
   }
   const key = decodeURIComponent(absolute.pathname.slice(base.pathname.length));

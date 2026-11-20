@@ -40,6 +40,8 @@
 
 初始化空工程后执行 `inject <资产包目录> --project <工程> [--ids id1,id2]`，不传 ids 使用全部已确认可用项；结果返回内建 asset 分组的 params.assetId。业务节点继续独立设置位置/缩放。也支持 init --asset-package <目录> --assets <ids或all>，正常仍推荐先建空工程再注入。
 
+模型接收检查包放在工作区的独立目录。交付工程只通过 `inject` 接收场景资源。新工程中的单文件 GLB 直接落在 `public/models/`；多文件模型使用同名子目录保留依赖相对路径。同名时忽略大小写，按可用顺序添加 -2、-3 等序号，场景节点继续通过 `public/data/model-manifest.json` 按资产 ID 查找。
+
 检索：`search --queries <内部查询数组文件>`，使用内置 serviceConfig；当前 CLI 不读取 --config，不要传入该参数期待覆盖。固定来源按管理员配置，不把示例分组写死。响应中 file URL 仅用于受控下载，不嵌入运行页面。
 
 选中类别匹配的库候选后，将完整候选 JSON 输入 `download <candidate.json> --out <新目录>`，随后直接 `inject <目录> --project <工程目录>`，使用返回的 assetId 构建场景。检索库是已审核可用模型来源，不再执行 preview → import-check → accept-remote，不要求浏览器、技术报告或设计师再次确认。下载器仍收集 GLB/glTF 依赖并重写本地 URI；实际下载或文件解析失败时报告具体原因并降级。不得把未运行浏览器当作模型不可用。旧工作区中已经下载的 remote 包也可直接 inject；accept-remote 仅保留兼容入口。上传模型包仍保留原有检查与用户确认流程。

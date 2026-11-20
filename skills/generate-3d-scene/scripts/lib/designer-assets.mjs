@@ -260,25 +260,63 @@ export function inject(dir,project,ids) {
  const manifest=existsSync(manifestPath)?readJSON(manifestPath):{};
  if(manifest===null || typeof manifest!=='object' || Array.isArray(manifest))throw new Error('Invalid asset manifest: expected an object mapping');
  const pending=new Map();
+ // Generated projects can be moved to a case-insensitive filesystem.
+ const pathKey=path=>path.toLowerCase();
+ const models=resolve(target,legacyLayout?'scene3d/assets/models':'models');
+ checkTarget(models);
+ const occupied=new Set(!legacyLayout&&existsSync(models)?readdirSync(models).map(pathKey):[]);
+ for(const record of Object.values(manifest)){
+  if(typeof record?.model!=='string')continue;
+  const [dir,name]=pathKey(record.model.replace(/^\//,'')).split('/');
+  if(dir==='models'&&name)occupied.add(name);
+ }
  for(const a of assets) {
-  const key=`models/packages/${a.id}_${a.contentHash.slice(0,12)}`;
-  const modelPath=(legacyLayout?'':'/')+key+'/'+a.entry;
-  if(manifest[a.id] && manifest[a.id].model!==modelPath)throw new Error(`Asset ID conflict: ${a.id}`);
+  const extension=posix.extname(a.entry);
+  const name=posix.basename(a.entry,extension);
+  const suffix=a.contentHash.slice(0,12);
+  const packed=`models/packages/${a.id}_${suffix}`;
+  const existing=manifest[a.id]?.model;
+  const previous=(legacyLayout?'':'/')+packed+'/'+a.entry;
+  const flat=!legacyLayout&&a.files.length===1&&a.files[0]===a.entry&&extension.toLowerCase()==='.glb';
+  const folder=name==='.'||name==='..'?'model':name;
+  const base=tag=>flat?'models':`models/${folder}${tag}`;
+  const entry=tag=>flat?name+tag+extension:a.entry;
+  const candidate=tag=>'/'+base(tag)+'/'+entry(tag);
+  const leaf=tag=>flat?entry(tag):folder+tag;
+  const usePack=legacyLayout||existing===previous;
+  let tag='';
+  if(!usePack&&existing===undefined){
+   for(let i=2;occupied.has(pathKey(leaf(tag)));i++)tag='-'+i;
+  }else if(!usePack&&existing!==candidate('')){
+   const prefix='/models/'+(flat?name:folder);
+   const tail=flat?extension:'/'+a.entry;
+   if(typeof existing==='string'&&existing.startsWith(prefix)&&existing.endsWith(tail)){
+    const stored=existing.slice(prefix.length,-tail.length);
+    if(stored==='-'+suffix||/^-[1-9]\d*$/.test(stored))tag=stored;
+   }
+  }
+  const modelPath=usePack?previous:candidate(tag);
+  if(existing!==undefined&&existing!==modelPath)throw new Error(`Asset ID conflict: ${a.id}`);
+  if(!usePack)occupied.add(pathKey(leaf(tag)));
   for(const f of a.files){
-   const legacy=legacyLayout;
-   const to=safePath(target,(legacy?'scene3d/assets/':'')+key+'/'+f);checkTarget(to);
+   const key=usePack?packed:base(tag);
+   const file=!usePack&&flat?entry(tag):f;
+   const to=safePath(models,posix.join(key.slice('models/'.length),file));
+   checkTarget(to);
    const data=readFileSync(safePath(resolve(dir,'files'),f));
    if(existsSync(to)) {
     if(!lstatSync(to).isFile() || !readFileSync(to).equals(data))throw new Error(`Asset injection conflict: ${to}`);
    } else {
-    if(pending.has(to)&&!pending.get(to).equals(data))throw new Error(`Asset injection conflict: ${to}`);
-    pending.set(to,data);
+    const key=pathKey(to);
+    const staged=pending.get(key);
+    if(staged&&(staged.to!==to||!staged.data.equals(data)))throw new Error(`Asset injection conflict: ${to}`);
+    pending.set(key,{to,data});
    }
   }
   // Preserve user metadata on existing compatible manifest entries.
   if(!manifest[a.id])manifest[a.id]={model:modelPath,format:extname(a.entry).slice(1).toLowerCase()};
  }
- for(const [to,data] of pending){mkdirSync(dirname(to),{recursive:true});writeFileSync(to,data,{flag:'wx'});}
+ for(const {to,data} of pending.values()){mkdirSync(dirname(to),{recursive:true});writeFileSync(to,data,{flag:'wx'});}
  if(!existsSync(manifestPath)||JSON.stringify(readJSON(manifestPath))!==JSON.stringify(manifest))atomicJSON(manifestPath,manifest);return assets.map(a=>({id:a.id,name:a.name,group:'asset',params:{assetId:a.id}}));
 }
 export function exportPackage(dir,out,config) {
