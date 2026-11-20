@@ -2,7 +2,7 @@
  * compile-appearance.mjs — 编辑视觉层 → 代码模块编译器（P4.1，F08/V17/V18）
  *
  * strip-edit 的前置步骤：把 scene-data.json 的 __visuals / __materialLib 编译成
- * `src/scene3d/scene/generated/appearance.ts` 代码模块（纯数据常量），运行包装配期由
+ * `src/3d/materials/generated/appearance.ts` 代码模块（纯数据常量），运行包装配期由
  * appearance-runtime 应用——编辑结果自动保真，不再依赖 LLM 人工转录 Markdown。
  *
  * 契约（优化 Spec §4.2 compileAppearance）：
@@ -210,7 +210,7 @@ const tsValue = (val, depth = 0) => {
 
 /**
  * 生成 appearance.ts 模块文本。
- * 类型引用从 scene-core 公开入口 import（VisualOverride / MaterialLibEntry），
+ * 类型引用从 engine 公开入口 import（VisualOverride / MaterialLibEntry），
  * 不 import edit（铁律 1 天然满足——生成物只有类型依赖 + 纯数据）。
  */
 const generateModule = (exportedVisuals, exportedMaterialLib) => {
@@ -219,11 +219,11 @@ const generateModule = (exportedVisuals, exportedMaterialLib) => {
   lines.push(' * appearance — 编译外观模块（strip-edit 自动生成，P4.1）');
   lines.push(' *');
   lines.push(' * 内容来自编辑器保存快照的 __visuals / __materialLib，已剥离编辑器');
-  lines.push(' * 交互态（locked）；由 scene-core/appearance-runtime 在装配期应用。');
+  lines.push(' * 交互态（locked）；由 engine/appearance-runtime 在装配期应用。');
   lines.push(' * 重新导出运行包时本文件会被整文件覆盖——不要手改（改了下次 strip 丢失）。');
   lines.push(' * 审计：字段与 TRANSCRIPTION.md 的视觉表逐条对应。');
   lines.push(' */');
-  lines.push("import type { MaterialLibEntry, VisualOverride } from '../../scene-core/index';");
+  lines.push("import type { MaterialLibEntry, VisualOverride } from '../../scene/index';");
   lines.push('');
   lines.push('/** 节点视觉层（nodeId → override；来自 __visuals，locked 已剥离） */');
   lines.push('export const compiledVisuals: Record<string, VisualOverride> = ');

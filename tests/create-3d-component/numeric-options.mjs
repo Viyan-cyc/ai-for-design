@@ -2,7 +2,7 @@ import {readFileSync} from 'node:fs';
 import {stripTypeScriptTypes} from 'node:module';
 import assert from 'node:assert/strict';
 const root=process.argv[2]??'D:/cyc/project/octo/test/3d-components';
-async function load(path){return import('data:text/javascript;base64,'+Buffer.from(stripTypeScriptTypes(readFileSync(root+'/src/map/'+path,'utf8'))).toString('base64'));}
+async function load(path){return import('data:text/javascript;base64,'+Buffer.from(stripTypeScriptTypes(readFileSync(root+'/src/3d/map/'+path,'utf8'))).toString('base64'));}
 const scan=await load('surface-particle-scan/parameters.ts'),scatter=await load('restored-map-suite/logical-scatter/parameters.ts');
 for(const m of [scan,scatter]){
  assert.deepEqual(m.normalize(),m.defaults);

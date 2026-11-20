@@ -1,5 +1,5 @@
 import {MapScene} from '@a3d/a3d-components/map';
-import {createScene3D} from './src/scene3d/create-scene';
+import {createScene3D} from './src/3d/create-scene';
 const host=document.querySelector('#host') as HTMLElement, out=document.querySelector('#result')!;
 let handle:any, runtime:MapScene|undefined;
 const create=MapScene.create;

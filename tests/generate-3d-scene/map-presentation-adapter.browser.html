@@ -1,8 +1,8 @@
 <!doctype html><meta charset="utf-8"><title>Map editor adapter acceptance</title><div id="host" style="height:400px"></div><pre id="result">RUNNING</pre>
 <script type="module">
-import {createScene3D} from '/src/scene3d/create-scene';
-import {Bridge} from '/src/edit/Bridge';
-import {SaveService} from '/src/edit/SaveService';
+import {createScene3D} from '/src/3d/create-scene';
+import {Bridge} from '/src/editor/Bridge';
+import {SaveService} from '/src/editor/SaveService';
 const out=document.querySelector('#result');let handle;
 const check=(v,m)=>{if(!v)throw Error(m);out.textContent+='\nPASS '+m;};
 try {

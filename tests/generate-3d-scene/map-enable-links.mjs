@@ -7,7 +7,7 @@ const root=fs.mkdtempSync(join(tmpdir(),'map-links-')),skill=resolve('skills/gen
 let passed=0,skipped=0;
 const snapshot=dir=>{const out={};function visit(p,k){for(const name of fs.readdirSync(p)){const f=join(p,name),key=k+name,st=fs.lstatSync(f);if(st.isSymbolicLink())out[key]=`link:${fs.readlinkSync(f)}`;else if(st.isDirectory()){out[key+'/']='';visit(f,key+'/');}else out[key]=fs.readFileSync(f).toString('base64');}}visit(dir,'');return out;};
 try {
- for(const [i,path] of ['package.json','src/scene3d/create-scene.ts','src/scene3d','vendor'].entries()) {
+ for(const [i,path] of ['package.json','src/3d/create-scene.ts','src/3d/map','vendor'].entries()) {
   const work=join(root,String(i)),external=join(root,'external-'+i);
   fs.cpSync(join(skill,'template'),work,{recursive:true});
   const dest=join(work,path);

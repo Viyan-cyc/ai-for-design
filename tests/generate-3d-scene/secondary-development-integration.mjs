@@ -37,7 +37,7 @@ writeFileSync(join(project,'src/business/cards/index.ts'),`import StatefulCard f
 import { h } from 'vue';
 export const cards={example:StatefulCard, alternate:{render:()=>h('div',{class:'alternate-card'},'alternate')}};
 `);
-const bootPath=join(project,'src/boot-scene.ts');
+const bootPath=join(project,'src/business/boot-scene.ts');
 let bootCode=readFileSync(bootPath,'utf8');
 bootCode="import { createApp, defineComponent, getCurrentInstance, h, type AppContext } from 'vue';\n"+bootCode;
 bootCode=bootCode.replace('  const handle = await createScene3D(host, { cards, ...options });', `
@@ -52,26 +52,26 @@ const hashes=(dir)=>Object.fromEntries(readdirSync(dir,{recursive:true,withFileT
 const businessBefore=hashes(join(project,'src/business')), bootBefore=readFileSync(bootPath,'utf8');
 const donor=join(temp,'replacement');
 const fresh=initProject(donor,{profile:'demo',deferBuild:true});assert.equal(fresh.ok,true,JSON.stringify(fresh.errors));seedProject(donor);
-const freshDataPath=join(donor,'public/scene3d/scene-data.json');
+const freshDataPath=join(donor,'public/data/scene.json');
 const freshData=JSON.parse(readFileSync(freshDataPath,'utf8'));freshData.meta={...freshData.meta,name:'replacement scene'};writeFileSync(freshDataPath,JSON.stringify(freshData));
-cpSync(join(donor,'src/scene3d'),join(project,'src/scene3d'),{recursive:true});
+for (const path of ['engine','objects','appearance','scene.ts','create-scene.ts','scene-profile.ts']) cpSync(join(donor,'src',path),join(project,'src',path),{recursive:true});
 cpSync(join(donor,'public/scene3d'),join(project,'public/scene3d'),{recursive:true});
 assert.deepEqual(hashes(join(project,'src/business')),businessBefore);assert.equal(readFileSync(bootPath,'utf8'),bootBefore);
 console.log('PASS copy replacement: external business/cards/boot unchanged');
-const packageEntry=join(project,'src/scene3d/index.ts'), entryCode=readFileSync(packageEntry,'utf8');
+const packageEntry=join(project,'src/3d/index.ts'), entryCode=readFileSync(packageEntry,'utf8');
 try {
  writeFileSync(packageEntry,entryCode+"\nimport '../business/cards';\n");
  assert(checkProject(project).errors.some(error=>error.includes('3D 包禁止反向依赖')));
 }finally{writeFileSync(packageEntry,entryCode);}
 
 
-const dataPath = join(project, 'public/scene3d/scene-data.json');
+const dataPath = join(project, 'public/data/scene.json');
 const data = JSON.parse(readFileSync(dataPath, 'utf8'));
 data.cars[0].params = { assetId: 'example', status: 'normal', capacity: 2 };
 data.cars[0].card = { type: 'example', trigger: 'always' };
 writeFileSync(dataPath, JSON.stringify(data));
 // Test-only observation seam. No debug API is added to the distributed template.
-for (const rel of ['src/main.ts', 'src/edit/edit-main.ts']) {
+for (const rel of ['src/business/main.ts', 'src/editor/edit-main.ts']) {
   const p = join(project, rel);
   let code = readFileSync(p, 'utf8');
   code = code.replace(
@@ -201,7 +201,7 @@ try {
 writeFileSync(dataPath, JSON.stringify(saved));
 const stripped = await stripEdit(project, out);
 assert.equal(stripped.ok, true, JSON.stringify(stripped.errors));
-assert.equal(existsSync(join(out, 'src/edit')), false);
+assert.equal(existsSync(join(out, 'src/editor')), false);
 assert.equal(checkProject(out, { stripped: true }).ok, true);
 symlinkSync(
   env.modules,

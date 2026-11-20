@@ -14,18 +14,18 @@
 
 ## 最少需要改哪些文件
 
-1. `public/scene3d/scene-data.json`：保留舞台配置，填写业务分组数组。
-2. `src/scene3d/scene-profile.ts`：工厂只在 BUSINESS_REGISTRARS 登记一次；卡片在外部 `src/business/cards/index.ts` 登记，由应用传入。
+1. `public/data/scene.json`：保留舞台配置，填写业务分组数组。
+2. `src/3d/scene-profile.ts`：工厂只在 BUSINESS_REGISTRARS 登记一次；卡片在外部 `src/business/cards/index.ts` 登记，由应用传入。
 3. 新建 handler；材质默认值在代码中。内建 asset/图元足够时不新增 handler。
 
-业务 handler 放 `src/scene3d/scene/handlers`，默认外观放 `src/scene3d/scene/appearance.ts`；数据接入放 `src/business/data/{types,adapter,connect}.ts`，默认不联网。scene3d 不依赖 business/boot/App/edit，core 不依赖场景实现或 edit；编辑器通过 SceneHandle 公开入口访问 core。Vue 卡片从外部 cards 参数传入。
+业务 handler 放 `src/3d/components/objects`，默认外观放 `src/3d/materials/appearance.ts`；数据接入放 `src/business/data/{types,adapter,connect}.ts`，默认不联网。scene3d 不依赖 business/boot/App/edit，core 不依赖场景实现或 edit；编辑器通过 SceneHandle 公开入口访问 core。Vue 卡片从外部 cards 参数传入。
 
-通常不修改 scene-core/index.ts、handlers/index.ts、引擎、编辑器或构建脚本。业务 handler 在 scene-profile 直接导入，不需要新增 barrel 导出。
+通常不修改 engine/index.ts、handlers/index.ts、引擎、编辑器或构建脚本。业务 handler 在 scene-profile 直接导入，不需要新增 barrel 导出。
 
-可直接拷贝 `scripts/scaffolds/block-handler.ts` 到工程的 `src/scene3d/scene/handlers/block.ts`，然后在 scene-profile 中导入并登记：
+可直接拷贝 `scripts/scaffolds/block-handler.ts` 到工程的 `src/3d/components/objects/block.ts`，然后在 scene-profile 中导入并登记：
 
 ```ts
-import { registerBlockHandler } from './scene/handlers/block';
+import { registerBlockHandler } from './components/objects/block';
 // BUSINESS_REGISTRARS 内：
 blocks: ({ sceneEngine }) => registerBlockHandler(sceneEngine),
 ```
@@ -47,7 +47,7 @@ blocks: ({ sceneEngine }) => registerBlockHandler(sceneEngine),
 - 每个需单独编排的对象保留独立节点 ID；不为了减少 draw call 擅自合并成不可单独编辑的实例。
 - GLB 业务工厂使用 makeAssetNodeFactory；禁止另写加载、蒙皮克隆和异步过期处理。具体签名只查 handlers/registry.ts 的该导出。
 - RenderLoop 的 onFrame/onAfterFrame 回调为 `(delta: number, elapsed: number, simulationDelta: number) => void`；允许只接收前一或两个参数。delta 为活动帧间实际秒数，elapsed 累计活动时间，按需休眠、停止及后台停留不计入。simulationDelta 为 `Math.min(delta, 0.1)`。动画使用 delta，不能用限幅步长推进需要保持真实速度的动画；物理积分需要自行子步计算。onFrame 返回取消订阅函数。业务工厂的动画适配器仍只传 delta。
-- SceneHandle 从 `scene-core` 公开入口导入。update 缺失字段不变、params 整块替换、remove 先执行。编辑器不深层导入 engine。
+- SceneHandle 从 `engine` 公开入口导入。update 缺失字段不变、params 整块替换、remove 先执行。编辑器不深层导入 engine。
 - 普通场景不必创建业务卡片；需要时查 scene-engineering.md 的 card 小节。
 
 ## 准确接口与舞台字段
@@ -107,7 +107,7 @@ variants:[{params,...}] 按 variantAxis:'x'|'y'|'z'|'index' 循环分配；默�
 
 复杂布局可保留工程内简短 JS 生成器，导入 `scripts/layout.mjs` 的 expandLayout；不要临时写几百行位置展开逻辑。共享尺寸可以放 `src/layout-recipe.json`，handler 构建时 import，生成器读取同一文件；不运行时 fetch public 文件，不重复抄常量。
 
-可复制 `scripts/scaffolds/layout-recipe.json` 到工程 `src/layout-recipe.json`，运行 `node scripts/generate-layout.mjs`，输出 public/layout-groups.generated.json。生成器与输入随源码交付；默认输出独立分组文件，并拒绝覆盖输入配方和 public/scene3d/scene-data.json；不要将自定义输出指向编辑器保存文件。首次生成时合并分组，后续重新生成先明确要替换的节点范围，保留人工编辑。
+可复制 `scripts/scaffolds/layout-recipe.json` 到工程 `src/layout-recipe.json`，运行 `node scripts/generate-layout.mjs`，输出 public/layout-groups.generated.json。生成器与输入随源码交付；默认输出独立分组文件，并拒绝覆盖输入配方和 public/data/scene.json；不要将自定义输出指向编辑器保存文件。首次生成时合并分组，后续重新生成先明确要替换的节点范围，保留人工编辑。
 
 ## 构建与排障入口
 

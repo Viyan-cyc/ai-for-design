@@ -27,10 +27,10 @@ function host(){const container=element(),canvas=element(),listeners=new Map(),s
 const failing=host();failing.addLayer=()=>{throw Error('layer failure')};assert.throws(()=>new map.GridHeat(failing,field),/layer failure/);assert.equal(failing.sources.size,0);assert.equal([...failing.listeners.values()].reduce((n,x)=>n+x.size,0),0);
 const geoHost=host();geoHost.on=()=>{throw Error('event registration')};assert.throws(()=>new map.GeographicScatter(geoHost,{data:[]}),/event registration/);assert.equal(geoHost.container.children.length,0);
 const tintHost=host();tintHost.__heatAdapterVersion='grid-heat-maplibre-5.24.0-v1';tintHost.on=()=>{throw Error('tint registration')};assert.throws(()=>new map.BuildingTint(tintHost,field),/tint registration/);assert.equal(tintHost.__heatTint,undefined);
-const entry=join(R,'skills/generate-3d-scene/extensions/map/src/scene3d/map/map-components.ts');
+const entry=join(R,'skills/generate-3d-scene/extensions/map/src/3d/map/map-components.ts');
 await build({entryPoints:[entry],bundle:true,platform:'node',format:'esm',packages:'external',outfile:join(lib,'fault-map.mjs'),alias:{'@a3d/a3d-components/map':join(lib,'dist/es/map.js'),'@a3d/a3d-components/utils':join(lib,'dist/es/utils.js')}});
 const {MapComponents,validateComponents}=await import(pathToFileURL(join(lib,'fault-map.mjs')));
-const startupSource=await readFile(join(R,'skills/generate-3d-scene/extensions/map/src/scene3d/map/create-map-scene.ts'),'utf8');
+const startupSource=await readFile(join(R,'skills/generate-3d-scene/extensions/map/src/3d/map/create-map-scene.ts'),'utf8');
 const validator=startupSource.slice(startupSource.indexOf('export function validateMapConfig'),startupSource.indexOf('function presentationOverrides')).replace('export function','function');
 const js=stripTypeScriptTypes('type MapConfig=any;'+validator);
 const validateMapConfig=new Function('validateLayerMapping','normalizeScanOptions','validateScanBuildings','normalizeMapExperienceParameters','mapExperienceThemes','validateMapExperienceOutside','validateComponents',js+';return validateMapConfig;')(map.validateLayerMapping,map.normalizeScanOptions,map.validateScanBuildings,map.normalizeMapExperienceParameters,map.mapExperienceThemes,map.validateMapExperienceOutside,validateComponents);

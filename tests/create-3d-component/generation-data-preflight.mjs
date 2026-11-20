@@ -7,7 +7,7 @@ import { prepareProjectEnvironment } from '../../skills/generate-3d-scene/script
 const work=resolve(process.argv[2]),source=join(work,'map-fixture/source');
 const skill=fileURLToPath(new URL('../../skills/generate-3d-scene/',import.meta.url));
 const {heatCellCenter}=await import(pathToFileURL(resolve(process.argv[3])));
-const file=join(source,'public/scene3d/scene-data.json'),data=JSON.parse(readFileSync(file));
+const file=join(source,'public/data/scene.json'),data=JSON.parse(readFileSync(file));
 const initialPackage=JSON.parse(readFileSync(join(source,'package.json'))),initialLock=readFileSync(join(source,'package-lock.json'));
 const options={origin:[121.49517,31.24194],cellSizeMeters:70};
 const records=[];for(let y=-16;y<16;y++)for(let x=-16;x<17;x++){const [lng,lat]=heatCellCenter(x,y,options);records.push({lng,lat,value:[70,150,180,188,220][(x+16)%5]});}

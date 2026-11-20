@@ -19,9 +19,9 @@ registerHooks({
  }
 });
 const THREE = await import('three');
-const {createComposite} = await import(pathToFileURL(join(skill,'template/src/scene3d/scene-core/handlers/procedural/composite.ts')));
+const {createComposite} = await import(pathToFileURL(join(skill,'template/src/3d/components/factories/procedural/composite.ts')));
 
-const {findBySlotKey, applyVisualOverride} = await import(pathToFileURL(join(skill,'template/src/scene3d/scene-core/materials.ts')));
+const {findBySlotKey, applyVisualOverride} = await import(pathToFileURL(join(skill,'template/src/3d/materials/materials.ts')));
 const b=createComposite(), material=new THREE.MeshStandardMaterial();
 b.mesh('shellDeep',new THREE.BoxGeometry(),material);
 const slot=b.batchSlot('steelFrame',material);

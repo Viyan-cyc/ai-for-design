@@ -29,7 +29,7 @@
 
 ## 编辑结果回写
 
-- 开发模式保存直接写回工程 `public/scene3d/scene-data.json`。
+- 开发模式保存直接写回工程 `public/data/scene.json`。
 - 离线模式保存复制 `scene3d-changes` 修改文本；剪贴板不可用时显示文本框。复制不表示源码保存成功，也不清除未保存状态。用户回传后由 Agent 回写。
 - 核对 sourceId 与对应工程，逐项比较 before；冲突先处理，不覆盖其他修改。path 是路径数组，缺少 after 表示删除，数组整体替换；保留图片 data URI，或落盘后更新引用。
 - 回写场景数据，不改业务 handler 或原 HTML；回写后统一构建。退出编辑只进入当前内存预览，可返回编辑，不等于保存。

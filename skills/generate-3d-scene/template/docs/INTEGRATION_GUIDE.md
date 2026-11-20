@@ -18,16 +18,16 @@ npm run preview
 
 | 要做什么 | 改哪里 |
 |---|---|
-| 改摆放、相机、灯光、画质 | public/scene3d/scene-data.json 或编辑器 |
-| 新增设备构造/状态行为 | src/scene3d/scene/handlers，并在 scene-profile.ts 登记 |
-| 改业务默认配色 | src/scene3d/scene/appearance.ts 或对应 handler 默认材质 |
+| 改摆放、相机、灯光、画质 | public/data/scene.json 或编辑器 |
+| 新增设备构造/状态行为 | src/3d/components/objects，并在 scene-profile.ts 登记 |
+| 改业务默认配色 | src/3d/materials/appearance.ts 或对应 handler 默认材质 |
 | 改设备信息卡片 | src/business/cards，通过外部 cards 参数注册 |
 | 对接后端字段/ID | src/business/data/types.ts、adapter.ts |
 | 订阅与请求 | src/business/data/connect.ts |
-| 页面 UI | src/App.vue |
-| 修改通用引擎功能 | src/scene3d/scene-core；普通业务无需修改 |
+| 页面 UI | src/business/App.vue |
+| 修改通用引擎功能 | src/3d/scene；普通业务无需修改 |
 
-main.ts 挂载 UI；boot-scene.ts 在包外装配数据和卡片；scene3d/scene-profile.ts 只注册 3D factory。不要建树后重新注册、重喂数据。
+main.ts 挂载 UI；boot-scene.ts 在包外装配数据和卡片；scene-profile.ts 只注册 3D factory。不要建树后重新注册、重喂数据。
 模板中的 DTO 是最小示例（status/spin/speed），生成具体场景时应收敛到实际业务字段并实现 handler 响应。
 
 ## 接入状态数据
@@ -99,9 +99,9 @@ RenderLoop 的 onFrame/onAfterFrame 依次提供 `delta`、`elapsed`、`simulati
 
 scene-data.json 包括业务/布局以及合法舞台设置；设备材质默认值在业务代码中。编辑外观在 __visuals、共享材质在 __materialLib。
 引擎在节点更新/重建后重放编辑视觉层；GLB 异步加载也走统一重放。编写业务 handler 应沿用该流程，不绕过或清空视觉覆盖。
-仅按需 strip-edit 导出时，外观编译至 src/scene3d/scene/generated/appearance.ts，去除编辑器；TRANSCRIPTION.md 是自动转换摘要。编译文件不要手改，改编辑源后重新导出。
+仅按需 strip-edit 导出时，外观编译至 src/3d/materials/generated/appearance.ts，去除编辑器；TRANSCRIPTION.md 是自动转换摘要。编译文件不要手改，改编辑源后重新导出。
 
-开发模式保存写入 public/scene3d/scene-data.json。离线页面的变更必须回传 Agent 写回并构建后才持久化；退出编辑只保留当前内存结果。
+开发模式保存写入 public/data/scene.json。离线页面的变更必须回传 Agent 写回并构建后才持久化；退出编辑只保留当前内存结果。
 
 ## 定位问题
 
@@ -124,11 +124,11 @@ scene-data.json 包括业务/布局以及合法舞台设置；设备材质默认
 
 ## 外置卡片与可替换包
 
-后端代码、Vue 卡片和样式放 src/business。整个场景包是 src/scene3d + public/scene3d；替换它们不会覆盖 src/business、App.vue 或外部 boot-scene.ts。
-不要把旧包文件混入新包：备份后整体替换。只有节点 ID、card.type 和 API 仍兼容时才能直接替换；新增或改名需同步业务映射。只升级引擎时替换兼容的 scene-core，不覆盖场景布局。
+后端代码、Vue 卡片和样式放 src/business。地图接入在 src/3d/map，自定义对象在 src/3d/components/objects，通用引擎在 src/3d/scene。场景数据在 public/data，模型和图片在 public/models、public/images。
+不要把旧包文件混入新包：备份后整体替换。只有节点 ID、card.type 和 API 仍兼容时才能直接替换；新增或改名需同步业务映射。只升级引擎时替换兼容的 engine，不覆盖场景布局。
 
 ```ts
-import { createScene3D } from './scene3d';
+import { createScene3D } from './scene';
 import DeviceCard from './business/cards/DeviceCard.vue';
 const scene = await createScene3D(container, {
   cards: { deviceInfo: DeviceCard },
@@ -146,7 +146,7 @@ deviceInfo 是自定义名称，节点配置 `card: { type: 'deviceInfo', trigge
 ```vue
 <script setup lang="ts">
 import { ref, getCurrentInstance, onMounted, onBeforeUnmount } from 'vue';
-import { createScene3D, type SceneHandle } from './scene3d';
+import { createScene3D, type SceneHandle } from './scene';
 import DeviceCard from './business/cards/DeviceCard.vue';
 const host = ref<HTMLElement>();
 const cardContext = getCurrentInstance()!.appContext;
@@ -175,20 +175,20 @@ onBeforeUnmount(() => { active = false; scene?.dispose(); });
 
 ## 交付目录
 
-打开项目根目录 index.3d.html 预览，preview/ 是运行资源，source/ 是唯一开发源码。开发时直接修改 source 并构建，构建只更新预览。
+打开项目根目录 index.3d.html 预览，同层的 JS/CSS 是运行资源，source/ 是唯一开发源码。开发时直接修改 source 并构建，构建只更新预览。
 
 
 ### 开发工作区与交付目录
 
-项目源码位于 `<项目>/source/`，init 返回的 WORKSPACE_PATH 指向该目录。源码修改、资产注入和扩展启用均在此进行。后续修改沿用当前工程和预览入口；构建更新同项目的 `index.3d.html` 与 `preview/` 中登记的产物，其余文件保持原样。
+项目源码位于 `<项目>/source/`，init 返回的 WORKSPACE_PATH 指向该目录。源码修改、资产注入和扩展启用均在此进行。后续修改沿用当前工程和预览入口；构建更新同项目的 `index.3d.html` 与同层登记的 JS/CSS 产物，其余文件保持原样。
 
 
 
 ## 可选地理地图工程
 
-只有启用了地图扩展的工程才包含 `src/scene3d/map` 与 MapLibre/Turf 依赖。Three 固定 0.185.1。普通三维工程不需要安装它们。
+只有启用了地图扩展的工程才包含 `src/3d/map` 与 MapLibre/Turf 依赖。Three 固定 0.185.1。普通三维工程不需要安装它们。
 
-- 地图服务、经纬度原点、视角、主题配置在 `public/scene3d/scene-data.json` 的 `map`；模型仍是原有分组，数据与卡片仍从 `src/business` 接入。
+- 地图服务、经纬度原点、视角、主题配置在 `public/data/scene.json` 的 `map`；模型仍是原有分组，数据与卡片仍从 `src/business` 接入。
 - `origin` 使用 WGS84 经纬度。模型 position 使用相对原点的米，X 东、Y 上、Z 南；资产默认正面为 +Z。地图适配不自动把整个地球转成平面场景，不支持地形高度贴合。
 - `@a3d/a3d-components/map` 的 `MapScene` 统一负责 MapLibre 生命周期、局部坐标、相机与重绘，以及地图主题、整体外观及建筑与底图标签算法；`create-map-scene.ts` 负责接入引擎、拾取、编辑和保存，只创建一个地图组件并转换配置与编辑接口。不要在业务层再建立独立相机循环。
 - 地图风格源当前按 OpenMapTiles 的 building 数据层适配。更换服务需核对矢量字段、字体、sprite、跨域和版权；运行仍需要访问地图服务。交付 HTML 不是离线瓦片包。
@@ -206,7 +206,7 @@ onBeforeUnmount(() => { active = false; scene?.dispose(); });
 - 固定屏幕尺寸标签从 `@a3d/a3d-components/labels` 导入 `createScreenLabel` 或 `ScreenLabel`，默认 180×48 CSS 像素，不随距离变大。文字、贴图、锚点和深度测试可配置；实体标牌仍按世界尺寸制作。
 - `/labels` 仅运行依赖 Three；`/map` 单独依赖 MapLibre，不从组件库根入口导出。普通工程无需地图依赖。GSAP、CSG、BVH 是可选 peer，使用对应组件时才安装。
 - 标签独立使用时调用 `dispose()`，内部生成的贴图随标签释放，外部贴图由调用者释放。挂入本模板受管理的节点后由 SceneEngine 统一释放，不再手动重复释放或将同一外部贴图跨引擎共享。
-- 新地图工程由 `enable-map.mjs` 准备组件包依赖。升级已有工程时保留 `src/business` 和本场景 handler，更新匹配版本的组件包与地图适配文件，再安装依赖并构建。旧标签从 scene-core/handlers 导入的，改为从 `/labels` 导入；不要只覆盖 package.json 或只复制一份 adapter。
+- 新地图工程由 `enable-map.mjs` 准备组件包依赖。升级已有工程时保留 `src/business` 和本场景 handler，更新匹配版本的组件包与地图适配文件，再安装依赖并构建。旧标签从 engine/handlers 导入的，改为从 `/labels` 导入；不要只覆盖 package.json 或只复制一份 adapter。
 - 本次不自动升级旧业务工程。组件库实现只有一份，模板不复制其源码；生产 tgz 是构建产物。
 
 地图启用脚本将组件包按内容摘要命名。使用 skill 时由统一构建自动更新外部依赖和 lockfile；独立开发时运行 npm install 更新依赖，不复用同名旧包。标签支持 clone/copy/Group.clone：材质独立，内部生成贴图独立释放，外部贴图继续由调用者拥有。

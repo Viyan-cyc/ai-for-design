@@ -1,4 +1,4 @@
-import { createScene3D } from './src/scene3d/create-scene';
+import { createScene3D } from './src/3d/create-scene';
 const host=document.querySelector('#host') as HTMLElement, out=document.querySelector('#result')!;
 const lines:string[]=[];
 function check(ok:unknown,label:string){if(!ok)throw Error(label);lines.push('PASS '+label);out.textContent=lines.join('\n');}

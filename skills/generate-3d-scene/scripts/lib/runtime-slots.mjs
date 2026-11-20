@@ -101,9 +101,9 @@ export const buildRuntimeSlotKeys = async (projectRoot, sceneData) => {
       }
       globalThis.__scene3dTs = (await import(pathToFileURL(tsPath).href)).default;
     }
-    const { SceneEngine } = await import(pathToFileURL(join(projectRoot, 'src', 'scene3d', 'scene-core', 'engine', 'SceneEngine.ts')).href);
-    const { registerBuiltinFactories } = await import(pathToFileURL(join(projectRoot, 'src', 'scene3d', 'scene-core', 'handlers', 'registry.ts')).href);
-    const { buildSlotKeysFromScene } = await import(pathToFileURL(join(projectRoot, 'src', 'scene3d', 'scene-core', 'engine', 'AssetEngine.ts')).href);
+    const { SceneEngine } = await import(pathToFileURL(join(projectRoot, 'src', '3d', 'scene', 'systems', 'SceneEngine.ts')).href);
+    const { registerBuiltinFactories } = await import(pathToFileURL(join(projectRoot, 'src', '3d', 'components', 'factories', 'registry.ts')).href);
+    const { buildSlotKeysFromScene } = await import(pathToFileURL(join(projectRoot, 'src', '3d', 'scene', 'systems', 'AssetEngine.ts')).href);
     const profileUrl = pathToFileURL(join(projectRoot, 'src', 'scene3d', 'scene-profile.ts')).href;
     const profile = await import(profileUrl);
     const engine = new SceneEngine();
@@ -225,9 +225,9 @@ const makeProjectGltfLoader = async (projectRoot) => {
   );
   const loader = new GLTFLoader();
   const draco = new DRACOLoader();
-  // Draco 解码器：工程 public/scene3d/assets/draco/（运行时同源）；Node 下用 file:// 绝对
+  // Draco 解码器：工程 public/decoders/draco/（运行时同源）；Node 下用 file:// 绝对
   // 路径 + fetch 拦截读文件（setDecoderPath 需尾斜杠——loader 直接字符串拼接）
-  draco.setDecoderPath(`${pathToFileURL(join(projectRoot, 'public', 'scene3d', 'assets', 'draco')).href}/`);
+  draco.setDecoderPath(`${pathToFileURL(join(projectRoot, 'public', 'decoders', 'draco')).href}/`);
   loader.setDRACOLoader(draco);
   return loader;
 };
@@ -244,7 +244,7 @@ const makeProjectGltfLoader = async (projectRoot) => {
  */
 const loadModelSlotKeys = async (projectRoot, assetId, loader, buildSlotKeysFromScene, threeNs) => {
   // 模型路径：工程 asset-manifest.json 真相源；无条目走 legacy 猜测（同运行时）
-  const manifestPath = join(projectRoot, 'public', 'scene3d', 'assets', 'asset-manifest.json');
+  const manifestPath = join(projectRoot, 'public', 'data', 'model-manifest.json');
   let modelRel = null;
   if (existsSync(manifestPath)) {
     try {
@@ -255,7 +255,7 @@ const loadModelSlotKeys = async (projectRoot, assetId, loader, buildSlotKeysFrom
   if (!modelRel) {
     modelRel = `models/${assetId}.glb`;
   }
-  const modelPath = join(projectRoot, 'public', 'scene3d', 'assets', modelRel);
+  const modelPath = modelRel.startsWith('/') ? join(projectRoot, 'public', modelRel.slice(1)) : join(projectRoot, 'public', modelRel.replace(/^assets\//, ''));
   if (!existsSync(modelPath)) {
     return null;
   }
@@ -274,8 +274,7 @@ const loadModelSlotKeys = async (projectRoot, assetId, loader, buildSlotKeysFrom
       } else {
         // resourcePath：与浏览器一致的 URL 形态（带尾斜杠——loader 用它 resolve
         // 相对 URI；Windows 路径的反斜杠/盘符会破坏 new URL(uri, base) 解析）
-        const baseDir = modelRel.replace(/[^/]*$/, '');
-        const resourceUrl = `${pathToFileURL(join(projectRoot, 'public', 'scene3d', 'assets', baseDir)).href}/`;
+        const resourceUrl = pathToFileURL(modelPath).href.replace(/[^/]*$/, '');
         loader.parse(buf.toString('utf8'), resourceUrl, resolve, reject);
       }
     });

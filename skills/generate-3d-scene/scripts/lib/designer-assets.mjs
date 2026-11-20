@@ -246,7 +246,9 @@ export function selected(dir,ids) {
 }
 export function inject(dir,project,ids) {
  outsideSkill(project);
- const assets=selected(dir,ids), target=resolve(project,'public/scene3d/assets'), manifestPath=resolve(target,'asset-manifest.json');
+ const assets=selected(dir,ids), target=resolve(project,'public');
+ const legacyLayout=!existsSync(resolve(target,'data/scene.json'))&&existsSync(resolve(target,'scene3d/scene-data.json'));
+ const manifestPath=resolve(target,legacyLayout?'scene3d/assets/asset-manifest.json':'data/model-manifest.json');
  const checkTarget = path => {
   for(let p=resolve(path);;p=dirname(p)) {
    let stat;try{stat=lstatSync(p);}catch(e){if(e.code!=='ENOENT')throw e;}
@@ -260,9 +262,11 @@ export function inject(dir,project,ids) {
  const pending=new Map();
  for(const a of assets) {
   const key=`models/packages/${a.id}_${a.contentHash.slice(0,12)}`;
-  if(manifest[a.id] && manifest[a.id].model!==key+'/'+a.entry)throw new Error(`Asset ID conflict: ${a.id}`);
+  const modelPath=(legacyLayout?'':'/')+key+'/'+a.entry;
+  if(manifest[a.id] && manifest[a.id].model!==modelPath)throw new Error(`Asset ID conflict: ${a.id}`);
   for(const f of a.files){
-   const to=safePath(target,key+'/'+f);checkTarget(to);
+   const legacy=legacyLayout;
+   const to=safePath(target,(legacy?'scene3d/assets/':'')+key+'/'+f);checkTarget(to);
    const data=readFileSync(safePath(resolve(dir,'files'),f));
    if(existsSync(to)) {
     if(!lstatSync(to).isFile() || !readFileSync(to).equals(data))throw new Error(`Asset injection conflict: ${to}`);
@@ -272,7 +276,7 @@ export function inject(dir,project,ids) {
    }
   }
   // Preserve user metadata on existing compatible manifest entries.
-  if(!manifest[a.id])manifest[a.id]={model:key+'/'+a.entry,format:extname(a.entry).slice(1).toLowerCase()};
+  if(!manifest[a.id])manifest[a.id]={model:modelPath,format:extname(a.entry).slice(1).toLowerCase()};
  }
  for(const [to,data] of pending){mkdirSync(dirname(to),{recursive:true});writeFileSync(to,data,{flag:'wx'});}
  if(!existsSync(manifestPath)||JSON.stringify(readJSON(manifestPath))!==JSON.stringify(manifest))atomicJSON(manifestPath,manifest);return assets.map(a=>({id:a.id,name:a.name,group:'asset',params:{assetId:a.id}}));

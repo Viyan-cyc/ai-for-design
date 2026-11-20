@@ -44,7 +44,7 @@ try{
 const skill=join(out,'skill');await cp(join(repo,'skills/generate-3d-scene'),skill,{recursive:true});const plan=await prepareSync({source:target,target:skill,work:join(out,'sync-prepare'),adoptGenerated:true});await applySync(plan,{confirmed:true});
 process.env.SCENE_TEST_PARAMETERS_FILE=join(out,'progress.json');
 await run('generated-scene',['tests/create-3d-component/synced-scene.mjs',out]);
-const scene=JSON.parse(await readFile(join(out,'scene.json'))),data=JSON.parse(await readFile(join(scene.project,'public/scene3d/scene-data.json')));
+const scene=JSON.parse(await readFile(join(out,'scene.json'))),data=JSON.parse(await readFile(join(scene.project,'public/data/scene.json')));
 for(const [i,group] of ['authored','highlighted'].entries())for(const key of Object.keys(checks[i].parameters))assert.deepEqual(data[group][0].params[key],checks[i].parameters[key],group+' preset mapping '+key);
 await run('scene-browser',['tests/create-3d-component/synced-browser.mjs',out]);await run('scene-rejection',['tests/create-3d-component/synced-rejection.mjs',out]);
 assert.equal(await baseline(original),productionBefore);

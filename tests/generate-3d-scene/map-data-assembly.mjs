@@ -11,7 +11,7 @@ try {
   cpSync(join(skill,'extensions/map/src'),join(root,'src'),{recursive:true});
   symlinkSync(resolve(process.argv[2]),join(root,'node_modules'),process.platform==='win32'?'junction':'dir');
   const p={lng:121.49517,lat:31.24194,value:180};
-  const check=async map=>{writeFileSync(join(root,'public/scene3d/scene-data.json'),JSON.stringify({map}));return checkAssembly(root);};
+  const check=async map=>{writeFileSync(join(root,'public/data/scene.json'),JSON.stringify({map}));return checkAssembly(root);};
   let result=await check({heat:{data:[p,p]}});
   assert.equal(result.ok,false,JSON.stringify(result));assert.match(result.errors.join('\n'),/map.heat.*同单元/s);
   result=await check({heat:{data:[p]},geographicScatter:{data:[{id:'a',lng:p.lng,lat:p.lat}]}});

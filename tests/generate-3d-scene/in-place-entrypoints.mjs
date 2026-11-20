@@ -10,7 +10,7 @@ try {
  assert(fs.existsSync(join(out,'source/package.json')));
  run('build-offline.mjs',[out]);
  fs.mkdirSync(join(out,'.history'));fs.writeFileSync(join(out,'.history/user.txt'),'history');
- const scene=join(out,'source/public/scene3d/scene-data.json'),data=JSON.parse(fs.readFileSync(scene));data.camera.position[0]+=5;fs.writeFileSync(scene,JSON.stringify(data));
+ const scene=join(out,'source/public/data/scene.json'),data=JSON.parse(fs.readFileSync(scene));data.camera.position[0]+=5;fs.writeFileSync(scene,JSON.stringify(data));
  run('build-offline.mjs',[join(out,'source')]);assert.equal(fs.readFileSync(join(out,'.history/user.txt'),'utf8'),'history');assert.equal(JSON.parse(fs.readFileSync(scene)).camera.position[0],data.camera.position[0]);
  for(const name of ['node_modules','.cache','offline']) assert(!fs.existsSync(join(out,'source',name)));
  console.log('PASS real init to project/source, unified project/source paths, external build, same preview and history preserved');

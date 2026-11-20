@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { materialParamDisabledReason as reason } from '../../skills/generate-3d-scene/template/src/edit/material-conditions.ts';
+import { materialParamDisabledReason as reason } from '../../skills/generate-3d-scene/template/src/editor/material-conditions.ts';
 const groups = {
   clearcoat: ['clearcoatRoughness', 'clearcoatNormalScale'],
   sheen: ['sheenColor', 'sheenRoughness'],

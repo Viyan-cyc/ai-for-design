@@ -7,7 +7,7 @@
  * 分支必须是静态 import 字面量（动态 import 变量会让 vite 不打包入口代码）。
  */
 if (new URLSearchParams(window.location.search).get('edit') === '1') {
-  void import('./edit/edit-main');
+  void import('./editor/edit-main');
 } else {
-  void import('./main');
+  void import('./business/main');
 }

@@ -29,7 +29,7 @@ const initialized = initProject(project, { deferBuild: true });
 assert.equal(initialized.ok, true, JSON.stringify(initialized.errors));
 assert.equal(realpathSync(join(project, 'node_modules')), realpathSync(env.modules));
 assert.equal(existsSync(join(project, 'src/business/cards/ExampleCard.vue')), false);
-assert.equal(existsSync(join(project, 'src/scene3d/scene/handlers/example.ts')), false);
+assert.equal(existsSync(join(project, 'src/3d/components/objects/example.ts')), false);
 assert.equal(existsSync(join(project, 'public/scene3d/assets/textures/example.jpg')), false);
 assert.equal(existsSync(join(project, 'offline')), false);
 console.log('PASS clean empty project links shared dependencies without initial build');
@@ -43,11 +43,11 @@ assert.equal(groups.blocks[1].params.label, 'rack');
 assert.throws(() => expandLayout([{ type: 'scene', idPrefix: 'bad' }]));
 assert.throws(() => expandLayout([{ type: 'blocks', idPrefix: 'dup' }, { type: 'blocks', idPrefix: 'dup' }]), /Duplicate/);
 assert.throws(() => expandLayout([{ type: 'blocks', idPrefix: 'bad', counts: [2, -1, 3] }]));
-cpSync(join(skill, 'scripts/scaffolds/block-handler.ts'), join(project, 'src/scene3d/scene/handlers/block.ts'));
-const profile = join(project, 'src/scene3d/scene-profile.ts');
-writeFileSync(profile, "import { registerBlockHandler } from './scene/handlers/block';\n" + readFileSync(profile, 'utf8')
+cpSync(join(skill, 'scripts/scaffolds/block-handler.ts'), join(project, 'src/3d/components/objects/block.ts'));
+const profile = join(project, 'src/3d/scene-profile.ts');
+writeFileSync(profile, "import { registerBlockHandler } from './objects/block';\n" + readFileSync(profile, 'utf8')
   .replace('=> void> = {};', '=> void> = { blocks: ({ sceneEngine }) => registerBlockHandler(sceneEngine) };'));
-const scenePath = join(project, 'public/scene3d/scene-data.json');
+const scenePath = join(project, 'public/data/scene.json');
 save(scenePath, { ...json(scenePath), ...groups });
 console.log('PASS editable node layout with stable IDs and independent params');
 

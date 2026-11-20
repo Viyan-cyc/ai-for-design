@@ -29,7 +29,7 @@ registerHooks({
       if (existsSync(fileURLToPath(url))) {
         return { url: url.href, shortCircuit: true };
       }
-      // 目录导入（'./scene-core' → index.ts）：scene-profile 生产模块加载需要
+      // 目录导入（'./engine' → index.ts）：scene-profile 生产模块加载需要
       try {
         const dirIndex = new URL(`${specifier }/index.ts`, context.parentURL);
         if (existsSync(fileURLToPath(dirIndex))) {
@@ -75,15 +75,15 @@ registerHooks({
 });
 const THREE = await import(pathToFileURL(dependencyPath('three/build/three.module.js')));
 const { installDiagnostics, waitForReady, getPageErrorSink } =
-  await import(pathToFileURL(join(template, 'src/scene3d/scene-core/diagnostics.ts')));
-const { makeAssetNodeFactory } = await import(pathToFileURL(join(template, 'src/scene3d/scene-core/handlers/registry.ts')));
-const { SceneEngine } = await import(pathToFileURL(join(template, 'src/scene3d/scene-core/engine/SceneEngine.ts')));
-const { RenderLoop } = await import(pathToFileURL(join(template, 'src/scene3d/scene-core/engine/RenderLoop.ts')));
-const { paramsEqual } = await import(pathToFileURL(join(template, 'src/scene3d/scene-core/types.ts')));
-const { getResourceScope } = await import(pathToFileURL(join(template, 'src/scene3d/scene-core/resources.ts')));
-const { registerTreeHandler } = await import(pathToFileURL(join(template, 'src/scene3d/scene/handlers/tree.ts')));
-const { registerRackHandler } = await import(pathToFileURL(join(template, 'src/scene3d/scene/handlers/rack.ts')));
-const { handlerUtils } = await import(pathToFileURL(join(template, 'src/scene3d/scene-core/handlers/registry.ts')));
+  await import(pathToFileURL(join(template, 'src/3d/scene/diagnostics.ts')));
+const { makeAssetNodeFactory } = await import(pathToFileURL(join(template, 'src/3d/components/factories/registry.ts')));
+const { SceneEngine } = await import(pathToFileURL(join(template, 'src/3d/scene/systems/SceneEngine.ts')));
+const { RenderLoop } = await import(pathToFileURL(join(template, 'src/3d/rendering/RenderLoop.ts')));
+const { paramsEqual } = await import(pathToFileURL(join(template, 'src/3d/scene/types.ts')));
+const { getResourceScope } = await import(pathToFileURL(join(template, 'src/3d/scene/resources.ts')));
+const { registerTreeHandler } = await import(pathToFileURL(join(template, 'src/3d/components/objects/tree.ts')));
+const { registerRackHandler } = await import(pathToFileURL(join(template, 'src/3d/components/objects/rack.ts')));
+const { handlerUtils } = await import(pathToFileURL(join(template, 'src/3d/components/factories/registry.ts')));
 
 let passed = 0; let failed = 0;
 const filterArg = process.argv.find((arg) => arg.startsWith('--filter='));
@@ -176,7 +176,7 @@ await test('RR5 real factory callback exception stays failed', async () => {
 await test('P2-R1 real AssetEngine load failure (glTF bin 404) rejects ready with failedAssets', async () => {
   // 生产链路：真 AssetEngine + 不可达 URL → GLTFLoader 抛错 → registry settle failed
   // → whenReady 拒绝 + failedAssets 记 nodeId@assetId（vite dev HTML 回落下的真 404 等价物）
-  const { AssetEngine } = await import(pathToFileURL(join(template, 'src/scene3d/scene-core/engine/AssetEngine.ts')));
+  const { AssetEngine } = await import(pathToFileURL(join(template, 'src/3d/scene/systems/AssetEngine.ts')));
   const assetEngine = new AssetEngine();
   const t = installDiagnostics(assetEngine);
   const factory = makeAssetNodeFactory(
@@ -192,7 +192,7 @@ await test('P2-R1 real AssetEngine load failure (glTF bin 404) rejects ready wit
 });
 await test('P2-RRR1 real registerBusinessFactories registers every declared type on real engine', async () => {
   // 生产链路：真 scene-profile（TS 转译直跑）+ 真 SceneEngine → 登记表全量注册
-  const { registerBusinessFactories } = await import(pathToFileURL(join(template, 'src/scene3d/scene-profile.ts')));
+  const { registerBusinessFactories } = await import(pathToFileURL(join(template, 'src/3d/scene-profile.ts')));
   const engine = new SceneEngine();
   registerBusinessFactories({
     sceneEngine: engine,
@@ -204,7 +204,7 @@ await test('P2-RRR1 real registerBusinessFactories registers every declared type
   }
 });
 await test('P2-RRR1 empty/wrong-name registrar throws after post-registration check', async () => {
-  const { registerBusinessFactories, BUSINESS_REGISTRARS } = await import(pathToFileURL(join(template, 'src/scene3d/scene-profile.ts')));
+  const { registerBusinessFactories, BUSINESS_REGISTRARS } = await import(pathToFileURL(join(template, 'src/3d/scene-profile.ts')));
   const ctx = (engine) => ({
     sceneEngine: engine,
     assetEngine: { registerAssetStates() { }, getInstance: async () => ({}) },
@@ -617,7 +617,7 @@ await test('P3-R3 repeated create/remove cycles dispose exactly once per resourc
 });
 
 await test('P3-R4 real Bridge undo/redo restores snapshot-missing fields, keeps identities', async () => {
-  const { Bridge } = await import(pathToFileURL(join(template, 'src/edit/Bridge.ts')));
+  const { Bridge } = await import(pathToFileURL(join(template, 'src/editor/Bridge.ts')));
   // 真 SceneEngine + 真 Bridge（handle 门面只接 Bridge 实际消费的面：update/serialize/internals）
   const engine = new SceneEngine();
   engine.registerFactory('things', () => new THREE.Group());
@@ -808,7 +808,7 @@ await test('P3 duplicate-object visuals do not clobber other nodes (F06/V09 core
 });
 
 await test('P3 EnvironmentEngine: intensity-only change does not regenerate PMREM (V16 core)', async () => {
-  const { EnvironmentEngine } = await import(pathToFileURL(join(template, 'src/scene3d/scene-core/engine/EnvironmentEngine.ts')));
+  const { EnvironmentEngine } = await import(pathToFileURL(join(template, 'src/3d/scene/systems/EnvironmentEngine.ts')));
   // Node 无 WebGL：注入计数 fake PMREM（测试缝 pmremFactory；生产恒真 PMREMGenerator）
   let fromSceneCalls = 0;
   const engine = new EnvironmentEngine();
@@ -836,7 +836,7 @@ await test('P3 EnvironmentEngine: intensity-only change does not regenerate PMRE
 });
 
 await test('P3 AssetEngine: disposed engine rejects late cache writeback and new loads (V05 core)', async () => {
-  const { AssetEngine } = await import(pathToFileURL(join(template, 'src/scene3d/scene-core/engine/AssetEngine.ts')));
+  const { AssetEngine } = await import(pathToFileURL(join(template, 'src/3d/scene/systems/AssetEngine.ts')));
   const engine = new AssetEngine();
   engine.dispose();
   await assert.rejects(engine.getInstance('x', 'http://127.0.0.1:59999/x.glb'), /已释放/);
@@ -873,7 +873,7 @@ await test('P3 slot uniqueness: findDuplicateSlotKeys flags same-parent duplicat
 });
 
 await test('P3-RR2 real Bridge: unchanged legacy node without params keeps identity on undo', async () => {
-  const { Bridge } = await import(pathToFileURL(join(template, 'src/edit/Bridge.ts')));
+  const { Bridge } = await import(pathToFileURL(join(template, 'src/editor/Bridge.ts')));
   // 真实 Bridge + 真 SceneEngine：省略 params 的未变 legacy 节点，撤销无关操作不得重建
   const engine = new SceneEngine();
   let creates = 0;
@@ -1160,14 +1160,14 @@ await test('P4.1 compileAppearance: reference validation reports exact paths (V1
     __materialLib: snapshot.__materialLib,
   }, { liveNodeIds: new Set(['a', 'b']) });
   assert.equal(r.code, r2.code, '编译确定性');
-  // 代码模块：双常量导出 + 类型来自 scene-core（不 import edit）
+  // 代码模块：双常量导出 + 类型来自 engine（不 import edit）
   assert.ok(/export const compiledVisuals/.test(r.code));
   assert.ok(/export const compiledMaterialLib/.test(r.code));
   assert.ok(!/from\s+['"].*edit/.test(r.code));
 });
 
 await test('P4.1 applyCompiledAppearance: visuals/materials/slots effective on real engine (V17 core)', async () => {
-  const { applyCompiledAppearance } = await import(pathToFileURL(join(template, 'src/scene3d/scene-core/appearance-runtime.ts')));
+  const { applyCompiledAppearance } = await import(pathToFileURL(join(template, 'src/3d/materials/appearance-runtime.ts')));
   // 真 SceneEngine + 真 ResourceScope（P3 验证过的所有权链路自动继承）
   const engine = new SceneEngine();
   engine.registerFactory('things', () => {
@@ -1219,11 +1219,11 @@ await test('P4.2 stripEdit atomic publish: failure preserves source and old outp
     const out = join(tmp, 'out');
     const r1 = await stripEdit(src, out, { force: true });
     assert.equal(r1.ok, true, JSON.stringify(r1.errors));
-    assert.ok(existsSync(join(out, 'src', 'scene3d', 'scene', 'generated', 'appearance.ts')), 'appearance.ts 落位');
+    assert.ok(existsSync(join(out, 'src', '3d', 'materials', 'generated', 'appearance.ts')), 'appearance.ts 落位');
     assert.ok(existsSync(join(out, 'TRANSCRIPTION.md')), '摘要落位');
     const oldMarker = readFileSync(join(out, 'src', 'main.ts'), 'utf8');
     // 坏源（陈旧引用）→ FAIL：源完好 + 旧 out 完好 + 无 staging 残留
-    const p = join(src, 'public', 'scene3d', 'scene-data.json');
+    const p = join(src, 'public', 'data', 'scene.json');
     const data = JSON.parse(readFileSync(p, 'utf8'));
     data.__visuals = { ghost_404: { color: '#000' } };
     writeFileSync(p, JSON.stringify(data, null, 2));
@@ -1231,7 +1231,7 @@ await test('P4.2 stripEdit atomic publish: failure preserves source and old outp
     assert.equal(r2.ok, false);
     assert.ok(r2.errors.some((e) => e.includes('ghost_404')), '错误报具体路径');
     assert.equal(readFileSync(join(out, 'src', 'main.ts'), 'utf8'), oldMarker, '旧产物分毫未动');
-    assert.ok(existsSync(join(src, 'src', 'edit', 'Bridge.ts')), '源工程完好');
+    assert.ok(existsSync(join(src, 'src', 'editor', 'Bridge.ts')), '源工程完好');
     const stagingLeft = readdirSyncSafe(dirname(out)).filter((f) => f.startsWith('.tmp-strip'));
     assert.equal(stagingLeft.length, 0, `staging 清理干净（残留：${stagingLeft.join(',')}）`);
     // out 嵌套在源内：拒绝
@@ -1257,8 +1257,8 @@ const P4_SOURCE = {
 };
 
 await test('P4-R1/R2 library materials survive late asset mount and rebuild; ownership exact (V17/V14)', async () => {
-  const { applyCompiledAppearance } = await import(pathToFileURL(join(template, 'src/scene3d/scene-core/appearance-runtime.ts')));
-  const makeAssetNodeFactoryMod = await import(pathToFileURL(join(template, 'src/scene3d/scene-core/handlers/registry.ts')));
+  const { applyCompiledAppearance } = await import(pathToFileURL(join(template, 'src/3d/materials/appearance-runtime.ts')));
+  const makeAssetNodeFactoryMod = await import(pathToFileURL(join(template, 'src/3d/components/factories/registry.ts')));
   // R1 复现夹具：真 makeAssetNodeFactory + 延迟 resolve 的 AssetEngine 替身（网络层测试替身，
   // 引擎/资源域/runtime 为真实模块）
   let releaseInstance;
@@ -1325,7 +1325,7 @@ await test('P4-R1/R2 library materials survive late asset mount and rebuild; own
 });
 
 await test('P4-R1 library materials remount after node rebuild (recreateNode path)', async () => {
-  const { applyCompiledAppearance } = await import(pathToFileURL(join(template, 'src/scene3d/scene-core/appearance-runtime.ts')));
+  const { applyCompiledAppearance } = await import(pathToFileURL(join(template, 'src/3d/materials/appearance-runtime.ts')));
   const engine = new SceneEngine();
   engine.registerFactory('boxes', {
     create: () => new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshStandardMaterial()),
@@ -1346,7 +1346,7 @@ await test('P4-R1 library materials remount after node rebuild (recreateNode pat
 });
 
 await test('P4-RR1 sole-owner rebuild window: same live material, zero mid-dispose, exactly one final', async () => {
-  const { applyCompiledAppearance } = await import(pathToFileURL(join(template, 'src/scene3d/scene-core/appearance-runtime.ts')));
+  const { applyCompiledAppearance } = await import(pathToFileURL(join(template, 'src/3d/materials/appearance-runtime.ts')));
   // 审稿复现：单节点 libraryRef，params 重建 → 旧节点 release 释放库材质（修复前），
   // created 回调取回同一已释放实例（reusesSameMaterial=true, disposesWhileReused=1）
   const engine = new SceneEngine();
@@ -1376,8 +1376,8 @@ await test('P4-RR1 sole-owner rebuild window: same live material, zero mid-dispo
 });
 
 await test('P4-RR1 late owner after all current owners removed: instance alive, single dispose', async () => {
-  const { applyCompiledAppearance } = await import(pathToFileURL(join(template, 'src/scene3d/scene-core/appearance-runtime.ts')));
-  const makeAssetNodeFactoryMod = await import(pathToFileURL(join(template, 'src/scene3d/scene-core/handlers/registry.ts')));
+  const { applyCompiledAppearance } = await import(pathToFileURL(join(template, 'src/3d/materials/appearance-runtime.ts')));
+  const makeAssetNodeFactoryMod = await import(pathToFileURL(join(template, 'src/3d/components/factories/registry.ts')));
   // 迟到 GLB：同步引用者先全删（零引用窗口），GLB 才完成挂载——实例必须仍活
   let releaseInstance;
   const gate = new Promise((r) => { releaseInstance = r; });
@@ -1426,7 +1426,7 @@ await test('P4-RR1 late owner after all current owners removed: instance alive, 
 });
 
 await test('P4-R1 library material textures applied (applyMaterialTextures wired)', async () => {
-  const { applyCompiledAppearance } = await import(pathToFileURL(join(template, 'src/scene3d/scene-core/appearance-runtime.ts')));
+  const { applyCompiledAppearance } = await import(pathToFileURL(join(template, 'src/3d/materials/appearance-runtime.ts')));
   const { loadMaterialTextureMod } = { loadMaterialTextureMod: null };
   void loadMaterialTextureMod;
   // 贴图应用走 applyMaterialTextures → loadMaterialTexture（TextureLoader 网络层）。
@@ -1473,7 +1473,7 @@ await test('P4-R3 stale slot fails closed with exact path; real slot passes (V19
   seedProject(src);
   if (!existsSync(join(src, 'node_modules'))) symlinkSync(dependencyPath(), join(src, 'node_modules'), process.platform === 'win32' ? 'junction' : 'dir');
   try {
-    const p = join(src, 'public/scene3d/scene-data.json');
+    const p = join(src, 'public/data/scene.json');
     const data = JSON.parse(readFileSync(p, 'utf8'));
     const exId = data.examples?.[0]?.id ?? 'example_01';
     const out = join(tmp, 'out');
@@ -1498,7 +1498,7 @@ await test('P4-R3 stale slot fails closed with exact path; real slot passes (V19
     writeFileSync(p, JSON.stringify(data, null, 2));
     const r2 = await stripEdit(src, out, { force: true });
     assert.equal(r2.ok, true, JSON.stringify(r2.errors));
-    const ap = readFileSync(join(out, 'src/scene3d/scene/generated/appearance.ts'), 'utf8');
+    const ap = readFileSync(join(out, 'src/3d/materials/generated/appearance.ts'), 'utf8');
     assert.ok(ap.includes('body'), '真实槽位编译进 appearance');
   } finally {
     rmSync(tmp, { recursive: true, force: true });
@@ -1521,7 +1521,7 @@ await test('P4-RR2 procedural slots: runtime-manifest positive, stale negative, 
   if (!existsSync(join(src, 'node_modules'))) symlinkSync(dependencyPath(), join(src, 'node_modules'), process.platform === 'win32' ? 'junction' : 'dir');
   try {
     assert.ok(existsSync(join(src, 'node_modules', 'typescript')), '夹具含 typescript（运行时清单前提）');
-    const p = join(src, 'public/scene3d/scene-data.json');
+    const p = join(src, 'public/data/scene.json');
     const data = JSON.parse(readFileSync(p, 'utf8'));
     const treeId = data.trees?.[0]?.id;
     const rackId = Object.keys((data.coderacks ?? []) && {}).length ? data.coderacks[0]?.id : null;
@@ -1537,7 +1537,7 @@ await test('P4-RR2 procedural slots: runtime-manifest positive, stale negative, 
     writeFileSync(p, JSON.stringify(data, null, 2));
     const r = await stripEdit(src, out, { force: true });
     assert.equal(r.ok, true, `合法程序化槽位必须导出成功（RR2 修复前误拒）：${JSON.stringify(r.errors)}`);
-    const ap = readFileSync(join(out, 'src/scene3d/scene/generated/appearance.ts'), 'utf8');
+    const ap = readFileSync(join(out, 'src/3d/materials/generated/appearance.ts'), 'utf8');
     assert.ok(ap.includes('"trunk"'), 'tree trunk 槽位编译进 appearance');
     if (rackId) {
       assert.ok(ap.includes('panel_side_l'), 'rack 面板槽位编译进 appearance');
@@ -1619,12 +1619,12 @@ await test('P4-RRR1 multi-primitive model: loader-true slots export, stale fails
     mkdirSync(modelDir, { recursive: true });
     writeFileSync(join(modelDir, 'model.gltf'), JSON.stringify(gltf));
     // manifest 登记资产
-    const manifestPath = join(src, 'public', 'scene3d', 'assets', 'asset-manifest.json');
+    const manifestPath = join(src, 'public', 'data', 'model-manifest.json');
     const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
     manifest.multi_prim = { model: 'models/multi_prim/model.gltf', format: 'gltf' };
     writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
     // 场景引用 + 编辑视觉（多 primitive 合法槽位——先经生产链路取真值）
-    const p = join(src, 'public/scene3d/scene-data.json');
+    const p = join(src, 'public/data/scene.json');
     const data = JSON.parse(readFileSync(p, 'utf8'));
     data.asset = [{ id: 'mp_01', params: { assetId: 'multi_prim' } }];
     writeFileSync(p, JSON.stringify(data, null, 2));
@@ -1647,16 +1647,16 @@ await test('P4-RRR1 multi-primitive model: loader-true slots export, stale fails
     const out = join(tmp, 'out');
     const r = await stripEdit(src, out, { force: true });
     assert.equal(r.ok, true, `多 primitive 合法槽位必须导出成功（修复前误报陈旧）：${JSON.stringify(r.errors)}`);
-    const ap = readFileSync(join(out, 'src/scene3d/scene/generated/appearance.ts'), 'utf8');
+    const ap = readFileSync(join(out, 'src/3d/materials/generated/appearance.ts'), 'utf8');
     assert.ok(ap.includes('part/surface') && ap.includes('part/surface_1'), '两个 primitive 槽位都编译进 appearance');
 
     // 运行时命中验证（全部在夹具源内加载——单 THREE 实例链）：
     // 真实 GLTFLoader 加载同一模型 → 复刻 makeAssetNodeFactory 挂载形态 →
     // findBySlotKey（运行时槽位定位函数）确认两个 key 都命中真实 mesh →
     // appearance-runtime 应用编译视觉后材质生效
-    const materialsMod = await import(pathToFileURL(join(src, 'src', 'scene3d', 'scene-core', 'materials.ts')));
-    const { applyCompiledAppearance } = await import(pathToFileURL(join(src, 'src/scene3d/scene-core/appearance-runtime.ts')));
-    const { SceneEngine: FixtureSceneEngine } = await import(pathToFileURL(join(src, 'src', 'scene3d', 'scene-core', 'engine', 'SceneEngine.ts')));
+    const materialsMod = await import(pathToFileURL(join(src, 'src', '3d', 'scene', 'materials.ts')));
+    const { applyCompiledAppearance } = await import(pathToFileURL(join(src, 'src/3d/materials/appearance-runtime.ts')));
+    const { SceneEngine: FixtureSceneEngine } = await import(pathToFileURL(join(src, 'src', '3d', 'scene', 'systems', 'SceneEngine.ts')));
     globalThis.self = globalThis.self ?? globalThis;
     globalThis.createImageBitmap = globalThis.createImageBitmap ?? (async () => ({ width: 1, height: 1, close: () => {} }));
     globalThis.ProgressEvent = globalThis.ProgressEvent ?? class { constructor(t, i = {}) { this.type = t; Object.assign(this, i); } };
@@ -1715,7 +1715,7 @@ await test('P4-RRR1 multi-primitive model: loader-true slots export, stale fails
       '错误槽位报具体路径',
     );
     assert.equal(readFileSync(join(out, 'src', 'main.ts'), 'utf8'), oldMarker, '旧输出完好');
-    assert.ok(existsSync(join(src, 'src', 'edit', 'Bridge.ts')), '源工程完好');
+    assert.ok(existsSync(join(src, 'src', 'editor', 'Bridge.ts')), '源工程完好');
   } finally {
     rmSync(tmp, { recursive: true, force: true });
   }
@@ -1758,11 +1758,11 @@ await test('P4-RRRR1 external bin (encoded filename): real slot exports, missing
     };
     writeFileSync(join(modelDir, 'model.gltf'), JSON.stringify(gltf));
     writeFileSync(join(modelDir, 'data mesh.bin'), bin);
-    const manifestPath = join(src, 'public', 'scene3d', 'assets', 'asset-manifest.json');
+    const manifestPath = join(src, 'public', 'data', 'model-manifest.json');
     const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
     manifest.ext_model = { model: 'models/ext_model/model.gltf', format: 'gltf' };
     writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
-    const p = join(src, 'public/scene3d/scene-data.json');
+    const p = join(src, 'public/data/scene.json');
     const data = JSON.parse(readFileSync(p, 'utf8'));
     data.asset = [{ id: 'ext_01', params: { assetId: 'ext_model' } }];
     // 正例：真实存在槽位 part → strip 成功保真（修复前：外部 bin 加载失败 → 空清单
@@ -1772,7 +1772,7 @@ await test('P4-RRRR1 external bin (encoded filename): real slot exports, missing
     const out = join(tmp, 'out');
     const r = await stripEdit(src, out, { force: true });
     assert.equal(r.ok, true, `外部 bin 真实槽位必须导出成功（修复前误报陈旧）：${JSON.stringify(r.errors)}`);
-    const ap = readFileSync(join(out, 'src/scene3d/scene/generated/appearance.ts'), 'utf8');
+    const ap = readFileSync(join(out, 'src/3d/materials/generated/appearance.ts'), 'utf8');
     assert.ok(ap.includes('"part"'), 'part 槽位编译进 appearance');
 
     // 负例：抽掉 data mesh.bin（缺外部依赖）→ 节点无运行时清单（非空清单冒充），
@@ -1790,7 +1790,7 @@ await test('P4-RRRR1 external bin (encoded filename): real slot exports, missing
       '加载失败不得冒充「成功加载但 key 不存在」',
     );
     assert.equal(readFileSync(join(out, 'src', 'main.ts'), 'utf8'), oldMarker, '旧输出完好');
-    assert.ok(existsSync(join(src, 'src', 'edit', 'Bridge.ts')), '源工程完好');
+    assert.ok(existsSync(join(src, 'src', 'editor', 'Bridge.ts')), '源工程完好');
   } finally {
     rmSync(tmp, { recursive: true, force: true });
   }
@@ -1805,7 +1805,7 @@ await test('P5-R1 cache: complete inputs — asset bytes/index.html/expect/url c
     const proj = join(tmp, 'p');
     mkdirSync(join(proj, 'public', 'scene3d', 'assets', 'models'), { recursive: true });
     mkdirSync(join(proj, 'src'), { recursive: true });
-    writeFileSync(join(proj, 'public', 'scene3d', 'scene-data.json'), '{}');
+    writeFileSync(join(proj, 'public', 'data', 'scene.json'), '{}');
     writeFileSync(join(proj, 'public', 'scene3d', 'assets', 'models', 'car.glb'), 'GLB-V1');
     writeFileSync(join(proj, 'index.html'), '<html></html>');
     writeFileSync(join(proj, 'src', 'main.ts'), 'export {};\n');
@@ -1828,11 +1828,11 @@ await test('P5-R1 cache: complete inputs — asset bytes/index.html/expect/url c
     assert.notEqual(k({ expectHash: 'aaa' }).key, k({ expectHash: 'bbb' }).key, 'expectHash in key');
     assert.notEqual(k({ url: 'http://a/' }).key, k({ url: 'http://b/' }).key, 'url in key');
     // run/edit 隔离：edit-only 改动不变 run 键、变 edit 键
-    mkdirSync(join(proj, 'src', 'edit'), { recursive: true });
-    writeFileSync(join(proj, 'src', 'edit', 'Bridge.ts'), 'export const a = 1;\n');
+    mkdirSync(join(proj, 'src', 'editor'), { recursive: true });
+    writeFileSync(join(proj, 'src', 'editor', 'Bridge.ts'), 'export const a = 1;\n');
     const runInfo = computeCacheKey(proj, { check: 'verify:run', mode: 'run' });
     const editInfo = computeCacheKey(proj, { check: 'verify:edit', mode: 'edit' });
-    writeFileSync(join(proj, 'src', 'edit', 'Bridge.ts'), 'export const a = 2;\n');
+    writeFileSync(join(proj, 'src', 'editor', 'Bridge.ts'), 'export const a = 2;\n');
     assert.equal(computeCacheKey(proj, { check: 'verify:run', mode: 'run' }).key, runInfo.key,
       'run key unaffected by edit-only change');
     assert.notEqual(computeCacheKey(proj, { check: 'verify:edit', mode: 'edit' }).key, editInfo.key,
@@ -1961,7 +1961,7 @@ await test('P5-R4/RR3 profiles: §3.5 behavior contract, default standard, dedup
     const project = join(tmp, 'proj');
     mkdirSync(join(project, 'public', 'scene3d', 'assets', 'models'), { recursive: true });
     mkdirSync(join(project, 'src'), { recursive: true });
-    writeFileSync(join(project, 'public', 'scene3d', 'scene-data.json'), JSON.stringify({ cars: [{ id: 'c1' }] }));
+    writeFileSync(join(project, 'public', 'data', 'scene.json'), JSON.stringify({ cars: [{ id: 'c1' }] }));
     writeFileSync(join(project, 'src', 'main.ts'), 'export {};\n');
     writeFileSync(join(project, 'package.json'), '{}');
     writeFileSync(join(project, 'package-lock.json'), '{}');
@@ -2187,7 +2187,7 @@ await test('P5-RR1 cache negatives: config change invalidates; same hash differe
     const project = join(tmp, 'proj');
     mkdirSync(join(project, 'public', 'scene3d', 'assets', 'models'), { recursive: true });
     mkdirSync(join(project, 'src'), { recursive: true });
-    writeFileSync(join(project, 'public', 'scene3d', 'scene-data.json'), JSON.stringify({ cars: [{ id: 'c1' }] }));
+    writeFileSync(join(project, 'public', 'data', 'scene.json'), JSON.stringify({ cars: [{ id: 'c1' }] }));
     writeFileSync(join(project, 'src', 'main.ts'), 'export {};\n');
     writeFileSync(join(project, 'package.json'), '{}');
     writeFileSync(join(project, 'package-lock.json'), '{}');
@@ -2403,7 +2403,7 @@ await test('P5-RRR4 typecheck evidence: structured binding, vite-only rejected, 
     const project = join(tmp, 'proj');
     mkdirSync(join(project, 'public', 'scene3d', 'assets', 'models'), { recursive: true });
     mkdirSync(join(project, 'src'), { recursive: true });
-    writeFileSync(join(project, 'public', 'scene3d', 'scene-data.json'), JSON.stringify({ cars: [{ id: 'c1' }] }));
+    writeFileSync(join(project, 'public', 'data', 'scene.json'), JSON.stringify({ cars: [{ id: 'c1' }] }));
     writeFileSync(join(project, 'src', 'main.ts'), 'export {};\n');
     writeFileSync(join(project, 'package.json'), '{}');
     writeFileSync(join(project, 'package-lock.json'), '{}');
@@ -2472,7 +2472,7 @@ await test('P5-RRR2/RRR3 exportBuild real build + fidelity compare + editRegress
     const project = join(tmp, 'proj');
     mkdirSync(join(project, 'public', 'scene3d', 'assets', 'models'), { recursive: true });
     mkdirSync(join(project, 'src'), { recursive: true });
-    writeFileSync(join(project, 'public', 'scene3d', 'scene-data.json'), JSON.stringify({ cars: [{ id: 'c1' }] }));
+    writeFileSync(join(project, 'public', 'data', 'scene.json'), JSON.stringify({ cars: [{ id: 'c1' }] }));
     writeFileSync(join(project, 'src', 'main.ts'), 'export {};\n');
     writeFileSync(join(project, 'package.json'), '{}');
     writeFileSync(join(project, 'package-lock.json'), '{}');
@@ -2533,7 +2533,7 @@ await test('P5-RRR2/RRR3 exportBuild real build + fidelity compare + editRegress
       runFidelity: async () => ({ status: 'PASS', detail: 'compare ok' }),
       runPerf: async () => ({ status: 'PASS', detail: 'ok' }),
     });
-    assert.equal(receivedExpect, join(project, 'public', 'scene3d', 'scene-data.json'), 'editRegression receives the project expect path（不默认母版）');
+    assert.equal(receivedExpect, join(project, 'public', 'data', 'scene.json'), 'editRegression receives the project expect path（不默认母版）');
     assert.equal(r3.verdict, 'PASS', 'release full-chain PASS');
 
     // RRR3：fidelity 失败传播（比较发现缺口 → FAIL）
@@ -2567,7 +2567,7 @@ await test('P5-RRRR1 fidelity-compare: structured semantic value diff (visible/c
     const baseMat = { name: 'red_mat', spec: { color: '#ff0000', metalness: 0.8, roughness: 0.3 } };
     const mk = (root, { role = 'src', extraGroup = null, mutate = null, privates = false }) => {
       mkdirSync(join(root, 'public'), { recursive: true });
-      mkdirSync(join(root, 'src', 'scene3d', 'scene', 'generated'), { recursive: true });
+      mkdirSync(join(root, 'src', '3d', 'materials', 'generated'), { recursive: true });
       let node = { id: 'car_01', parentId: 'p1', position: [1, 0, 2], params: { count: 5, status: 'normal' } };
       let appV = { car_01: JSON.parse(JSON.stringify(baseVisual)) };
       let appM = { red_mat: JSON.parse(JSON.stringify(baseMat)) };
@@ -2590,8 +2590,8 @@ await test('P5-RRRR1 fidelity-compare: structured semantic value diff (visible/c
         ...(isSrc && matOut ? { __materialLib: { red_mat: matOut } } : {}),
         ...(privates ? { __stale: true } : {}),
       };
-      writeFileSync(join(root, 'public', 'scene3d', 'scene-data.json'), JSON.stringify(data));
-      writeFileSync(join(root, 'src', 'scene3d', 'scene', 'generated', 'appearance.ts'),
+      writeFileSync(join(root, 'public', 'data', 'scene.json'), JSON.stringify(data));
+      writeFileSync(join(root, 'src', '3d', 'materials', 'generated', 'appearance.ts'),
         `export const compiledVisuals = ${JSON.stringify(appV)};\n`
         + `export const compiledMaterialLib = ${JSON.stringify(appM)};\n`);
     };
@@ -2741,7 +2741,7 @@ await test('P5 final production boundaries: fidelity, edit reload, rollback retr
 if (!process.argv.includes('--node-only')) {
   const i = process.argv.indexOf('--url');
   const url = i >= 0 ? process.argv[i + 1] : positionalArg(process.argv.slice(2)) ?? 'http://localhost:5199/';
-  const expect = readExpect(join(template, 'public/scene3d/scene-data.json'));
+  const expect = readExpect(join(template, 'public/data/scene.json'));
   let session;
   try {
     session = await openBrowserSession({ port: 9274 });

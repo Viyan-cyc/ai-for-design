@@ -25,20 +25,20 @@ assert(checkProject(project).errors.some((e) => e.includes('pinia-extra')));
 writeFileSync(file, "import 'undeclared';\n");
 assert(checkProject(project).errors.some((e) => e.includes('undeclared')));
 writeFileSync(file, 'export {};\n');
-const coreFile = join(project, 'src/scene3d/scene/test-dependency.ts');
+const coreFile = join(project, 'src/3d/materials/test-dependency.ts');
 writeFileSync(coreFile, "import 'pinia';\n");
 assert(checkProject(project).errors.some((e) => e.includes('pinia')));
 writeFileSync(coreFile, 'export {};\n');
 const { ESLint } = await import(pathToFileURL(dependencyPath('eslint/lib/api.js')));
 const lint = new ESLint({ cwd: project });
 assert.equal(
-  await lint.isPathIgnored(join(project, 'public/scene3d/assets/draco/draco_decoder.js')),
+  await lint.isPathIgnored(join(project, 'public/decoders/draco/draco_decoder.js')),
   true,
 );
 const prettier = await import(pathToFileURL(dependencyPath('prettier/index.mjs')));
 for (const file of [
-  'public/scene3d/assets/draco/draco_decoder.js',
-  'src/scene3d/scene/generated/appearance.ts',
+  'public/decoders/draco/draco_decoder.js',
+  'src/3d/materials/generated/appearance.ts',
 ]) {
   assert.equal(
     (

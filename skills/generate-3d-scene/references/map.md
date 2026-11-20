@@ -8,7 +8,7 @@
 
 1. `node scripts/init.mjs "<artifact-folder>" --name <场景名称> --profile empty --assets referenced --deps skip --defer-build`，使用返回的 WORKSPACE_PATH 编辑。
 2. `node scripts/enable-map.mjs <WORKSPACE_PATH>`。后续统一构建自动在工程外安装依赖并同步 lockfile（内网用已有 npm 源）。Three 固定 0.185.1，MapLibre 5.24.0，Turf 7.2.0。
-3. 在 `public/scene3d/scene-data.json` 增加 map。原 scene/camera/lights/controls/renderer 保留，模型仍用现有 asset 或业务分组。
+3. 在 `public/data/scene.json` 增加 map。原 scene/camera/lights/controls/renderer 保留，模型仍用现有 asset 或业务分组。
 
 ```json
 "map": {
@@ -41,7 +41,7 @@
 
 ## 构建与二开
 
-继续执行 `node scripts/build-offline.mjs <WORKSPACE_PATH>`，成功交付根目录 index.3d.html + preview/ + source/。不新增浏览器审美验收。地图适配位于 source/src/scene3d/map，业务数据和 Vue 卡片仍在 source/src/business。
+继续执行 `node scripts/build-offline.mjs <WORKSPACE_PATH>`，成功交付根目录 index.3d.html、同层 JS/CSS 与 source/。不新增浏览器审美验收。地图适配位于 source/src/3d/map，业务数据和 Vue 卡片仍在 source/src/business。
 
 
 ## 整体外观

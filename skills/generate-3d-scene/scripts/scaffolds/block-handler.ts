@@ -1,8 +1,8 @@
-// Copy to src/scene3d/scene/handlers/block.ts. Register registerBlockHandler in scene-profile.ts.
+// Copy to src/3d/components/objects/block.ts. Register registerBlockHandler in scene-profile.ts.
 import * as THREE from 'three';
-import type { SceneEngine } from '../../scene-core';
-import type { NodeFactoryDefinition } from '../../scene-core/types';
-import { handlerUtils } from '../../scene-core/handlers';
+import type { SceneEngine } from '../../scene';
+import type { NodeFactoryDefinition } from '../../scene/types';
+import { handlerUtils } from '../factories';
 
 export const registerBlockHandler = (engine: SceneEngine): void => {
   const definition: NodeFactoryDefinition = {

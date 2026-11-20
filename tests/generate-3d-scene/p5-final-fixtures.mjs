@@ -34,16 +34,16 @@ try {
   for (const p of [project, delivery]) {
     fs.mkdirSync(join(p, "public"), { recursive: true });
   }
-  fs.mkdirSync(join(delivery, "src/scene3d/scene/generated"), { recursive: true });
+  fs.mkdirSync(join(delivery, "src/3d/materials/generated"), { recursive: true });
   fs.writeFileSync(
-    join(project, "public/scene3d/scene-data.json"),
+    join(project, "public/data/scene.json"),
     JSON.stringify(source),
   );
   fs.writeFileSync(
-    join(delivery, "public/scene3d/scene-data.json"),
+    join(delivery, "public/data/scene.json"),
     JSON.stringify(runtime),
   );
-  const appearance = join(delivery, "src/scene3d/scene/generated/appearance.ts");
+  const appearance = join(delivery, "src/3d/materials/generated/appearance.ts");
   fs.writeFileSync(appearance, compiled.code);
   assert.equal((await defaultRunFidelity(project)).status, "PASS");
   fs.writeFileSync(appearance, compiled.code.replace("#ff0000", "#0000ff"));

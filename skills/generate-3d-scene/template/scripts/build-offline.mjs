@@ -8,6 +8,8 @@ import { createRequire } from 'node:module';
 import { spawnSync } from 'node:child_process';
 import { build } from 'vite';
 import vue from '@vitejs/plugin-vue';
+import ts from 'typescript';
+import { parse, compileTemplate } from 'vue/compiler-sfc';
 import {mapRenderer} from './map-renderer.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -77,36 +79,66 @@ try {
   timed('typecheck');
   if (checked.error) throw checked.error;
   if (checked.status !== 0) throw new Error('类型检查未通过');
-  const scene = JSON.parse(readFileSync(resolve(publicDir, 'scene3d/scene-data.json'), 'utf8'));
-  const manifestFile = resolve(publicDir, 'scene3d/assets/asset-manifest.json');
+  const scene = JSON.parse(readFileSync(resolve(publicDir, 'data/scene.json'), 'utf8'));
+  const manifestResource = path => path.startsWith('/') ? path.slice(1) : path.replace(/^assets\//, '');
+  const manifestFile = resolve(publicDir, 'data/model-manifest.json');
   const allManifest = existsSync(manifestFile) ? JSON.parse(readFileSync(manifestFile, 'utf8')) : {};
   const manifest = Object.create(null);
   visit(scene, (obj) => {
     if (typeof obj.assetId === 'string') {
       const entry = allManifest[obj.assetId] ?? { model: `models/${obj.assetId}.glb`, format: 'glb' };
       manifest[obj.assetId] = entry;
-      collect(`scene3d/assets/${entry.model.replace(/^assets\//, '')}`);
-      Object.values(entry.textures ?? {}).forEach((url) => collect(`scene3d/assets/${url.replace(/^assets\//, '')}`));
+      collect(manifestResource(entry.model));
+      Object.values(entry.textures ?? {}).forEach((url) => collect(manifestResource(url)));
     }
     for (const [key, value] of Object.entries(obj)) {
-      if (typeof value === 'string' && (/^(?:map|lightMap|envMap|sheenColorMap|sheenRoughnessMap|iridescenceMap|iridescenceThicknessMap|anisotropyMap|normalMap|roughnessMap|metalnessMap|aoMap|emissiveMap|alphaMap|bumpMap|displacementMap|clearcoatMap|clearcoatNormalMap|clearcoatRoughnessMap|transmissionMap|thicknessMap|specularMap|specularColorMap|specularIntensityMap|url|texture)$/i.test(key) || /^\/?(?:scene3d\/)?assets\//.test(value))) collect(value);
+      if (typeof value === 'string' && (/^(?:map|lightMap|envMap|sheenColorMap|sheenRoughnessMap|iridescenceMap|iridescenceThicknessMap|anisotropyMap|normalMap|roughnessMap|metalnessMap|aoMap|emissiveMap|alphaMap|bumpMap|displacementMap|clearcoatMap|clearcoatNormalMap|clearcoatRoughnessMap|transmissionMap|thicknessMap|specularMap|specularColorMap|specularIntensityMap|url|texture)$/i.test(key) || /^\/?(?:(?:scene3d\/)?assets|images|models)\//.test(value))) collect(value);
     }
   });
-  // Constant resources used by business handlers/materials, not the complete asset library.
-  for (const file of walk(resolve(root, 'src'))) {
-    if (!/\.(?:ts|vue|css)$/.test(file)) continue;
-    const code = readFileSync(file, 'utf8');
-    for (const match of code.matchAll(/['"](\/?(?:scene3d\/)?assets\/[^'"\r\n]+\.(?:png|jpe?g|webp|avif|glb|gltf|bin))['"]/gi)) collect(match[1]);
+  // CSS URLs are collected from the compiled CSS below.
+  const resourcePath = /^(?:\.\/|\/)?(?:(?:scene3d\/)?assets|images|models)\/[^\r\n]+\.(?:png|jpe?g|webp|avif|glb|gltf|bin)(?:[?#].*)?$/i;
+  function collectLiterals(filename, code) {
+    const source = ts.createSourceFile(filename, code, ts.ScriptTarget.Latest, false);
+    function visitNode(node) {
+      if ((ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) && resourcePath.test(node.text)) {
+        collect(node.text);
+      }
+      ts.forEachChild(node, visitNode);
+    }
+    visitNode(source);
   }
-  const extraFile = resolve(publicDir, 'scene3d/offline-resources.json');
+  for (const file of walk(resolve(root, 'src'))) {
+    const extension = extname(file);
+    if (extension !== '.ts' && extension !== '.vue') continue;
+    const code = readFileSync(file, 'utf8');
+    if (extension === '.ts') {
+      collectLiterals(file, code);
+      continue;
+    }
+    const { descriptor } = parse(code, { filename: file });
+    for (const script of [descriptor.script, descriptor.scriptSetup]) {
+      if (script) collectLiterals(file + '.' + (script.lang ?? 'js'), script.content);
+    }
+    if (descriptor.template && !descriptor.template.lang) {
+      const template = compileTemplate({
+        source: descriptor.template.content,
+        filename: file,
+        id: hash(file),
+        transformAssetUrls: false,
+        compilerOptions: { expressionPlugins: ['typescript'] },
+      });
+      collectLiterals(file + '.ts', template.code);
+    }
+  }
+  const extraFile = resolve(publicDir, 'data/offline-resources.json');
   if (existsSync(extraFile)) {
     const extra = JSON.parse(readFileSync(extraFile, 'utf8'));
     if (!Array.isArray(extra) || extra.some((url) => typeof url !== 'string')) throw new Error('offline-resources.json 必须是资源路径字符串数组');
     extra.forEach((url) => collect(url));
   }
   if (needsDraco) {
-    collect('scene3d/assets/draco/draco_wasm_wrapper.js');
-    collect('scene3d/assets/draco/draco_decoder.wasm');
+    collect('decoders/draco/draco_wasm_wrapper.js');
+    collect('decoders/draco/draco_decoder.wasm');
   }
   const data = { version: 1, scene, manifest, resources };
   data.sourceId = hash(JSON.stringify(data) + walk(resolve(root, 'src')).sort().map((file) => `${relative(root, file)}:${hash(readFileSync(file))}`).join('\n'));

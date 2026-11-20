@@ -1,7 +1,9 @@
-import {existsSync,lstatSync,readdirSync,readFileSync,writeFileSync,mkdirSync,unlinkSync,renameSync} from 'node:fs';
-import {resolve,join,dirname,relative} from 'node:path';
+import {existsSync,lstatSync,readdirSync,readFileSync,writeFileSync,mkdirSync,unlinkSync,renameSync,rmdirSync} from 'node:fs';
+import {resolve,join,dirname} from 'node:path';
 import {createHash,randomUUID} from 'node:crypto';
-const manifestName='preview/.scene3d-preview-baseline.json';
+const manifestName='.scene3d-preview-baseline.json';
+const legacyManifestName='preview/.scene3d-preview-baseline.json';
+const flatOutput=key=>/^(?:index\.3d\.html|scene(?:-data)?\.js|[\w.-]+\.css)$/.test(key);
 export const externalInputVersion = 1;
 const hash=data=>createHash('sha256').update(data).digest('hex');
 function safe(path) {
@@ -14,25 +16,27 @@ function safe(path) {
 export function publishPreview(root,out,offline=join(root,'offline')) {
  if(resolve(root)!==resolve(out,'source'))throw new Error('原位发布要求工程位于交付目录 source');
  const files=new Map();
- function walk(dir) {
-  for(const name of readdirSync(dir)) {
-   const path=join(dir,name),st=lstatSync(path),key=relative(offline,path).replaceAll('\\','/');
-   if(st.isSymbolicLink())throw new Error(`预览输入不支持链接: ${path}`);
-   if(st.isDirectory())walk(path);
-   else if(st.isFile()&&!['.scene3d-offline','index.3d.html'].includes(key))files.set('preview/'+key,readFileSync(path));
-  }
+ for(const key of readdirSync(offline)) {
+  const path=join(offline,key);
+  if(!lstatSync(path).isFile())throw new Error(`预览输出必须为同层普通文件: ${key}`);
+  if(key==='.scene3d-offline')continue;
+  if(!flatOutput(key))throw new Error(`未知预览输出: ${key}`);
+  files.set(key,readFileSync(path));
  }
- walk(offline);
- files.set('index.3d.html',Buffer.from(readFileSync(join(offline,'index.3d.html'),'utf8').replace(/((?:src|href)=["'])\.\//g,'$1./preview/')));
- if(files.has(manifestName))throw new Error('预览输入不能包含发布基线');
- const manifestPath=join(out,manifestName);safe(manifestPath);
+ if(!files.has('index.3d.html'))throw new Error('缺少预览入口');
+ const manifestPath=join(out,manifestName),legacyPath=join(out,legacyManifestName);
+ safe(manifestPath);
+ const migrate=!existsSync(manifestPath)&&existsSync(legacyPath);
+ if(migrate)safe(legacyPath);
+ const baselinePath=migrate?legacyPath:manifestPath;
  let previous={};
- if(existsSync(manifestPath)) {
-  const baseline=JSON.parse(readFileSync(manifestPath,'utf8'));
-  if(baseline.version!==1||!baseline.files||typeof baseline.files!=='object'||Array.isArray(baseline.files)||!Object.hasOwn(baseline.files,'index.3d.html'))throw new Error('预览基线无效');
+ if(existsSync(baselinePath)) {
+  const baseline=JSON.parse(readFileSync(baselinePath,'utf8'));
+  if(baseline.version!==(migrate?1:2)||!baseline.files||typeof baseline.files!=='object'||Array.isArray(baseline.files)||!Object.hasOwn(baseline.files,'index.3d.html'))throw new Error('预览基线无效');
   previous=baseline.files;
   for(const [key,value] of Object.entries(previous)) {
-   if((key!=='index.3d.html'&&!key.startsWith('preview/'))||key===manifestName||key.includes('\\')||key.includes(':')||key.split('/').some(x=>!x||x==='.'||x==='..')||typeof value!=='string'||!/^[a-f0-9]{64}$/.test(value))throw new Error('预览基线条目无效');
+   const valid=key==='index.3d.html'||(migrate?key.startsWith('preview/')&&flatOutput(key.slice(8)):flatOutput(key));
+   if(!valid||typeof value!=='string'||!/^[a-f0-9]{64}$/.test(value))throw new Error('预览基线条目无效');
   }
  }
  const keys=new Set([...Object.keys(previous),...files.keys()]);
@@ -42,8 +46,9 @@ export function publishPreview(root,out,offline=join(root,'offline')) {
    if(!existsSync(path)||!lstatSync(path).isFile()||hash(readFileSync(path))!==previous[key])throw new Error(`预览文件已修改或删除: ${key}`);
   } else if(existsSync(path))throw new Error(`预览目标存在非管理内容: ${key}`);
  }
- const next={version:1,files:Object.fromEntries([...files].map(([key,data])=>[key,hash(data)]))};
+ const next={version:2,files:Object.fromEntries([...files].map(([key,data])=>[key,hash(data)]))};
  files.set(manifestName,Buffer.from(JSON.stringify(next,null,2)+'\n'));keys.add(manifestName);
+ if(migrate)keys.add(legacyManifestName);
  const originals=new Map([...keys].map(key=>[key,existsSync(join(out,key))?readFileSync(join(out,key)):null]));
  const temps=new Map(),changed=[];
  try {
@@ -64,5 +69,6 @@ export function publishPreview(root,out,offline=join(root,'offline')) {
   }
   throw error;
  } finally {for(const path of temps.values())if(existsSync(path))unlinkSync(path);}
+ if(migrate&&readdirSync(join(out,'preview')).length===0)rmdirSync(join(out,'preview'));
  return join(out,'index.3d.html');
 }

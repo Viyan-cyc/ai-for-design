@@ -1,4 +1,4 @@
-import type { SceneHandle } from '../../scene3d';
+import type { SceneHandle } from '../../3d/index';
 import type { ApplyResult, DataAdapter, DeviceUpdate, IdMapping } from './types';
 
 /** 省略 mappings 时业务 ID 等于节点 ID；提供映射后只接受表中 ID。 */

@@ -33,7 +33,7 @@ try{
  checks.push('offline reopen does not claim disk save; same-source snapshot import and undo restore map data');
  const server=JSON.parse(await readFile(join(work,'server.json'),'utf8'));
  await page.goto(server.url+'/r8-test.html',{waitUntil:'domcontentloaded'});await page.waitForFunction(()=>window.r8,null,{timeout:90000});
- const legacy=await page.evaluate(async()=>{const data=window.r8.handle.serialize();window.r8.dispose();delete data.map.runtime;delete data.map.experience;delete data.map.heat;delete data.map.logicalScatter;const {createScene3D}=await import('/src/scene3d/index.ts');const handle=await createScene3D(document.querySelector('#map'),{data});const result={mode:handle.viewMode,surfaces:handle.surfaces.list().length};handle.dispose();return result;});
+ const legacy=await page.evaluate(async()=>{const data=window.r8.handle.serialize();window.r8.dispose();delete data.map.runtime;delete data.map.experience;delete data.map.heat;delete data.map.logicalScatter;const {createScene3D}=await import('/src/3d/index.ts');const handle=await createScene3D(document.querySelector('#map'),{data});const result={mode:handle.viewMode,surfaces:handle.surfaces.list().length};handle.dispose();return result;});
  assert.equal(legacy.mode,'map');assert.ok(legacy.surfaces>0);checks.push('omitted runtime preserves legacy MapScene and editable surfaces');
  assert.deepEqual(errors,[]);await writeFile(join(work,'roundtrip.json'),JSON.stringify({status:'passed',checks,errors,visual:'not-evaluated'},null,2));console.log(JSON.stringify(checks,null,2));
 }catch(e){await writeFile(join(work,'roundtrip-failure.json'),JSON.stringify({error:String(e),checks,errors},null,2));throw e;}finally{await browser.close();}

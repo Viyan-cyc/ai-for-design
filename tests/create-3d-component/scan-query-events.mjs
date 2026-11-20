@@ -1,6 +1,6 @@
 import {readFile,writeFile} from 'node:fs/promises';import {stripTypeScriptTypes} from 'node:module';import assert from 'node:assert/strict';import {resolve,join} from 'node:path';
 const w=resolve(process.argv[2]),delay=ms=>new Promise(r=>setTimeout(r,ms));
-let source=await readFile('D:/cyc/project/octo/test/3d-components/src/map/surface-particle-scan/map-host.ts','utf8');source=stripTypeScriptTypes(source.replace(/^import .*;\r?\n/gm,''));
+let source=await readFile('D:/cyc/project/octo/test/3d-components/src/3d/map/surface-particle-scan/map-host.ts','utf8');source=stripTypeScriptTypes(source.replace(/^import .*;\r?\n/gm,''));
 const mocks=`const maplibregl={MercatorCoordinate:{fromLngLat:()=>({x:0,y:0,meterInMercatorCoordinateUnits:()=>1})}};class SurfaceParticleScan{userData={};commits=0;async setDataAsync(d,cancel){await new Promise(r=>setTimeout(r,20));if(cancel())return false;this.commits++;return true;}dispose(){}};`;
 const {attachSurfaceParticleScan}=await import('data:text/javascript;base64,'+Buffer.from(mocks+source).toString('base64'));
 const listeners=new Map();let reads=0,opacity=1;

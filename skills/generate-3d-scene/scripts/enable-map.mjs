@@ -21,7 +21,7 @@ function rejectLinkedPath(destination) {
     path = parent;
   }
 }
-for (const path of ['src/scene3d/create-scene.ts', 'package.json', 'vendor']) rejectLinkedPath(join(workspace, path));
+for (const path of ['src/3d/create-scene.ts', 'package.json', 'vendor']) rejectLinkedPath(join(workspace, path));
 const skill = dirname(dirname(fileURLToPath(import.meta.url)));
 // Map runtime is distributed through the same production component package.
 const packages = readdirSync(join(skill, 'vendor')).filter(name => /^a3d-a3d-components-.*\.tgz$/.test(name));
@@ -30,14 +30,14 @@ const sourcePackage = packages[0];
 const digest = createHash('sha256').update(readFileSync(join(skill, 'vendor', sourcePackage))).digest('hex').slice(0, 16);
 const componentPackage = sourcePackage.replace(/\.tgz$/, `-${digest}.tgz`);
 
-const entry = join(workspace, 'src/scene3d/create-scene.ts');
+const entry = join(workspace, 'src/3d/create-scene.ts');
 let code = readFileSync(entry, 'utf8').replace(/^[ \t]*if \(data\.map\) throw new Error\('地图能力未启用，请先运行 enable-map\.mjs'\);\r?\n/gm, '');
 if (!code.includes('createMapScene')) {
   const marker = "  const canvas = document.createElement('canvas');";
   if (!code.includes(marker)) throw new Error('create-scene.ts 已变更，请按 references/map.md 手动接入，未覆盖业务代码');
   code = "import { createMapScene } from './map/create-map-scene';\n" + code.replace(marker, `  if (data.map) {
     const handle = await createMapScene(host, structuredClone(data), options.cards ?? {}, {
-      profile: registerBusinessFactories, cardContext: options.cardContext, assetBaseUrl, assetManifest: manifest,
+      profile: registerBusinessFactories, cardContext: options.cardContext, externalCardHost: options.externalCardHost, assetBaseUrl, assetManifest: manifest,
     });
     try {
       applyCompiledAppearance(handle, data, { visuals: compiledVisuals, materialLib: compiledMaterialLib });

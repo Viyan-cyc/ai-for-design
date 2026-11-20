@@ -1,9 +1,9 @@
 import { MapScene } from '@a3d/a3d-components/map';
 import { createScreenLabel } from '@a3d/a3d-components/labels';
 import * as THREE from 'three';
-import {Bridge} from './src/edit/Bridge';
-import {createScene3D} from './src/scene3d/create-scene';
-import {localToMercator} from './src/scene3d/map/create-map-scene';
+import {Bridge} from './src/editor/Bridge';
+import {createScene3D} from './src/3d/create-scene';
+import {localToMercator} from './src/3d/map/create-map-scene';
 const output=document.querySelector('#result')!;
 const host=document.querySelector('#host') as HTMLElement;
 const lines:string[]=[];

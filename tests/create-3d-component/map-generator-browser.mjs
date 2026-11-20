@@ -38,7 +38,7 @@ try{
  await page.evaluate(async()=>{await window.r8.save.save();});
  assert.equal(await page.evaluate(()=>window.r8.save.status.value),'已保存到源码');
  assert.equal(await page.evaluate(()=>window.r8.save.dirty.value),false);
- const disk=JSON.parse(await readFile(join(server.source,'public/scene3d/scene-data.json'),'utf8'));
+ const disk=JSON.parse(await readFile(join(server.source,'public/data/scene.json'),'utf8'));
  assert.equal(disk.map.heat.tint.brightness,1.2);assert.equal(disk.map.logicalScatter.options.pointRadius,5.2);assert.equal(disk.map.experience.parameters.water,'#123456');
  checks.push('real SaveService POST writes current generated source');
  await page.reload({waitUntil:'domcontentloaded'});await page.waitForFunction(()=>window.r8,null,{timeout:90000});

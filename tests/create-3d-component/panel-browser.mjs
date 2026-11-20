@@ -10,7 +10,7 @@ await mkdir(out,{recursive:true});
 const run=args=>{const p=spawnSync(process.execPath,args,{cwd:repo,encoding:'utf8'});assert.equal(p.status,0,p.stdout+p.stderr);return p.stdout;};
 const project=run(['skills/create-3d-component/scripts/init.mjs',out,'right-panel','--profile','legacy']).match(/WORKSPACE_PATH=(.+)/)[1].trim();
 run([join(project,'example/build.mjs')]);
-const css=await readFile(join(repo,'skills/generate-3d-scene/template/src/edit/styles/editor.css'),'utf8');
+const css=await readFile(join(repo,'skills/generate-3d-scene/template/src/editor/styles/editor.css'),'utf8');
 const expected=Object.fromEntries([...css.match(/\.edit-scope\s*\{[^}]+\}/)[0].matchAll(/(--ed-[\w-]+):\s*([^;]+);/g)].map(m=>[m[1],m[2].trim()]));
 const browser=await chromium.launch({...(process.env.COMPONENT_BROWSER_PATH?{executablePath:process.env.COMPONENT_BROWSER_PATH}:{channel:'msedge'}),headless:true});
 const context=await browser.newContext({offline:true,acceptDownloads:true,viewport:{width:1280,height:800}});

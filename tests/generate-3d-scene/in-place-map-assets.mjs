@@ -23,18 +23,18 @@ try {
  await downloadCandidate({remoteId:'sample',name:'sample',entryUrl:origin+'/model.gltf'},pkg,{endpoint:origin,allowedOrigins:[origin]});
  run('designer-assets.mjs',['inject',pkg,'--project',source]);
  run('enable-map.mjs',[project]);
- const scenePath=join(source,'public/scene3d/scene-data.json'),scene=JSON.parse(fs.readFileSync(scenePath));
+ const scenePath=join(source,'public/data/scene.json'),scene=JSON.parse(fs.readFileSync(scenePath));
  scene.map={styleUrl:origin+'/style.json',origin:[114.06,22.54],center:[114.06,22.54],zoom:16,pitch:45,bearing:0,theme:'light',view:'3d'};
  fs.writeFileSync(scenePath,JSON.stringify(scene));
  run('build-offline.mjs',[project]);
- const preview=fs.readFileSync(join(project,'preview/scene-data.js'));
+ const preview=fs.readFileSync(join(project,'scene-data.js'));
  scene.map.bearing=30;fs.writeFileSync(scenePath,JSON.stringify(scene));
  fs.writeFileSync(join(project,'user-notes.txt'),'KEEP');
  run('designer-assets.mjs',['inject',pkg,'--project',source]);run('enable-map.mjs',[source]);
  run('build-offline.mjs',[source]);
  assert(fs.existsSync(join(project,'index.3d.html')));
- assert(!fs.readFileSync(join(project,'preview/scene-data.js')).equals(preview));
- assert.match(fs.readFileSync(join(project,'preview/scene-data.js'),'utf8'), /"bearing":30/);
+ assert(!fs.readFileSync(join(project,'scene-data.js')).equals(preview));
+ assert.match(fs.readFileSync(join(project,'scene-data.js'),'utf8'), /"bearing":30/);
  assert.equal(fs.readFileSync(join(project,'user-notes.txt'),'utf8'),'KEEP');
  assert.equal(JSON.parse(fs.readFileSync(scenePath)).map.bearing,30);
  const moved=join(root,'developer/source');fs.cpSync(source,moved,{recursive:true});
@@ -43,9 +43,11 @@ try {
   const r=spawnSync(env.node,args,{cwd:moved,encoding:'utf8',timeout:180000,maxBuffer:8*1024*1024});assert.equal(r.status,0,r.stdout+r.stderr);
  }
  assert(fs.existsSync(join(root,'developer/index.3d.html')));
- const manifest=JSON.parse(fs.readFileSync(join(source,'public/scene3d/assets/asset-manifest.json'))),model=join(source,'public/scene3d/assets',Object.values(manifest)[0].model);
+ const manifest=JSON.parse(fs.readFileSync(join(source,'public/data/model-manifest.json'))),model=join(source,'public',Object.values(manifest)[0].model.replace(/^\//,''));
  fs.appendFileSync(model,'\nUSER_EDIT');run('designer-assets.mjs',['inject',pkg,'--project',source],false);assert(fs.readFileSync(model,'utf8').endsWith('USER_EDIT'));
- const adapter=join(source,'src/scene3d/map/create-map-scene.ts');fs.appendFileSync(adapter,'\n// USER_EDIT');run('enable-map.mjs',[project],false);assert(fs.readFileSync(adapter,'utf8').endsWith('USER_EDIT'));
- for(const name of ['node_modules','.cache','offline']) assert(!fs.existsSync(join(source,name)));
+ const adapter=join(source,'src/3d/map/create-map-scene.ts');fs.appendFileSync(adapter,'\n// USER_EDIT');run('enable-map.mjs',[project],false);assert(fs.readFileSync(adapter,'utf8').endsWith('USER_EDIT'));
+ for(const name of ['node_modules','offline']) assert(!fs.existsSync(join(source,name)));
+ const cache=join(source,'.cache');
+ if(fs.existsSync(cache)) assert.deepEqual(fs.readdirSync(cache),[]);
  console.log('PASS init contract; inject/map/build/edit/rebuild; moved map source npm ci --offline and standalone build; user file and conflict preservation. No browser/service validation.');
 }finally{await new Promise(r=>server.close(r));assert(root.startsWith(join(tmpdir(),'scene-combined-')));fs.rmSync(root,{recursive:true,force:true});}

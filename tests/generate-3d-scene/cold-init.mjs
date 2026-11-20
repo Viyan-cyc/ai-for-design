@@ -18,7 +18,7 @@ try {
   assert(!existsSync(env.SCENE3D_ENV_DIR));
   assert(!existsSync(env.npm_config_cache));
   assert(!existsSync(join(project, 'source/node_modules')));
-  const scene = JSON.parse(readFileSync(join(project, 'source/public/scene3d/scene-data.json')));
+  const scene = JSON.parse(readFileSync(join(project, 'source/public/data/scene.json')));
   scene.Box = [{ id: 'duplicate' }, { id: 'duplicate' }];
   const data = join(root, 'bad.json'); writeFileSync(data, JSON.stringify(scene));
   const bad = run('init.mjs', [join(root, 'bad'), '--project-dir', '--name', 'bad-fixture', '--scene', data, '--json']);

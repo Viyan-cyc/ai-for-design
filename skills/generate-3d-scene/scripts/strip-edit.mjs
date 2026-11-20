@@ -8,11 +8,11 @@
  *   ① 校验源快照：__visuals/__materialLib 的陈旧引用、缺失库条目报具体路径
  *      （真实未支持 = FAIL，不删掉后 PASS）
  *   ② 在临时目录完成全部产出：复制剔除 edit 世界 + 私有区剥离 + 编译
- *      src/scene3d/scene/generated/appearance.ts（运行包装配期由 appearance-runtime 应用）
+ *      src/3d/materials/generated/appearance.ts（运行包装配期由 appearance-runtime 应用）
  *   ③ TRANSCRIPTION.md 改自动转换摘要（保留三类表作人类审计对照，不再是人工转录指令）
  *   ④ 原子发布：临时目录过 checkProject --stripped 后才 rename 到 out；
  *      失败清理临时目录——源工程与已存在的旧产物分毫不动
- *   ⑤ 自检铁律 3：build.mjs --stripped（src/edit 不存在 / 无 edit 引用 / 无私有区 /
+ *   ⑤ 自检铁律 3：build.mjs --stripped（src/editor 不存在 / 无 edit 引用 / 无私有区 /
  *      generated/appearance.ts 可审计）
  *
  * CLI：
@@ -39,10 +39,10 @@ const copyFilter = (src) => {
   if (EXCLUDE_FILE_RE.test(name)) {
     return false;
   }
-  // 剔除编辑态世界（路径分隔符归一后判 src/edit 段）
+  // 剔除编辑态世界（路径分隔符归一后判 src/editor 段）
   const norm = src.replace(/\\/g, '/');
-  if (norm.endsWith('/src/offline-entry.ts') || norm.endsWith('/scripts/build-offline.mjs')) return false;
-  if (/\/src\/edit$/.test(norm) || norm.includes('/src/edit/')) {
+  if (norm.endsWith('/src/business/SceneEditLauncher.vue') || norm.endsWith('/src/offline-entry.ts') || norm.endsWith('/scripts/build-offline.mjs')) return false;
+  if (/\/src\/editor$/.test(norm) || norm.includes('/src/editor/')) {
     return false;
   }
   return true;
@@ -83,13 +83,13 @@ const outWouldDestroySrc = (srcAbs, outAbs) => {
 
 /* ── entry.ts：双态分流 → 二开单入口（固定入口文件，P2.1）────────────────── */
 
-const ENTRY_IF_RE = /if \(new URLSearchParams[\s\S]*?import\('\.\/edit\/edit-main'\);[\s\S]*?\}\s*else\s*\{[\s\S]*?import\('\.\/main'\);[\s\S]*?\}/;
+const ENTRY_IF_RE = /if \(new URLSearchParams[\s\S]*?import\('\.\/editor\/edit-main'\);[\s\S]*?\}\s*else\s*\{[\s\S]*?import\('\.\/business\/main'\);[\s\S]*?\}/;
 
 /** 二开交付物的 entry.ts（整文件替换，确定性内容——不复用源文件的注释与形态） */
 const ENTRY_RUNTIME = `/**
  * entry — 二开态单入口（编辑态已随交付剥离）
  */
-void import('./main');
+void import('./business/main');
 `;
 
 /**
@@ -98,7 +98,7 @@ void import('./main');
  * 非 chunk import 形态报错（不静默产出坏入口）。
  */
 const rewriteEntry = (code, errors) => {
-  if (ENTRY_IF_RE.test(code) || /import\('\.\/main'\)/.test(code)) {
+  if (ENTRY_IF_RE.test(code) || /import\('\.\/business\/main'\)/.test(code)) {
     return ENTRY_RUNTIME;
   }
   errors.push('src/entry.ts 形态非预期（既无 edit 分支也无 main 入口），拒绝改写');
@@ -140,11 +140,11 @@ export const buildTranscription = (visuals, materialLib, liveNodeIds, opts = {})
   lines.push('');
   if (opts.autoCompiled) {
     lines.push('> 本文件由 strip-edit.mjs 生成。编辑期视觉已**自动编译**进');
-    lines.push('> `src/scene3d/scene/generated/appearance.ts`（运行包装配期由 appearance-runtime 应用），');
+    lines.push('> `src/3d/materials/generated/appearance.ts`（运行包装配期由 appearance-runtime 应用），');
     lines.push('> **无需人工转录**——下方三类表是编译产物的审计对照，逐字段核对即可。');
   } else {
     lines.push('> 本文件由 strip-edit.mjs（--legacy-transcription 模式）生成。视觉参数未自动编译，');
-    lines.push('> 需由 LLM 按下方指引转录进**代码**（scene/appearance.ts / handler 默认值）。');
+    lines.push('> 需由 LLM 按下方指引转录进**代码**（appearance/appearance.ts / handler 默认值）。');
   }
   lines.push('');
 
@@ -262,8 +262,8 @@ export const stripEdit = async (srcProject, outDir, opts = {}) => {
   const out = resolve(outDir);
   const errors = [];
 
-  if (!existsSync(join(src, 'src', 'edit'))) {
-    return { ok: false, errors: [`源工程不含 src/edit/（编辑态工程？）：${src}`], out };
+  if (!existsSync(join(src, 'src', 'editor'))) {
+    return { ok: false, errors: [`源工程不含 src/editor/（编辑态工程？）：${src}`], out };
   }
   // 路径守卫（V19）：out == src / out 是 src 祖先 → 拒绝（发布/清空会毁源）
   const guard = outWouldDestroySrc(src, out);
@@ -283,13 +283,13 @@ export const stripEdit = async (srcProject, outDir, opts = {}) => {
   }
 
   // ② 源快照读取 + 引用一致性校验（P4.1 前置——编译 FAIL 在动任何文件之前）
-  const srcDataPath = join(src, 'public', 'scene3d', 'scene-data.json');
+  const srcDataPath = join(src, 'public', 'data', 'scene.json');
   let snapshot = null;
   if (existsSync(srcDataPath)) {
     try {
       snapshot = JSON.parse(readFileSync(srcDataPath, 'utf8'));
     } catch (err) {
-      return { ok: false, errors: [`public/scene3d/scene-data.json 解析失败：${err.message}`], out };
+      return { ok: false, errors: [`public/data/scene.json 解析失败：${err.message}`], out };
     }
   }
   const liveNodeIds = new Set();
@@ -386,13 +386,13 @@ export const stripEdit = async (srcProject, outDir, opts = {}) => {
     } else {
       errors.push('缺 src/entry.ts（固定入口）');
     }
-    const appPath = join(staging, 'src', 'App.vue');
+    const appPath = join(staging, 'src', 'business', 'App.vue');
     if (existsSync(appPath)) {
       writeFileSync(appPath, rewriteApp(readFileSync(appPath, 'utf8')));
     }
 
     // ② 私有区剥离 + ③ 自动转换摘要 + 编译外观落盘
-    const dataPath = join(staging, 'public', 'scene3d', 'scene-data.json');
+    const dataPath = join(staging, 'public', 'data', 'scene.json');
     let transcription = null;
     if (existsSync(dataPath)) {
       const data = snapshot;
@@ -412,9 +412,9 @@ export const stripEdit = async (srcProject, outDir, opts = {}) => {
       writeFileSync(join(staging, 'TRANSCRIPTION.md'), `${transcription.md}\n`);
     }
 
-    // ③ 编译外观 → src/scene3d/scene/generated/appearance.ts（整文件覆盖母版占位）
+    // ③ 编译外观 → src/3d/materials/generated/appearance.ts（整文件覆盖母版占位）
     if (compilation) {
-      const generatedDir = join(staging, 'src', 'scene3d', 'scene', 'generated');
+      const generatedDir = join(staging, 'src', '3d', 'materials', 'generated');
       mkdirSync(generatedDir, { recursive: true });
       writeFileSync(join(generatedDir, 'appearance.ts'), compilation.code);
     }

@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {normalizeHex,hexToHsv,hsvToHex,kelvinToHex} from '../../skills/generate-3d-scene/template/src/edit/color-input.ts';
+import {normalizeHex,hexToHsv,hsvToHex,kelvinToHex} from '../../skills/generate-3d-scene/template/src/editor/color-input.ts';
 assert.equal(normalizeHex(' AABBCC '),'#aabbcc');
 for(const invalid of ['#abc','red','#fffffff','', '#gg0000']) assert.equal(normalizeHex(invalid),null);
 for(let r=0;r<256;r+=17)for(let g=0;g<256;g+=17)for(let b=0;b<256;b+=17){

@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { dependencyPath } from '../../skills/generate-3d-scene/scripts/lib/environment.mjs';
 const ts = createRequire(import.meta.url)(dependencyPath('typescript'));
-const source = readFileSync(new URL('../../skills/generate-3d-scene/template/src/scene3d/scene-core/engine/RenderLoop.ts', import.meta.url), 'utf8')
+const source = readFileSync(new URL('../../skills/generate-3d-scene/template/src/3d/rendering/RenderLoop.ts', import.meta.url), 'utf8')
   .replace("import { onResourcesChanged } from '../render-invalidation';", 'const onResourcesChanged = () => () => {};');
 const js = ts.transpileModule(source, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext } }).outputText;
 const { RenderLoop } = await import('data:text/javascript;base64,' + Buffer.from(js).toString('base64'));

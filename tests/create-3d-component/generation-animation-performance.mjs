@@ -11,7 +11,7 @@ writeFileSync(join(fixture,'package.json'),JSON.stringify({dependencies:{'@a3d/a
 cpSync(join(g,'vendor/a3d-a3d-components-0.1.1.tgz'),join(fixture,'vendor/component.tgz'));assert.equal(checkComponentVersion(fixture,g).status,'current');
 writeFileSync(join(fixture,'vendor/component.tgz'),'old');assert.throws(()=>checkComponentVersion(fixture,g),/COMPONENT_VERSION_MISMATCH/);
 writeFileSync(join(fixture,'package.json'),'{}');assert.equal(checkComponentVersion(fixture,g).status,'unused');
-let code=readFileSync(join(g,'template/src/scene3d/scene-core/engine/RenderLoop.ts'),'utf8').replace(/^import .*;\r?\n/gm,'');
+let code=readFileSync(join(g,'template/src/3d/rendering/RenderLoop.ts'),'utf8').replace(/^import .*;\r?\n/gm,'');
 code=stripTypeScriptTypes(code,{mode:'transform'});code='const onResourcesChanged=()=>()=>{};\n'+code;
 const {RenderLoop}=await import('data:text/javascript;base64,'+Buffer.from(code).toString('base64'));
 const listeners=new Map();globalThis.document={hidden:false,addEventListener:(k,f)=>listeners.set(k,f),removeEventListener:k=>listeners.delete(k)};

@@ -11,10 +11,10 @@ const {createServer}=await import(pathToFileURL(join(env.modules,'vite/dist/node
 let server,browser;
 try{
  // Instrument only the independent test input; product/public project remains untouched.
- const file=join(input.source,'src/scene3d/map/create-map-scene.ts');let code=await readFile(file,'utf8');
+ const file=join(input.source,'src/3d/map/create-map-scene.ts');let code=await readFile(file,'utf8');
  assert.ok(code.includes('new MapComponents('));code=code.replace(/(components\s*=\s*new MapComponents\([^;]+;)/,'$1\n(globalThis as any).__combo={map,components};');await writeFile(file,code);
  await writeFile(join(input.source,'combined-test.html'),'<!doctype html><html><body style="margin:0"><div id="map" style="position:relative;width:100vw;height:100vh"></div><div id="panel" style="position:fixed;right:0;top:0;width:290px;max-height:100vh;overflow:auto;background:white;z-index:10"></div><script type="module" src="/src/combined-test.ts"></script></body></html>');
- await writeFile(join(input.source,'src/combined-test.ts'),`import {createScene3D} from './scene3d';
+ await writeFile(join(input.source,'src/combined-test.ts'),`import {createScene3D} from './scene';
 import {Bridge} from './edit/Bridge';import {SaveService} from './edit/SaveService';import {createApp} from 'vue';import Panel from './edit/MapComponentsPanel.vue';
 const handle=await createScene3D(document.querySelector('#map')!);const bridge=new Bridge(handle),save=new SaveService(handle,bridge);const app=createApp(Panel,{bridge});app.mount('#panel');
 (window as any).combined={handle,bridge,save,dispose(){app.unmount();save.dispose();handle.dispose();}};`);
@@ -23,12 +23,12 @@ const handle=await createScene3D(document.querySelector('#map')!);const bridge=n
  await page.goto('http://127.0.0.1:17941/combined-test.html',{waitUntil:'domcontentloaded'});await page.waitForFunction(()=>window.combined&&window.__combo,null,{timeout:90000});
  if(await page.getByRole('button',{name:'收起',exact:true}).count())await page.getByRole('button',{name:'收起',exact:true}).click();
  const snap=()=>page.evaluate(()=>window.combined.handle.serialize().map);
- assert.equal((await snap()).geographicScatter.data.length,JSON.parse(await readFile(join(project,'public/scene3d/scene-data.json'),'utf8')).map.geographicScatter.data.length);assert.equal(await page.locator('[data-geographic-scatter]').count(),1);assert.equal(await page.locator('[aria-label="逻辑散点（非地理图层）"]').count(),0);
+ assert.equal((await snap()).geographicScatter.data.length,JSON.parse(await readFile(join(project,'public/data/scene.json'),'utf8')).map.geographicScatter.data.length);assert.equal(await page.locator('[data-geographic-scatter]').count(),1);assert.equal(await page.locator('[aria-label="逻辑散点（非地理图层）"]').count(),0);
  await page.waitForFunction(()=>{const c=document.querySelector('[data-geographic-scatter]');const r=c?.getBoundingClientRect();return c.width>0&&c.height>0&&r.width>0&&r.height>0;});
  const viewport=await page.evaluate(()=>{const c=document.querySelector('[data-geographic-scatter]'),map=window.__combo.map,rect=c.getBoundingClientRect(),base=map.getCanvas().getBoundingClientRect();return {width:c.width,height:c.height,aligned:Math.abs(rect.x-base.x)<1&&Math.abs(rect.y-base.y)<1&&Math.abs(rect.width-base.width)<1&&Math.abs(rect.height-base.height)<1,inside:window.__combo.components.diagnostics().geographicScatter.markers.filter(p=>p.x>=0&&p.y>=0&&p.x<rect.width&&p.y<rect.height).length};});assert.ok(viewport.aligned);assert.ok(viewport.inside>0);checks.push('nonzero canvas aligned to map viewport with visible markers: '+JSON.stringify(viewport));
  checks.push('actual combined scene: geographic overlay, no logical panel');
  // Pure semantic checks are executed from the actual generated module, without GL cycles.
- const unit=await page.evaluate(async()=>{const {validateGeographicScatter:v,projectGeographicMarkers:p}=await import('/src/scene3d/map/geographic-scatter.ts');let rejected=0;for(const bad of [{data:[{id:'x',lng:181,lat:0}]},{data:[{id:'x',lng:0,lat:0},{id:'x',lng:1,lat:1}]},{stopClusterZoom:Infinity},{visible:'yes'}])try{v(bad);}catch{rejected++;}const data=Array.from({length:9},(_,i)=>({id:String(i),lng:i,lat:0}));return {rejected,cluster:p(data,q=>({x:q.lng,y:2}),16,28,9,17),separate:p(data,q=>({x:q.lng,y:2}),17,28,9,17).length,empty:p([],q=>q,16,28,9,17).length};});
+ const unit=await page.evaluate(async()=>{const {validateGeographicScatter:v,projectGeographicMarkers:p}=await import('/src/3d/map/geographic-scatter.ts');let rejected=0;for(const bad of [{data:[{id:'x',lng:181,lat:0}]},{data:[{id:'x',lng:0,lat:0},{id:'x',lng:1,lat:1}]},{stopClusterZoom:Infinity},{visible:'yes'}])try{v(bad);}catch{rejected++;}const data=Array.from({length:9},(_,i)=>({id:String(i),lng:i,lat:0}));return {rejected,cluster:p(data,q=>({x:q.lng,y:2}),16,28,9,17),separate:p(data,q=>({x:q.lng,y:2}),17,28,9,17).length,empty:p([],q=>q,16,28,9,17).length};});
  assert.equal(unit.rejected,4);assert.equal(unit.cluster.length,1);assert.equal(unit.cluster[0].x,4);assert.equal(unit.cluster[0].ids.length,9);assert.equal(unit.separate,9);assert.equal(unit.empty,0);checks.push('invalid geographic data rejected; exact grid centroid, stop-zoom and empty semantics');
  console.log('STAGE: disable cluster for projection');
  await page.evaluate(()=>{const c=window.combined.handle.serialize().map;c.geographicScatter.stopClusterZoom=0;c.geographicScatter.heatLinked=false;window.combined.handle.update({map:c});});
@@ -39,7 +39,7 @@ const handle=await createScene3D(document.querySelector('#map')!);const bridge=n
  }
  await page.setViewportSize({width:1100,height:720});await page.waitForFunction(()=>{const canvas=document.querySelector('[data-geographic-scatter]');return canvas.width===Math.round(canvas.parentElement.clientWidth*Math.min(devicePixelRatio,2));});checks.push(process.env.FOCUS_SCAN==='1'?'resize verified; navigation regression not rerun in focused scan check':'exact projection across pan/zoom/pitch/bearing and resize');
  // Restore the initial view so saving tests do not redefine the accepted scene.
- const original=JSON.parse(await readFile(join(project,'public/scene3d/scene-data.json'),'utf8'));
+ const original=JSON.parse(await readFile(join(project,'public/data/scene.json'),'utf8'));
  await page.evaluate(c=>window.combined.handle.update({map:c}),original.map);
  await page.getByRole('checkbox',{name:'地图散点显示',exact:true}).uncheck();assert.equal((await snap()).geographicScatter.visible,false);assert.equal((await snap()).heat.tint.enabled,true);
  await page.evaluate(()=>window.combined.bridge.undo());assert.equal((await snap()).geographicScatter.visible,true);
@@ -62,7 +62,7 @@ const handle=await createScene3D(document.querySelector('#map')!);const bridge=n
  const surfaces=await page.evaluate(()=>{const scan=window.combined.handle.internals.scene.getObjectByName('surface_particle_scan'),g=scan.children[0].geometry,p=g.getAttribute('position'),n=g.getAttribute('aSurfaceNormal'),k=g.getAttribute('aKind');let walls=0,roofs=0,models=0;const heights=new Set();for(let i=0;i<k.count;i++){if(k.getX(i)===1){if(Math.abs(n.getY(i))<.1){walls++;heights.add(Math.round(p.getY(i)));}else roofs++;}if(k.getX(i)===2)models++;}return {...scan.userData.surfaceDiagnostics,walls,roofs,models,heightRows:heights.size};});
  assert.ok(surfaces.completeFeatures>0);assert.ok(surfaces.walls>0&&surfaces.roofs>0&&surfaces.models>0&&surfaces.heightRows>3);checks.push('full rounded footprints and multi-height wall/roof/GLB particles: '+JSON.stringify(surfaces));
  }
- await page.evaluate(()=>window.combined.save.save());assert.equal(await page.evaluate(()=>window.combined.save.status.value),'已保存到源码');const saved=JSON.parse(await readFile(join(input.source,'public/scene3d/scene-data.json'),'utf8'));assert.equal(saved.map.geographicScatter.options.pointRadius,5.2);assert.deepEqual(saved.map.geographicScatter.data,original.map.geographicScatter.data);
+ await page.evaluate(()=>window.combined.save.save());assert.equal(await page.evaluate(()=>window.combined.save.status.value),'已保存到源码');const saved=JSON.parse(await readFile(join(input.source,'public/data/scene.json'),'utf8'));assert.equal(saved.map.geographicScatter.options.pointRadius,5.2);assert.deepEqual(saved.map.geographicScatter.data,original.map.geographicScatter.data);
  await page.reload({waitUntil:'domcontentloaded'});await page.waitForFunction(()=>window.combined,null,{timeout:90000});assert.equal((await snap()).geographicScatter.options.pointRadius,5.2);checks.push('SaveService writes independent source and reload preserves geographic data/options');
  await page.evaluate(()=>window.combined.dispose());assert.equal(await page.locator('[data-geographic-scatter]').count(),0);assert.equal(await page.locator('.maplibregl-canvas').count(),0);assert.deepEqual(errors,[]);checks.push('dispose removes overlay and map; no uncaught page errors');
  await writeFile(join(evidence,'browser.json'),JSON.stringify({status:'passed',checks,model,errors,screenshots:false,visual:'user-pending'},null,2));console.log(JSON.stringify({status:'passed',checks,model}));

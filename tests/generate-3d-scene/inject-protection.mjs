@@ -15,14 +15,14 @@ try{
  await downloadCandidate({remoteId:'sample',name:'sample',entryUrl:origin+'/model.gltf'},pkg,{endpoint:origin,allowedOrigins:[origin]});
  const a=loadPackage(pkg).assets[0];assert(a.files.length>=3);
  for(const [index,value] of [[],null,'invalid',42,true].entries()){
-  const project=resolve(root,'invalid'+index),manifest=resolve(project,'public/scene3d/assets/asset-manifest.json');
+  const project=resolve(root,'invalid'+index),manifest=resolve(project,'public/data/model-manifest.json');
   fs.mkdirSync(dirname(manifest),{recursive:true});fs.writeFileSync(manifest,JSON.stringify(value));
   const before=snap(project);
   const result=spawnSync(process.execPath,[resolve('skills/generate-3d-scene/scripts/designer-assets.mjs'),'inject',pkg,'--project',project],{encoding:'utf8'});
   assert.equal(result.status,1,result.stdout+result.stderr);assert.equal(result.stdout.trim(),'');assert.match(result.stderr,/Invalid asset manifest/);
   assert.deepEqual(snap(project),before,'invalid manifest must not write any assets');
  }
- const emptyProject=resolve(root,'empty-mapping'),emptyManifest=resolve(emptyProject,'public/scene3d/assets/asset-manifest.json');
+ const emptyProject=resolve(root,'empty-mapping'),emptyManifest=resolve(emptyProject,'public/data/model-manifest.json');
  fs.mkdirSync(dirname(emptyManifest),{recursive:true});fs.writeFileSync(emptyManifest,'{}');
  inject(pkg,emptyProject);assert(JSON.parse(fs.readFileSync(emptyManifest))[a.id]);
 

@@ -7,12 +7,12 @@ import {mapRenderer} from './scripts/map-renderer.mjs';
 
 /** 贴图上传扩展名白名单 */
 const TEXTURE_EXT = new Set(['.png', '.jpg', '.jpeg', '.webp', '.avif']);
-const TEXTURE_DIR = fileURLToPath(new URL('./public/scene3d/assets/textures', import.meta.url));
+const TEXTURE_DIR = fileURLToPath(new URL('./public/images', import.meta.url));
 
 /**
  * dev-only 贴图上传端点：
  * POST /__scene3d/upload-texture（binary body + x-filename 头，文件名 encodeURIComponent 编码）。
- * 扩展名白名单 + 文件名 sanitize（防路径穿越）+ 重名自动后缀 → 写 public/scene3d/assets/textures/ → 返回相对 URL。
+ * 扩展名白名单 + 文件名 sanitize（防路径穿越）+ 重名自动后缀 → 写 public/images/ → 返回相对 URL。
  * apply='serve' 保证不进 build 产物。
  */
 const textureUploadPlugin = (): Plugin => ({
@@ -54,7 +54,7 @@ const textureUploadPlugin = (): Plugin => ({
             }
           }
           res.setHeader('Content-Type', 'application/json');
-          res.end(JSON.stringify({ url: `scene3d/assets/textures/${name}` }));
+          res.end(JSON.stringify({ url: `images/${name}` }));
         })().catch((err: unknown) => {
           res.statusCode = 500;
           res.end(JSON.stringify({ error: String(err) }));
@@ -69,7 +69,7 @@ const sceneSavePlugin = (): Plugin => ({
   name: 'scene3d-save-scene',
   apply: 'serve',
   handleHotUpdate(context) {
-    if (path.resolve(context.file) === fileURLToPath(new URL('./public/scene3d/scene-data.json', import.meta.url))) { return []; }
+    if (path.resolve(context.file) === fileURLToPath(new URL('./public/data/scene.json', import.meta.url))) { return []; }
   },
   configureServer(server) {
     server.middlewares.use('/__scene3d/save-scene', (req, res) => {
@@ -90,7 +90,7 @@ const sceneSavePlugin = (): Plugin => ({
           if (!data.scene || !data.camera || !data.controls || !data.renderer || !Array.isArray(data.lights)) {
             res.statusCode = 400; res.end(); return;
           }
-          const target = fileURLToPath(new URL('./public/scene3d/scene-data.json', import.meta.url));
+          const target = fileURLToPath(new URL('./public/data/scene.json', import.meta.url));
           const temp = `${target}.${crypto.randomUUID()}.tmp`;
           await writeFile(temp, JSON.stringify(data, null, 2) + '\n', { flag: 'wx' });
           await rename(temp, target);

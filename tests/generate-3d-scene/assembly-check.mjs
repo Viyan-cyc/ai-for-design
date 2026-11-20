@@ -8,11 +8,11 @@ import { checkAssembly } from '../../skills/generate-3d-scene/scripts/lib/assemb
 
 const skill = fileURLToPath(new URL('../../skills/generate-3d-scene/', import.meta.url));
 const root = mkdtempSync(join(tmpdir(), 'assembly-fixture-'));
-const profile = join(root, 'src/scene3d/scene-profile.ts');
-const data = join(root, 'public/scene3d/scene-data.json');
+const profile = join(root, 'src/3d/scene-profile.ts');
+const data = join(root, 'public/data/scene.json');
 const setFactory = body => writeFileSync(profile, `
 import * as THREE from 'three';
-import {createComposite} from './scene-core/handlers/procedural/composite';
+import {createComposite} from './engine/factories/procedural/composite';
 export function registerBusinessFactories({sceneEngine}) {
  sceneEngine.registerFactory('test', {create(node) {
  const b=createComposite(), g=new THREE.BoxGeometry(1,1,1), m=new THREE.MeshStandardMaterial();

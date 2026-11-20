@@ -36,7 +36,7 @@ registerHooks({
 const THREE = await import('three');
 
 const { SceneEngine } = await import(
-  pathToFileURL(join(skill, 'template/src/scene3d/scene-core/engine/SceneEngine.ts'))
+  pathToFileURL(join(skill, 'template/src/3d/scene/systems/SceneEngine.ts'))
 );
 const { createDataAdapter } = await import(
   pathToFileURL(join(skill, 'template/src/business/data/adapter.ts'))

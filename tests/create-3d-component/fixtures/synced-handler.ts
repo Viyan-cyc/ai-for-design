@@ -2,8 +2,8 @@
 import * as THREE from 'three';
 import { AuthoredComponent } from '@a3d/a3d-components/core';
 import { HostHighlight } from '@a3d/a3d-components/helper';
-import type { SceneEngine } from '../../scene-core';
-import { handlerUtils } from '../../scene-core/handlers';
+import type { SceneEngine } from '../engine';
+import { handlerUtils } from '../engine/factories';
 
 // Node params replace the whole business state; component setters are incremental.
 function objectOptions(params: ConstructorParameters<typeof AuthoredComponent>[0]) {

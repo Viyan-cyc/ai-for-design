@@ -1,7 +1,7 @@
 /** Business assembly: add only the factories/cards used by this scene. */
-import type { SceneEngine } from './scene-core';
-import type { AssetEngine } from './scene-core';
-import type { RenderLoop } from './scene-core';
+import type { SceneEngine } from './scene';
+import type { AssetEngine } from './scene';
+import type { RenderLoop } from './scene';
 
 export interface BusinessRegistrarContext {
   sceneEngine: SceneEngine;

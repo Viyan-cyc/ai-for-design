@@ -13,7 +13,7 @@ const env = await import(
 );
 const esbuild = await import(pathToFileURL(env.dependencyPath('esbuild/lib/main.js')));
 const dir = mkdtempSync(join(tmpdir(), 'scene3d-review-'));
-const core = root + '/skills/generate-3d-scene/template/src/scene3d/scene-core';
+const core = root + '/skills/generate-3d-scene/template/src/3d/scene';
 const entry = `import * as THREE from 'three';import {createScene} from '${core}/createScene';import {setupCards} from '${core}/cards/registry';import {AssetEngine} from '${core}/engine/AssetEngine';import {RendererEngine} from '${core}/engine/RendererEngine';import {loadAssetManifest} from '${core}/asset-manifest';import {createDataAdapter} from '${root}/skills/generate-3d-scene/template/src/business/data/adapter';window.review={createDataAdapter,THREE,createScene,setupCards,AssetEngine,RendererEngine,loadAssetManifest};`;
 const compiled = await esbuild.build({
   stdin: { contents: entry, resolveDir: root, loader: 'ts' },
@@ -24,7 +24,7 @@ const compiled = await esbuild.build({
   define: { 'import.meta.env.DEV': 'false', 'process.env.NODE_ENV': '"production"' },
 });
 const data = JSON.parse(
-  readFileSync(root + '/skills/generate-3d-scene/template/public/scene3d/scene-data.json', 'utf8'),
+  readFileSync(root + '/skills/generate-3d-scene/template/public/data/scene.json', 'utf8'),
 );
 for (const key of Object.keys(data))
   if (!['version', 'meta', 'scene', 'camera', 'lights', 'controls', 'renderer'].includes(key))

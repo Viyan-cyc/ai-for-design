@@ -10,7 +10,7 @@
  *   - 影响域文件内容 hash：
  *       scene-data.json / asset-manifest.json / **public/scene3d/assets 资产闭包整树**
  *       （模型 .glb/.gltf/.bin/贴图——改任一字节 key 即变）
- *       src/**（run 模式不含 src/edit；edit 模式含——run/edit 结论互不复用）
+ *       src/**（run 模式不含 src/editor；edit 模式含——run/edit 结论互不复用）
  *       index.html（入口模板）、vendor tgz、lock、package.json
  *       eslint/tsconfig/vite 配置（config 域）
  *   - 目标指纹：URL、expect 内容 hash、viewport、browser/gpu、mode、profile
@@ -39,17 +39,17 @@ export const CACHE_FILENAME = '.verification-cache.json';
  * 域定义对齐 Spec §3.5 + P5-R1：
  *   'scene'   scene-data.json / asset-manifest.json / public/scene3d/assets/**（资产闭包）
  *   'code'    src/** 非 edit（run 与 edit 共享的 core/handlers/cards）
- *   'edit'    src/edit/**（只影响 edit 模式结论）
+ *   'edit'    src/editor/**（只影响 edit 模式结论）
  *   'deps'    package-lock / package.json / vendor tgz / node_modules 语义
  *   'config'  eslint/tsconfig/vite/index.html（影响 build/typecheck/lint 结论）
  */
 export const fileAffect = (file) => {
   const f = file.split(sep).join('/');
   if (f.endsWith('scene-data.json') || f.endsWith('asset-manifest.json')
-    || f.startsWith('public/scene3d/assets/') || f === 'index.html') {
+    || /^public\/(?:data|models|images|decoders)\//.test(f) || f === 'index.html') {
     return 'scene';
   }
-  if (f.startsWith('src/edit/') || f.includes('/edit/')) {
+  if (f.startsWith('src/editor/') || f.includes('/edit/')) {
     return 'edit';
   }
   if (f.startsWith('src/')) {
@@ -207,10 +207,14 @@ export const computeCacheKey = (projectRoot, opts = {}) => {
 
   try {
     if (affects.includes('scene')) {
-      pushOrUnstable('sceneData', hashFile(join(projectRoot, 'public', 'scene3d', 'scene-data.json')));
-      pushOrUnstable('assetManifest', hashFile(join(projectRoot, 'public', 'scene3d', 'assets', 'asset-manifest.json')));
+      pushOrUnstable('sceneData', hashFile(join(projectRoot, 'public', 'data', 'scene.json')));
+      pushOrUnstable('assetManifest', hashFile(join(projectRoot, 'public', 'data', 'model-manifest.json')));
       // P5-R1：资产闭包整树（模型/bin/贴图改一个字节 key 即变）
-      pushOrUnstable('assetsClosure', hashTree(join(projectRoot, 'public', 'scene3d', 'assets')));
+
+      for (const group of ['models', 'images', 'decoders']) {
+        const assets = join(projectRoot, 'public', group);
+        if (existsSync(assets)) pushOrUnstable(group, hashTree(assets));
+      }
       // P5-R1：入口模板（index.html 改脚本引用/容器结构影响挂载检查）
       pushOrUnstable('indexHtml', hashFile(join(projectRoot, 'index.html')));
     }

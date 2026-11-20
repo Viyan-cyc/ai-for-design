@@ -2,7 +2,7 @@ import {readFile,writeFile,mkdir} from 'node:fs/promises';
 import {stripTypeScriptTypes} from 'node:module';
 import assert from 'node:assert/strict';
 import {pathToFileURL} from 'node:url';
-const source=process.argv[2]??'D:/cyc/project/octo/test/3d-components/src/map/surface-particle-scan/map-host.ts';
+const source=process.argv[2]??'D:/cyc/project/octo/test/3d-components/src/3d/map/surface-particle-scan/map-host.ts';
 let code=(await readFile(source,'utf8')).replace(/^import .*;\r?\n/gm,'');code=stripTypeScriptTypes(code);
 code=`const maplibregl={MercatorCoordinate:{fromLngLat:()=>({x:0,y:0,meterInMercatorCoordinateUnits:()=>1})}};class SurfaceParticleScan{userData={};sets=0;frames=0;disposed=0;setData(){this.sets++;}setFrame(){this.frames++;}tick(){return false;}dispose(){this.disposed++;}}\n`+code;
 const {attachSurfaceParticleScan}=await import(process.argv[3]?pathToFileURL(process.argv[3]).href:'data:text/javascript;base64,'+Buffer.from(code).toString('base64'));

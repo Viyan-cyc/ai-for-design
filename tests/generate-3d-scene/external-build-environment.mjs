@@ -24,7 +24,7 @@ try {
   const before = builds();
   run(join(skill, 'scripts/build-offline.mjs'), [project]);
   cleanSource(source); assert.deepEqual(builds(), before);
-  const preview = join(project, 'preview/scene.js'), old = fs.readFileSync(preview);
+  const preview = join(project, 'scene.js'), old = fs.readFileSync(preview);
   const entry = join(source, 'src/offline-entry.ts'), entryText = fs.readFileSync(entry);
   fs.appendFileSync(entry, '\nconst bad: number = "INVALID";\n');
   run(join(skill, 'scripts/build-offline.mjs'), [project], false);
@@ -39,7 +39,7 @@ try {
 
   const slotInput = createBuildInput(source, prepareProjectEnvironment(source));
   try {
-    const scene = JSON.parse(fs.readFileSync(join(source, 'public/scene3d/scene-data.json')));
+    const scene = JSON.parse(fs.readFileSync(join(source, 'public/data/scene.json')));
     scene.Box = [{ id: 'runtime_probe', params: {} }];
     const keys = await buildRuntimeSlotKeys(slotInput.source, scene);
     assert(keys.has('runtime_probe'));

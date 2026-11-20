@@ -74,7 +74,7 @@ metadata:
 
 工程目录、数据字段、坐标和依赖方向以 [generation-contract.md](references/generation-contract.md) 为准。读取生成工程现状后局部修改；不得用 demo 覆盖用户源码、布局、槽位或已保存外观。生成时不修改核心引擎、编辑器、构建与校验脚本。
 
-应用代码与模型资源离线，不使用 CDN 或 fetch 本地文件；地图联网资源例外见 map.md。动态资源登记 public/scene3d/offline-resources.json。用户要求实时数据时才提供业务映射，纯展示不额外实现 MQTT/轮询。
+应用代码与模型资源离线，不使用 CDN 或 fetch 本地文件；地图联网资源例外见 map.md。动态资源登记 public/data/offline-resources.json。用户要求实时数据时才提供业务映射，纯展示不额外实现 MQTT/轮询。
 
 ## 验证失败与重试上限
 
@@ -122,7 +122,7 @@ metadata:
 
 ### 开发工作区与交付目录
 
-项目源码位于 `<项目>/source/`，init 返回的 WORKSPACE_PATH 指向该目录。源码修改、资产注入和扩展启用均在此进行。后续修改沿用当前工程和预览入口；构建更新同项目的 `index.3d.html` 与 `preview/` 中登记的产物，其余文件保持原样。
+项目源码位于 `<项目>/source/`，init 返回的 WORKSPACE_PATH 指向该目录。源码修改、资产注入和扩展启用均在此进行。后续修改沿用当前工程和预览入口；构建更新同项目的 `index.3d.html` 和同层登记的 JS、CSS 产物，其余文件保持原样。
 
 
 

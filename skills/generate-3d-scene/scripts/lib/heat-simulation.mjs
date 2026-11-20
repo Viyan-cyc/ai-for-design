@@ -8,7 +8,7 @@ import { inputDigest } from './build-guard.mjs';
 export async function generateProjectHeat(root, modules, expectedDigest = inputDigest(root)) {
   const script = join(root, 'scripts/heat-simulation.mjs');
   if (!existsSync(script)) return null; // Real business data, including missing cells, is untouched.
-  const file = join(root, 'public/scene3d/scene-data.json');
+  const file = join(root, 'public/data/scene.json');
   const original = readFileSync(file, 'utf8'), scene = JSON.parse(original);
   const assertInputs = () => {
     if (inputDigest(root) !== expectedDigest) throw Error('BUILD_INPUT_CHANGED: simulation inputs changed');
@@ -44,7 +44,7 @@ export async function generateProjectHeat(root, modules, expectedDigest = inputD
     scene.meta = {...scene.meta, description: `${scene.meta?.description ?? ''}`.replace(/\s*\[热力及关联告警为模拟数据\]$/, '') + ' [热力及关联告警为模拟数据]'};
     const output = JSON.stringify(scene, null, 2) + '\n';
     // Permit only the generated JSON change; never rebase other inputs.
-    const digest = inputDigest(root, {replacements: new Map([['public/scene3d/scene-data.json', output]])});
+    const digest = inputDigest(root, {replacements: new Map([['public/data/scene.json', output]])});
     assertInputs();
     writeFileSync(file, output);
     return {digest, records:data.length, alerts:count === undefined ? 'unchanged' : scene.map.geographicScatter.data.length};

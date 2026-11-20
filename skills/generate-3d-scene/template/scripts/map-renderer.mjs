@@ -6,7 +6,7 @@ import {createHash} from 'node:crypto';
 
 /** Only map-enabled projects resolve these optional dependencies. */
 export async function mapRenderer(root){
- if(!existsSync(join(root,'src/scene3d/map/create-map-scene.ts')))return [];
+ if(!existsSync(join(root,'src/3d/map/create-map-scene.ts')))return [];
  const require=createRequire(join(root,'package.json'));
  const adapter=await import(pathToFileURL(require.resolve('@a3d/a3d-components/map-adapter')).href);
  const source=readFileSync(require.resolve('maplibre-gl/dist/maplibre-gl-dev.js'),'utf8');
