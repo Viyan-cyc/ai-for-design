@@ -171,8 +171,17 @@ try {
   data.sourceId = hash(data.sourceId + JSON.stringify(resources));
   writeFileSync(resolve(stage, 'scene-data.js'), `window.__scene3dOffline=${JSON.stringify(data).replace(/</g, '\\u003c')};\n`);
   const sceneDataHash = hash(readFileSync(resolve(stage, 'scene-data.js'))).slice(0, 12);
-  const styles = walk(stage).filter((file) => extname(file) === '.css').map((file) => `<link rel="stylesheet" href="./${relative(stage, file).replaceAll('\\', '/')}?v=${sceneDataHash}">`).join('\n');
+  const stylePaths = walk(stage).filter((file) => extname(file) === '.css')
+    .map((file) => relative(stage, file).replaceAll('\\', '/'));
+  const styles = stylePaths.map((file) => `<link rel="stylesheet" href="./${file}?v=${sceneDataHash}">`).join('\n');
+  const artifact = {
+    version: 1,
+    skill: 'generate-3d-scene',
+    source: 'source/public/data/scene.json',
+    history: ['.scene3d-preview-baseline.json', 'scene-data.js', 'scene.js', ...stylePaths],
+  };
   const html = readFileSync(resolve(root, 'index.html'), 'utf8')
+    .replace('</head>', (tag) => '<script type="application/json" id="octo-design-artifact">' + JSON.stringify(artifact).replace(/</g, '\\u003c') + '</script>\n' + tag)
     .replace('</head>', `${styles}\n</head>`)
     .replace(/<script\s+type="module"\s+src="\/src\/entry\.ts"><\/script>/, `<script src="./scene-data.js?v=${sceneDataHash}"></script><script src="./scene.js?v=${sceneDataHash}"></script>`);
   if (html.includes('type="module"') || !html.includes('./scene-data.js')) throw new Error('index.html 入口形态不支持离线打包');
