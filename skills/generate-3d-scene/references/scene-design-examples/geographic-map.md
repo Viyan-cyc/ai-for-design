@@ -8,7 +8,7 @@
 建筑形状和高度以地图数据为准。白模表达实际体块，不代表精细地标模型；数据缺失时说明限制，不用虚构精模冒充真实数据。
 
 ## 怎样组合组件
-- 完整设计地图使用[MapExperience](../component-docs/MapExperience.md)，由生成器统一接入。通过map.theme选择light或dark，地面、道路、水域、绿地、建筑和文字沿用预设，不逐项手抄颜色。
+- 完整设计地图使用[MapExperience](../component-docs/MapExperience.md)，由生成器统一接入。未指定主题时省略 `map.theme`，沿用组件默认浅色；明确指定时使用 `light` 或 `dark`，地面、道路、水域、绿地、建筑和文字沿用预设，不逐项手抄颜色。
 - 地点、中心、范围、zoom、bearing和pitch按项目关注区域设置，不沿用上海样本的绝对取景。
 - 没有业务数据需求时只生成底图和所需模型。经纬度热力采用栅格和建筑染色共享数据场；逻辑散点单独呈现，不能直接当作地图图层。当前生成器接入范围见[组件选用](../restored-map-components.md)及[叠加层接口](../map-overlays.md)，未接通的编辑保存能力不作承诺；扫光按需添加。
 - 业务标签可用[ScreenLabel](../component-docs/ScreenLabel.md)，按项目定义信息、尺寸、缩放显隐及遮挡规则；底图labelSize不是业务卡片的像素尺寸。
