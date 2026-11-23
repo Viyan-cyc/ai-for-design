@@ -23,6 +23,7 @@ Path — 路径绘制组件。
 |---|---|---|---|
 | paths | `PathData[]` | — | 一组路径数据，每个元素生成一条管道或平面带。 |
 | material | `Material` | — | 共享材质。所有路径复用。不传则使用默认 `MeshStandardMaterial`（`dispose()` 时一并释放）。 |
+| style | `PathStyleOptions` | — | 内置样式。传入自定义 material 时优先使用自定义材质。 |
 | flow | `FlowOptions` | `不开启` | 流光效果配置。开启后流光贯穿整组 paths（从第一条流向最后一条）。
 流光材质由本组件 clone 生成并独立释放，不影响传入的 `material`。 |
 | name | `string` | — | Optional name applied to the `Object3D.name` property.

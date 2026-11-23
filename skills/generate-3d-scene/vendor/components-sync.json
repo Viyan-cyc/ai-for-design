@@ -4,9 +4,9 @@
     "name": "@a3d/a3d-components",
     "version": "0.1.1",
     "path": "vendor/a3d-a3d-components-0.1.1.tgz",
-    "sha256": "7440ad2b684868ba5c3d23030b2952c34602353c2a38e65db092c327cb260f39"
+    "sha256": "34aef9908fda63e402eb3821c5c9417861ad070d6aa383c868e37ed25c0a6f41"
   },
-  "sourceDigest": "80f711684451fb4338b8b93eb0f057a934304f9b5587e730f34238f1fedcb6c5",
+  "sourceDigest": "796eab22d64dfc51e7b125ea52382bec9533010daa8ce91fb30e24174b68ca22",
   "files": {
     "references/component-catalog.md": "3d984d29a046ee90b97056bb4bba427716df5e853bae80dc3bc45c82b86b7aa6",
     "references/component-docs/AssetCache.md": "36884bcb590418fa66d7e2a9f1e34c974110a83e2daf10dd5a5224c95b83a46a",
@@ -32,8 +32,8 @@
     "references/component-docs/MaterialManager.md": "d485839f3b4c25d8de9e65b8d68d5cfd5e5d997f3c779151e23ee541d63c95f5",
     "references/component-docs/MeshReflectorMaterial.md": "8008165fc45911f8cc17832d2a8e6d38a4c18778d5a3d8129f5e99460b61a35e",
     "references/component-docs/Node3D.md": "6d15f0d1280220685dadc73dd1f0901c6b98fc7a7f18b2a9c997cac5efb1c9bd",
-    "references/component-docs/Outlines.md": "1170775aa5366cb2e0459f42d72e258552e936548bdc5c5c8c0f85fb75c055e2",
-    "references/component-docs/Path.md": "6b434e0b4c95fc47e5101edb49f9ee56f6d7e2597fa5ff2a1e0392674a686a14",
+    "references/component-docs/Outlines.md": "77a138ba7eee4f0b83c7d55bdae7fe0c1c154df94b0cbfacd8f4b5f0211838ef",
+    "references/component-docs/Path.md": "f169b71d98e8e9bfb9ff4be1306236163889d5025df61bdcb618972544763c9b",
     "references/component-docs/PickController.md": "43fb1045e2755835fdf23739bf456bfaa26f08708d38a600e738ccdac7882834",
     "references/component-docs/PivotControls.md": "b7945dc35d3e7b4ae1db50ce04a01790ef251e22d826479da65b1395ab3b7152",
     "references/component-docs/Rack.md": "7cdc67681aa7a3689e22a8006253665d41d7d12d2488aa51b5472ff212c9241f",
@@ -41,10 +41,10 @@
     "references/component-docs/Shape.md": "a463810c3ca7093df944cbdcb978a0e61026672958f4d98374c0f89c29e2cad9",
     "references/component-docs/Sky.md": "59b171985f8ea77300cf6d87ee1a583e2188e874bcbac1a035ac31aa6eb2d281",
     "references/component-docs/SurfaceParticleScan.md": "e5bc6db858261da7e22c88ac982c83f95d0da581f197d34c7405c1dab9a6492c",
-    "references/component-docs/Wall.md": "5598fa91799947983047251c9b016dd91e775a41238351f6935f5e833d76208a",
+    "references/component-docs/Wall.md": "f66069451f760a99585f178914d9373150635834f3f2001748bb931c7820a247",
     "references/component-docs/Wireframe.md": "1dd987efe42c463d67a6b57da780b12d7c98b3dd79c1067b1e1a03862323ef73",
-    "vendor/a3d-a3d-components-0.1.1.tgz": "7440ad2b684868ba5c3d23030b2952c34602353c2a38e65db092c327cb260f39",
-    "vendor/components.json": "e742f94e20f764dcf45e708ed42a337152050ce9781f519123208531e0d6ab20"
+    "vendor/a3d-a3d-components-0.1.1.tgz": "34aef9908fda63e402eb3821c5c9417861ad070d6aa383c868e37ed25c0a6f41",
+    "vendor/components.json": "6d44e651be4e09ffb17c075d45f55f4330fc6f0fe790af7246c7517d5cbcdd19"
   },
   "states": {
     "package": "built",

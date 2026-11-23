@@ -83,9 +83,22 @@ export async function createMapScene(host: HTMLElement, data: SceneData, cards: 
     componentStatus.hidden=false;console.error(`[${name}]`,error);
   };
   let experienceConfig=structuredClone(config.experience);
+  const buildingSource=runtime.experience as typeof runtime.experience & {
+    onBuildingsCommitted?:(listener:(revision:number)=>void)=>()=>void;
+  };
+  const onBuildingsCommitted=buildingSource.onBuildingsCommitted?.bind(buildingSource);
   const createScan=(value:SurfaceParticleScanOptions)=>{
     const scene=handle!.internals.scene, loop=handle!.internals.renderLoop;
+    const engine=handle!.internals.sceneEngine;
+    const subscriptions=onBuildingsCommitted?{
+      onBuildingsCommitted,
+      onMeshesChanged:(listener:()=>void)=>{
+        const stop=(['created','updated','removed'] as const).map(event=>engine.subscribeNodeEvent(event,listener));
+        return ()=>stop.forEach(unsubscribe=>unsubscribe());
+      },
+    }:{};
     return attachSurfaceParticleScan({map,scene,origin:config.origin,
+      ...subscriptions,
       invalidate:loop.invalidate,onFrame:(callback,demand)=>loop.onFrame(callback,demand),
       acceptsLayer:id=>['sh-rounded-buildings-3d','sh-rounded-buildings-3d-next','sh-rounded-buildings-3d-retained','sh-rounded-buildings-3d-next-retained','sh-buildings-3d','sh-halic-ordinary-buildings-3d'].includes(id),
       completeLayer:id=>id==='sh-rounded-buildings-3d'||id==='sh-rounded-buildings-3d-next',
@@ -149,7 +162,7 @@ export async function createMapScene(host: HTMLElement, data: SceneData, cards: 
         if(next.styleUrl!==config.styleUrl||JSON.stringify(next.origin)!==JSON.stringify(config.origin))throw Error('地图服务、原点、宿主或图层映射改变需要重新创建');
       }
     };
-    if(scanConfig){const result=attemptComponent('surfaceScan',()=>createScan(scanConfig!),reportComponent);if(result.ok)scan=result.value;}
+    if(scanConfig?.enabled){const result=attemptComponent('surfaceScan',()=>createScan(scanConfig!),reportComponent);if(result.ok)scan=result.value;}
     const originalSerialize = handle.serialize.bind(handle);
     handle.serialize = () => ({ ...originalSerialize(), camera: structuredClone(data.camera), map: {
       ...config, heat:components?.serialize().heat,geographicScatter:components?.serialize().geographicScatter,logicalScatter:components?.serialize().logicalScatter,experience:structuredClone(experienceConfig), surfaceScan: structuredClone(scanConfig), center: map.getCenter().toArray(), zoom: map.getZoom(), pitch: experience!.getState().view === '2d' ? experience!.getState().pitch : map.getPitch(), bearing: map.getBearing(),
@@ -167,7 +180,7 @@ export async function createMapScene(host: HTMLElement, data: SceneData, cards: 
           throw new Error('更换地图服务或坐标原点需要重新创建场景');
         components!.update(next);
         const nextScan = next.surfaceScan;
-        if(!nextScan){scan?.dispose();scan=undefined;}
+        if(!nextScan?.enabled){scan?.dispose();scan=undefined;}
         else if(!scan)scan=createScan(nextScan);
         else scan.component.setOptions(normalizeSurfaceParticleScanOptions(nextScan));
         scanConfig = structuredClone(nextScan);
@@ -181,7 +194,8 @@ export async function createMapScene(host: HTMLElement, data: SceneData, cards: 
       const { camera: _camera, controls: _controls, map: _map, ...rest } = fragment;
       if (rest.renderer?.logarithmicDepthBuffer) throw new Error('地图共用标准深度缓冲，不支持对数深度');
       const result = originalUpdate(rest);
-      scan?.refresh();
+      // Visual-only updates can hide meshes without emitting a node update.
+      if(!onBuildingsCommitted||rest.__visuals!==undefined)scan?.refresh();
       if(next){components!.clearRejected();componentErrors.clear();componentStatus.hidden=true;componentStatus.textContent='';}
 
       return result;

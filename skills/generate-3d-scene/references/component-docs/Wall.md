@@ -14,8 +14,11 @@ Wall — 墙体绘制组件。
 - 每个拐角按 `radius` 倒圆角；数组形式可逐顶点指定，`undefined` 回退到全局值；
   `close = true` 时形成环形墙体
 - 支持每段独立的墙洞（WallHole，窗 / 门），按段局部坐标描述并贯通墙体厚度
-- UV 沿墙长（u）/ 墙高（v）重算，支持 `uvMode: 'repeat' | 'stretch'`，
-  便于整面贴图（砖墙 / 窗户）；墙洞经 CSG 挖出后贴图在开口周围连续过渡
+- `walls[].uvMode` 默认 `repeat`，按米平铺。设为 `stretch` 时使用单张图集：
+  图片顶部为墙顶、底部为墙底，中间左半为外墙、右半为内墙。
+  顶部和底部各占图片高度的 `width / (height + 2 * width)`。
+  开放路径沿行进方向右侧为外墙，墙端和门窗洞口的切面复用顶部条带。
+  可用 `walls[].atlasAspect` 传入图片像素宽度除以像素高度，内外墙各自按比例铺满并居中裁切。
 - 所有墙体共享同一材质；未传入材质时使用默认 `MeshStandardMaterial`
 - 实现 IDisposable —— `dispose()` 释放全部几何体（自建材质一并释放）
 

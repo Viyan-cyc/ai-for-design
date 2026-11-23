@@ -24,10 +24,8 @@ Outlines — 描边组件。
 | color | `ColorRepresentation` | `'black'` | 描边颜色。 |
 | opacity | `number` | `1` | 描边不透明度。 |
 | transparent | `boolean` | `false` | 描边是否透明。 |
-| screenspace | `boolean` | `false` | 线宽是否与缩放无关（屏幕空间恒定）。
-- `true`：厚度按世界单位沿法线偏移，与摄像机距离无关；
-- `false`（默认）：厚度按裁剪空间偏移，远处更细、近处更粗。 |
-| thickness | `number` | `0.05` | 描边线宽。 |
+| screenspace | `boolean` | — | 使用屏幕空间线宽（CSS 像素）。默认使用世界单位。 |
+| thickness | `number` | — | 描边线宽。屏幕模式默认 2 px，世界模式默认 0.05。 |
 | angle | `number` | `Math.PI` | 几何折痕角度（弧度）。
 - `0` = 不分裂、直接复用父级法线；
 - `Math.PI`（默认）= 在每个硬边处分裂法线，使描边沿轮廓外扩、平面区域不被描边。 |

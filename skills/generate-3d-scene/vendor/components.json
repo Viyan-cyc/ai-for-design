@@ -1835,13 +1835,13 @@
         "name": "screenspace",
         "type": "boolean",
         "default": "false",
-        "description": "线宽是否与缩放无关（屏幕空间恒定）。true = 沿世界法线偏移，与摄像机距离无关；false = 在裁剪空间沿投影法线偏移，近处粗、远处细（体积感更自然）"
+        "description": "true 使用 CSS 像素，false 使用世界单位。"
       },
       {
         "name": "thickness",
         "type": "number",
-        "default": "0.05",
-        "description": "描边线宽"
+        "default": "2 px / 0.05",
+        "description": "屏幕模式默认 2 CSS 像素，世界模式默认 0.05 世界单位。"
       },
       {
         "name": "angle",
@@ -1909,7 +1909,7 @@
     "methods": [
       {
         "signature": ".attachRenderer(renderer: THREE.WebGLRenderer): void",
-        "description": "绑定渲染器以读取绘图缓冲尺寸（screenspace 偏移归一化用），并监听 canvas resize。仅在 screenspace = true 时有必要调用；不传则 size 默认为 1×1。"
+        "description": "手动更新视口尺寸。组件也会在每次绘制时自动更新。"
       },
       {
         "signature": ".setAngle(angle: number): void",
@@ -1925,7 +1925,7 @@
       }
     ],
     "examples": [
-      "import { Outlines } from '@a3d/a3d-components/core';\n\n// 给一个普通网格加描边\nconst mesh = new THREE.Mesh(geometry, material);\nconst outline = new Outlines({ mesh, color: 'red', thickness: 0.05 });\nmesh.add(outline); // 描边作为 mesh 的子级，自动跟随变换 / 骨架\nscene.add(mesh);\n\n// 屏幕空间恒定线宽（卡通描边风格）\nconst toon = new Outlines({\n  mesh, color: 'black', thickness: 0.01, screenspace: true,\n});\ntoon.attachRenderer(renderer); // 让组件读取画布尺寸做归一化\nmesh.add(toon);\n\n// 切换折痕角度（运行时重建）\noutline.setAngle(Math.PI / 4);"
+      "import { Outlines } from '@a3d/a3d-components/core';\n\n// 给一个普通网格加描边\nconst mesh = new THREE.Mesh(geometry, material);\nconst outline = new Outlines({ mesh, color: 'red', thickness: 0.05 });\nmesh.add(outline); // 描边作为 mesh 的子级，自动跟随变换 / 骨架\nscene.add(mesh);\n\n// 屏幕空间恒定线宽（卡通描边风格）\nconst toon = new Outlines({\n  mesh, color: 'black', thickness: 2, screenspace: true,\n});\nmesh.add(toon);\n\n// 切换折痕角度（运行时重建）\noutline.setAngle(Math.PI / 4);"
     ]
   },
   {
@@ -1976,6 +1976,12 @@
         "type": "FlowOptions",
         "default": "—",
         "description": "流光效果配置。开启后一条带拖尾的高亮光带贯穿整组 paths（从第一条流向最后一条）。流光材质由组件 clone 生成并独立释放"
+      },
+      {
+        "name": "style",
+        "type": "PathStyleOptions",
+        "default": "—",
+        "description": "{ preset: 'translucent-flow', color: '#49aaff' } 为圆管生成半透明外壳和流光内芯。流光默认开启，flow.color 可单独覆盖颜色。传入 material 时使用自定义材质。"
       }
     ],
     "dataTypes": [
@@ -2643,6 +2649,18 @@
             "type": "WallHole[]",
             "default": "—",
             "description": "墙洞（窗 / 门）列表，画在墙的立面上，按 segment 归属到对应墙段并贯通墙体厚度"
+          },
+          {
+            "name": "uvMode",
+            "type": "'repeat' | 'stretch'",
+            "default": "'repeat'",
+            "description": "repeat 按米平铺。stretch 使用单张图集，图片顶部为墙顶、底部为墙底，中间左半为外墙、右半为内墙。顶部和底部各占图片高度的 width / (height + 2 * width)。开放路径沿行进方向右侧为外墙，墙端与门窗洞口切面复用顶部条带。"
+          },
+          {
+            "name": "atlasAspect",
+            "type": "number",
+            "default": "—",
+            "description": "图集的像素宽度除以像素高度。用于 stretch，提供时内外墙各自按比例铺满并居中裁切。"
           }
         ]
       },
