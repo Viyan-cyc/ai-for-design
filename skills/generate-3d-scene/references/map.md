@@ -69,6 +69,10 @@ enable-map 在写入前预检全部扩展文件及组件包：相同内容复用
 
 写入前还检查注册入口 create-scene.ts、package.json、扩展及组件包目标的父路径，拒绝符号链接和目录 junction，包含工作区及其祖先路径。文件链接测试若因系统权限无法创建，必须标记未执行，不视为通过。
 
+### 地理坐标转场景位置
+
+设置 `map.origin` 后，可运行 `node scripts/check-data.mjs <WORKSPACE_PATH> <经度> <纬度>`，一次可传多组坐标。输出的 `position` 是地面上的 `[x, y, z]`（米），X 向东、Y 向上、Z 向南。转换使用当前工程组件的地图变换。热力和地图散点继续直接使用经纬度。
+
 ### 表面扫光
 
 常用组合在同一个 `map` 中配置：用 `heat` 提供栅格数据，添加 `heat.tint: {}` 让建筑共享热场，设置 `geographicScatter.heatLinked: true` 关联红区告警，再开启 `surfaceScan`。连续模拟数据和告警由构建时的 `scripts/heat-simulation.mjs` 配置生成，具体输入见 [地图组件组合](restored-map-components.md)。场景描述只写场景内容，模拟数据说明由构建脚本自动追加。已确认且内容未变的模型复用资产检查结果。
