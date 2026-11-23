@@ -67,6 +67,8 @@ enable-map 在写入前预检全部扩展文件及组件包：相同内容复用
 写入前还检查注册入口 create-scene.ts、package.json、扩展及组件包目标的父路径，拒绝符号链接和目录 junction，包含工作区及其祖先路径。文件链接测试若因系统权限无法创建，必须标记未执行，不视为通过。
 
 ### 表面扫光
+
+常用组合在同一个 `map` 中配置：用 `heat` 提供栅格数据，添加 `heat.tint: {}` 让建筑共享热场，设置 `geographicScatter.heatLinked: true` 关联红区告警，再开启 `surfaceScan`。连续模拟数据和告警由构建时的 `scripts/heat-simulation.mjs` 配置生成，具体输入见 [地图组件组合](restored-map-components.md)。场景描述只写场景内容，模拟数据说明由构建脚本自动追加。已确认且内容未变的模型复用资产检查结果。
 需要扫光时配置 `map.surfaceScan: { enabled: true }`，接入细节见 [map-scan-integration.md](map-scan-integration.md)。
 
 新生成地图场景默认在设计师主题与用户外观覆盖完成、地图实际帧和瓦片准备好后首次显示，加载期间显示准备提示。该流程由create-map-scene.ts统一负责，不在业务代码另加定时遮罩；普通换色不重新隐藏地图。资源30秒仍未齐全时显示当前主题地图并提示加载不完整。
