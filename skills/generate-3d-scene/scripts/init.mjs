@@ -1,3 +1,4 @@
+import { enableSceneComponents } from './lib/scene-component-deps.mjs';
 import { reserveProject } from './project-directory.mjs';
 /**
  * init.mjs — 工程脚手架（母版复制 → 场景选择 → 资产库注入 → 占位替换 → 首次构建校验）
@@ -313,10 +314,7 @@ export const initProject = (target, opts = {}) => {
       errors.push(`vendor/ 有多个 tgz，须 --components-version 显式选择：${available.join(', ')}`);
     }
     if (tgz) {
-      const vendorOut = join(out, 'vendor');
-      mkdirSync(vendorOut, { recursive: true });
-      cpSync(join(VENDOR_DIR, tgz), join(vendorOut, tgz));
-      pkg.dependencies = { ...pkg.dependencies, '@a3d/a3d-components': `file:./vendor/${tgz}` };
+      enableSceneComponents(out, join(VENDOR_DIR, tgz), pkg);
       components.included = true;
       components.tgz = tgz;
     }

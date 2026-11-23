@@ -24,7 +24,7 @@ node scripts/sync-components.mjs --apply <验证目录/sync-plan.json> --confirm
 
 ## 场景中使用
 
-新建工程沿用 `init --with-components` 和统一 `build-offline`。从组件目录找到导入路径，再按当前生成契约编写业务 handler，并在 scene-profile 登记。已有工程不会自动升级，不能用新模板覆盖已有源码。组件库的可选依赖不一定自动安装；按所用导入入口，在工程 package.json 中明确声明需要的依赖，再走统一构建，不跳过装配检查。
+新建工程沿用 `init --with-components` 和统一 `build-offline`。从组件目录找到导入路径，再按当前生成契约编写业务 handler，并在 scene-profile 登记。已有工程不会自动升级，不能用新模板覆盖已有源码。组件依赖（含地图依赖）由 init --with-components 统一声明。已有工程使用 enable-components.mjs 补齐依赖；首次接入地图功能时使用 enable-map.mjs。同步新包时核对 scripts/lib/scene-component-deps.mjs 中的依赖版本范围，再走统一构建。
 
 - **Object3D 组件**：明确 create、参数更新及资源释放责任。场景引擎已经登记的网格资源不能再由组件重复释放；有自有事件、动画或外部资源时必须单独落实清理接口。
 - **借用宿主的效果**：显式传入宿主对象，保持宿主材质和几何；清理效果自己的资源与回调。不能从类名猜测建筑提取、坐标或动画规则。

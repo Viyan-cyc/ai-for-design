@@ -75,7 +75,7 @@ update 仅在 params 改变时调用；transform 更新由引擎完成。返回 
 | controls | type: OrbitControls、target、minDistance/maxDistance、minPolarAngle/maxPolarAngle、enablePan、autoRotate/autoRotateSpeed、enableDamping/dampingFactor、zoomSpeed |
 | renderer | toneMapping: NoToneMapping/Linear/Reinhard/Cineon/ACESFilmic/AgX/Neutral；exposure；shadowMap: Basic/PCF/PCFSoft/VSM；shadowMapEnabled；pixelRatio（实际倍率）；shadowMapSize；maxFps（0 不限）；renderMode（demand/continuous）；antialias；logarithmicDepthBuffer |
 
-模板舞台是小场景起点：按实际业务范围设置相机、控制距离、光源位置及阴影覆盖，不能直接沿用固定范围。其他有效默认值可保留。纯几何需求不要求评估组件目录；确定需要某个现成组件时才查对应条目。正常生成不读 build.mjs/init.mjs 源码来猜接口。
+模板舞台是小场景起点：按实际业务范围设置相机、控制距离、光源位置及阴影覆盖，不能直接沿用固定范围。其他有效默认值可保留。资源与组件选择按 SKILL.md「选材与复用」执行。正常生成不读 build.mjs/init.mjs 源码来猜接口。
 
 ## 组合体与贴图复用
 
@@ -124,7 +124,7 @@ PowerShell 文本读写显式使用 UTF-8，优先宿主编辑工具；不因终
 | 机柜/车辆/人物 | procedural/rack、car、worker 按需复用；样例的历史 bodyColor 参数仅兼容旧数据，新代码通过外观层编辑颜色 |
 | 仓储货架整体展示 | 组件 Rack；框架/层板是 InstancedMesh，不承诺单根立柱独立编排，先确认编辑粒度 |
 | 二维热力覆盖 | 组件 HeatMap 输出 CanvasTexture；不是三维体积温度场 |
-| 墙体 | 按需查组件 Wall；组件需 --with-components |
+| 墙体 | 组件目录中的 Wall；按墙体路径、开口和编辑需求确认适用性 |
 | 独立零件材质编辑 | composite-handler，稳定槽位；不同业务对象使用独立节点 |
 
 只读命中项对应文档，不遍历所有实现。组件存在不等于符合需求；编辑粒度或离线资源不符时直接用几何组合。

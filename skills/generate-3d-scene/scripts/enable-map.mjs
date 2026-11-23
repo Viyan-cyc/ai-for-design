@@ -1,7 +1,9 @@
 import { createHash } from 'node:crypto';
 import { cpSync, existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { dirname, join, resolve } from 'node:path';
+import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { mapComponentDependencies } from './lib/scene-component-deps.mjs';
+import { rejectLinkedPath } from './lib/plain-path.mjs';
 import { resolveWorkspace } from './lib/workspace.mjs';
 
 // Optional feature installation, never run for an ordinary local 3D scene.
@@ -9,19 +11,7 @@ const target = process.argv[2];
 if (!target) throw new Error('用法: node scripts/enable-map.mjs <交付目录或工作区>');
 const workspace = resolveWorkspace(target);
 if(!existsSync(join(workspace,'scripts/map-renderer.mjs'))||!readFileSync(join(workspace,'vite.config.ts'),'utf8').includes('mapRenderer'))throw Error('工程构建模板较旧：请在副本合入当前template的map-renderer、vite.config和build-offline适配后启用地图；未修改工程。');
-// Reject links in every destination ancestry before reading or writing project files.
-function rejectLinkedPath(destination) {
-  let path = resolve(destination);
-  for (;;) {
-    try {
-      if (lstatSync(path).isSymbolicLink()) throw new Error(`地图启用冲突，工程未修改：链接路径 ${path}`);
-    } catch (error) { if (error.code !== 'ENOENT') throw error; }
-    const parent = dirname(path);
-    if (parent === path) break;
-    path = parent;
-  }
-}
-for (const path of ['src/3d/create-scene.ts', 'package.json', 'vendor']) rejectLinkedPath(join(workspace, path));
+for (const path of ['src/3d/create-scene.ts', 'package.json', 'package-lock.json', 'vendor']) rejectLinkedPath(join(workspace, path));
 const skill = dirname(dirname(fileURLToPath(import.meta.url)));
 // Map runtime is distributed through the same production component package.
 const packages = readdirSync(join(skill, 'vendor')).filter(name => /^a3d-a3d-components-.*\.tgz$/.test(name));
@@ -50,7 +40,8 @@ if (!code.includes('createMapScene')) {
 
 const packagePath = join(workspace, 'package.json');
 const pkg = JSON.parse(readFileSync(packagePath, 'utf8'));
-pkg.dependencies = { ...pkg.dependencies, '@a3d/a3d-components': `file:./vendor/${componentPackage}`, three: '0.185.1', 'maplibre-gl': '5.24.0', '@turf/turf': '7.2.0' };
+const { dependencies, reuseArchive } = mapComponentDependencies(workspace, pkg.dependencies, join(skill, 'vendor', sourcePackage));
+pkg.dependencies = reuseArchive ? dependencies : { ...dependencies, '@a3d/a3d-components': `file:./vendor/${componentPackage}` };
 // Preflight the entire copy set before changing dependencies, registration or files.
 const pending = [], conflicts = [];
 function inspect(source, destination) {
@@ -68,7 +59,7 @@ function inspect(source, destination) {
 inspect(join(skill, 'extensions/map/src'), join(workspace, 'src'));
 const vendor = join(workspace, 'vendor');
 if (existsSync(vendor) && (!lstatSync(vendor).isDirectory() || lstatSync(vendor).isSymbolicLink())) conflicts.push(vendor);
-else inspect(join(skill, 'vendor', sourcePackage), join(vendor, componentPackage));
+else if (!reuseArchive) inspect(join(skill, 'vendor', sourcePackage), join(vendor, componentPackage));
 if (conflicts.length) throw new Error(`地图启用冲突，工程未修改：\n${conflicts.join('\n')}\n请保留用户修改并手动迁移；不会强制覆盖。`);
 for (const [source, destination] of pending) {
   mkdirSync(dirname(destination), { recursive: true });

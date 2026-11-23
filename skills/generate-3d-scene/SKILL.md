@@ -1,6 +1,6 @@
 ---
 name: generate-3d-scene
-description: 根据文字或截图需求生成可二次开发的 Vue 3 + Three.js 3D 场景，优先使用用户上传包和内网模型，未命中复用组件或几何拼装。交付可离线打开的 index.3d.html 与配套资源，支持材质、贴图、拖拽布局及保存导入。
+description: 根据文字或截图需求生成可二次开发的 Vue 3 + Three.js 3D 场景，使用已确认的用户资产，其余对象和功能优先复用匹配组件，按需检索内网模型或使用几何拼装。交付可离线打开的 index.3d.html 与配套资源，支持材质、贴图、拖拽布局及保存导入。
 metadata:
   version: "0.1.0"
 ---
@@ -32,7 +32,7 @@ metadata:
 1. 读 `references/generation-contract.md`，再读 `references/scene-design-examples/README.md`，读取共享规范与命中的领域方案。普通生成不通读引擎、编辑器、材质系统或构建脚本。
 2. 会话首次运行 `node scripts/ensure-env.mjs`，仅检查 Node/npm，不要求预装基础编译依赖。无可用运行时时按 HINT 处理；调用运行时安装脚本时使用 -RuntimeOnly（Windows）或 --runtime-only（Shell），不预装基础依赖。工程依赖在完整清单确定后由统一构建准备，位于工程外，不在生成项目中创建 node_modules。
 3. 按下方「选材与复用」选择资源；上传包的接收、更新与导入命令见 [designer-assets.md](references/designer-assets.md)，仅在涉及资产操作时读取。
-4. `node scripts/init.mjs "<artifact-folder>" --name <场景名称> --profile empty --assets referenced --deps skip --defer-build`。模型确认后用 designer-assets inject 注入资源，或 --asset-package 指定已确认资产包；skill 不携带模型库。需组件时加 --with-components；地图场景先 enable-map 确定完整依赖，再由统一构建一次准备。普通生成不先运行 setup-env 预装基础依赖。
+4. `node scripts/init.mjs "<artifact-folder>" --name <场景名称> --profile empty --assets referenced --with-components --deps skip --defer-build`。模型确认后用 designer-assets inject 注入资源，或 --asset-package 指定已确认资产包；skill 不携带模型库。默认用 --with-components 一次声明组件依赖（含地图依赖）并注入组件包。明确不使用组件时可省略此选项。首次启用地图功能时运行 enable-map 接入地图源码和注册入口，再由统一构建一次准备依赖。普通生成不先运行 setup-env 预装基础依赖。
 5. 读取生成工程现状，局部修改业务 handler、scene-profile 的注册项和 scene-data。设计相机、光照、材质与布局；不要从 demo 模板覆盖现有文件。
 6. `node scripts/build-offline.mjs <WORKSPACE_PATH>`。准备完整依赖后执行静态契约、Node 同步装配检查、类型检查、资源检查和离线打包。连续模拟热力通过工程 scripts/heat-simulation.mjs 提供范围/数值函数，构建自动调用组件生成连续单元，见 references/restored-map-components.md；不手写经纬度点阵。编译使用工程外临时输入，结束后清理；项目仅保留源码与预览。工程自身 npm run build:offline 供开发者安装依赖后使用，默认生成使用此统一入口。成功后按下方验收规则交付；TIMING 与非阻塞性能 WARN 不是新门禁。
 
@@ -50,17 +50,20 @@ metadata:
 
 ## 选材与复用
 
-已确认用户模型包 → 内网合适模型 → 匹配的现成组件 → 复用 procedural 或自定义几何。
+已确认的用户资产按既定用途使用。其余对象或功能按「匹配的现成组件 → 适用的内网模型 → 复用 procedural 或自定义几何」选择；用户明确指定使用模型时，按模型流程处理。
+
+- 新建场景在 init 前列出计划实际创建的对象和功能，包含根据场景主题补出的基础结构、标注和交互等。同类实例合并为一次匹配。修改已有场景时，针对新增或需替换的类别执行此步骤。
+- 一次读取 [组件目录](references/component-catalog.md)，按每类对象或功能的用途、编辑粒度及所需输入匹配，识别同义词与上下文。只打开候选组件的用法页，确认公开入口、输入及能力覆盖。组件能满足需求且在目标工程中可用时，采用该组件。明确要求纯手写几何或禁止使用组件时按用户要求处理。
+- 写 handler 或 scene-data 前确认新增类别已匹配；已有工程首次接入组件或缺少组件依赖时，先运行 `node scripts/enable-components.mjs <WORKSPACE_PATH>` 补齐清单和组件包，保留工程已有依赖声明；已有地图功能的工程也使用此命令补齐依赖；首次启用地图功能才运行 enable-map。实际装配时按计划接入组件。若组件因接口、依赖或能力不适用而降级，交付时简述具体原因。默认样式按「默认配置与故障处理」执行。
 
 用户明确要求“纯几何体”或“不使用模型库”时跳过检索；低多边形、工业风格、数据可视化与快速生成不表示纯几何授权。无上传包也可直接生成，不要求用户先上传。
 
-- 开始编写主要业务对象的几何 handler 前，先从需求提取对象类别（如叉车、货架、集装箱），扣除已确认上传包中已匹配的类别，按下方入批条件筛选剩余类别，有入选类别时写入 UTF-8 查询文件，一次执行 `node scripts/search-assets.mjs --batch <查询文件> --brief --json`。不同数量/位置的同类对象不重复查询；无需用户提醒或批准检索。
+- 开始编写主要业务对象的几何 handler 前，先从需求提取对象类别（如叉车、货架、集装箱），扣除已确认资产覆盖及已匹配可用组件的类别（用户明确指定模型的类别仍按模型流程处理），按下方入批条件筛选剩余类别，有入选类别时写入 UTF-8 查询文件，一次执行 `node scripts/search-assets.mjs --batch <查询文件> --brief --json`。不同数量/位置的同类对象不重复查询；无需用户提醒或批准检索。
 - 根据实际返回候选的名称、用途和模型信息判断匹配；匹配的库模型直接下载并注入，不重复检查。向量分数高不等于类别正确。对纳入检索的对象，没有合适候选时可使用组件或几何；请求失败允许降级，但必须说明“检索失败”，不能说“库中没有”。未执行检索不得声称“未命中”。
-- 新建场景时，需表现实际外形、保留辨识特征或用户明确要求使用模型的主要对象纳入检索。用户只提供场景主题、未指定表现精度时，默认检索未被已确认资产覆盖的主要业务对象。用户未指定使用模型的对象，若明确用于占位、布局或动线示意且组件或几何足以表达，可直接实现。用户未指定使用模型的地面、墙体、标线等基础结构也可直接使用几何。修改已有场景时沿用现有资产，仅将新增或需要替换且符合以上条件的类别纳入检索。
+- 新建场景时，需表现实际外形、保留辨识特征或用户明确要求使用模型的主要对象纳入检索。用户只提供场景主题、未指定表现精度时，默认检索未被已确认资产覆盖的主要业务对象。用户未指定使用模型的对象，若明确用于占位、布局或动线示意且组件或几何足以表达，可直接实现。地面、墙体、标线等基础结构也先匹配组件；未匹配且未指定使用模型时可使用几何。修改已有场景时沿用现有资产，仅将新增或需要替换且符合以上条件的类别纳入检索。
 - 交付时简短说明哪些主要对象用了模型、哪些使用几何及降级原因；不生成额外报告，不新增构建门禁，不循环改词重试。配置与下载见 designer-assets.md。
 - 检索库只存已审核可用模型。候选类别匹配后直接 download → inject 并在场景使用；不执行 preview/import-check/accept-remote，不要求浏览器报告或用户确认。不得因缺少检查报告改用几何体；检索失败、无合适候选或实际下载/依赖解析失败时允许降级，并说明原因。
 - 普通 GLB 用内建 asset 分组。自定义加载行为使用 makeAssetNodeFactory，不另写异步加载/克隆/过期处理。
-- 组件按用途和编辑粒度选择，见速查的复用表；不要求每次遍历组件目录。
 - 节点与槽位的编辑粒度、稳定命名约束见生成契约「类型、生命周期与编辑」与「组合体命名与结束顺序」。
 - 代码建模直接写 handler，不生成 GLB 脚本。模型入库校验属于另行请求的维护任务。
 
@@ -107,7 +110,7 @@ metadata:
 | 修改已有场景、编辑结果回写、定向诊断 | references/scene-workflow.md |
 | 自定义轮廓与精细建模 | references/modeling-channels.md |
 | 开发维护：同步已入库组件包与使用说明 | references/component-sync.md |
-| 已选中组件 | references/component-catalog.md → 对应 component-docs 文件 |
+| 匹配组件与确认用法 | references/component-catalog.md → 候选组件的 component-docs 文件 |
 | 生产数据接入或架构排障 | references/scene-engineering.md |
 | 资产导入、检索库维护 | references/asset-pipeline.md |
 | 模型入库规格 | references/model-spec.md |
