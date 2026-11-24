@@ -25,7 +25,9 @@ description: 调试已有三维组件的参数，或从自然语言与设计资�
 创作默认交付预览＋实时调参面板＋重置；无需使用者重复要求。组件源码及说明集中在component/，完整演示集中在example/，按create.md统一构建index.3d.html。默认不启动浏览器、不截图或像素比对，不做LLM视觉检查；构建通过即可交给用户看效果。未经运行标明RUNTIME: not-run，不能称交互已验证。检查分层、故障排查和重试上限见[验证流程](references/validation.md)。
 最终回复只提供一个预览artifact：
 `<artifact type="text/link">实际构建返回的HTML_PATH绝对路径</artifact>`
-必须替换为真实生成路径，不输出占位符；不要把component、preset、controls、说明或目录逐个输出为artifact。除非用户明确要求，其他源码/ZIP/报告不单独链接。验证范围和用户待确认仍用简短文字说明；需要独立review时直接给prompt，不另生成prompt文件。
+必须替换为真实生成路径，不输出占位符；不要把component、preset、controls、说明或目录逐个输出为artifact。除非用户明确要求源码、开发交付或入库，其他源码/ZIP/报告不单独链接。验证范围和用户待确认仍用简短文字说明；需要独立review时直接给prompt，不另生成prompt文件。
+
+用户明确要求交给开发或入库时，在回复正文提供组件工程、component/、已有源码 ZIP 及 example/library-demo.ts 的实际路径，供维护者直接使用。入库、同步和场景验收的指令见 [入库与场景接入指南](references/library-intake.md)。
 
 ## 组件本体与演示边界
 每次创作先明确组件本体、借用的宿主资源和接入接口，写入component-boundary.json。组件源码在component/src/，设计/接口/参数说明在component/；场景、业务样本、相机/渲染调度和面板统一在example/。按需求判断所有权：货架的几何属于货架组件；地图扫光借用地图建筑，不能在扫光组件里重建整座城市。创作的能力本身就是灯光或相机时，这些资源可以属于组件。
