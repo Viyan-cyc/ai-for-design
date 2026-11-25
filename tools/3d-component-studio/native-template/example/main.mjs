@@ -1,7 +1,8 @@
 import * as THREE from 'three';
-import {AuthoredComponent} from '../component/src/index.ts';
-import {controls,normalize} from '../component/src/parameters.ts';
-import overrides from '../component/preset.json';
+import {AuthoredComponent} from '../__COMPONENT_DIR__/src/index.ts';
+import {controls,normalize} from '../__COMPONENT_DIR__/src/parameters.ts';
+import overrides from '../__COMPONENT_DIR__/preset.json';
+import manifest from '../__COMPONENT_DIR__/package.json';
 const startupCleanup=[];
 try{
 const $=id=>document.getElementById(id),initial=normalize(overrides);let preset={...initial},disposed=false,frame=0,renders=0,revision=0;
@@ -18,8 +19,8 @@ function apply(p){if(disposed)throw Error('组件已释放');const next=normaliz
 for(const c of controls){const label=document.createElement('label');label.textContent=c.label+' ('+c.unit+')';const value=document.createElement('output');value.id='value-'+c.key;const input=document.createElement('input');input.id='control-'+c.key;input.type=c.type;for(const k of ['min','max','step'])if(c[k]!==undefined)input[k]=c[k];input.oninput=()=>{try{apply({...preset,[c.key]:c.type==='color'?input.value:Number(input.value)});$('status').textContent='参数已应用';}catch(e){$('status').textContent=e.message;sync();}};label.append(value,input);$('controls').append(label);}
 $('reset').onclick=()=>{try{apply({...initial});$('status').textContent='已恢复默认参数';}catch(error){$('status').textContent='恢复失败：'+error.message;}};
 $('export').textContent='导出参数';$('import').accept='.json';
-$('export').onclick=()=>{const a=document.createElement('a'),u=URL.createObjectURL(new Blob([JSON.stringify({formatVersion:1,id:'__ID__',version:'0.1.0',parameters:preset},null,2)],{type:'application/json'}));a.href=u;a.download='__ID__-parameters.json';a.click();setTimeout(()=>URL.revokeObjectURL(u),1000);$('status').textContent='参数已导出；组件源码使用构建命令导出';};
-$('import').onchange=async e=>{const file=e.target.files[0],token=++revision;if(!file)return;try{if(file.size>65536)throw Error('参数文件过大');const text=await file.text();if(token!==revision||disposed)return;const p=JSON.parse(text);if(p.formatVersion!==1||p.id!=='__ID__'||p.version!=='0.1.0'||Object.keys(p).sort().join(',')!=='formatVersion,id,parameters,version')throw Error('参数身份或版本不匹配');if(!p.parameters||Object.keys(p.parameters).some(k=>!['size','color'].includes(k)))throw Error('未知参数');apply(p.parameters);$('status').textContent='导入通过';}catch(error){$('status').textContent='导入失败，原参数保留：'+error.message;}finally{e.target.value='';}};
+$('export').onclick=()=>{const a=document.createElement('a'),u=URL.createObjectURL(new Blob([JSON.stringify({formatVersion:1,id:manifest.component.id,version:manifest.version,parameters:preset},null,2)],{type:'application/json'}));a.href=u;a.download='__ID__-parameters.json';a.click();setTimeout(()=>URL.revokeObjectURL(u),1000);$('status').textContent='参数已导出；组件源码使用构建命令导出';};
+$('import').onchange=async e=>{const file=e.target.files[0],token=++revision;if(!file)return;try{if(file.size>65536)throw Error('参数文件过大');const text=await file.text();if(token!==revision||disposed)return;const p=JSON.parse(text);if(p.formatVersion!==1||p.id!==manifest.component.id||p.version!==manifest.version||Object.keys(p).sort().join(',')!=='formatVersion,id,parameters,version')throw Error('参数身份或版本不匹配');if(!p.parameters||typeof p.parameters!=='object'||Array.isArray(p.parameters))throw Error('未知参数');apply(p.parameters);$('status').textContent='导入通过';}catch(error){$('status').textContent='导入失败，原参数保留：'+error.message;}finally{e.target.value='';}};
 function panel(open){$('panel').hidden=!open;$('open-panel').hidden=open;document.body.classList.toggle('panel-collapsed',!open);$('toggle-panel').setAttribute('aria-expanded',String(open));$('open-panel').setAttribute('aria-expanded',String(open));resize();}
 $('toggle-panel').onclick=()=>{panel(false);$('open-panel').focus();};$('open-panel').onclick=()=>{panel(true);$('toggle-panel').focus();};$('panel').onkeydown=e=>{if(e.key==='Escape')$('toggle-panel').click();};
 window.studio={snapshot:()=>({design:{...preset}}),apply:p=>apply(p.design??p),renders:()=>renders,dispose(){if(disposed)return;disposed=true;observer.disconnect();cancelAnimationFrame(frame);component.dispose();renderer.dispose();renderer.domElement.remove();for(const el of document.querySelectorAll('input,button'))el.disabled=true;}};

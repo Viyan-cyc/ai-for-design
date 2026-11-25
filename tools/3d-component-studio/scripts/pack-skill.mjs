@@ -4,7 +4,7 @@ const tool=new URL('../',import.meta.url),target=new URL('../../../skills/create
 const sha=b=>createHash('sha256').update(b).digest('hex');
 async function collect(base,prefix,relative=''){for(const e of await readdir(new URL(relative,base),{withFileTypes:true})){if(e.isSymbolicLink())throw Error('No linked resources');const name=relative+e.name;if(e.isDirectory())await collect(base,prefix,name+'/');else{const bytes=await readFile(new URL(name,base));files[prefix+name]=bytes;sources.push({output:prefix+name,sha256:sha(bytes)});}}}
 // Share actual generator theme tokens; generated skill remains standalone.
-const editorCSS=await readFile(new URL('../../../skills/generate-3d-scene/template/src/edit/styles/editor.css',import.meta.url),'utf8');
+const editorCSS=await readFile(new URL('../../../skills/generate-3d-scene/template/src/editor/styles/editor.css',import.meta.url),'utf8');
 const tokens=editorCSS.match(/\.edit-scope\s*\{[^}]+\}/)?.[0];
 if(!tokens||!tokens.includes('--ed-accent:'))throw Error('Generator editor tokens missing');
 const previewURL=new URL('authoring-template/example/index.html',tool);

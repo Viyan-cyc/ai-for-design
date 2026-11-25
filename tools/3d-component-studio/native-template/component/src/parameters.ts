@@ -9,7 +9,7 @@ export interface ComponentOptions {
  visible?: boolean; 
  /** 附加业务数据。 */
  userData?: Record<string, unknown> }
-export const defaults = Object.freeze({size:1,color:'#45b8ff'});
+export const defaults = Object.freeze({size:1,color:'#45b8ff',name:'',visible:true,userData:Object.freeze({})});
 export const controls = Object.freeze([
  {key:'size',type:'range',label:'尺寸',unit:'世界单位',min:.5,max:2,step:.1},
  {key:'color',type:'color',label:'颜色',unit:'sRGB'}

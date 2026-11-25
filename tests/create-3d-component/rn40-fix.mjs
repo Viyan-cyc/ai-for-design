@@ -1,3 +1,4 @@
+import {fixtureComponent} from './fixture-component.mjs';
 import {readFile,writeFile,mkdir,unlink} from 'node:fs/promises';
 import {resolve,join} from 'node:path';
 import {createRequire} from 'node:module';
@@ -14,7 +15,7 @@ export {AuthoredComponent as ExportedComponent} from "@component";
 // '@component' "@parameters"
 export function run(ctrl){const c=new AuthoredComponent(defaults);ctrl.textContent='@component';ctrl.other="@parameters";c.dispose();return ctrl;}`;
 await writeFile(demo,source);
-const plan=await planIntake({candidate:join(root,'interactive-object/component'),target:'D:/cyc/project/octo/test/3d-components',category:'core',names:['AuthoredComponent'],demo});
+const plan=await planIntake({candidate:await fixtureComponent(join(root,'interactive-object'),'interactive-object'),target:'D:/cyc/project/octo/test/3d-components',category:'core',names:['AuthoredComponent'],demo});
 const transformed=Buffer.from(plan.operations[plan.doc+'/demo.ts'],'base64').toString();assert.ok(transformed.includes('// \'@component\' "@parameters"'));
 const testFile=join(library,plan.doc,'rn40-literal.ts');await writeFile(testFile,transformed);
 try{const esbuild=createRequire(join(library,'package.json'))('esbuild');await esbuild.build({entryPoints:[testFile],outfile:join(out,'literal.mjs'),bundle:true,platform:'node',format:'esm'});const module=await import(pathToFileURL(join(out,'literal.mjs')));assert.deepEqual(module.run({}),{textContent:'@component',other:'@parameters'});assert.equal(module.exportedDefaults.size,1);assert.equal(typeof module.ExportedComponent,'function');}finally{await unlink(testFile);}

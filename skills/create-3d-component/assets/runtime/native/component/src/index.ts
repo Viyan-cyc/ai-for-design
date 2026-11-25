@@ -24,9 +24,9 @@ export class AuthoredComponent extends Group {
   normalize(options);
   const next=normalize({...this.options,...options});this.options=next;
   this.mesh.scale.setScalar(next.size);this.mesh.material.color.set(next.color);
-  if(next.name!==undefined)this.name=next.name;
-  if(next.visible!==undefined)this.visible=next.visible;
-  if(next.userData!==undefined)this.userData={...next.userData};
+  if(options.name!==undefined)this.name=next.name;
+  if(options.visible!==undefined)this.visible=next.visible;
+  if(options.userData!==undefined)this.userData={...next.userData};
  }
  /** 返回当前配置的副本。 */
  getOptions(){return {...this.options};}

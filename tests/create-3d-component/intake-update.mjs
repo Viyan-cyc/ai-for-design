@@ -1,9 +1,10 @@
+import {fixtureComponent} from './fixture-component.mjs';
 import assert from 'node:assert/strict';
 import {readFile,writeFile,cp,mkdir} from 'node:fs/promises';
 import {resolve,join} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {planIntake,validateIntake,applyIntake,baseline} from '../../tools/3d-component-studio/intake/core.mjs';
-const out=resolve(process.argv[2]),repo=fileURLToPath(new URL('../../',import.meta.url)),target=join(out,'target'),candidate=join(out,'intake-host/component');
+const out=resolve(process.argv[2]),repo=fileURLToPath(new URL('../../',import.meta.url)),target=join(out,'target'),candidate=await fixtureComponent(join(out,'intake-host'),'intake-host');
 const args={candidate,target,category:'helper',names:['HostHighlight'],update:true};
 const notes=join(target,'docs/components/intake-host/notes.md'),beforeNotes=await readFile(notes);
 const params=join(candidate,'src/parameters.ts'),text=await readFile(params,'utf8');assert(text.includes('opacity:1'));await writeFile(params,text.replace('opacity:1','opacity:0.8'));

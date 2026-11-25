@@ -35,7 +35,7 @@ scripts/pack-skill.mjs用于在完成工具构建后生成skill的assets/runtime
 从本目录执行，路径替换为实际位置：
 
 ```powershell
-node intake/cli.mjs plan --candidate <项目/component> --target <组件库> --category core --exports MyComponent --out <新plan.json>
+node intake/cli.mjs plan --candidate <组件目录> --target <组件库> --category core --exports MyComponent --out <新plan.json>
 node intake/cli.mjs validate --plan <plan.json> --work <新的独立验证目录> --test <组件运行断言.mjs>
 node intake/cli.mjs apply --receipt <验证目录/receipt.json> --developer-confirmed
 ```

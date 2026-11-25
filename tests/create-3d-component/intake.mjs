@@ -10,7 +10,7 @@ for(const e of await readdir(original,{withFileTypes:true})){if(['.git','dist'].
 const checks=[],runtimeTest=join(repo,'tests/create-3d-component/intake-runtime.mjs');
 for(const [profile,id,category,name] of [['native-object','intake-object','core','AuthoredComponent'],['native-host','intake-host','helper','HostHighlight']]){
  const project=join(out,id);const r=spawnSync(process.execPath,[join(repo,'skills/create-3d-component/scripts/init.mjs'),'--profile',profile,'--project-dir',project,id],{encoding:'utf8'});if(r.status!==0)throw Error(r.stdout+r.stderr);
- const candidate=join(project,'component'),args={candidate,target,category,names:[name]};
+ const candidate=join(project,'components',id),args={candidate,target,category,names:[name]};
  const plan=await planIntake(args);await writeFile(join(out,id+'-plan.json'),JSON.stringify(plan,null,2));
  assert.equal(plan.status,'planned');const entry=join(target,'src',category,'index.ts'),before=await readFile(entry);
  const candidateEntry=join(candidate,'src/index.ts'),src=await readFile(candidateEntry);await writeFile(candidateEntry,Buffer.concat([src,Buffer.from('\n')]));await assert.rejects(()=>validateIntake(plan,join(out,id+'-stale'),{runtimeTest}),/候选已变化/);await writeFile(candidateEntry,src);

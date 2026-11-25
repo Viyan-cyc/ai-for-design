@@ -5,21 +5,21 @@ const repo=fileURLToPath(new URL('../../',import.meta.url)),out=resolve(process.
 await mkdir(out,{recursive:true});
 function run(args,pass=true,cwd=repo){const p=spawnSync(process.execPath,args,{cwd,encoding:'utf8'});if(pass)assert.equal(p.status,0,p.stdout+p.stderr);else assert.notEqual(p.status,0);return p.stdout+p.stderr;}
 const project=run(['skills/create-3d-component/scripts/init.mjs',out,'type-closure','--profile',process.env.COMPONENT_PROFILE||'native-object']).match(/WORKSPACE_PATH=(.+)/)[1].trim(),build=join(project,'example/build.mjs');
-run([build]);const html=await readFile(join(project,'index.3d.html')),entry=join(project,'component/src/index.ts'),original=await readFile(entry,'utf8');
+run([build]);const html=await readFile(join(project,'index.3d.html')),entry=join(project,'components/type-closure/src/index.ts'),original=await readFile(entry,'utf8');
 await writeFile(join(project,'example/external.ts'),'export interface DemoOnly { value: string }');
 await writeFile(join(project,'example/external.d.ts'),'interface OutsideDemo { value: string }');
 const cases=[
- ['export-type',"export type {DemoOnly} from '../../example/external';"],
- ['import-type',"import type {DemoOnly} from '../../example/external';export type Leaked=DemoOnly;"],
- ['type-expression',"export type Leaked=import('../../example/external').DemoOnly;"],
- ['import-equals',"import External = require('../../example/external'); export type Leaked=External.DemoOnly;"],
- ['path-reference',"/// <reference path=\"../../example/external.d.ts\" />\nexport type Leaked=OutsideDemo;"],
- ['module-augmentation',"declare module '../../example/external' { interface DemoOnly { extra: string } }"],
+ ['export-type',"export type {DemoOnly} from '../../../example/external';"],
+ ['import-type',"import type {DemoOnly} from '../../../example/external';export type Leaked=DemoOnly;"],
+ ['type-expression',"export type Leaked=import('../../../example/external').DemoOnly;"],
+ ['import-equals',"import External = require('../../../example/external'); export type Leaked=External.DemoOnly;"],
+ ['path-reference',"/// <reference path=\"../../../example/external.d.ts\" />\nexport type Leaked=OutsideDemo;"],
+ ['module-augmentation',"declare module '../../../example/external' { interface DemoOnly { extra: string } }"],
  ['types-reference',"/// <reference types=\"node\" />"],
  ['undeclared-type-peer',"export type Leaked=import('node:fs').Stats;"]
 ];
 for(const [name,code] of cases){await writeFile(entry,code+'\n'+original);const log=run([build,'--export-component'],false);assert.match(log,/TypeScript (dependency|types reference)/);await writeFile(join(out,name+'.log'),log);assert.deepEqual(await readFile(join(project,'index.3d.html')),html);}
-await writeFile(join(project,'component/src/local-types.ts'),'export interface Local { value: string }');
+await writeFile(join(project,'components/type-closure/src/local-types.ts'),'export interface Local { value: string }');
 const positive=original+"\nimport type {Local} from './local-types';export type {Local} from './local-types';export type LocalImport=import('./local-types').Local;export const identity=(v:Local)=>v;\n";
 await writeFile(entry,positive);const exported=run([build,'--export-component']);await writeFile(join(out,'export.log'),exported);
 const zip=exported.match(/COMPONENT_SOURCE_PATH=(.+)/)[1].trim(),files=readZip(new Uint8Array(await readFile(zip)));assert.deepEqual(Buffer.from(files['src/index.ts']),Buffer.from(positive));

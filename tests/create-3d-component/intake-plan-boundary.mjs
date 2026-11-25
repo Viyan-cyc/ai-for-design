@@ -1,9 +1,10 @@
+import {fixtureComponent} from './fixture-component.mjs';
 import assert from 'node:assert/strict';
 import {cp,readFile,writeFile,mkdir,symlink,unlink} from 'node:fs/promises';
 import {join,resolve} from 'node:path';
 import {planIntake,baseline} from '../../tools/3d-component-studio/intake/core.mjs';
 const out=resolve(process.argv[2]),target=join(out,'target'),candidate=join(out,'plan-boundary');
-await cp(join(out,'intake-host/component'),candidate,{recursive:true});const packagePath=join(candidate,'package.json'),pkg=JSON.parse(await readFile(packagePath));pkg.component.id='boundary-component';await writeFile(packagePath,JSON.stringify(pkg));
+await cp(await fixtureComponent(join(out,'intake-host'),'intake-host'),candidate,{recursive:true});const packagePath=join(candidate,'package.json'),pkg=JSON.parse(await readFile(packagePath));pkg.component.id='boundary-component';await writeFile(packagePath,JSON.stringify(pkg));
 const index=join(candidate,'src/index.ts'),code=(await readFile(index,'utf8')).replaceAll('HostHighlight','BoundaryComponent');
 // Re-exported class declarations are the common multi-file layout.
 await writeFile(join(candidate,'src/implementation.ts'),code);await writeFile(index,"export {BoundaryComponent} from './implementation';\n");

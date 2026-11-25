@@ -1,3 +1,4 @@
+import {fixtureComponent} from './fixture-component.mjs';
 import assert from 'node:assert/strict';
 import {cp,mkdir,readFile,writeFile,unlink,access} from 'node:fs/promises';
 import {join,resolve} from 'node:path';
@@ -7,7 +8,7 @@ const repo=fileURLToPath(new URL('../../',import.meta.url));
 const seed=resolve(process.argv[2]),out=resolve(process.argv[3]);
 await mkdir(out);const target=join(out,'target'),candidate=join(out,'component');
 await cp(join(seed,'target'),target,{recursive:true,dereference:true});
-await cp(join(seed,'intake-host/component'),candidate,{recursive:true});
+await cp(await fixtureComponent(join(seed,'intake-host'),'intake-host'),candidate,{recursive:true});
 const production=await baseline('D:/cyc/project/octo/test/3d-components');
 const args={candidate,target,category:'helper',names:['HostHighlight'],update:true};
 const registryPath=join(target,'docs/intake/intake-host.json'),registryBytes=await readFile(registryPath);

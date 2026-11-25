@@ -7,7 +7,7 @@ const out=resolve(process.env.COMPONENT_TEST_OUTPUT||'docs/create-3d-component/n
 const library='D:/cyc/project/octo/test/3d-components',before=await baseline(library),results=[];
 for(const [profile,id,category,name] of [['native-object','interactive-object','core','AuthoredComponent'],['native-host','interactive-host','helper','HostHighlight']]){
  const project=join(out,id),init=spawnSync(process.execPath,['skills/create-3d-component/scripts/init.mjs','--profile',profile,'--project-dir',project,id],{encoding:'utf8'});assert.equal(init.status,0,init.stderr);
- const demo=join(project,'example/library-demo.ts'),candidate=join(project,'component');
+ const demo=join(project,'example/library-demo.ts'),candidate=join(project,'components',id);
  const plan=await planIntake({candidate,target:library,category,names:[name],demo});
  assert.ok(plan.operations[plan.doc+'/demo.ts']);assert.ok(Buffer.from(plan.operations[plan.doc+'/demo.ts'],'base64').toString().includes('../../../src/'+category+'/index'));
  const original=await readFile(demo);await writeFile(demo,Buffer.concat([original,Buffer.from('\n// changed')]));

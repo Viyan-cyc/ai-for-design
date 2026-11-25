@@ -41,18 +41,18 @@
     },
     {
       "path": "native/component/src/index.ts",
-      "bytes": 1936,
-      "sha256": "b68805a16caf9bcfe8fa226d22d4780796c76cd777aa7fba8a24e34dbacecef3"
+      "bytes": 1945,
+      "sha256": "ed27683d450d5256f15a220caeff3398925236e6360ad9793587e2f56a0e4a08"
     },
     {
       "path": "native/component/src/parameters.ts",
-      "bytes": 1438,
-      "sha256": "77bda0b82f5582de66b85e2a065d53945389061a4b4b624fec2ffdfc52233699"
+      "bytes": 1486,
+      "sha256": "d9bf7789762b9c465e06b69b898d9ee1ce10a50993e5d96227d43e15ec5dac27"
     },
     {
       "path": "native/example/build.mjs",
-      "bytes": 7099,
-      "sha256": "d074257a7caa3a85a51b6cc500fe3542e7ecd4fbe3b005237e739d8c97db361c"
+      "bytes": 7180,
+      "sha256": "2c32ad574ff49d4b0468d23a2628cdbee14dfe25581caf2387f51f8ce0fe6639"
     },
     {
       "path": "native/example/check-types.mjs",
@@ -71,8 +71,8 @@
     },
     {
       "path": "native/example/main.mjs",
-      "bytes": 4979,
-      "sha256": "7d3b95f6ed1cebfe6d92ba9383a11dcd10d7b558eae010c2f4e47d0f46cabb6a"
+      "bytes": 5100,
+      "sha256": "c5a96f24107d98014ce58891bddd1a212d4f34dbf5bb60825f5b9191df51586f"
     },
     {
       "path": "native/example/package.json",
@@ -116,8 +116,8 @@
     },
     {
       "path": "host/example/build.mjs",
-      "bytes": 7099,
-      "sha256": "d074257a7caa3a85a51b6cc500fe3542e7ecd4fbe3b005237e739d8c97db361c"
+      "bytes": 7180,
+      "sha256": "2c32ad574ff49d4b0468d23a2628cdbee14dfe25581caf2387f51f8ce0fe6639"
     },
     {
       "path": "host/example/check-types.mjs",
@@ -136,8 +136,8 @@
     },
     {
       "path": "host/example/main.mjs",
-      "bytes": 6672,
-      "sha256": "f798833a0e27a8ed7b69b6d02410ddd9e4cef27c176bf847d3e3f27d22fd57f6"
+      "bytes": 6797,
+      "sha256": "5af69a2ec91e86531245fd87014a4c99020b5276e2a945ce7f1d08d024008e65"
     },
     {
       "path": "host/example/package.json",

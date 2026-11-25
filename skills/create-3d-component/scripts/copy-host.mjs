@@ -5,7 +5,26 @@ async function safe(path){for(let p=resolve(path);;p=dirname(p)){try{const s=awa
 await safe(sourceArg);await safe(projectArg);const source=await realpath(sourceArg),project=await realpath(projectArg);
 const inside=(a,b)=>{const p=relative(a,b);return p===''||(!p.startsWith('..'+sep)&&p!=='..'&&!p.startsWith(sep)&&!p.includes(':'));};
 if(inside(source,project)||inside(project,source))throw Error('Source and destination projects must not contain each other');
-const meta=JSON.parse(await readFile(join(project,'component/package.json'),'utf8'));if(meta.component?.host!=='borrowed-host')throw Error('Destination must be a native-host project');
+const components=join(project,'components');
+await safe(components);
+let candidates;
+try {
+  candidates=(await readdir(components,{withFileTypes:true})).map(entry=>{
+    if(entry.isSymbolicLink())throw Error('Linked component refused: '+entry.name);
+    return entry.isDirectory()?join(components,entry.name):null;
+  }).filter(Boolean);
+} catch(error) {
+  if(error.code!=='ENOENT')throw error;
+  candidates=[join(project,'component')]; // Existing template layout.
+}
+const borrowed=[];
+for(const candidate of candidates){
+  const manifest=join(candidate,'package.json');
+  await safe(manifest);
+  const meta=JSON.parse(await readFile(manifest,'utf8'));
+  if(meta.component?.host==='borrowed-host')borrowed.push(candidate);
+}
+if(borrowed.length!==1)throw Error('Destination must contain exactly one native-host component');
 const example=join(project,'example');await safe(example);const target=join(example,'host');try{await lstat(target);throw Error('Host copy already exists; edit that copy, do not overwrite');}catch(e){if(e.code!=='ENOENT')throw e;}
 const excluded=new Set(['node_modules','.git','.cache','.npm-cache','.history','dist','preview','offline','index.3d.html']);
 async function list(root,prefix=''){const files=[];for(const e of await readdir(join(root,prefix),{withFileTypes:true})){if(excluded.has(e.name))continue;if(e.isSymbolicLink())throw Error('Linked source refused: '+e.name);const p=prefix+e.name;if(e.isDirectory())files.push(...await list(root,p+'/'));else if(e.isFile())files.push(p);else throw Error('Unsupported source entry');}return files.sort();}

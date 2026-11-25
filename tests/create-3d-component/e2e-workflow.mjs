@@ -17,7 +17,7 @@ const checks=[],browser=await chromium.launch({channel:'msedge',headless:true});
 try{
  for(const [profile,id,category,name,key,value,color] of [['native-object','e2e-object','core','AuthoredComponent','size','1.5','#45b8ff'],['native-host','e2e-host','helper','HostHighlight','opacity','0.8','#ff8800']]){
   const project=join(out,id);await run(id+'-init',['skills/create-3d-component/scripts/init.mjs','--profile',profile,'--project-dir',project,id]);
-  await writeFile(join(project,'component/design.md'),`# ${id}\n\n技术流程样本，非用户已确认的业务设计。\n${profile==='native-object'?'需求：可调尺寸与颜色的独立对象。':'需求：借用现有Mesh的静态描边效果，可开关、改色及调节亮度；关闭不改变宿主。'}\n使用创作模板提供的能力，未声称额外新业务实现。视觉及功能必要性待用户确认。\n`);
+  await writeFile(join(project,'components',id,'design.md'),`# ${id}\n\n技术流程样本，非用户已确认的业务设计。\n${profile==='native-object'?'需求：可调尺寸与颜色的独立对象。':'需求：借用现有Mesh的静态描边效果，可开关、改色及调节亮度；关闭不改变宿主。'}\n使用创作模板提供的能力，未声称额外新业务实现。视觉及功能必要性待用户确认。\n`);
   await run(id+'-build',[join(project,'example/build.mjs')]);
   const context=await browser.newContext({offline:true,acceptDownloads:true,viewport:{width:1280,height:800}}),page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
   await page.goto(pathToFileURL(join(project,'index.3d.html')).href);await page.waitForFunction(()=>window.studio?.renders()>0);
@@ -28,7 +28,7 @@ try{
   await page.locator('#reset').click();await page.locator('#import').setInputFiles(paramsFile);await page.waitForFunction(()=>document.getElementById('status').textContent==='导入通过');
   assert.deepEqual(await page.evaluate(()=>studio.snapshot().design),expected);await page.screenshot({path:join(out,id+'.png')});assert.deepEqual(errors,[]);await context.close();
   const exported=JSON.parse(await readFile(paramsFile,'utf8'));assert.deepEqual(exported.parameters,expected);
-  await writeFile(join(project,'component/preset.json'),JSON.stringify(exported.parameters,null,2));
+  await writeFile(join(project,'components',id,'preset.json'),JSON.stringify(exported.parameters,null,2));
   await run(id+'-rebuild',[join(project,'example/build.mjs')]);
   const output=await run(id+'-export',[join(project,'example/build.mjs'),'--export-component']);const zip=output.match(/COMPONENT_SOURCE_PATH=(.+)/)?.[1].trim();assert(zip);
   const archive=join(out,id+'-source.zip');await cp(zip,archive);const entries=readZip(new Uint8Array(await readFile(archive))),candidate=join(out,id+'-unpacked');await mkdir(candidate);
@@ -36,7 +36,7 @@ try{
   assert.deepEqual(JSON.parse(await readFile(join(candidate,'preset.json'),'utf8')),expected);
   const plan=await planIntake({candidate,target,category,names:[name]});await writeFile(join(out,id+'-plan.json'),JSON.stringify(plan,null,2));
   const receipt=await validateIntake(plan,join(out,id+'-validation'),{runtimeTest:join(repo,'tests/create-3d-component/intake-runtime.mjs')});await applyIntake(receipt,{developerConfirmed:true});
-  const sourceFiles={};for(const path of Object.keys(entries).filter(p=>p.startsWith('src/'))){const a=await readFile(join(project,'component',path)),b=await readFile(join(target,'src',category,id,path.slice(4)));assert.deepEqual(a,Buffer.from(entries[path]));assert.deepEqual(a,b);sourceFiles[path]=hash(a);}
+  const sourceFiles={};for(const path of Object.keys(entries).filter(p=>p.startsWith('src/'))){const a=await readFile(join(project,'components',id,path)),b=await readFile(join(target,'src',category,id,path.slice(4)));assert.deepEqual(a,Buffer.from(entries[path]));assert.deepEqual(a,b);sourceFiles[path]=hash(a);}
   checks.push({id,profile,project,archive,candidate,category,name,parameters:expected,sourceFiles,archiveHash:hash(await readFile(archive)),preview:'passed',export:'passed',design:'pending-user',engineering:'passed-in-copy',developerApproval:'isolated-test-only',publication:'unpublished'});
   await writeFile(join(out,'progress.json'),JSON.stringify(checks,null,2));console.log('PASS preview -> ZIP -> library: '+id);
  }
